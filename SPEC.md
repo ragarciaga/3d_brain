@@ -540,7 +540,9 @@ TypeScript se fija en 6.0.3 porque typescript-eslint aún no soporta la 7. Decis
 
 - Al cargar, la app calcula y guarda el centro original de cada pieza y de cada nodo del árbol. Estos valores no cambian nunca.
 - Cada pieza tiene un `desplazamiento` (vector) en el estado. Posición en pantalla = posición original + desplazamiento.
-- Explosión global: desplazamiento = (centro de la pieza menos centro del conjunto visible) multiplicado por el factor del deslizador.
+- Explosión global: cada bloque se aleja del centro del conjunto visible (en X se mide desde el plano medio, x = 0, con el signo de su lado, para que izquierda y derecha no cambien de lado) una distancia igual al factor del deslizador por (distancia base más factor radial por su distancia al centro, con tope). Así también salen las piezas profundas. Las constantes viven en `src/lib/explosion.ts`.
+- Separar una pieza: sale en esa misma dirección hasta quedar fuera del conjunto armado, y nunca se mueve menos de `DISTANCIA_SEPARAR`.
+- Al soltar el deslizador, al cambiar el nivel con la explosión activa y al reensamblar, la cámara encuadra el conjunto visible sin cambiar la dirección desde la que se mira.
 - Separar por nivel: se usa el centro del nodo del nivel elegido para que sus piezas se muevan como un bloque.
 - Reensamblar: el desplazamiento vuelve a cero con una animación. Como la posición original nunca se tocó, no hay error acumulado.
 
