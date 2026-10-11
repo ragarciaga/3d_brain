@@ -62,17 +62,27 @@ export function leerEnvios(filas: string[][]): { envios: Envio[]; invalidas: num
   return { envios, invalidas };
 }
 
+/**
+ * Un docente puede reenviar la misma estructura (o enviarla en partes): por revisor, campo e idioma
+ * queda la respuesta más reciente. Las filas del CSV de Google vienen en orden cronológico.
+ */
+export function ultimasRespuestas(envios: Envio[]): { revisor: string; r: Respuesta }[] {
+  const m = new Map<string, { revisor: string; r: Respuesta }>();
+  for (const e of envios) {
+    for (const r of e.respuestas) m.set(`${e.revisor}|${r.estructura}|${r.campo}|${r.idioma ?? ''}`, { revisor: e.revisor, r });
+  }
+  return [...m.values()];
+}
+
 export function resumenMarkdown(estructura: string, envios: Envio[], versionActual: string): string {
   const lineas = [`## Revisiones de \`${estructura}\``, '', `Versión actual del contenido: ${versionActual}`, ''];
   lineas.push('| Revisor | Campo | Idioma | Veredicto | Propuesta | Versión revisada |', '|---|---|---|---|---|---|');
-  for (const e of envios) {
-    for (const r of e.respuestas) {
-      const propuesta = (r.propuesta ?? (r.posicion ? `posición ${r.posicion.join(', ')}` : r.ramo ? `ramo: ${r.ramo} (${r.malla})` : ''))
-        .replace(/\|/g, '/')
-        .replace(/\n/g, ' ');
-      const vieja = r.version !== versionActual ? ' (desactualizada)' : '';
-      lineas.push(`| ${e.revisor} | ${r.campo} | ${r.idioma ?? ''} | ${r.veredicto} | ${propuesta} | ${r.version}${vieja} |`);
-    }
+  const limpiar = (t: string) => t.replace(/\|/g, '/').replace(/[\r\n]+/g, ' ');
+  for (const { revisor, r } of ultimasRespuestas(envios)) {
+    const propuesta = limpiar(r.propuesta ?? (r.posicion ? `posición ${r.posicion.join(', ')}` : r.ramo ? `ramo: ${r.ramo} (${r.malla})` : ''));
+    const comentario = r.comentario ? ` Comentario: ${limpiar(r.comentario)}` : '';
+    const vieja = r.version !== versionActual ? ' (desactualizada)' : '';
+    lineas.push(`| ${revisor} | ${r.campo} | ${r.idioma ?? ''} | ${r.veredicto} | ${propuesta}${comentario} | ${r.version}${vieja} |`);
   }
   lineas.push('', 'Siguiente paso: preparar el cambio en `src/data/estructuras.json` y que el editor lo apruebe (tier C).');
   return lineas.join('\n');

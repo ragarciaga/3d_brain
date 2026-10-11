@@ -26,3 +26,17 @@ describe('importar revisiones (F24)', () => {
     expect(md).toContain('(desactualizada)');
   });
 });
+
+describe('reenvíos', () => {
+  it('queda solo la respuesta más reciente por revisor, campo e idioma', async () => {
+    const { ultimasRespuestas } = await import('../scripts/lib/revisiones.ts');
+    const base = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es' as const, version: '0.1.0', fecha: 'x' };
+    const envios = [
+      { revisor: 'P1', estructura: 'hippocampus', marcaTemporal: '1', respuestas: [{ ...base, veredicto: 'corregir' as const }] },
+      { revisor: 'P1', estructura: 'hippocampus', marcaTemporal: '2', respuestas: [{ ...base, veredicto: 'correcto' as const }] },
+    ];
+    const u = ultimasRespuestas(envios);
+    expect(u).toHaveLength(1);
+    expect(u[0]!.r.veredicto).toBe('correcto');
+  });
+});

@@ -29,6 +29,7 @@
     "react-i18next": "17.0.16",
     "react-router": "8.4.0",
     "three": "0.186.1",
+    "three-mesh-bvh": "0.8.3",
     "zustand": "5.0.15"
   },
   "devDependencies": {

@@ -69,7 +69,10 @@
     "delGrupo": "Del grupo",
     "fuentes": "Fuentes",
     "porVerificar": "(referencia por verificar)",
-    "version": "Versión del contenido"
+    "version": "Versión del contenido",
+    "fuentePendiente": "pendiente de confirmar",
+    "latin": "Latín",
+    "gruposDeEstudio": "Grupos de estudio"
   },
   "recurso": {
     "video": "video",
@@ -154,7 +157,14 @@
     "copiada": "Revisión copiada. Pégala en el mensaje al editor.",
     "descargada": "Revisión descargada como archivo.",
     "enviadaEl": "(enviada el {{fecha}})",
-    "salir": "Salir del modo revisión"
+    "salir": "Salir del modo revisión",
+    "comentario": "Comentario (opcional)",
+    "pendientes": "Fichas por revisar",
+    "desactualizadas_one": "{{count}} respuesta es sobre una versión anterior del contenido",
+    "desactualizadas_other": "{{count}} respuestas son sobre una versión anterior del contenido",
+    "parte": "Parte {{n}} de {{total}}",
+    "largaExplica": "La revisión es larga: se envía en varias partes. Abre cada parte y confírmala en el formulario.",
+    "sinPendientes": "No te quedan fichas por revisar."
   },
   "comun": {
     "cerrar": "Cerrar"
@@ -183,5 +193,10 @@
     "codigo": "Código de la aplicación: licencia MIT.",
     "avisosTitulo": "Avisos",
     "volver": "Volver al atlas"
+  },
+  "error": {
+    "titulo": "Algo salió mal",
+    "texto": "La página tuvo un error. Vuelve al inicio del atlas.",
+    "volver": "Volver al inicio"
   }
 }

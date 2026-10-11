@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router';
+import BarreraErrores from './components/BarreraErrores';
 import Licencia from './components/Licencia';
 import Pagina from './components/Pagina';
 import { idiomaDelNavegador } from './i18n';
@@ -22,11 +23,13 @@ const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename={basename}>
-      <Routes>
-        <Route path="/" element={<Navigate to={`/${idiomaDelNavegador()}`} replace />} />
-        <Route path="/:lang/*" element={<Ruta />} />
-      </Routes>
-    </BrowserRouter>
+    <BarreraErrores>
+      <BrowserRouter basename={basename}>
+        <Routes>
+          <Route path="/" element={<Navigate to={`/${idiomaDelNavegador()}`} replace />} />
+          <Route path="/:lang/*" element={<Ruta />} />
+        </Routes>
+      </BrowserRouter>
+    </BarreraErrores>
   </StrictMode>,
 );

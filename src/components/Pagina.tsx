@@ -42,7 +42,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const revisor = useAtlas((s) => s.revisor);
   const [menu, setMenu] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const entrada = slug ? entradaPorSlug(decodeURIComponent(slug), idioma) : undefined;
+  const entrada = slug ? entradaPorSlug(slug, idioma) : undefined; // react-router ya decodificó el slug
 
   useEffect(() => {
     if (i18n.language !== idioma) void i18n.changeLanguage(idioma);
@@ -74,19 +74,11 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     }
   }, [revision, codigoUrl]);
 
-  const irA = useCallback(
-    (id: string | null) => {
-      const e = id ? estructuras[id] : undefined;
-      navigate(e ? `/${idioma}/${encodeURIComponent(e.slug[idioma])}` : `/${idioma}`);
-      setMenu(false);
-    },
-    [idioma, navigate],
-  );
-
-  // La URL decide la selección. El encuadre espera a que el modelo cargue (las cajas salen del GLB)
-  // y respeta la cámara de un enlace compartido en la primera carga.
+  // La URL decide la selección. El encuadre espera a que el modelo cargue (las cajas salen del GLB).
+  // Un enlace compartido trae cámara y modo aislar: se respetan una sola vez, en la primera carga.
   const encuadrePendiente = useRef<string[] | null>(null);
-  const respetarCamaraInicial = useRef(Boolean(inicial.vista || inicial.camara));
+  const respetarCamaraInicial = useRef(Boolean((inicial.vista || inicial.camara) && slug));
+  const aislarInicial = useRef(inicial.aislar ?? null);
   const encuadrar = useCallback(() => {
     const piezas = encuadrePendiente.current;
     if (!piezas || !useAtlas.getState().cargado) return;
@@ -98,6 +90,36 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     if (piezas.length) setTimeout(() => useAtlas.getState().pedirCamara({ encuadrar: piezas }), 50);
   }, []);
 
+  /** Resaltar (F3, F4): selecciona, deja el resto como fantasma (muchas estructuras son internas) y encuadra. */
+  const resaltar = useCallback(
+    (id: string) => {
+      const s = useAtlas.getState();
+      s.seleccionar({ entrada: id });
+      const piezas = piezasDeEntrada(id);
+      if (piezas.length) {
+        s.aislarPiezas(piezas, aislarInicial.current ?? 'contexto');
+        aislarInicial.current = null;
+      }
+      encuadrePendiente.current = piezas;
+      encuadrar();
+    },
+    [encuadrar],
+  );
+
+  const irA = useCallback(
+    (id: string | null, desdeVisor = false) => {
+      const e = id ? estructuras[id] : undefined;
+      const ruta = e ? `/${idioma}/${encodeURIComponent(e.slug[idioma])}` : `/${idioma}`;
+      // Elegir la misma estructura que ya está en la URL no cambia la ruta: se resalta de nuevo aquí.
+      const misma = encodeURI(decodeURI(location.pathname)).endsWith(ruta);
+      if (misma && desdeVisor) return; // el toque en el visor ya dejó la selección como está
+      if (id && misma) resaltar(id);
+      else if (!misma) navigate(ruta);
+      setMenu(false);
+    },
+    [idioma, navigate, location.pathname, resaltar],
+  );
+
   useEffect(() => {
     const s = useAtlas.getState();
     if (!entrada) {
@@ -105,29 +127,18 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       return;
     }
     if (s.seleccion.entrada === entrada) return; // vino del visor o del árbol: ya está resaltada
-    s.seleccionar({ entrada });
-    const piezas = piezasDeEntrada(entrada);
-    // Resaltar (F3, F4): muchas estructuras son internas, así que el resto queda como fantasma.
-    if (piezas.length && !inicial.aislar) s.aislarPiezas(piezas, 'contexto');
-    encuadrePendiente.current = piezas;
-    encuadrar();
-  }, [entrada, slug, inicial, encuadrar]);
+    resaltar(entrada);
+  }, [entrada, slug, resaltar]);
 
   useEffect(() => {
     if (cargado) encuadrar();
   }, [cargado, encuadrar]);
 
-  // Aislar compartido: se aplica a la estructura del enlace cuando el modelo cargó.
-  useEffect(() => {
-    if (cargado && inicial.aislar && entrada) {
-      useAtlas.getState().aislarPiezas(piezasDeEntrada(entrada), inicial.aislar);
-    }
-  }, [cargado, inicial, entrada]);
-
   useEffect(() => {
     const alSeleccionar = (e: Event) => {
       const id = (e as CustomEvent<{ entrada: string | null }>).detail.entrada;
-      if (id) irA(id);
+      if (!id && useAtlas.getState().aislar?.modo === 'contexto') useAtlas.getState().salirAislar();
+      irA(id, true);
     };
     const alElegir = (e: Event) => irA((e as CustomEvent<{ entrada: string }>).detail.entrada);
     const alTeclear = (e: KeyboardEvent) => {
@@ -201,6 +212,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
             type="button"
             onClick={() => {
               useAtlas.getState().setRevisor(null);
+              useAtlas.getState().cargarRespuestas({});
+              useAtlas.getState().setUbicando(null);
               try {
                 sessionStorage.removeItem(CLAVE_REVISOR);
               } catch {
@@ -217,7 +230,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           {mensaje}
         </p>
       )}
-      <PanelRevision idioma={idioma} />
+      <PanelRevision idioma={idioma} alElegir={irA} />
       <div className="cuerpo">
         <aside id="panel-izq" className="panel-izq">
           <GruposEstudio idioma={idioma} />

@@ -30,13 +30,14 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
   const tieneHijos = n.hijos.length > 0 || extras.length > 0;
 
   return (
-    <li role="treeitem" aria-expanded={tieneHijos ? abierto : undefined} aria-selected={activo}>
+    <li>
       <div className={`arbol-fila${activo ? ' activo' : ''}`} style={{ paddingInlineStart: `${nivel * 0.9}rem` }}>
         {tieneHijos ? (
           <button
             type="button"
             className="arbol-abrir"
             aria-label={abierto ? t('arbol.cerrar', { nombre: etiqueta }) : t('arbol.abrir', { nombre: etiqueta })}
+            aria-expanded={abierto}
             onClick={() => setAbierto(!abierto)}
           >
             {abierto ? '▾' : '▸'}
@@ -57,6 +58,7 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
           type="button"
           className="arbol-nombre"
           data-nodo={id}
+          aria-current={activo ? 'true' : undefined}
           onClick={() => {
             if (n.tipo === 'pieza') {
               const s = useAtlas.getState();
@@ -85,12 +87,12 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
         </button>
       </div>
       {abierto && tieneHijos && (
-        <ul role="group">
+        <ul>
           {n.hijos.map((h) => (
             <Nodo key={h} id={h} nivel={nivel + 1} idioma={idioma} alElegir={alElegir} />
           ))}
           {extras.length > 0 && (
-            <li role="treeitem" aria-expanded={verMarcadores}>
+            <li>
               <div className="arbol-fila" style={{ paddingInlineStart: `${(nivel + 1) * 0.9}rem` }}>
                 <button
                   type="button"
@@ -107,7 +109,7 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
             </li>
           )}
           {verMarcadores && extras.map((m) => (
-            <li key={m.id} role="treeitem" aria-selected={seleccion.entrada === m.id}>
+            <li key={m.id}>
               <div
                 className={`arbol-fila marcador${seleccion.entrada === m.id ? ' activo' : ''}`}
                 style={{ paddingInlineStart: `${(nivel + 2) * 0.9}rem` }}
@@ -133,7 +135,7 @@ export default function Arbol({ idioma, alElegir }: Props) {
   const { t } = useTranslation();
   return (
     <nav aria-label={t('arbol.titulo')} className="arbol">
-      <ul role="tree">
+      <ul>
         {arbol.raices.map((r) => (
           <Nodo key={r} id={r} nivel={0} idioma={idioma} alElegir={alElegir} />
         ))}

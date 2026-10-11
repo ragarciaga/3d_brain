@@ -43,3 +43,15 @@ describe('revisión docente (F24)', () => {
     expect(desactualizadas([r('a', '0.1.0'), r('b', '0.2.0')], () => '0.2.0').map((x) => x.campo)).toEqual(['a']);
   });
 });
+
+describe('envío en partes', () => {
+  it('una revisión larga se parte en varias URL que caben en el límite y no pierden respuestas', async () => {
+    const { urlsFormulario } = await import('../src/lib/revision');
+    const muchas = Array.from({ length: 120 }, (_, i) => ({ ...r(`campo.${i}`), propuesta: 'ñ'.repeat(40) }));
+    const urls = urlsFormulario(config, 'P', 'h', muchas);
+    expect(urls.length).toBeGreaterThan(1);
+    expect(urls.every((u) => u.length <= MAX_URL)).toBe(true);
+    const total = urls.reduce((n, u) => n + JSON.parse(new URL(u).searchParams.get('entry.3')!).respuestas.length, 0);
+    expect(total).toBe(120);
+  });
+});

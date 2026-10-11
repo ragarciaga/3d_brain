@@ -50,3 +50,25 @@ export function urlFormulario(c: ConfigFormulario, codigo: string, estructura: s
 export function desactualizadas(respuestas: Respuesta[], versionActual: (estructura: string) => string): Respuesta[] {
   return respuestas.filter((r) => r.version !== versionActual(r.estructura));
 }
+
+/**
+ * URL prellenadas para enviar una revisión larga en partes que quepan en el límite de URL.
+ * Devuelve [] si el formulario no está configurado o si una sola respuesta no cabe.
+ */
+export function urlsFormulario(c: ConfigFormulario, codigo: string, estructura: string, respuestas: Respuesta[]): string[] {
+  if (!formularioConfigurado(c) || !respuestas.length) return [];
+  const partes: Respuesta[][] = [];
+  let actual: Respuesta[] = [];
+  for (const r of respuestas) {
+    const prueba = [...actual, r];
+    if (urlFormulario(c, codigo, estructura, prueba)) actual = prueba;
+    else {
+      if (!actual.length) return []; // una sola respuesta excede el límite
+      partes.push(actual);
+      actual = [r];
+      if (!urlFormulario(c, codigo, estructura, actual)) return [];
+    }
+  }
+  if (actual.length) partes.push(actual);
+  return partes.map((p) => urlFormulario(c, codigo, estructura, p)!);
+}

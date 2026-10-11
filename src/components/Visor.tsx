@@ -1,10 +1,11 @@
 // Visor 3D (F1). Cada pieza se dibuja con la transformación original del GLB, sin tocarla, dentro de
 // un grupo cuyo único papel es sumar el desplazamiento de fragmentar (F6, F7).
-import { Bvh, CameraControls, Html, useGLTF } from '@react-three/drei';
+import { CameraControls, Html, useGLTF } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
+import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
 import {
   esMallaDeToque,
   estructuras,
@@ -40,6 +41,12 @@ export const camaraActual: { leer: (() => number[]) | null } = { leer: null };
 
 const raycastNulo = () => null;
 
+/** Un arrastre para rotar no es un toque (R3F dispara onClick aunque el puntero se haya movido). */
+const ARRASTRE_PX = 4;
+
+export const reducirMovimiento = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idioma: Idioma }) {
   const grupo = useRef<THREE.Group>(null);
   const desplazamiento = useRef<Vec3>(CERO);
@@ -51,6 +58,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const seleccionada = useAtlas((s) => piezasSeleccionadas(s.seleccion).includes(id));
   const mallaSel = useAtlas((s) => s.seleccion.malla);
   const revisando = useAtlas((s) => !!s.revisor);
+  const shift = useAtlas((s) => s.shift);
   const [encima, setEncima] = useState(false);
 
   const color = colorDePieza(id);
@@ -60,21 +68,27 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
     if (!g) return;
     const s = useAtlas.getState();
     const obj = objetivo(s, id);
-    const nuevo = acercar(desplazamiento.current, obj, dt * 6);
+    const nuevo = acercar(desplazamiento.current, obj, reducirMovimiento() ? 1 : dt * 6);
     desplazamiento.current = nuevo;
     g.position.set(nuevo[0], nuevo[1], nuevo[2]);
   });
 
-  const seleccionable = !referencia && !fantasma;
+  // Una pieza oculta nunca se toca; un fantasma (aislar con contexto) solo con Shift, para sumarlo.
+  const seleccionable = visible && !referencia && (!fantasma || shift);
 
   const alTocar = (e: ThreeEvent<MouseEvent>) => {
-    if (!seleccionable) return;
+    if (!seleccionable || e.delta > ARRASTRE_PX) return;
     e.stopPropagation();
     const s = useAtlas.getState();
     if (s.ubicando) {
-      // Propuesta de posición (F24): punto tocado menos el desplazamiento actual de la pieza.
+      // Propuesta de posición (F24): punto sobre la malla visible (no el tubo de toque), menos el
+      // desplazamiento actual de la pieza.
+      const visibleHit = e.intersections.find(
+        (i) => i.eventObject === e.eventObject && !String(i.object.userData.nombreMalla ?? '').endsWith('#toque'),
+      );
+      const punto = visibleHit?.point ?? e.point;
       const d = desplazamiento.current;
-      const p: [number, number, number] = [e.point.x - d[0], e.point.y - d[1], e.point.z - d[2]];
+      const p: [number, number, number] = [punto.x - d[0], punto.y - d[1], punto.z - d[2]];
       const est = estructuras[s.ubicando];
       s.responder({
         estructura: s.ubicando,
@@ -103,7 +117,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   };
 
   const alDobleTocar = (e: ThreeEvent<MouseEvent>) => {
-    if (!seleccionable) return;
+    if (!seleccionable || e.delta > ARRASTRE_PX) return;
     e.stopPropagation();
     const s = useAtlas.getState();
     if (fueraDeSitio(s, id)) s.devolver([id]);
@@ -131,7 +145,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
             geometry={m.geometria}
             matrixAutoUpdate={false}
             matrix={m.matriz}
-            raycast={seleccionable ? undefined : raycastNulo}
+            raycast={seleccionable ? acceleratedRaycast : raycastNulo}
             userData={{ nombreMalla: m.nombre }}
             renderOrder={referencia ? 2 : m.toque ? 3 : 0}
           >
@@ -184,6 +198,8 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       const nombre = (o.userData.name as string | undefined) ?? o.name;
       const pieza = piezaDeMalla(nombre);
       if (!pieza) return;
+      // Árbol de intersección para tocar rápido aun con un millón de triángulos.
+      if (!mesh.geometry.boundsTree) mesh.geometry.boundsTree = new MeshBVH(mesh.geometry);
       const l = res.get(pieza) ?? [];
       l.push({
         nombre,
@@ -230,6 +246,13 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
   const seleccion = useAtlas((s) => s.seleccion.entrada);
   const ambos = useAtlas((s) => s.ambos);
   const respuestas = useAtlas((s) => s.respuestas);
+  // Los marcadores con ancla siguen a su pieza cuando se fragmenta.
+  const base = useAtlas((s) => s.base);
+  const separadas = useAtlas((s) => s.separadas);
+  const devueltas = useAtlas((s) => s.devueltas);
+  void base;
+  void separadas;
+  void devueltas;
   const ocultas = useAtlas((s) => s.ocultas);
   const aislar = useAtlas((s) => s.aislar);
   const visibles = useMemo(() => new Set(piezasVisibles({ ocultas, aislar })), [ocultas, aislar]);
@@ -241,9 +264,10 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
     } else if (m.ancla) {
       const piezas = piezasDeEntrada(m.ancla);
       if (!piezas.some((p) => visibles.has(p))) continue;
+      const s = useAtlas.getState();
       for (const p of piezas) {
         const c = cajasPiezas.get(p)?.getCenter(new THREE.Vector3());
-        if (c) puntos.push({ id: m.id, pos: c, aproximada: true, propuesta: false });
+        if (c) puntos.push({ id: m.id, pos: c.add(new THREE.Vector3(...objetivo(s, p))), aproximada: true, propuesta: false });
       }
     }
   }
@@ -292,11 +316,13 @@ const DIRECCIONES: Record<Vista | 'inicio', [number, number, number]> = {
   inicio: [0.75, 0.3, 0.9],
 };
 
+/** Caja de las piezas donde están ahora (posición original más su desplazamiento). */
 function cajaDe(piezas: string[]): THREE.Box3 {
+  const s = useAtlas.getState();
   const caja = new THREE.Box3();
   for (const p of piezas) {
     const c = cajasPiezas.get(p);
-    if (c) caja.union(c);
+    if (c) caja.union(c.clone().translate(new THREE.Vector3(...objetivo(s, p))));
   }
   return caja;
 }
@@ -328,7 +354,7 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     const fov = ((camera as THREE.PerspectiveCamera).fov ?? 40) * (Math.PI / 180);
     const dist = Math.max(radio / Math.sin(fov / 2), 0.05) * 1.1;
     const d = new THREE.Vector3(...direccion).normalize();
-    void c.setLookAt(centro.x + d.x * dist, centro.y + d.y * dist, centro.z + d.z * dist, centro.x, centro.y, centro.z, animar);
+    void c.setLookAt(centro.x + d.x * dist, centro.y + d.y * dist, centro.z + d.z * dist, centro.x, centro.y, centro.z, animar && !reducirMovimiento());
   };
 
   useEffect(() => {
@@ -347,7 +373,7 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     if (!pedido || !cargado) return;
     if (pedido.camara && pedido.camara.length === 6) {
       const [a, b, c, d, e, f] = pedido.camara as [number, number, number, number, number, number];
-      void controles.current?.setLookAt(a, b, c, d, e, f, true);
+      void controles.current?.setLookAt(a, b, c, d, e, f, !reducirMovimiento());
     } else if (pedido.encuadrar?.length) {
       const caja = cajaDe(pedido.encuadrar);
       const pos = controles.current?.getPosition(new THREE.Vector3());
@@ -385,15 +411,42 @@ function MedidorCuadros() {
 export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma: Idioma; vistaInicial?: Vista; camaraInicial?: number[] }) {
   const { t } = useTranslation();
   const ubicando = useAtlas((s) => s.ubicando);
+  const inicioPuntero = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') useAtlas.getState().setShift(e.type === 'keydown');
+    };
+    const alSalir = () => useAtlas.getState().setShift(false);
+    window.addEventListener('keydown', alTeclear);
+    window.addEventListener('keyup', alTeclear);
+    window.addEventListener('blur', alSalir);
+    return () => {
+      window.removeEventListener('keydown', alTeclear);
+      window.removeEventListener('keyup', alTeclear);
+      window.removeEventListener('blur', alSalir);
+    };
+  }, []);
+
   return (
-    <div className={`visor${ubicando ? ' visor-ubicando' : ''}`} data-testid="visor">
+    <div
+      className={`visor${ubicando ? ' visor-ubicando' : ''}`}
+      data-testid="visor"
+      onPointerDown={(e) => {
+        inicioPuntero.current = { x: e.clientX, y: e.clientY };
+      }}
+    >
       <Canvas
         camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
         dpr={[1, 2]}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
-        onPointerMissed={() => {
+        onPointerMissed={(e) => {
+          const i = inicioPuntero.current;
+          if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
           const s = useAtlas.getState();
-          if (!s.ubicando) s.seleccionar(null);
+          if (s.ubicando) return;
+          // Tocar el vacío deselecciona: la URL vuelve a /:lang para que el estado y la URL coincidan.
+          window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
         }}
       >
         <color attach="background" args={['#e8ecf0']} />
@@ -401,9 +454,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
         <directionalLight position={[1, 3, 2]} intensity={1.6} />
         <directionalLight position={[-2, 1, -1]} intensity={0.6} />
         <Suspense fallback={<Html center><div className="cargando">{t('visor.cargando')}</div></Html>}>
-          <Bvh firstHitOnly>
-            <Modelo idioma={idioma} />
-          </Bvh>
+          <Modelo idioma={idioma} />
           <Marcadores idioma={idioma} />
         </Suspense>
         <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />

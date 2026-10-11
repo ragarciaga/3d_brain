@@ -13,14 +13,17 @@ function ControlRevision({ entrada, campo, idioma, version }: { entrada: string;
   const { t } = useTranslation();
   const clave = claveRespuesta({ estructura: entrada, campo, idioma });
   const r = useAtlas((s) => s.respuestas[clave]);
+  // El componente se monta con key={clave}: el texto nunca pasa de un campo o estructura a otro.
   const [texto, setTexto] = useState(r?.propuesta ?? '');
-  const responder = (veredicto: Veredicto, propuesta?: string) =>
+  const [comentario, setComentario] = useState(r?.comentario ?? '');
+  const responder = (veredicto: Veredicto, propuesta?: string, nota?: string) =>
     useAtlas.getState().responder({
       estructura: entrada,
       campo,
       idioma,
       veredicto,
       propuesta: propuesta || undefined,
+      comentario: nota || undefined,
       version,
       fecha: new Date().toISOString(),
     });
@@ -33,7 +36,9 @@ function ControlRevision({ entrada, campo, idioma, version }: { entrada: string;
             type="button"
             className={`chip chip-${v}${r?.veredicto === v ? ' activo' : ''}`}
             aria-pressed={r?.veredicto === v}
-            onClick={() => (r?.veredicto === v ? useAtlas.getState().borrarRespuesta(clave) : responder(v, v === 'corregir' ? texto : undefined))}
+            onClick={() =>
+              r?.veredicto === v ? useAtlas.getState().borrarRespuesta(clave) : responder(v, v === 'corregir' ? texto : undefined, comentario)
+            }
           >
             {t(`revision.${v}`)}
           </button>
@@ -45,8 +50,18 @@ function ControlRevision({ entrada, campo, idioma, version }: { entrada: string;
           placeholder={t('revision.propuestaAyuda')}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          onBlur={() => responder('corregir', texto)}
+          onBlur={() => responder('corregir', texto, comentario)}
           rows={3}
+        />
+      )}
+      {r && (
+        <textarea
+          aria-label={t('revision.comentario')}
+          placeholder={t('revision.comentario')}
+          value={comentario}
+          onChange={(e) => setComentario(e.target.value)}
+          onBlur={() => responder(r.veredicto, r.veredicto === 'corregir' ? texto : undefined, comentario)}
+          rows={2}
         />
       )}
     </div>
@@ -90,14 +105,6 @@ function recursosHeredados(id: string): Recurso[] {
   while (p) {
     res.push(...(estructuras[p]?.ficha?.recursos ?? []));
     p = nodos[p]?.padre ?? null;
-  }
-  const piezas = new Set(piezasDeEntrada(id));
-  for (const g of grupos) {
-    if (g.miembros.includes(id) || g.miembros.some((m) => piezasDeEntrada(m).some((x) => piezas.has(x)))) {
-      for (const f of g.fuentes) {
-        if (f.url) res.push({ titulo: f.cita, url: f.url, tipo: 'articulo', idioma: 'en', nota: g.nombre });
-      }
-    }
   }
   const vistos = new Set<string>();
   return res.filter((r) => (vistos.has(r.url) ? false : (vistos.add(r.url), true)));
@@ -219,6 +226,21 @@ function RevisionTrazo({ malla, version }: { malla: string; version: string }) {
   );
 }
 
+/** Grupos de estudio que incluyen la entrada, con sus fuentes (sin convertirlas en recursos). */
+function GruposDeLaEntrada({ id, idioma }: { id: string; idioma: Idioma }) {
+  const { t } = useTranslation();
+  const piezas = new Set(piezasDeEntrada(id));
+  const lista = grupos.filter(
+    (g) => g.miembros.includes(id) || (piezas.size > 0 && g.miembros.some((m) => piezasDeEntrada(m).some((x) => piezas.has(x)))),
+  );
+  if (!lista.length) return null;
+  return (
+    <p className="ficha-padre">
+      {t('ficha.gruposDeEstudio')}: {lista.map((g) => g.nombre[idioma]).join(', ')}
+    </p>
+  );
+}
+
 export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idioma; alCompartir: () => void; alCerrar: () => void }) {
   const { t } = useTranslation();
   const seleccion = useAtlas((s) => s.seleccion);
@@ -237,7 +259,15 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const f = e.ficha;
   const version = f?.version ?? 'sin-ficha';
   const rev = (campo: string, idiomaCampo?: Idioma) =>
-    revisor ? <ControlRevision entrada={id} campo={campo} idioma={idiomaCampo} version={version} /> : null;
+    revisor ? (
+      <ControlRevision
+        key={claveRespuesta({ estructura: id, campo, idioma: idiomaCampo })}
+        entrada={id}
+        campo={campo}
+        idioma={idiomaCampo}
+        version={version}
+      />
+    ) : null;
   const padre = padreDeEntrada(id);
   const marcador = marcadorPorId(id);
   const estadoIdioma = f?.revision[idioma]?.estado ?? 'borrador';
@@ -259,13 +289,14 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       {nombrePendiente(e, idioma) && <p className="etiqueta-aviso">{t('ficha.nombrePendiente')}</p>}
       {padre && <p className="ficha-padre">{t('buscar.en', { lugar: nombreNodo(padre, idioma, false, t) })}</p>}
       <p className="ficha-fuente-nombre">
-        {t('ficha.fuenteNombre')}: {e.fuente_nombre}
+        {t('ficha.fuenteNombre')}: {e.fuente_nombre === PENDIENTE ? t('ficha.fuentePendiente') : e.fuente_nombre}
       </p>
+      <GruposDeLaEntrada id={id} idioma={idioma} />
       {revisor && (
         <div className="ficha-campo">
           <h3>{t('revision.nombres')}</h3>
           <p>
-            ES: {e.nombre.es} · EN: {e.nombre.en} · LA: {e.latin}
+            {t('idioma.nombre_es')}: {e.nombre.es} · {t('idioma.nombre_en')}: {e.nombre.en} · {t('ficha.latin')}: {e.latin}
           </p>
           {rev('nombre', 'es')}
           {rev('nombre', 'en')}

@@ -88,6 +88,7 @@ interface Estado {
   revisor: string | null;
   respuestas: Record<string, Respuesta>;
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
+  shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)
 
   setAmbos(v: boolean): void;
   setCentros(c: Record<string, Vec3>): void;
@@ -110,6 +111,7 @@ interface Estado {
   borrarRespuesta(clave: string): void;
   cargarRespuestas(r: Record<string, Respuesta>): void;
   setUbicando(id: string | null): void;
+  setShift(v: boolean): void;
 }
 
 export function piezasVisibles(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] {
@@ -153,6 +155,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   revisor: null,
   respuestas: {},
   ubicando: null,
+  shift: false,
 
   setAmbos: (v) => set({ ambos: v }),
   setCentros: (c) => {
@@ -246,6 +249,9 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   cargarRespuestas: (r) => set({ respuestas: r }),
   setUbicando: (id) => set({ ubicando: id }),
+  setShift: (v) => {
+    if (get().shift !== v) set({ shift: v });
+  },
 }));
 
 /** Piezas que resalta la selección actual. */

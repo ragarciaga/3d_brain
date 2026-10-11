@@ -69,7 +69,10 @@
     "delGrupo": "From the group",
     "fuentes": "Sources",
     "porVerificar": "(reference to be verified)",
-    "version": "Content version"
+    "version": "Content version",
+    "fuentePendiente": "pending confirmation",
+    "latin": "Latin",
+    "gruposDeEstudio": "Study groups"
   },
   "recurso": {
     "video": "video",
@@ -154,7 +157,14 @@
     "copiada": "Review copied. Paste it in your message to the editor.",
     "descargada": "Review downloaded as a file.",
     "enviadaEl": "(sent on {{fecha}})",
-    "salir": "Leave review mode"
+    "salir": "Leave review mode",
+    "comentario": "Comment (optional)",
+    "pendientes": "Cards to review",
+    "desactualizadas_one": "{{count}} answer is about an older version of the content",
+    "desactualizadas_other": "{{count}} answers are about an older version of the content",
+    "parte": "Part {{n}} of {{total}}",
+    "largaExplica": "The review is long: it is sent in several parts. Open each part and confirm it in the form.",
+    "sinPendientes": "No cards left to review."
   },
   "comun": {
     "cerrar": "Close"
@@ -183,5 +193,10 @@
     "codigo": "Application code: MIT license.",
     "avisosTitulo": "Notices",
     "volver": "Back to the atlas"
+  },
+  "error": {
+    "titulo": "Something went wrong",
+    "texto": "The page hit an error. Go back to the start of the atlas.",
+    "volver": "Back to start"
   }
 }

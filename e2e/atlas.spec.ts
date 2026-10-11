@@ -90,8 +90,43 @@ test('modo revisión: el docente marca campos y el contador sube', async ({ page
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
   await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Correcto' }).click();
   await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Corregir' }).click();
-  await page.locator('[data-campo="que_es.es"] textarea').fill('Propuesta de prueba');
+  await page.locator('[data-campo="que_es.es"]').getByRole('textbox', { name: 'Cambio propuesto' }).fill('Propuesta de prueba');
+  await page.locator('[data-campo="que_es.es"]').getByRole('textbox', { name: 'Cambio propuesto' }).blur();
   await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
+  // El texto propuesto no pasa a otra estructura.
+  await page.getByRole('combobox', { name: /Buscar/ }).fill('tálamo');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/es\/talamo$/);
+  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Corregir' }).click();
+  await expect(page.locator('[data-campo="que_es.es"]').getByRole('textbox', { name: 'Cambio propuesto' })).toHaveValue('');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('3 respuestas');
   await page.getByRole('button', { name: 'Enviar revisión' }).click();
   await expect(page.getByRole('dialog', { name: 'Enviar revisión' })).toContainText('Hipocampo');
+});
+
+test('tras salir del modo fantasma las piezas se pueden volver a tocar', async ({ page }) => {
+  await abrir(page, '/es/hipocampo');
+  await modeloCargado(page);
+  await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
+  await expect(page).toHaveURL(/\/es$/);
+  await page.locator('[data-vista="lateral-izq"]').click();
+  await page.waitForTimeout(1500);
+  const lienzo = page.getByTestId('visor').locator('canvas');
+  const caja = (await lienzo.boundingBox())!;
+  await page.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
+  await expect(page).toHaveURL(/\/es\/[a-z0-9-]+$/);
+  await expect(page.getByTestId('ficha')).toBeVisible();
+});
+
+test('elegir de nuevo la misma estructura después de deseleccionar vuelve a abrir la ficha', async ({ page }) => {
+  await abrir(page, '/es');
+  await modeloCargado(page);
+  const buscar = page.getByRole('combobox', { name: /Buscar/ });
+  await buscar.fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
+  await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
+  await buscar.fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
 });

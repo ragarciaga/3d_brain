@@ -646,3 +646,26 @@ a {
     padding: 0.2rem 0.4rem;
   }
 }
+
+.enlace {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--acento);
+  text-decoration: underline;
+}
+
+.enlace-parte {
+  display: inline-block;
+  margin: 0 0.5rem 0.4rem 0;
+}
+
+.dialogo-revision h3 {
+  font-size: 0.95rem;
+  margin: 0.8rem 0 0.3rem;
+}
+
+.dialogo-revision {
+  max-height: 70vh;
+  overflow: auto;
+}
