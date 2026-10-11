@@ -26,7 +26,7 @@ Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y 
 ## Stack
 - Node.js 24 LTS (`engines` admite 22.18 o superior por el CI del harness), TypeScript 6.0.3 estricto (https://www.typescriptlang.org/docs/)
 - Vite 8.3.4 + React 19.3.0 (https://vite.dev, https://react.dev)
-- three 0.186.1, @react-three/fiber 9.8.1, @react-three/drei 10.7.9 (https://threejs.org/docs/, https://r3f.docs.pmnd.rs)
+- three 0.186.1, @react-three/fiber 9.8.1, @react-three/drei 10.7.9, three-mesh-bvh 0.8.3 (https://threejs.org/docs/, https://r3f.docs.pmnd.rs)
 - zustand 5.0.15, react-router 8.4.0, i18next 26.4.3 + react-i18next 17.0.16, fuse.js 7.5.0, idb-keyval 6.3.0
 - Vitest 5.0.3, Playwright 1.64.0 (https://vitest.dev, https://playwright.dev)
 - Pipeline: Python 3.13 + bpy 5.2.2 (Blender sin ventana, https://docs.blender.org/api/current/), @gltf-transform/core, /extensions y /functions 4.5.1 con meshoptimizer 1.3.0
@@ -62,7 +62,8 @@ Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y 
 - **Licencias visibles.** Modelo y derivados CC BY-SA 4.0 con crédito a Z-Anatomy y
   BodyParts3D (DBCLS); código MIT. Aviso "Uso educativo, no clínico" en la primera visita y en
   el pie.
-- **Nervios delgados:** cada nervio tiene una malla invisible más gruesa solo para el toque.
+- **Nervios delgados:** cada nervio (hoy, los dos vagos) tiene una malla invisible más gruesa solo
+  para el toque (`#toque`, generada por `pipeline/extraer.py`).
 - **Medir antes de optimizar.** Nada de instancing, LOD ni simplificación sin una medición en
   los equipos de referencia (HP Iris Xe, iPhone 12 Pro Max, Android de gama baja) que lo pida.
   Presupuesto: `atlas.glb` 15 MB o menos, `atlas-liviano.glb` 5 MB o menos.
