@@ -237,6 +237,15 @@ test('elegir desde la búsqueda o una relación lleva el foco al título de la f
   await expect(titulo).toBeFocused();
 });
 
+test('elegir un nodo del árbol lleva el foco al título de la ficha', async ({ page }) => {
+  await abrir(page, '/es');
+  const titulo = page.locator('#ficha-titulo');
+  await expect(titulo).toHaveCount(0);
+  await page.locator('[data-nodo="g-brain"]').click();
+  await expect(titulo).toBeVisible();
+  await expect(titulo).toBeFocused();
+});
+
 test('ruta desconocida: aviso traducido con enlace al inicio; mayúsculas en el slug se aceptan', async ({ page }) => {
   await abrir(page, '/es/no-existe');
   const aviso = page.getByTestId('no-encontrada');
@@ -293,6 +302,28 @@ test('si el modelo no carga, el árbol, la búsqueda y las fichas siguen y se pu
   await page.getByRole('button', { name: 'Reintentar' }).click();
   await modeloCargado(page);
   await expect(page.getByTestId('visor-error')).toHaveCount(0);
+});
+
+test('si WebGL falla, solo el visor muestra el error: el árbol y la búsqueda siguen y no sale la página global', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, tipo: string, ...resto: unknown[]) {
+      if (tipo === 'webgl2' || tipo === 'webgl' || tipo === 'experimental-webgl') return null;
+      return (original as (...a: unknown[]) => unknown).call(this, tipo, ...resto);
+    } as typeof HTMLCanvasElement.prototype.getContext;
+  });
+  await abrir(page, '/es');
+  const error = page.getByTestId('visor-error');
+  await expect(error).toContainText('No se pudo mostrar el modelo 3D');
+  await expect(error.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Algo salió mal' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Árbol de estructuras' })).toBeVisible();
+  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/es\/hipocampo$/);
+  await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
+  await expect(error).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Algo salió mal' })).toHaveCount(0);
 });
 
 test('en escritorio el objetivo del encuadre queda en el centro del visor', async ({ page }) => {

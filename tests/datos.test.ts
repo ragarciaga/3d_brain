@@ -24,6 +24,14 @@ describe('datos del atlas', () => {
     expect(arbol.raices.length).toBeGreaterThan(0);
   });
 
+  it('cada fila de mapeo.csv tiene su pieza en el árbol', () => {
+    const csv = readFileSync('pipeline/mapeo.csv', 'utf8').trim().split('\n').slice(1);
+    const mallas = csv.map((l) => (l.startsWith('"') ? l.slice(1, l.indexOf('"', 1)) : l.split(',')[0]!));
+    expect(mallas.length).toBeGreaterThan(0);
+    const delArbol = new Set(Object.values(nodos).filter((n) => n.tipo === 'pieza').map((n) => n.malla));
+    expect(mallas.filter((m) => !delArbol.has(m))).toEqual([]);
+  });
+
   it('la glándula pineal y el plexo coroideo están en el árbol y en estructuras.json', () => {
     for (const id of ['pineal-gland', 'choroid-plexus']) expect(estructuras[id], id).toBeTruthy();
     const piezas = Object.values(nodos).filter((n) => n.tipo === 'pieza');
