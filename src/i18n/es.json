@@ -1,0 +1,202 @@
+{
+  "app": {
+    "titulo": "Atlas 3D: cerebro y nervio vago",
+    "marca": "Atlas cerebro y vago"
+  },
+  "menu": {
+    "boton": "Estructuras"
+  },
+  "lado": {
+    "izquierdo": "izquierdo",
+    "derecho": "derecho"
+  },
+  "arbol": {
+    "titulo": "Árbol de estructuras",
+    "organosReferencia": "Órganos de referencia",
+    "abrir": "Abrir {{nombre}}",
+    "cerrar": "Cerrar {{nombre}}",
+    "mostrar": "Mostrar u ocultar {{nombre}}",
+    "contador": "Piezas visibles de este grupo",
+    "sinMalla_one": "Estructura sin malla ({{count}})",
+    "sinMalla_other": "Estructuras sin malla ({{count}})"
+  },
+  "grupos": {
+    "titulo": "Grupos de estudio"
+  },
+  "buscar": {
+    "etiqueta": "Buscar una estructura",
+    "placeholder": "Buscar (Ctrl+K): hipocampo, amygdala, vago...",
+    "resultados": "Resultados de la búsqueda",
+    "sinResultados": "Sin resultados",
+    "en": "en {{lugar}}"
+  },
+  "acciones": {
+    "titulo": "Acciones de la pieza",
+    "aislar": "Aislar",
+    "aislarContexto": "Aislar con contexto",
+    "separar": "Separar",
+    "devolver": "Devolver",
+    "ocultar": "Ocultar",
+    "encuadrar": "Encuadrar",
+    "compartir": "Compartir",
+    "mostrarTodo": "Mostrar todo (Esc)"
+  },
+  "marcador": {
+    "titulo": "Marcador sin malla",
+    "sin_ubicar": "sin ubicar",
+    "aproximada": "aproximada",
+    "validada": "validada",
+    "explica_sin_ubicar": "Esta estructura no viene en el modelo 3D y aún no tiene una posición validada. Un revisor docente puede proponerla.",
+    "explica_aproximada": "Esta estructura no viene en el modelo 3D. El punto marca una posición aproximada, pendiente de validación docente.",
+    "explica_validada": "Esta estructura no viene en el modelo 3D. El punto marca una posición validada por un revisor."
+  },
+  "ficha": {
+    "titulo": "Ficha de la estructura",
+    "vacia": "Toca una pieza en el modelo, en el árbol o en la búsqueda para ver su ficha.",
+    "cerrar": "Cerrar la ficha",
+    "latinPendiente": "Nombre latino pendiente",
+    "nombrePendiente": "El nombre en este idioma está pendiente de revisión; se muestra el del otro idioma.",
+    "fuenteNombre": "Fuente del nombre",
+    "enPreparacion": "Ficha en preparación.",
+    "verificadoOtroIdioma": "Esta ficha está verificada en el otro idioma; puedes consultarla cambiando el idioma.",
+    "ubicacion": "Ubicación",
+    "queEs": "Qué es",
+    "paraQueSirve": "Para qué sirve",
+    "relaciones": "Relaciones",
+    "relevancia": "Relevancia en psicología",
+    "recursos": "Recursos",
+    "soloMiIdioma": "Solo en mi idioma",
+    "delGrupo": "Del grupo",
+    "fuentes": "Fuentes",
+    "porVerificar": "(referencia por verificar)",
+    "version": "Versión del contenido",
+    "fuentePendiente": "pendiente de confirmar",
+    "latin": "Latín",
+    "gruposDeEstudio": "Grupos de estudio"
+  },
+  "recurso": {
+    "video": "video",
+    "articulo": "artículo",
+    "paper": "paper",
+    "libro": "libro",
+    "imagen": "imagen"
+  },
+  "idioma": {
+    "selector": "Idioma",
+    "ambos": "Ambos idiomas",
+    "en_es": "(en español)",
+    "en_en": "(en inglés)",
+    "nombre_es": "En español",
+    "nombre_en": "En inglés"
+  },
+  "estado": {
+    "borrador": "Borrador: aún no revisado por docentes",
+    "en_revision": "En revisión",
+    "verificado": "Verificado"
+  },
+  "evidencia": {
+    "consenso": "Evidencia: consenso",
+    "moderada": "Evidencia: moderada",
+    "debatida": "Evidencia: debatida"
+  },
+  "fragmentar": {
+    "titulo": "Fragmentar y reensamblar",
+    "nivel": "Separar por",
+    "hemisferios": "hemisferios",
+    "lobulos": "lóbulos",
+    "piezas": "piezas",
+    "explosion": "Explosión",
+    "reensamblar": "Reensamblar",
+    "armar": "Armar pieza por pieza",
+    "armarAyuda": "Con el conjunto desarmado, haz doble clic en cada pieza para devolverla a su sitio.",
+    "contador": "{{n}} de {{total}} en su sitio",
+    "armadoCompleto": "Las {{total}} piezas están en su sitio",
+    "terminar": "Terminar"
+  },
+  "vistas": {
+    "titulo": "Vistas anatómicas",
+    "anterior": "Anterior",
+    "posterior": "Posterior",
+    "lateral-izq": "Lateral izq.",
+    "lateral-der": "Lateral der.",
+    "superior": "Superior",
+    "inferior": "Inferior"
+  },
+  "visor": {
+    "cargando": "Cargando el modelo...",
+    "fps": "{{n}} cuadros/s",
+    "piezas_one": "{{count}} pieza",
+    "piezas_other": "{{count}} piezas"
+  },
+  "revision": {
+    "titulo": "Modo revisión docente",
+    "codigo": "código {{codigo}}",
+    "respuestas_one": "{{count}} respuesta",
+    "respuestas_other": "{{count}} respuestas",
+    "veredicto": "Tu revisión de este campo",
+    "correcto": "Correcto",
+    "corregir": "Corregir",
+    "no_es_mi_area": "No es mi área",
+    "propuesta": "Cambio propuesto",
+    "propuestaAyuda": "Escribe el texto correcto o el cambio que propones, con su fuente si la tienes.",
+    "nombres": "Nombres",
+    "pieza": "¿La malla corresponde a esta estructura y está bien ubicada?",
+    "proponerPosicion": "Proponer posición",
+    "cancelarUbicar": "Cancelar",
+    "tocaElModelo": "Toca en el modelo el punto donde va esta estructura.",
+    "trazoTitulo": "Trazo {{numero}} del vago {{lado}}",
+    "trazoAyuda": "Este trazo viene sin nombre en el modelo. ¿Qué ramo es?",
+    "trazoPregunta": "Elige el ramo",
+    "noEsRamo": "No es un ramo (tronco del vago)",
+    "noSe": "No sé",
+    "enviar": "Enviar revisión",
+    "consentimiento": "Al enviar, aceptas que tu nombre aparezca como revisor en las fichas que valides (Ley 1581 de 2012). Se envía una revisión por estructura.",
+    "sinFormulario": "El formulario de revisión aún no está configurado: la revisión se copia o se descarga para enviarla al editor.",
+    "abrirFormulario": "Abrir formulario",
+    "copiar": "Copiar o descargar",
+    "copiada": "Revisión copiada. Pégala en el mensaje al editor.",
+    "descargada": "Revisión descargada como archivo.",
+    "enviadaEl": "(enviada el {{fecha}})",
+    "salir": "Salir del modo revisión",
+    "comentario": "Comentario (opcional)",
+    "pendientes": "Fichas por revisar",
+    "desactualizadas_one": "{{count}} respuesta es sobre una versión anterior del contenido",
+    "desactualizadas_other": "{{count}} respuestas son sobre una versión anterior del contenido",
+    "parte": "Parte {{n}} de {{total}}",
+    "largaExplica": "La revisión es larga: se envía en varias partes. Abre cada parte y confírmala en el formulario.",
+    "sinPendientes": "No te quedan fichas por revisar."
+  },
+  "comun": {
+    "cerrar": "Cerrar"
+  },
+  "compartir": {
+    "vista": "Compartir esta vista",
+    "copiado": "Enlace copiado."
+  },
+  "aviso": {
+    "titulo": "Antes de empezar",
+    "educativo": "Uso educativo. No es una herramienta clínica ni de diagnóstico.",
+    "unCuerpo": "El modelo representa un solo cuerpo adulto masculino; la anatomía varía entre personas.",
+    "borrador": "Esta es una versión piloto: las fichas están en borrador hasta que las revisen docentes.",
+    "entendido": "Entendido"
+  },
+  "licencia": {
+    "enlace": "Fuentes y licencia",
+    "titulo": "Fuentes y licencia",
+    "modeloTitulo": "Modelo 3D",
+    "modelo": "La geometría proviene de Z-Anatomy, construido sobre BodyParts3D.",
+    "ta2": "Nombres en latín, inglés y español: Terminologia Anatomica 2, incluida en Z-Anatomy.",
+    "derivado": "El modelo de este atlas es una obra derivada y se distribuye bajo CC BY-SA 4.0.",
+    "contenidoTitulo": "Contenido",
+    "contenido": "Fichas, grupos y marcadores: CC BY-SA 4.0. Las fuentes externas se citan y enlazan; su texto no se copia.",
+    "codigoTitulo": "Código",
+    "codigo": "Código de la aplicación: licencia MIT.",
+    "avisosTitulo": "Avisos",
+    "volver": "Volver al atlas"
+  },
+  "error": {
+    "titulo": "Algo salió mal",
+    "texto": "La página tuvo un error. Vuelve al inicio del atlas.",
+    "volver": "Volver al inicio"
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "app": {
+    "titulo": "3D Atlas: brain and vagus nerve",
+    "marca": "Brain and vagus atlas"
+  },
+  "menu": {
+    "boton": "Structures"
+  },
+  "lado": {
+    "izquierdo": "left",
+    "derecho": "right"
+  },
+  "arbol": {
+    "titulo": "Structure tree",
+    "organosReferencia": "Reference organs",
+    "abrir": "Open {{nombre}}",
+    "cerrar": "Close {{nombre}}",
+    "mostrar": "Show or hide {{nombre}}",
+    "contador": "Visible pieces in this group",
+    "sinMalla_one": "Structure without mesh ({{count}})",
+    "sinMalla_other": "Structures without mesh ({{count}})"
+  },
+  "grupos": {
+    "titulo": "Study groups"
+  },
+  "buscar": {
+    "etiqueta": "Search for a structure",
+    "placeholder": "Search (Ctrl+K): hippocampus, amígdala, vagus...",
+    "resultados": "Search results",
+    "sinResultados": "No results",
+    "en": "in {{lugar}}"
+  },
+  "acciones": {
+    "titulo": "Piece actions",
+    "aislar": "Isolate",
+    "aislarContexto": "Isolate with context",
+    "separar": "Separate",
+    "devolver": "Put back",
+    "ocultar": "Hide",
+    "encuadrar": "Frame",
+    "compartir": "Share",
+    "mostrarTodo": "Show all (Esc)"
+  },
+  "marcador": {
+    "titulo": "Marker without mesh",
+    "sin_ubicar": "not placed",
+    "aproximada": "approximate",
+    "validada": "validated",
+    "explica_sin_ubicar": "This structure is not in the 3D model and has no validated position yet. A teacher reviewer can propose one.",
+    "explica_aproximada": "This structure is not in the 3D model. The point marks an approximate position, pending teacher validation.",
+    "explica_validada": "This structure is not in the 3D model. The point marks a position validated by a reviewer."
+  },
+  "ficha": {
+    "titulo": "Structure card",
+    "vacia": "Tap a piece in the model, the tree or the search to see its card.",
+    "cerrar": "Close the card",
+    "latinPendiente": "Latin name pending",
+    "nombrePendiente": "The name in this language is pending review; the other language's name is shown.",
+    "fuenteNombre": "Name source",
+    "enPreparacion": "Card in preparation.",
+    "verificadoOtroIdioma": "This card is verified in the other language; switch language to read it.",
+    "ubicacion": "Location",
+    "queEs": "What it is",
+    "paraQueSirve": "What it does",
+    "relaciones": "Relations",
+    "relevancia": "Relevance in psychology",
+    "recursos": "Resources",
+    "soloMiIdioma": "Only in my language",
+    "delGrupo": "From the group",
+    "fuentes": "Sources",
+    "porVerificar": "(reference to be verified)",
+    "version": "Content version",
+    "fuentePendiente": "pending confirmation",
+    "latin": "Latin",
+    "gruposDeEstudio": "Study groups"
+  },
+  "recurso": {
+    "video": "video",
+    "articulo": "article",
+    "paper": "paper",
+    "libro": "book",
+    "imagen": "image"
+  },
+  "idioma": {
+    "selector": "Language",
+    "ambos": "Both languages",
+    "en_es": "(in Spanish)",
+    "en_en": "(in English)",
+    "nombre_es": "In Spanish",
+    "nombre_en": "In English"
+  },
+  "estado": {
+    "borrador": "Draft: not yet reviewed by teachers",
+    "en_revision": "Under review",
+    "verificado": "Verified"
+  },
+  "evidencia": {
+    "consenso": "Evidence: consensus",
+    "moderada": "Evidence: moderate",
+    "debatida": "Evidence: debated"
+  },
+  "fragmentar": {
+    "titulo": "Explode and reassemble",
+    "nivel": "Separate by",
+    "hemisferios": "hemispheres",
+    "lobulos": "lobes",
+    "piezas": "pieces",
+    "explosion": "Explosion",
+    "reensamblar": "Reassemble",
+    "armar": "Assemble piece by piece",
+    "armarAyuda": "With the set taken apart, double-click each piece to put it back.",
+    "contador": "{{n}} of {{total}} in place",
+    "armadoCompleto": "All {{total}} pieces are in place",
+    "terminar": "Finish"
+  },
+  "vistas": {
+    "titulo": "Anatomical views",
+    "anterior": "Anterior",
+    "posterior": "Posterior",
+    "lateral-izq": "Left lateral",
+    "lateral-der": "Right lateral",
+    "superior": "Superior",
+    "inferior": "Inferior"
+  },
+  "visor": {
+    "cargando": "Loading the model...",
+    "fps": "{{n}} fps",
+    "piezas_one": "{{count}} piece",
+    "piezas_other": "{{count}} pieces"
+  },
+  "revision": {
+    "titulo": "Teacher review mode",
+    "codigo": "code {{codigo}}",
+    "respuestas_one": "{{count}} answer",
+    "respuestas_other": "{{count}} answers",
+    "veredicto": "Your review of this field",
+    "correcto": "Correct",
+    "corregir": "Correct it",
+    "no_es_mi_area": "Not my field",
+    "propuesta": "Proposed change",
+    "propuestaAyuda": "Write the correct text or the change you propose, with its source if you have it.",
+    "nombres": "Names",
+    "pieza": "Does the mesh match this structure and is it correctly placed?",
+    "proponerPosicion": "Propose position",
+    "cancelarUbicar": "Cancel",
+    "tocaElModelo": "Tap the point in the model where this structure belongs.",
+    "trazoTitulo": "Strand {{numero}} of the {{lado}} vagus",
+    "trazoAyuda": "This strand has no name in the model. Which branch is it?",
+    "trazoPregunta": "Choose the branch",
+    "noEsRamo": "Not a branch (vagal trunk)",
+    "noSe": "I don't know",
+    "enviar": "Send review",
+    "consentimiento": "By sending, you agree that your name appears as reviewer on the cards you validate (Colombian Law 1581 of 2012). One review is sent per structure.",
+    "sinFormulario": "The review form is not configured yet: the review is copied or downloaded so you can send it to the editor.",
+    "abrirFormulario": "Open form",
+    "copiar": "Copy or download",
+    "copiada": "Review copied. Paste it in your message to the editor.",
+    "descargada": "Review downloaded as a file.",
+    "enviadaEl": "(sent on {{fecha}})",
+    "salir": "Leave review mode",
+    "comentario": "Comment (optional)",
+    "pendientes": "Cards to review",
+    "desactualizadas_one": "{{count}} answer is about an older version of the content",
+    "desactualizadas_other": "{{count}} answers are about an older version of the content",
+    "parte": "Part {{n}} of {{total}}",
+    "largaExplica": "The review is long: it is sent in several parts. Open each part and confirm it in the form.",
+    "sinPendientes": "No cards left to review."
+  },
+  "comun": {
+    "cerrar": "Close"
+  },
+  "compartir": {
+    "vista": "Share this view",
+    "copiado": "Link copied."
+  },
+  "aviso": {
+    "titulo": "Before you start",
+    "educativo": "Educational use. Not a clinical or diagnostic tool.",
+    "unCuerpo": "The model represents a single adult male body; anatomy varies between people.",
+    "borrador": "This is a pilot version: cards are drafts until teachers review them.",
+    "entendido": "Got it"
+  },
+  "licencia": {
+    "enlace": "Sources and license",
+    "titulo": "Sources and license",
+    "modeloTitulo": "3D model",
+    "modelo": "The geometry comes from Z-Anatomy, built on BodyParts3D.",
+    "ta2": "Latin, English and Spanish names: Terminologia Anatomica 2, included in Z-Anatomy.",
+    "derivado": "This atlas's model is a derivative work distributed under CC BY-SA 4.0.",
+    "contenidoTitulo": "Content",
+    "contenido": "Cards, groups and markers: CC BY-SA 4.0. External sources are cited and linked; their text is not copied.",
+    "codigoTitulo": "Code",
+    "codigo": "Application code: MIT license.",
+    "avisosTitulo": "Notices",
+    "volver": "Back to the atlas"
+  },
+  "error": {
+    "titulo": "Something went wrong",
+    "texto": "The page hit an error. Go back to the start of the atlas.",
+    "volver": "Back to start"
+  }
+}

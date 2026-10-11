@@ -1,0 +1,145 @@
+[
+ {
+  "id": "sistema-limbico",
+  "nombre": {
+   "es": "Sistema límbico",
+   "en": "Limbic system"
+  },
+  "descripcion": {
+   "es": "Estructuras que participan en emoción, memoria y motivación.",
+   "en": "Structures involved in emotion, memory and motivation."
+  },
+  "miembros": [
+   "g-limbic-lobe",
+   "amygdaloid-body",
+   "fornix",
+   "hypothalamus",
+   "mamillary-body",
+   "septal-nuclei",
+   "medial-occipitotemporal-gyrus-parahippocampal"
+  ],
+  "fuentes": [
+   {
+    "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Limbic System, NBK538491",
+    "verificada": false,
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK538491/"
+   }
+  ],
+  "estado": "borrador"
+ },
+ {
+  "id": "ganglios-basales",
+  "nombre": {
+   "es": "Ganglios basales",
+   "en": "Basal ganglia"
+  },
+  "descripcion": {
+   "es": "Núcleos subcorticales del estriado y el globo pálido.",
+   "en": "Subcortical nuclei of the striatum and the globus pallidus."
+  },
+  "miembros": [
+   "g-corpus-striatum"
+  ],
+  "fuentes": [
+   {
+    "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Basal Ganglia, NBK537141",
+    "verificada": false,
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK537141/"
+   }
+  ],
+  "estado": "borrador"
+ },
+ {
+  "id": "diencefalo",
+  "nombre": {
+   "es": "Diencéfalo",
+   "en": "Diencephalon"
+  },
+  "descripcion": {
+   "es": "Tálamo, hipotálamo, epitálamo y metatálamo.",
+   "en": "Thalamus, hypothalamus, epithalamus and metathalamus."
+  },
+  "miembros": [
+   "g-diencephalon"
+  ],
+  "fuentes": [
+   {
+    "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+    "verificada": false,
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+   }
+  ],
+  "estado": "borrador"
+ },
+ {
+  "id": "tronco-encefalico",
+  "nombre": {
+   "es": "Tronco encefálico",
+   "en": "Brainstem"
+  },
+  "descripcion": {
+   "es": "Mesencéfalo, puente y bulbo raquídeo.",
+   "en": "Midbrain, pons and medulla oblongata."
+  },
+  "miembros": [
+   "g-brainstem"
+  ],
+  "fuentes": [
+   {
+    "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+    "verificada": false,
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+   }
+  ],
+  "estado": "borrador"
+ },
+ {
+  "id": "corteza-motora-sensitiva",
+  "nombre": {
+   "es": "Corteza motora y sensitiva",
+   "en": "Motor and sensory cortex"
+  },
+  "descripcion": {
+   "es": "Giros precentral, postcentral y paracentral.",
+   "en": "Precentral, postcentral and paracentral gyri."
+  },
+  "miembros": [
+   "precentral-gyrus",
+   "postcentral-gyrus",
+   "paracentral-gyrus-and-sulcus"
+  ],
+  "fuentes": [
+   {
+    "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+    "verificada": false,
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+   }
+  ],
+  "estado": "borrador"
+ },
+ {
+  "id": "nervio-vago",
+  "nombre": {
+   "es": "Nervio vago",
+   "en": "Vagus nerve"
+  },
+  "descripcion": {
+   "es": "El vago y sus núcleos en el bulbo raquídeo.",
+   "en": "The vagus and its nuclei in the medulla oblongata."
+  },
+  "miembros": [
+   "g-vagus-nerve-x",
+   "nucleus-of-solitary-tract",
+   "nucleus-ambiguus",
+   "posterior-nucleus-of-vagus-nerve"
+  ],
+  "fuentes": [
+   {
+    "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Vagal Nerve Nuclei, NBK545209",
+    "verificada": false,
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/"
+   }
+  ],
+  "estado": "borrador"
+ }
+]
