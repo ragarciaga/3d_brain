@@ -121,7 +121,7 @@ Contenido de la ficha:
 - Fuentes, revisor, fecha de revisión y estado en ese idioma.
 - Botón "Reportar un error" (F12, hito 2).
 
-Acciones: Aislar, Separar, Devolver, Ocultar, Compartir.
+Acciones: Aislar, Aislar con contexto, Separar, Ocultar, Encuadrar, Compartir. Aislar, Aislar con contexto y Separar se activan con un toque y se desactivan con otro, y muestran si están activos para las piezas de la ficha (parcial si solo lo están algunas).
 
 **Criterio:** los nervios delgados se pueden seleccionar en el celular sin atinarles con precisión (riesgo 3).
 
@@ -130,13 +130,13 @@ Acciones: Aislar, Separar, Devolver, Ocultar, Compartir.
 - **Solo esta pieza:** el resto se oculta.
 - **Con contexto:** el resto queda como fantasma (transparencia alta, no seleccionable) para no perder la ubicación.
 
-Shift+clic aísla varias piezas a la vez. Aislar un nodo del árbol aísla todas sus hijas. Esc o "Mostrar todo" sale del modo.
+Shift+clic aísla varias piezas a la vez. Aislar un nodo del árbol aísla todas sus hijas. Esc o "Mostrar todo" sale del modo. El botón de aislar de la ficha y del árbol se alterna: un segundo toque sale del modo.
 
 #### F6. Fragmentar
 
 - **Explosión global:** un deslizador de 0 a 100 % aleja cada pieza visible del centro del conjunto.
 - **Separar por nivel:** un selector define qué tan fino se desarma: hemisferios, lóbulos o giros. Con "lóbulos", cada lóbulo se aleja como un bloque con sus giros juntos; con "giros", se separan uno por uno.
-- **Separar una pieza:** desde la ficha, la pieza sale de su sitio y queda resaltada, mientras el resto sigue armado.
+- **Separar una pieza:** desde la ficha, la pieza sale de su sitio y queda resaltada, mientras el resto sigue armado; el mismo botón, pulsado otra vez, la devuelve.
 
 Límite real: solo se puede fragmentar hasta el nivel de detalle que trae el modelo.
 
@@ -145,10 +145,13 @@ Límite real: solo se puede fragmentar hasta el nivel de detalle que trae el mod
 #### F7. Reensamblar
 
 - **Reensamblar todo:** animación corta que devuelve todas las piezas a su sitio.
-- **Devolver una pieza:** desde la ficha o con doble clic sobre una pieza separada.
-- **Armar pieza por pieza:** con el conjunto desarmado, se devuelven las piezas una a una, con contador de avance ("12 de 40 en su sitio").
+- **Devolver una pieza:** con un segundo toque en Separar de la ficha, o con doble clic sobre una pieza separada cuando no se está armando pieza por pieza.
+- **Armar pieza por pieza:** con el conjunto desarmado, se devuelven las piezas una a una. Hay dos modos:
+  - **Tocar:** cada toque sobre una pieza fuera de su sitio la devuelve; mientras dura el modo, tocar no abre la ficha; una barra visible explica qué hacer y muestra el avance ("12 de 40 en su sitio"); funciona con el dedo.
+  - **Reto:** se arrastra cada pieza en el plano de la pantalla; si se suelta cerca de su sitio, encaja y cuenta; si no, vuelve a donde estaba. La tolerancia se mide en pantalla, proporcional al tamaño con que se ve la pieza. Mientras se arrastra, la cámara no se mueve.
+- **Cerrar el armado:** "Terminar", Esc o Reensamblar salen del modo. El reto no reemplaza el rompecabezas (F16, fase 2).
 
-**Criterio:** después de reensamblar, cada pieza queda en su posición exacta original, sin error acumulado.
+**Criterio:** después de reensamblar, cada pieza queda en su posición exacta original, sin error acumulado. En modo reto, una pieza soltada lejos de su sitio vuelve a su posición desarmada, y una que encaja queda con desplazamiento exactamente cero.
 
 #### F8. Planos de corte (hito 2)
 
@@ -545,6 +548,7 @@ TypeScript se fija en 6.0.3 porque typescript-eslint aún no soporta la 7. Decis
 - Al soltar el deslizador, al cambiar el nivel con la explosión activa y al reensamblar, la cámara encuadra el conjunto visible sin cambiar la dirección desde la que se mira.
 - Separar por nivel: se usa el centro del nodo del nivel elegido para que sus piezas se muevan como un bloque.
 - Reensamblar: el desplazamiento vuelve a cero con una animación. Como la posición original nunca se tocó, no hay error acumulado.
+- Arrastrar (F7, reto): mientras se arrastra se suma un desplazamiento temporal en el plano perpendicular a la cámara que pasa por el centro de la pieza. Al soltar, si encaja, el desplazamiento vuelve a cero (devolver); si no, el temporal se descarta. La posición original nunca se toca.
 
 ### Planos de corte
 
