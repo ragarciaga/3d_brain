@@ -36,3 +36,15 @@ export function desfaseVerticalPx(alturaHoja: number, alturaVisor: number): numb
   if (!(alturaHoja > 0) || !(alturaVisor > 0)) return 0;
   return Math.min(Math.round(alturaHoja / 2), Math.floor(alturaVisor / 2));
 }
+
+/**
+ * Distancia de la cámara al centro para que una esfera de ese radio quepa en pantalla, con 10 % de
+ * margen y un mínimo de 5 cm. Usa el campo de visión más estrecho: el vertical en pantalla apaisada y
+ * el horizontal en pantalla vertical (celular). Un aspecto no válido cuenta como 1.
+ */
+export function distanciaEncuadre(radio: number, fovVerticalGrados: number, aspecto: number): number {
+  const fovV = fovVerticalGrados * (Math.PI / 180);
+  const a = Number.isFinite(aspecto) && aspecto > 0 ? aspecto : 1;
+  const fovH = 2 * Math.atan(Math.tan(fovV / 2) * a);
+  return Math.max(radio / Math.sin(Math.min(fovV, fovH) / 2), 0.05) * 1.1;
+}

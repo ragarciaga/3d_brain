@@ -3,6 +3,7 @@ import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { arbol, estructuras, marcadoresPorPadre, nodos, piezasBajo } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
+import { accionAlPulsar, estadoAislar, propsPulsado } from '../lib/alternar';
 import { nombreNodo, nombreVisible } from '../lib/nombres';
 import { useAtlas } from '../store/useAtlas';
 
@@ -19,6 +20,7 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
   const piezas = piezasBajo(id);
   const ocultas = useAtlas((s) => s.ocultas);
   const ambos = useAtlas((s) => s.ambos);
+  const aislado = useAtlas((s) => estadoAislar(s.aislar, 'solo', piezas));
   const seleccion = useAtlas((s) => s.seleccion);
   const visiblesN = piezas.filter((p) => !ocultas.has(p)).length;
   const marcados = visiblesN === piezas.length;
@@ -78,10 +80,14 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
         )}
         <button
           type="button"
-          className="arbol-aislar"
+          {...propsPulsado(aislado, 'arbol-aislar')}
           title={t('acciones.aislar')}
           aria-label={`${t('acciones.aislar')}: ${etiqueta}`}
-          onClick={() => useAtlas.getState().aislarPiezas(piezas, 'solo')}
+          onClick={() =>
+            accionAlPulsar(aislado) === 'desactivar'
+              ? useAtlas.getState().salirAislar()
+              : useAtlas.getState().aislarPiezas(piezas, 'solo')
+          }
         >
           ◎
         </button>

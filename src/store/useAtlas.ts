@@ -8,6 +8,7 @@ import {
   desplazamientosExplosion,
   promedio,
   sumar,
+  type Lado,
   type Nivel,
   type Vec3,
 } from '../lib/explosion';
@@ -42,6 +43,12 @@ function ancestroBloque(pieza: string): string {
   return ultimo;
 }
 
+/** Lado anatómico de una pieza; sin lado (o vacío) cuenta como medio. */
+export function ladoDe(pieza: string): Lado {
+  const l = nodos[pieza]?.lado;
+  return l === 'l' || l === 'r' ? l : 'medio';
+}
+
 export function bloqueDe(pieza: string, nivel: Nivel): string {
   const n = nodos[pieza];
   const lado = n?.lado || 'medio';
@@ -62,6 +69,9 @@ export interface Seleccion {
   malla: string | null; // malla tocada (trazos del vago en modo revisión)
 }
 
+/** Modos de "Armar pieza por pieza" (F7): tocar cada pieza o arrastrarla hasta su sitio (reto). */
+export type ModoArmado = 'tocar' | 'reto';
+
 export interface PedidoCamara {
   vista?: Vista;
   camara?: number[];
@@ -79,7 +89,7 @@ interface Estado {
   base: Record<string, Vec3>; // desplazamiento por explosión
   separadas: Record<string, Vec3>;
   devueltas: Set<string>;
-  armando: { total: string[] } | null;
+  armando: { modo: ModoArmado; total: string[] } | null;
   grupoActivo: string | null;
   centros: Record<string, Vec3>;
   cargado: boolean;
@@ -106,7 +116,8 @@ interface Estado {
   separar(piezas: string[]): void;
   devolver(piezas: string[]): void;
   reensamblarTodo(): void;
-  armarPiezaPorPieza(): void;
+  armarPiezaPorPieza(modo?: ModoArmado): void;
+  setModoArmado(modo: ModoArmado): void;
   terminarArmado(): void;
   pedirCamara(p: Omit<PedidoCamara, 't'>): void;
   setRevisor(codigo: string | null): void;
@@ -128,9 +139,17 @@ export function piezasVisibles(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] 
   return todasLasPiezas.filter((p) => !s.ocultas.has(p) && (!s.aislar || s.aislar.piezas.has(p)));
 }
 
+/** Piezas sobre las que se encuadra la cámara: las de estudio visibles del encéfalo; si no hay, las de estudio visibles. */
+export function piezasDeEncuadre(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] {
+  const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
+  const encefalo = new Set(piezasBajo('g-brain'));
+  const foco = visibles.filter((p) => encefalo.has(p));
+  return foco.length ? foco : visibles;
+}
+
 function recalcularBase(s: Estado): Record<string, Vec3> {
   const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-  return desplazamientosExplosion(s.centros, visibles, (p) => bloqueDe(p, s.nivel), s.explosion);
+  return desplazamientosExplosion(s.centros, visibles, (p) => bloqueDe(p, s.nivel), s.explosion, ladoDe);
 }
 
 /** Desplazamiento objetivo de una pieza (la animación se acerca a este valor). */
@@ -145,6 +164,11 @@ export function objetivo(s: Estado, pieza: string): Vec3 {
 export function fueraDeSitio(s: Estado, pieza: string): boolean {
   const o = objetivo(s, pieza);
   return o[0] !== 0 || o[1] !== 0 || o[2] !== 0;
+}
+
+/** Piezas de estudio visibles que están fuera de su sitio: lo que hay que armar. Las de referencia nunca cuentan. */
+function totalArmado(s: Estado): string[] {
+  return piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio' && fueraDeSitio(s, p));
 }
 
 export const useAtlas = create<Estado>((set, get) => ({
@@ -217,6 +241,9 @@ export const useAtlas = create<Estado>((set, get) => ({
   setExplosion: (f) => {
     set({ explosion: Math.min(1, Math.max(0, f)), devueltas: new Set() });
     set({ base: recalcularBase(get()) });
+    // Mover el deslizador durante el armado cambia qué hay que armar; el modo se conserva.
+    const armando = get().armando;
+    if (armando) set({ armando: { modo: armando.modo, total: totalArmado(get()) } });
   },
   setNivel: (n) => {
     set({ nivel: n });
@@ -224,14 +251,21 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   separar: (piezas) => {
     const s = get();
-    const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-    const conjunto = promedio(visibles.map((p) => s.centros[p]!).filter(Boolean));
-    const centro = promedio(piezas.map((p) => s.centros[p]!).filter(Boolean));
-    const d = desplazamientoSeparar(centro, conjunto);
+    // Conjunto armado: las piezas de estudio que se dibujan (misma condición que `visible` en Visor.tsx,
+    // donde "aislar con contexto" deja las demás como fantasma pero sí dibujadas).
+    const dibujadas = todasLasPiezas.filter(
+      (p) =>
+        nodos[p]?.clase === 'estudio' &&
+        !s.ocultas.has(p) &&
+        (!s.aislar || s.aislar.modo === 'contexto' || s.aislar.piezas.has(p)),
+    );
+    const conjunto = promedio(dibujadas.map((p) => s.centros[p]!).filter(Boolean));
     const separadas = { ...s.separadas };
     const devueltas = new Set(s.devueltas);
     for (const p of piezas) {
-      separadas[p] = d;
+      const centro = s.centros[p];
+      if (!centro) continue;
+      separadas[p] = desplazamientoSeparar(centro, conjunto, ladoDe(p));
       devueltas.delete(p);
     }
     set({ separadas, devueltas });
@@ -250,10 +284,11 @@ export const useAtlas = create<Estado>((set, get) => ({
     set({ explosion: 0, separadas: {}, devueltas: new Set(), armando: null });
     set({ base: recalcularBase(get()) });
   },
-  armarPiezaPorPieza: () => {
-    const s = get();
-    const total = piezasVisibles(s).filter((p) => fueraDeSitio(s, p));
-    set({ armando: total.length ? { total } : null });
+  // Entra siempre al modo, aunque no haya nada desarmado (total vacío): la barra explica cómo desarmar.
+  armarPiezaPorPieza: (modo = 'tocar') => set({ armando: { modo, total: totalArmado(get()) } }),
+  setModoArmado: (modo) => {
+    const armando = get().armando;
+    if (armando) set({ armando: { modo, total: armando.total } });
   },
   terminarArmado: () => set({ armando: null }),
   pedirCamara: (p) => set({ camara: { ...p, t: Date.now() + Math.random() } }),
