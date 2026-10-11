@@ -1,14 +1,21 @@
 # Progress
 
-Updated: 2026-10-11
+Updated: 2026-10-11 (hito 1)
 
 ## Current objective
-Construir el esqueleto (issue del walking skeleton) y luego el pipeline de la fase 0, primeras tareas del hito 1 (piloto con docentes).
+Hito 1 (piloto con docentes) construido y en revisión en el PR del kickoff. Siguiente: medir en los
+equipos de referencia y arrancar el piloto con los revisores.
 
 ## Current state
-- Works: kickoff aprobado. AGENTS.md, SPEC.md 0.3, docs/brief.md, ADRs 0001 a 0008, docs/v2.md y el reporte de la fase 0 (docs/research/fase-0/REPORT.md).
-- Broken: nada; todavía no hay código, así que los comandos de Verification no existen aún (los crea el esqueleto).
-- Pending: el editor revisa y fusiona el PR del kickoff. El editor consigue los docentes revisores (SPEC 15.2) antes del piloto.
+- Works: pipeline de la fase 0 reproducible (338 mallas, 6,49 MB, posiciones verificadas al 0,1 mm);
+  F1 a F7, F9, F10, F11 y F24; aviso educativo y pantalla de licencia; 43 pruebas unitarias y
+  7 E2E en verde; build para GitHub Pages.
+- Broken: nada conocido. Rendimiento real sin medir: en la nube solo hay WebGL por software.
+- Pending (editor): fusionar el PR; activar GitHub Pages (Settings, Pages, Source: GitHub Actions);
+  crear el formulario de Google de revisión (docs/revision-docente.md); conseguir revisores;
+  medir cuadros por segundo en el portátil, el iPhone y el Android.
+- Pending (contenido): las fuentes de las 10 fichas están "por verificar" (la red de la sesión
+  bloqueó NCBI); 54 piezas con nombre en español PENDIENTE.
 
 ## Key decisions
 - 2026-10-11: stack SPA con Vite, React y R3F, see docs/adr/0001-stack.md
@@ -21,9 +28,10 @@ Construir el esqueleto (issue del walking skeleton) y luego el pipeline de la fa
 - 2026-10-11: revisión docente por formulario de Google, see docs/adr/0008-revision-docente.md
 
 ## Next steps
-1. Fusionar el PR del kickoff.
-2. `/rb-build #2` (esqueleto). Issue de control: #1.
-3. `/rb-spec` del pipeline de la fase 0, luego F1 + F2, F4 + F5 + F9 + marcadores, F24, F6 + F7, F3 + F10 + F11.
+1. Fusionar el PR #3 y activar GitHub Pages.
+2. Configurar el formulario de revisión y repartir enlaces a los docentes.
+3. Medir en los equipos de referencia; si el Android baja de 30 cuadros/s, abrir el issue de F19.
+4. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
