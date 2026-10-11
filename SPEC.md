@@ -11,7 +11,7 @@ Nombre provisional. Versión 0.3, 11 de octubre de 2026.
 - Pipeline corregido (sección 9): los nervios son curvas, hay modificadores que aplicar, los objetos tienen padres y la invariante de posición se verifica automáticamente.
 - Regla 1 reformulada: lo que nunca cambia es la posición de cada pieza en el mundo.
 - Decisiones cerradas: lateralidad (separadas), licencia del contenido (CC BY-SA 4.0), hosting (GitHub Pages).
-- Inventario (sección 8) anotado con lo que existe en el modelo y cómo se completa lo que falta.
+- Inventario (sección 8) anotado con lo que existe en el modelo y cómo se completa lo que falta. Los cuerpos mamilares sí están (Z-Anatomy los escribe "Mamillary body").
 
 ## 1. Propósito
 
@@ -213,7 +213,7 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
   - Trazos del vago: el revisor toca un trazo y elige de una lista qué ramo es, "no es un ramo" o "no sé".
   - Pasos de circuitos y casos clásicos, cuando existan (fase 2).
 - **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre un formulario de Google del editor, ya lleno con todas las respuestas, y el revisor solo confirma. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
-- **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. Un script las convierte en un issue por ficha. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
+- **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha que se vuelve issue. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
 - **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando una ficha tiene el visto bueno de los tres roles (anatomía, psicología, traducción) en un idioma, pasa a "verificada" con revisor y fecha.
 - **Vista del revisor:** lista de lo que le falta por revisar y de lo que ya revisó.
 - **Privacidad:** el formulario pide consentimiento explícito para mostrar el nombre del revisor en las fichas (Ley 1581 de 2012). La app no guarda datos de revisores en un servidor propio.
@@ -232,7 +232,7 @@ Un solo motor para dos usos. Un circuito es una secuencia de pasos; cada paso re
 
 Circuitos iniciales (cada uno necesita fuente antes de publicarse):
 
-- **Circuito de Papez:** hipocampo, fórnix, cuerpos mamilares, núcleo anterior del tálamo, giro cingulado, giro parahipocampal y de vuelta al hipocampo. Primer circuito propuesto.
+- **Circuito de Papez:** hipocampo, fórnix, cuerpos mamilares, núcleo anterior del tálamo, giro cingulado, giro parahipocampal y de vuelta al hipocampo. Primer circuito propuesto. Todo existe como malla salvo el núcleo anterior del tálamo (marcador).
 - **Vías del miedo:** del tálamo a la amígdala (vía corta) y del tálamo a la corteza y luego a la amígdala (vía larga).
 - **Ganglios basales:** corteza, estriado (caudado y putamen), globo pálido, tálamo y de vuelta a la corteza.
 - **Eje vago-cerebro:** de las vísceras al nervio vago, al núcleo del tracto solitario, y desde ahí hacia hipotálamo, amígdala e ínsula. Todas sus estructuras centrales existen como mallas en el modelo.
@@ -454,12 +454,13 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Núcleo caudado, putamen, globo pálido, amígdala, hipocampo | Mallas, por lado |
 | Tálamo; hipotálamo | Mallas (tálamo por lado; hipotálamo una sola pieza) |
 | Epitálamo: habénula, glándula pineal | Mallas |
+| Cuerpos mamilares | Mallas, por lado ("Mamillary body" en Z-Anatomy) |
 | Metatálamo: cuerpos geniculados lateral y medial | Mallas, por lado |
 | Cuerpo calloso, fórnix, comisura del hipocampo | Mallas |
 | Mesencéfalo, puente, bulbo raquídeo | Mallas, por lado |
 | Cerebelo | Mallas |
 | Ventrículos laterales, tercero y cuarto, acueducto cerebral, plexos coroideos | Mallas |
-| Núcleo accumbens, cuerpos mamilares | Por completar (atlas SPL/NAC) |
+| Núcleo accumbens | Por completar (atlas SPL/NAC) |
 | Sustancia gris periacueductal, locus coeruleus, núcleos del rafe, área postrema, núcleo anterior del tálamo | Marcadores |
 
 **Nervio vago (ambos lados)**
@@ -483,7 +484,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Faltante | Vía | Requiere |
 |---|---|---|
 | Ramos del vago | Ya están dibujados; un revisor identifica cada trazo (F24) y el pipeline lo separa sin moverlo | Solo revisión docente |
-| Cuerpos mamilares, núcleo accumbens (y tracto mamilotalámico) | Atlas SPL/NAC de Harvard (Open Anatomy, licencia de 3D Slicer). Viene de otro cerebro: se alinea al de Z-Anatomy con estructuras comunes (tálamo, caudado, putamen, ventrículos). Piezas nuevas, posición aproximada | Investigación de licencia, alineación y revisión docente. Fase 2, antes de Papez |
+| Núcleo accumbens (y tracto mamilotalámico) | Atlas SPL/NAC de Harvard (Open Anatomy, licencia de 3D Slicer). Viene de otro cerebro: se alinea al de Z-Anatomy con estructuras comunes (tálamo, caudado, putamen, ventrículos). Piezas nuevas, posición aproximada | Investigación de licencia, alineación y revisión docente. Fase 2, antes de Papez |
 | Vago izquierdo por debajo de la tráquea | BodyParts3D tendría el tronco del vago izquierdo y comparte origen con Z-Anatomy | Investigación (servidor de BodyParts3D no verificado aún) |
 | Periacueductal, locus coeruleus, rafe, área postrema, núcleo anterior del tálamo | Sin fuente abierta usable (Brainstem Navigator prohíbe redistribuir) | Marcador ubicado por revisor |
 | Ganglios, plexos, troncos y ramos abdominales del vago | Marcador ubicado por revisor. Alternativa costosa: curvas dibujadas en Blender sobre láminas de dominio público (Gray's Anatomy, 1918) con validación docente. Pista sin verificar: modelo del vago humano de SPARC (NIH) | Revisión docente |

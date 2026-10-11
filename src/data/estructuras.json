@@ -1,0 +1,5240 @@
+{
+ "version": "0.1.0",
+ "licencia": "CC BY-SA 4.0",
+ "estructuras": {
+  "accessory-nucleus-of-oculomotor-nerve": {
+   "id": "accessory-nucleus-of-oculomotor-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo accesorio del nervio oculomotor",
+    "en": "Accessory nucleus of oculomotor nerve"
+   },
+   "latin": "Nucleus accessorius nervi oculomotorii",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-accesorio-del-nervio-oculomotor",
+    "en": "accessory-nucleus-of-oculomotor-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "amygdaloid-body": {
+   "id": "amygdaloid-body",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuerpo amigdaloide",
+    "en": "Amygdaloid body"
+   },
+   "latin": "Corpus amygdaloideum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuerpo-amigdaloide",
+    "en": "amygdaloid-body"
+   },
+   "sinonimos": {
+    "es": [
+     "amígdala",
+     "amígdala cerebral"
+    ],
+    "en": [
+     "amygdala"
+    ]
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En la parte anterior y medial del lóbulo temporal, por debajo del uncus y delante del hipocampo.",
+     "en": "In the anterior medial temporal lobe, beneath the uncus and in front of the hippocampus."
+    },
+    "que_es": {
+     "es": "Conjunto de núcleos (unos trece) en forma de almendra, agrupados en grupos funcionales como el basolateral y el central.",
+     "en": "An almond-shaped cluster of nuclei (about thirteen), arranged in functional groups such as the basolateral and the central group."
+    },
+    "para_que_sirve": {
+     "es": "Participa en la evaluación de estímulos con carga emocional, en el aprendizaje del miedo y en la modulación de la memoria emocional. No es un centro exclusivo del miedo.",
+     "en": "Takes part in evaluating emotionally salient stimuli, in fear learning and in modulating emotional memory. It is not an exclusive fear centre."
+    },
+    "relaciones": [
+     "hippocampus",
+     "hypothalamus",
+     "thalamus",
+     "g-insula",
+     "nucleus-of-solitary-tract"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Interviene en el condicionamiento del miedo y en dar prioridad a la información emocionalmente relevante.",
+       "en": "It is involved in fear conditioning and in prioritising emotionally relevant information."
+      },
+      "evidencia": "consenso",
+      "fuentes": [
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Amygdala, NBK537102",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK537102/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Amygdala",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK537102/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Núcleos, conexiones y funciones.",
+       "en": "Nuclei, connections and functions."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Amygdala, NBK537102",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK537102/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "angular-gyrus": {
+   "id": "angular-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro angular",
+    "en": "Angular gyrus"
+   },
+   "latin": "Gyrus angularis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-angular",
+    "en": "angular-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "anterior-cochlear-nucleus": {
+   "id": "anterior-cochlear-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo coclear anterior",
+    "en": "Anterior cochlear nucleus"
+   },
+   "latin": "Nucleus cochlearis anterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-coclear-anterior",
+    "en": "anterior-cochlear-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "anterior-commissure": {
+   "id": "anterior-commissure",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Comisura anterior",
+    "en": "Anterior commissure"
+   },
+   "latin": "Commissura anterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "comisura-anterior",
+    "en": "anterior-commissure"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "anterior-occipital-sulcus": {
+   "id": "anterior-occipital-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Anterior occipital sulcus*"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "anterior-occipital-sulcus",
+    "en": "anterior-occipital-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "anterior-papillary-muscle-of-right-ventricle": {
+   "id": "anterior-papillary-muscle-of-right-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Músculo papilar anterior del ventrículo derecho",
+    "en": "Anterior papillary muscle of right ventricle"
+   },
+   "latin": "Musculus papillaris anterior ventriculi dextri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "musculo-papilar-anterior-del-ventriculo-derecho",
+    "en": "anterior-papillary-muscle-of-right-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "anterior-quadrangular-lobule": {
+   "id": "anterior-quadrangular-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo cuadrangular anterior",
+    "en": "Anterior quadrangular lobule"
+   },
+   "latin": "Lobulus quadrangularis anterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-cuadrangular-anterior",
+    "en": "anterior-quadrangular-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "anterior-semilunar-leaflet-of-pulmonary-valve": {
+   "id": "anterior-semilunar-leaflet-of-pulmonary-valve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula semilunar anterior de la valva pulmonar",
+    "en": "Anterior semilunar leaflet of pulmonary valve"
+   },
+   "latin": "Valvula semilunaris anterior valvae trunci pulmonalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-semilunar-anterior-de-la-valva-pulmonar",
+    "en": "anterior-semilunar-leaflet-of-pulmonary-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "aqueduct-of-midbrain": {
+   "id": "aqueduct-of-midbrain",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Acueducto del mesencéfalo",
+    "en": "Aqueduct of midbrain"
+   },
+   "latin": "Aquaeductus mesencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "acueducto-del-mesencefalo",
+    "en": "aqueduct-of-midbrain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "arytenoid-cartilage": {
+   "id": "arytenoid-cartilage",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cartílago aritenoides",
+    "en": "Arytenoid cartilage"
+   },
+   "latin": "Cartilago arytenoidea",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cartilago-aritenoides",
+    "en": "arytenoid-cartilage"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "base-of-peduncle": {
+   "id": "base-of-peduncle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Base del pedúnculo",
+    "en": "Base of peduncle"
+   },
+   "latin": "Basis pedunculi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "base-del-pedunculo",
+    "en": "base-of-peduncle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "biventral-lobule": {
+   "id": "biventral-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo biventral",
+    "en": "Biventral lobule"
+   },
+   "latin": "Lobulus biventer",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-biventral",
+    "en": "biventral-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "calcarine-sulcus": {
+   "id": "calcarine-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco calcarino",
+    "en": "Calcarine sulcus"
+   },
+   "latin": "Sulcus calcarinus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-calcarino",
+    "en": "calcarine-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "caudate-nucleus": {
+   "id": "caudate-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo caudado",
+    "en": "Caudate nucleus"
+   },
+   "latin": "Nucleus caudatus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-caudado",
+    "en": "caudate-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "Junto al ventrículo lateral y cerca del tálamo; tiene forma de C, con cabeza, cuerpo y cola.",
+     "en": "Next to the lateral ventricle and near the thalamus; it is C-shaped, with a head, a body and a tail."
+    },
+    "que_es": {
+     "es": "Núcleo de sustancia gris que, con el putamen, forma el estriado dorsal, parte de los ganglios basales.",
+     "en": "A grey matter nucleus that, with the putamen, forms the dorsal striatum, part of the basal ganglia."
+    },
+    "para_que_sirve": {
+     "es": "Recibe información de la corteza, sobre todo frontal, y participa en circuitos de control motor, aprendizaje y conducta dirigida a metas.",
+     "en": "Receives input from the cortex, mostly frontal, and takes part in circuits for motor control, learning and goal-directed behaviour."
+    },
+    "relaciones": [
+     "putamen",
+     "globus-pallidus",
+     "thalamus",
+     "g-corpus-striatum"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Forma parte del circuito de los ganglios basales: corteza, estriado, globo pálido, tálamo y de vuelta a la corteza.",
+       "en": "It is part of the basal ganglia loop: cortex, striatum, globus pallidus, thalamus and back to the cortex."
+      },
+      "evidencia": "consenso",
+      "fuentes": [
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Nucleus Caudate, NBK557407",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK557407/"
+       },
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Basal Ganglia, NBK537141",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK537141/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Nucleus Caudate",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK557407/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Anatomía y conexiones del caudado.",
+       "en": "Anatomy and connections of the caudate."
+      }
+     },
+     {
+      "titulo": "Neuroanatomy, Basal Ganglia",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK537141/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Ganglios basales en conjunto.",
+       "en": "The basal ganglia as a whole."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Nucleus Caudate, NBK557407",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK557407/"
+     },
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Basal Ganglia, NBK537141",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK537141/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "central-lobule": {
+   "id": "central-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo central",
+    "en": "Central lobule"
+   },
+   "latin": "Lobulus centralis vermis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-central",
+    "en": "central-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "central-sulcus": {
+   "id": "central-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco central",
+    "en": "Central sulcus"
+   },
+   "latin": "Sulcus centralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-central",
+    "en": "central-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cingulate-gyrus-and-sulcus-middle-anterior-part": {
+   "id": "cingulate-gyrus-and-sulcus-middle-anterior-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Cingulate gyrus and sulcus (Middle anterior part)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "cingulate-gyrus-and-sulcus-middle-anterior-part",
+    "en": "cingulate-gyrus-and-sulcus-middle-anterior-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cingulate-gyrus-and-sulcus-middle-posterior-part": {
+   "id": "cingulate-gyrus-and-sulcus-middle-posterior-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Cingulate gyrus and sulcus (Middle posterior part)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "cingulate-gyrus-and-sulcus-middle-posterior-part",
+    "en": "cingulate-gyrus-and-sulcus-middle-posterior-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cingulate-gyrus-and-sulcus-posterior-dorsal-part": {
+   "id": "cingulate-gyrus-and-sulcus-posterior-dorsal-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Cingulate gyrus and sulcus (Posterior dorsal part)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "cingulate-gyrus-and-sulcus-posterior-dorsal-part",
+    "en": "cingulate-gyrus-and-sulcus-posterior-dorsal-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cingulate-gyrus-posteroventral-part": {
+   "id": "cingulate-gyrus-posteroventral-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Cingulate gyrus (Posteroventral part*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "cingulate-gyrus-posteroventral-part",
+    "en": "cingulate-gyrus-posteroventral-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cingulate-sulcus-marginal-part": {
+   "id": "cingulate-sulcus-marginal-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Cingulate sulcus (Marginal part*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "cingulate-sulcus-marginal-part",
+    "en": "cingulate-sulcus-marginal-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "circular-sulcus-of-insula": {
+   "id": "circular-sulcus-of-insula",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco circular de la ínsula",
+    "en": "Circular sulcus of insula"
+   },
+   "latin": "Sulcus circularis insulae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-circular-de-la-insula",
+    "en": "circular-sulcus-of-insula"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "collateral-sulcus": {
+   "id": "collateral-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco colateral",
+    "en": "Collateral sulcus"
+   },
+   "latin": "Sulcus collateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-colateral",
+    "en": "collateral-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "corniculate-cartilage": {
+   "id": "corniculate-cartilage",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cartílago corniculado",
+    "en": "Corniculate cartilage"
+   },
+   "latin": "Cartilago corniculata",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cartilago-corniculado",
+    "en": "corniculate-cartilage"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "corpus-callosum": {
+   "id": "corpus-callosum",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuerpo calloso",
+    "en": "Corpus callosum"
+   },
+   "latin": "Corpus callosum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuerpo-calloso",
+    "en": "corpus-callosum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cricoid-cartilage": {
+   "id": "cricoid-cartilage",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cartílago cricoides",
+    "en": "Cricoid cartilage"
+   },
+   "latin": "Cartilago cricoidea",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cartilago-cricoides",
+    "en": "cricoid-cartilage"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "culmen": {
+   "id": "culmen",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Culmen",
+    "en": "Culmen"
+   },
+   "latin": "Culmen",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "culmen",
+    "en": "culmen"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "cuneus": {
+   "id": "cuneus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuneus",
+    "en": "Cuneus"
+   },
+   "latin": "Cuneus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuneus",
+    "en": "cuneus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "declive": {
+   "id": "declive",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Declive",
+    "en": "Declive"
+   },
+   "latin": "Declive",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "declive",
+    "en": "declive"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "flocculus": {
+   "id": "flocculus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Flocculus",
+    "en": "Flocculus"
+   },
+   "latin": "Flocculus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "flocculus",
+    "en": "flocculus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "folium-of-vermis": {
+   "id": "folium-of-vermis",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Folio del vermis",
+    "en": "Folium of vermis"
+   },
+   "latin": "Folium vermis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "folio-del-vermis",
+    "en": "folium-of-vermis"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "fornix": {
+   "id": "fornix",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Fornix",
+    "en": "Fornix"
+   },
+   "latin": "Fornix",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "fornix",
+    "en": "fornix"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "fourth-ventricle": {
+   "id": "fourth-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuarto ventrículo",
+    "en": "Fourth ventricle"
+   },
+   "latin": "Ventriculus quartus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuarto-ventriculo",
+    "en": "fourth-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-aortic-valve": {
+   "id": "g-aortic-valve",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Valva aórtica",
+    "en": "Aortic valve"
+   },
+   "latin": "Valva aortae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valva-aortica",
+    "en": "aortic-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-basal-forebrain": {
+   "id": "g-basal-forebrain",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Prosencéfalo basal",
+    "en": "Basal forebrain"
+   },
+   "latin": "Pars basalis telencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "prosencefalo-basal",
+    "en": "basal-forebrain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-brain": {
+   "id": "g-brain",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Encéfalo",
+    "en": "Brain"
+   },
+   "latin": "Encephalon",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "encefalo",
+    "en": "brain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-brainstem": {
+   "id": "g-brainstem",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Tronco encefálico",
+    "en": "Brainstem"
+   },
+   "latin": "Trucus encephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "tronco-encefalico",
+    "en": "brainstem"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-central-mesencephalic-structures": {
+   "id": "g-central-mesencephalic-structures",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Estructuras mesencefálicas centrales",
+    "en": "Central mesencephalic structures"
+   },
+   "latin": "Structurae centrales mesencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "estructuras-mesencefalicas-centrales",
+    "en": "central-mesencephalic-structures"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-cerebellum": {
+   "id": "g-cerebellum",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Cerebelo",
+    "en": "Cerebellum"
+   },
+   "latin": "Cerebellum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cerebelo",
+    "en": "cerebellum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-cerebral-peduncle": {
+   "id": "g-cerebral-peduncle",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Pedúnculo cerebral",
+    "en": "Cerebral peduncle"
+   },
+   "latin": "Pedunculus cerebri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "pedunculo-cerebral",
+    "en": "cerebral-peduncle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-cerebrum": {
+   "id": "g-cerebrum",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Cerebro",
+    "en": "Cerebrum"
+   },
+   "latin": "Cerebrum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cerebro",
+    "en": "cerebrum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-commissural-fibres-of-telencephalon": {
+   "id": "g-commissural-fibres-of-telencephalon",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Fibras comisurales del telencéfalo",
+    "en": "Commissural fibres of telencephalon"
+   },
+   "latin": "Fibrae commissurales telencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "fibras-comisurales-del-telencefalo",
+    "en": "commissural-fibres-of-telencephalon"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-corpus-striatum": {
+   "id": "g-corpus-striatum",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Cuerpo estriado",
+    "en": "Corpus striatum"
+   },
+   "latin": "Corpus striatum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuerpo-estriado",
+    "en": "corpus-striatum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-diencephalon": {
+   "id": "g-diencephalon",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Diencéfalo",
+    "en": "Diencephalon"
+   },
+   "latin": "Diencephalon",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "diencefalo",
+    "en": "diencephalon"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-dorsal-striatum": {
+   "id": "g-dorsal-striatum",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Estriado dorsal",
+    "en": "Dorsal striatum"
+   },
+   "latin": "Striatum dorsale",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "estriado-dorsal",
+    "en": "dorsal-striatum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-frontal-lobe": {
+   "id": "g-frontal-lobe",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Lóbulo frontal",
+    "en": "Frontal lobe"
+   },
+   "latin": "Lobus frontalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-frontal",
+    "en": "frontal-lobe"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-grey-matter-of-pontine-tegmentum": {
+   "id": "g-grey-matter-of-pontine-tegmentum",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Sustancia gris del tegmento pontino",
+    "en": "Grey matter of pontine tegmentum"
+   },
+   "latin": "Substantia grisea tegmenti pontis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "sustancia-gris-del-tegmento-pontino",
+    "en": "grey-matter-of-pontine-tegmentum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-grey-matter-of-tegmentum-of-midbrain": {
+   "id": "g-grey-matter-of-tegmentum-of-midbrain",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Sustancia gris del tegmento del mesencéfalo",
+    "en": "Grey matter of tegmentum of midbrain"
+   },
+   "latin": "Substantia grisea tegmenti mesencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "sustancia-gris-del-tegmento-del-mesencefalo",
+    "en": "grey-matter-of-tegmentum-of-midbrain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-heart": {
+   "id": "g-heart",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Corazón",
+    "en": "Heart"
+   },
+   "latin": "Cor",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "corazon",
+    "en": "heart"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-insula": {
+   "id": "g-insula",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Ínsula",
+    "en": "Insula"
+   },
+   "latin": "Insula",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "insula",
+    "en": "insula"
+   },
+   "sinonimos": {
+    "es": [
+     "corteza insular",
+     "lóbulo de la ínsula"
+    ],
+    "en": [
+     "insular cortex",
+     "insular lobe"
+    ]
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "Corteza escondida en el fondo del surco lateral, cubierta por los opérculos frontal, parietal y temporal.",
+     "en": "Cortex hidden deep in the lateral sulcus, covered by the frontal, parietal and temporal opercula."
+    },
+    "que_es": {
+     "es": "Lóbulo de la corteza cerebral, rodeado por el surco circular de la ínsula.",
+     "en": "A lobe of the cerebral cortex, surrounded by the circular sulcus of the insula."
+    },
+    "para_que_sirve": {
+     "es": "Integra señales del cuerpo con información emocional y cognitiva; forma parte de circuitos que conectan corteza, sistema límbico y sistema autónomo.",
+     "en": "Integrates bodily signals with emotional and cognitive information; it belongs to circuits linking the cortex, the limbic system and the autonomic system."
+    },
+    "relaciones": [
+     "amygdaloid-body",
+     "nucleus-of-solitary-tract",
+     "g-limbic-lobe"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Participa en la interocepción, la percepción del estado interno del cuerpo.",
+       "en": "It takes part in interoception, the perception of the body's internal state."
+      },
+      "evidencia": "moderada",
+      "fuentes": [
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Insular Cortex, NBK570606",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK570606/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Insular Cortex",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK570606/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Anatomía y funciones de la corteza insular.",
+       "en": "Anatomy and functions of the insular cortex."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Insular Cortex, NBK570606",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK570606/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "g-interlobar-sulci": {
+   "id": "g-interlobar-sulci",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Surcos interlobares",
+    "en": "Interlobar sulci"
+   },
+   "latin": "Sulci interlobares",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surcos-interlobares",
+    "en": "interlobar-sulci"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-laryngeal-cartilages": {
+   "id": "g-laryngeal-cartilages",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Cartílagos laríngeos",
+    "en": "Laryngeal cartilages"
+   },
+   "latin": "Cartilagines laryngis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cartilagos-laringeos",
+    "en": "laryngeal-cartilages"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-left-lung": {
+   "id": "g-left-lung",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Pulmon izquierdo",
+    "en": "Left lung"
+   },
+   "latin": "Pulmo sinister",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "pulmon-izquierdo",
+    "en": "left-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-limbic-lobe": {
+   "id": "g-limbic-lobe",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Lóbulo límbico",
+    "en": "Limbic lobe"
+   },
+   "latin": "Lobus limbicus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-limbico",
+    "en": "limbic-lobe"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-lungs": {
+   "id": "g-lungs",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Pulmones",
+    "en": "Lungs"
+   },
+   "latin": "Pulmones",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "pulmones",
+    "en": "lungs"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-midbrain": {
+   "id": "g-midbrain",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Mesencéfalo",
+    "en": "Midbrain"
+   },
+   "latin": "Mesencephalon",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "mesencefalo-2",
+    "en": "midbrain-2"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-occipital-lobe": {
+   "id": "g-occipital-lobe",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Lóbulo occipital",
+    "en": "Occipital lobe"
+   },
+   "latin": "Lobus occipitalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-occipital",
+    "en": "occipital-lobe"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-oculomotor-complex": {
+   "id": "g-oculomotor-complex",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Complejo oculomotor",
+    "en": "Oculomotor complex"
+   },
+   "latin": "Complexus oculomotorius",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "complejo-oculomotor",
+    "en": "oculomotor-complex"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-organos-referencia": {
+   "id": "g-organos-referencia",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Órganos de referencia",
+    "en": "Reference organs"
+   },
+   "latin": "",
+   "fuente_nombre": "interfaz",
+   "slug": {
+    "es": "organos-de-referencia",
+    "en": "reference-organs"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-parietal-lobe": {
+   "id": "g-parietal-lobe",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Lóbulo parietal",
+    "en": "Parietal lobe"
+   },
+   "latin": "Lobus parietalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-parietal",
+    "en": "parietal-lobe"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-projection-fibres-of-telencephalon": {
+   "id": "g-projection-fibres-of-telencephalon",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Fibras de proyección del telencéfalo",
+    "en": "Projection fibres of telencephalon"
+   },
+   "latin": "Fibrae projectionis telencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "fibras-de-proyeccion-del-telencefalo",
+    "en": "projection-fibres-of-telencephalon"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-pulmonary-valve": {
+   "id": "g-pulmonary-valve",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Valva pulmonar",
+    "en": "Pulmonary valve"
+   },
+   "latin": "Valva trunci pulmonalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valva-pulmonar",
+    "en": "pulmonary-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-right-atrioventricular-valve": {
+   "id": "g-right-atrioventricular-valve",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Valva atrioventricular derecha",
+    "en": "Right atrioventricular valve"
+   },
+   "latin": "Valva atrioventricularis dextra",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valva-atrioventricular-derecha",
+    "en": "right-atrioventricular-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-right-lung": {
+   "id": "g-right-lung",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Pulmón derecho",
+    "en": "Right lung"
+   },
+   "latin": "Pulmo dexter",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "pulmon-derecho",
+    "en": "right-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-root-of-aorta": {
+   "id": "g-root-of-aorta",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Raíz de la aorta",
+    "en": "Root of aorta"
+   },
+   "latin": "Radix aortae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "raiz-de-la-aorta",
+    "en": "root-of-aorta"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-root-of-pulmonary-trunk": {
+   "id": "g-root-of-pulmonary-trunk",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Raíz del tronco pulmonar",
+    "en": "Root of pulmonary trunk"
+   },
+   "latin": "Radix trunci pulmonalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "raiz-del-tronco-pulmonar",
+    "en": "root-of-pulmonary-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-tectum-of-midbrain": {
+   "id": "g-tectum-of-midbrain",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Techo del mesencéfalo",
+    "en": "Tectum of midbrain"
+   },
+   "latin": "Tectum mesencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "techo-del-mesencefalo",
+    "en": "tectum-of-midbrain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-tegmentum-of-midbrain": {
+   "id": "g-tegmentum-of-midbrain",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Tegmento del mesencéfalo",
+    "en": "Tegmentum of midbrain"
+   },
+   "latin": "Tegmentum mesencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "tegmento-del-mesencefalo",
+    "en": "tegmentum-of-midbrain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-tegmentum-of-pons": {
+   "id": "g-tegmentum-of-pons",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Tegmento del pons",
+    "en": "Tegmentum of pons"
+   },
+   "latin": "Tegmentum pontis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "tegmento-del-pons",
+    "en": "tegmentum-of-pons"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-telencephalon": {
+   "id": "g-telencephalon",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Telencéfalo",
+    "en": "Telencephalon"
+   },
+   "latin": "Telencephalon",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "telencefalo",
+    "en": "telencephalon"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-temporal-lobe": {
+   "id": "g-temporal-lobe",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Lóbulo temporal",
+    "en": "Temporal lobe"
+   },
+   "latin": "Lobus temporalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-temporal",
+    "en": "temporal-lobe"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-vagus-nerve-x": {
+   "id": "g-vagus-nerve-x",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Nervio vago (X)",
+    "en": "Vagus nerve (X)"
+   },
+   "latin": "Nervus vagus (X)",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nervio-vago-x-2",
+    "en": "vagus-nerve-x-2"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-valvular-complex-of-heart": {
+   "id": "g-valvular-complex-of-heart",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Complejo valvular del corazón",
+    "en": "Valvular complex of heart"
+   },
+   "latin": "Complexus valvularis cordis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "complejo-valvular-del-corazon",
+    "en": "valvular-complex-of-heart"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-walls-of-lateral-ventricle": {
+   "id": "g-walls-of-lateral-ventricle",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Paredes del ventrículo lateral",
+    "en": "Walls of lateral ventricle"
+   },
+   "latin": "Parietes ventriculi lateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "paredes-del-ventriculo-lateral",
+    "en": "walls-of-lateral-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "g-white-matter-of-diencephalon": {
+   "id": "g-white-matter-of-diencephalon",
+   "tipo": "grupo",
+   "nombre": {
+    "es": "Sustancia blanca del diencéfalo",
+    "en": "White matter of diencephalon"
+   },
+   "latin": "Substantia alba diencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "sustancia-blanca-del-diencefalo",
+    "en": "white-matter-of-diencephalon"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "globus-pallidus": {
+   "id": "globus-pallidus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Globo pálido",
+    "en": "Globus pallidus"
+   },
+   "latin": "Globus pallidus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "globo-palido",
+    "en": "globus-pallidus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "gracile-lobule": {
+   "id": "gracile-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo grácil",
+    "en": "Gracile lobule"
+   },
+   "latin": "Lobulus gracilis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-gracil",
+    "en": "gracile-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "habenula": {
+   "id": "habenula",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Habénula",
+    "en": "Habenula"
+   },
+   "latin": "Habenula",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "habenula",
+    "en": "habenula"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "hippocampal-commissure": {
+   "id": "hippocampal-commissure",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Comisura hipocampal",
+    "en": "Hippocampal commissure"
+   },
+   "latin": "Commissura hippocampi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "comisura-hipocampal",
+    "en": "hippocampal-commissure"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "hippocampus": {
+   "id": "hippocampus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Hipocampo",
+    "en": "Hippocampus"
+   },
+   "latin": "Hippocampus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "hipocampo",
+    "en": "hippocampus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En la cara medial del lóbulo temporal, en el piso del cuerno temporal (inferior) del ventrículo lateral. Tiene cabeza, cuerpo y cola.",
+     "en": "On the medial side of the temporal lobe, in the floor of the temporal (inferior) horn of the lateral ventricle. It has a head, a body and a tail."
+    },
+    "que_es": {
+     "es": "Estructura de sustancia gris de la corteza más antigua (arquicorteza). Con el giro dentado y el subículo forma la formación del hipocampo.",
+     "en": "A grey matter structure of the oldest cortex (archicortex). With the dentate gyrus and the subiculum it forms the hippocampal formation."
+    },
+    "para_que_sirve": {
+     "es": "Participa en la formación y consolidación de memorias declarativas (de hechos y de episodios) y en la navegación espacial.",
+     "en": "Takes part in forming and consolidating declarative memories (facts and episodes) and in spatial navigation."
+    },
+    "relaciones": [
+     "fornix",
+     "amygdaloid-body",
+     "medial-occipitotemporal-gyrus-parahippocampal",
+     "g-limbic-lobe",
+     "mamillary-body"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Su lesión bilateral produce amnesia anterógrada para memorias declarativas, mientras se conservan aprendizajes de habilidades motoras.",
+       "en": "Bilateral damage causes anterograde amnesia for declarative memories, while motor skill learning is spared."
+      },
+      "evidencia": "consenso",
+      "fuentes": [
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Hippocampus, NBK482171",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK482171/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Hippocampus",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK482171/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Anatomía, conexiones y correlación clínica.",
+       "en": "Anatomy, connections and clinical correlation."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Hippocampus, NBK482171",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK482171/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "hypothalamus": {
+   "id": "hypothalamus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Hipotálamo",
+    "en": "Hypothalamus"
+   },
+   "latin": "Hypothalamus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "hipotalamo",
+    "en": "hypothalamus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En el diencéfalo, por debajo del tálamo, alrededor de la parte inferior del tercer ventrículo; incluye los cuerpos mamilares.",
+     "en": "In the diencephalon, below the thalamus, around the lower part of the third ventricle; it includes the mammillary bodies."
+    },
+    "que_es": {
+     "es": "Conjunto de núcleos organizados en zonas periventricular, medial y lateral.",
+     "en": "A collection of nuclei arranged in periventricular, medial and lateral zones."
+    },
+    "para_que_sirve": {
+     "es": "Regula la homeostasis: función endocrina a través de la hipófisis, sistema nervioso autónomo, temperatura, hambre y sed.",
+     "en": "Regulates homeostasis: endocrine function through the pituitary gland, the autonomic nervous system, temperature, hunger and thirst."
+    },
+    "relaciones": [
+     "thalamus",
+     "amygdaloid-body",
+     "fornix",
+     "mamillary-body",
+     "nucleus-of-solitary-tract",
+     "third-ventricle"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Inicia la respuesta hormonal al estrés a través del eje hipotálamo, hipófisis y suprarrenal.",
+       "en": "It initiates the hormonal stress response through the hypothalamic, pituitary and adrenal axis."
+      },
+      "evidencia": "consenso",
+      "fuentes": [
+       {
+        "cita": "StatPearls, Neuroanatomy, Hypothalamus (Bear MH, Reddy V, Bollu PC), PMID 30252249",
+        "verificada": false,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/30252249/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "StatPearls, Neuroanatomy, Hypothalamus (Bear MH, Reddy V, Bollu PC), PMID 30252249",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30252249/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Zonas, núcleos y funciones.",
+       "en": "Zones, nuclei and functions."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls, Neuroanatomy, Hypothalamus (Bear MH, Reddy V, Bollu PC), PMID 30252249",
+      "verificada": false,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30252249/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "inferior-colliculus": {
+   "id": "inferior-colliculus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Colículo inferior",
+    "en": "Inferior colliculus"
+   },
+   "latin": "Colliculus inferior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "coliculo-inferior",
+    "en": "inferior-colliculus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-frontal-sulcus": {
+   "id": "inferior-frontal-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco frontal inferior",
+    "en": "Inferior frontal sulcus"
+   },
+   "latin": "Sulcus frontalis inferior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-frontal-inferior",
+    "en": "inferior-frontal-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-leaflet-of-right-atrioventricular-valve": {
+   "id": "inferior-leaflet-of-right-atrioventricular-valve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula posterior de la valva atrioventricular derecha",
+    "en": "Inferior leaflet of right atrioventricular valve"
+   },
+   "latin": "Cuspis inferior valvae atrioventricularis dextrae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-posterior-de-la-valva-atrioventricular-derecha",
+    "en": "inferior-leaflet-of-right-atrioventricular-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-lobe-of-left-lung": {
+   "id": "inferior-lobe-of-left-lung",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo inferior del pulmón izquierdo",
+    "en": "Inferior lobe of left lung"
+   },
+   "latin": "Lobus inferior pulmonis sinistri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-inferior-del-pulmon-izquierdo",
+    "en": "inferior-lobe-of-left-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-lobe-of-right-lung": {
+   "id": "inferior-lobe-of-right-lung",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo inferior del pulmón derecho",
+    "en": "Inferior lobe of right lung"
+   },
+   "latin": "Lobus inferior pulmonis dextri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-inferior-del-pulmon-derecho",
+    "en": "inferior-lobe-of-right-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-occipital-gyrus-and-sulcus": {
+   "id": "inferior-occipital-gyrus-and-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Inferior occipital gyrus and sulcus*"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "inferior-occipital-gyrus-and-sulcus",
+    "en": "inferior-occipital-gyrus-and-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-papillary-muscle-of-left-ventricle": {
+   "id": "inferior-papillary-muscle-of-left-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Músculo papilar inferior del ventrículo izquierdo",
+    "en": "Inferior papillary muscle of left ventricle"
+   },
+   "latin": "Musculus papillaris inferior ventriculi sinistri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "musculo-papilar-inferior-del-ventriculo-izquierdo",
+    "en": "inferior-papillary-muscle-of-left-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-papillary-muscle-of-right-ventricle": {
+   "id": "inferior-papillary-muscle-of-right-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Músculo papilar posterior del ventrículo derecho",
+    "en": "Inferior papillary muscle of right ventricle"
+   },
+   "latin": "Musculus papillaris inferior ventriculi dextri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "musculo-papilar-posterior-del-ventriculo-derecho",
+    "en": "inferior-papillary-muscle-of-right-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-salivatory-nucleus": {
+   "id": "inferior-salivatory-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo salival inferior",
+    "en": "Inferior salivatory nucleus"
+   },
+   "latin": "Nucleus salivatorius inferior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-salival-inferior",
+    "en": "inferior-salivatory-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-semilunar-lobule": {
+   "id": "inferior-semilunar-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo semilunar inferior",
+    "en": "Inferior semilunar lobule"
+   },
+   "latin": "Lobulus semilunaris inferior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-semilunar-inferior",
+    "en": "inferior-semilunar-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-temporal-gyrus": {
+   "id": "inferior-temporal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro temporal inferior",
+    "en": "Inferior temporal gyrus"
+   },
+   "latin": "Gyrus temporalis inferior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-temporal-inferior",
+    "en": "inferior-temporal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "inferior-temporal-sulcus": {
+   "id": "inferior-temporal-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco temporal inferior",
+    "en": "Inferior temporal sulcus"
+   },
+   "latin": "Sulcus temporalis inferior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-temporal-inferior",
+    "en": "inferior-temporal-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "insula-subcentral-gyrus-and-ant-and-post-sulci": {
+   "id": "insula-subcentral-gyrus-and-ant-and-post-sulci",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Insula (Subcentral gyrus and ant. and post. sulci*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "insula-subcentral-gyrus-and-ant-and-post-sulci",
+    "en": "insula-subcentral-gyrus-and-ant-and-post-sulci"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "interpeduncular-fossa": {
+   "id": "interpeduncular-fossa",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Fosa interpeduncular",
+    "en": "Interpeduncular fossa"
+   },
+   "latin": "Fossa interpeduncularis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "fosa-interpeduncular",
+    "en": "interpeduncular-fossa"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "intraparietal-sulcus": {
+   "id": "intraparietal-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco intraparietal",
+    "en": "Intraparietal sulcus"
+   },
+   "latin": "Sulcus intraparietalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-intraparietal",
+    "en": "intraparietal-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lat-fis-ant-horizont": {
+   "id": "lat-fis-ant-horizont",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Lat_Fis-ant-Horizont"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "lat-fis-ant-horizont",
+    "en": "lat-fis-ant-horizont"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lat-fis-ant-vertical": {
+   "id": "lat-fis-ant-vertical",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Lat_Fis-ant-Vertical"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "lat-fis-ant-vertical",
+    "en": "lat-fis-ant-vertical"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lat-fis-post": {
+   "id": "lat-fis-post",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Lat_Fis-post"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "lat-fis-post",
+    "en": "lat-fis-post"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lateral-geniculate-body": {
+   "id": "lateral-geniculate-body",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuerpo geniculado lateral",
+    "en": "Lateral geniculate body"
+   },
+   "latin": "Corpus geniculatum laterale",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuerpo-geniculado-lateral",
+    "en": "lateral-geniculate-body"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lateral-occipital-gyrus-middle-occipital-gyrus": {
+   "id": "lateral-occipital-gyrus-middle-occipital-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Lateral occipital gyrus (Middle occipital gyrus*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "lateral-occipital-gyrus-middle-occipital-gyrus",
+    "en": "lateral-occipital-gyrus-middle-occipital-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lateral-occipitotemporal-gyrus": {
+   "id": "lateral-occipitotemporal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro occipitotemporal lateral",
+    "en": "Lateral occipitotemporal gyrus"
+   },
+   "latin": "Gyrus occipitotemporalis lateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-occipitotemporal-lateral",
+    "en": "lateral-occipitotemporal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lateral-ventricle": {
+   "id": "lateral-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Ventrículo lateral",
+    "en": "Lateral ventricle"
+   },
+   "latin": "Ventriculus lateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "ventriculo-lateral",
+    "en": "lateral-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "left-atrium": {
+   "id": "left-atrium",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Atrio izquierdo",
+    "en": "Left atrium"
+   },
+   "latin": "Atrium sinistrum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "atrio-izquierdo",
+    "en": "left-atrium"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "left-coronary-leaflet": {
+   "id": "left-coronary-leaflet",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula coronaria aórtica izquierda",
+    "en": "Left coronary leaflet"
+   },
+   "latin": "Valvula coronaria sinistra aortae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-coronaria-aortica-izquierda",
+    "en": "left-coronary-leaflet"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "left-semilunar-leaflet-of-pulmonary-valve": {
+   "id": "left-semilunar-leaflet-of-pulmonary-valve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula semilunar izquierda de la valva pulmonar",
+    "en": "Left semilunar leaflet of pulmonary valve"
+   },
+   "latin": "Valvula semilunaris sinistra valvae trunci pulmonalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-semilunar-izquierda-de-la-valva-pulmonar",
+    "en": "left-semilunar-leaflet-of-pulmonary-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "left-ventricle": {
+   "id": "left-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Ventrículo izquierdo",
+    "en": "Left ventricle"
+   },
+   "latin": "Ventriculus sinister",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "ventriculo-izquierdo",
+    "en": "left-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lentiform-nucleus": {
+   "id": "lentiform-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo lentiforme",
+    "en": "Lentiform nucleus"
+   },
+   "latin": "Nucleus lentiformis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-lentiforme",
+    "en": "lentiform-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lingual-gyrus": {
+   "id": "lingual-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro lingual",
+    "en": "Lingual gyrus"
+   },
+   "latin": "Gyrus lingualis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-lingual",
+    "en": "lingual-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lingula-of-cerebellum": {
+   "id": "lingula-of-cerebellum",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lingula del cerebelo",
+    "en": "Lingula of cerebellum"
+   },
+   "latin": "Lingula cerebelli",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lingula-del-cerebelo",
+    "en": "lingula-of-cerebellum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "lunate-sulcus": {
+   "id": "lunate-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Lunate sulcus"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "lunate-sulcus",
+    "en": "lunate-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-anterior-gastric-branches-of-anterior-vagal-trunk": {
+   "id": "m-anterior-gastric-branches-of-anterior-vagal-trunk",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos gástricos anteriores del tronco vagal anterior",
+    "en": "Anterior gastric branches of anterior vagal trunk"
+   },
+   "latin": "Rami gastrici anteriores trunci vagalis anterioris",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-anterior-gastric-branches-of-anterior-vagal-trunk",
+    "en": "m-anterior-gastric-branches-of-anterior-vagal-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-anterior-nuclei-of-thalamus": {
+   "id": "m-anterior-nuclei-of-thalamus",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Núcleos anteriores del tálamo",
+    "en": "Anterior nuclei of thalamus"
+   },
+   "latin": "Nuclei anteriores thalami",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-anterior-nuclei-of-thalamus",
+    "en": "m-anterior-nuclei-of-thalamus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-anterior-vagal-trunk": {
+   "id": "m-anterior-vagal-trunk",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Tronco vagal anterior",
+    "en": "Anterior vagal trunk"
+   },
+   "latin": "Truncus vagalis anterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-anterior-vagal-trunk",
+    "en": "m-anterior-vagal-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-area-postrema": {
+   "id": "m-area-postrema",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Área postrema",
+    "en": "Area postrema"
+   },
+   "latin": "Area postrema",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-area-postrema",
+    "en": "m-area-postrema"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-auricular-branch-of-vagus-nerve": {
+   "id": "m-auricular-branch-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramo auricular del nervio vago",
+    "en": "Auricular branch of vagus nerve"
+   },
+   "latin": "Ramus auricularis nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-auricular-branch-of-vagus-nerve",
+    "en": "m-auricular-branch-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-bronchial-branches-of-vagus-nerve": {
+   "id": "m-bronchial-branches-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos bronquiales del nervio vago",
+    "en": "Bronchial branches of vagus nerve"
+   },
+   "latin": "Rami bronchiales nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-bronchial-branches-of-vagus-nerve",
+    "en": "m-bronchial-branches-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-caerulean-nucleus": {
+   "id": "m-caerulean-nucleus",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Locus caeruleo",
+    "en": "Caerulean nucleus"
+   },
+   "latin": "Nucleus caeruleus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-caerulean-nucleus",
+    "en": "m-caerulean-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-coeliac-branches-of-posterior-vagal-trunk": {
+   "id": "m-coeliac-branches-of-posterior-vagal-trunk",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos celíacos del tronco vagal posterior",
+    "en": "Coeliac branches of posterior vagal trunk"
+   },
+   "latin": "Rami coeliaci trunci vagalis posteriores",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-coeliac-branches-of-posterior-vagal-trunk",
+    "en": "m-coeliac-branches-of-posterior-vagal-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-hepatic-branches-of-anterior-vagal-trunk": {
+   "id": "m-hepatic-branches-of-anterior-vagal-trunk",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos hepáticos del tronco vagal anterior",
+    "en": "Hepatic branches of anterior vagal trunk"
+   },
+   "latin": "Rami hepatici trunci vagalis anterioris",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-hepatic-branches-of-anterior-vagal-trunk",
+    "en": "m-hepatic-branches-of-anterior-vagal-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-inferior-cervical-cardiac-branches-of-vagus-nerve": {
+   "id": "m-inferior-cervical-cardiac-branches-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos cardíacos cervicales inferiores del nervio vago",
+    "en": "Inferior cervical cardiac branches of vagus nerve"
+   },
+   "latin": "Rami cardiaci cervicales inferiores nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-inferior-cervical-cardiac-branches-of-vagus-nerve",
+    "en": "m-inferior-cervical-cardiac-branches-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-inferior-ganglion-of-vagus-nerve": {
+   "id": "m-inferior-ganglion-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ganglio inferior del nervio vago",
+    "en": "Inferior ganglion of vagus nerve"
+   },
+   "latin": "Ganglion inferius nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-inferior-ganglion-of-vagus-nerve",
+    "en": "m-inferior-ganglion-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-jugular-foramen": {
+   "id": "m-jugular-foramen",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Foramen yugular",
+    "en": "Jugular foramen"
+   },
+   "latin": "Foramen jugulare",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-jugular-foramen",
+    "en": "m-jugular-foramen"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-nucleus-accumbens": {
+   "id": "m-nucleus-accumbens",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Núcleo accumbens",
+    "en": "Nucleus accumbens"
+   },
+   "latin": "Nucleus accumbens",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-nucleus-accumbens",
+    "en": "m-nucleus-accumbens"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-oesophageal-plexus": {
+   "id": "m-oesophageal-plexus",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Plexo esofágico",
+    "en": "Oesophageal plexus"
+   },
+   "latin": "Plexus oesophageus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-oesophageal-plexus",
+    "en": "m-oesophageal-plexus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-periaqueductal-grey": {
+   "id": "m-periaqueductal-grey",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Sustancia gris periacueductal",
+    "en": "Periaqueductal grey"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "SPEC del proyecto (nombre por confirmar en TA2)",
+   "slug": {
+    "es": "m-periaqueductal-grey",
+    "en": "m-periaqueductal-grey"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-pharyngeal-branch-of-vagus-nerve": {
+   "id": "m-pharyngeal-branch-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramo faríngeo del nervio vago",
+    "en": "Pharyngeal branch of vagus nerve"
+   },
+   "latin": "Ramus pharyngeus nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-pharyngeal-branch-of-vagus-nerve",
+    "en": "m-pharyngeal-branch-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-posterior-gastric-branches-of-posterior-vagal-trunk": {
+   "id": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos gástricos posteriores del tronco vagal posterior",
+    "en": "Posterior gastric branches of posterior vagal trunk"
+   },
+   "latin": "Rami gastrici posteriores trunci vagalis posteriores",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
+    "en": "m-posterior-gastric-branches-of-posterior-vagal-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-posterior-vagal-trunk": {
+   "id": "m-posterior-vagal-trunk",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Tronco vagal posterior",
+    "en": "Posterior vagal trunk"
+   },
+   "latin": "Truncus vagalis posterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-posterior-vagal-trunk",
+    "en": "m-posterior-vagal-trunk"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-pulmonary-plexus": {
+   "id": "m-pulmonary-plexus",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Plexo pulmonar",
+    "en": "Pulmonary plexus"
+   },
+   "latin": "Plexus pulmonalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-pulmonary-plexus",
+    "en": "m-pulmonary-plexus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-raphe-nuclei-of-medulla-oblongata": {
+   "id": "m-raphe-nuclei-of-medulla-oblongata",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Núcleos del rafe del bulbo raquídeo",
+    "en": "Raphe nuclei of medulla oblongata"
+   },
+   "latin": "Nuclei raphes medullae oblongatae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-raphe-nuclei-of-medulla-oblongata",
+    "en": "m-raphe-nuclei-of-medulla-oblongata"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-recurrent-laryngeal-nerve": {
+   "id": "m-recurrent-laryngeal-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Nervio laríngeo recurrente",
+    "en": "Recurrent laryngeal nerve"
+   },
+   "latin": "Nervus laryngeus recurrens",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-recurrent-laryngeal-nerve",
+    "en": "m-recurrent-laryngeal-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-superior-cervical-cardiac-branches-of-vagus-nerve": {
+   "id": "m-superior-cervical-cardiac-branches-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos cardíacos cervicales superiores del nervio vago",
+    "en": "Superior cervical cardiac branches of vagus nerve"
+   },
+   "latin": "Rami cardiaci cervicales superiores nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-superior-cervical-cardiac-branches-of-vagus-nerve",
+    "en": "m-superior-cervical-cardiac-branches-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-superior-ganglion-of-vagus-nerve": {
+   "id": "m-superior-ganglion-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ganglio superior del nervio vago",
+    "en": "Superior ganglion of vagus nerve"
+   },
+   "latin": "Ganglion superius nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-superior-ganglion-of-vagus-nerve",
+    "en": "m-superior-ganglion-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-superior-laryngeal-nerve": {
+   "id": "m-superior-laryngeal-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Nervio laríngeo superior",
+    "en": "Superior laryngeal nerve"
+   },
+   "latin": "Nervus laryngeus superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-superior-laryngeal-nerve",
+    "en": "m-superior-laryngeal-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-thoracic-cardiac-branches-of-vagus-nerve": {
+   "id": "m-thoracic-cardiac-branches-of-vagus-nerve",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Ramos cardíacos torácicos del nervio vago",
+    "en": "Thoracic cardiac branches of vagus nerve"
+   },
+   "latin": "Rami cardiaci thoracici nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "m-thoracic-cardiac-branches-of-vagus-nerve",
+    "en": "m-thoracic-cardiac-branches-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "mamillary-body": {
+   "id": "mamillary-body",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuerpo mamilar",
+    "en": "Mamillary body"
+   },
+   "latin": "Corpus mammillare",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuerpo-mamilar",
+    "en": "mamillary-body"
+   },
+   "sinonimos": {
+    "es": [
+     "cuerpo mamilar",
+     "cuerpos mamilares"
+    ],
+    "en": [
+     "mammillary body",
+     "mammillary bodies"
+    ]
+   },
+   "ficha": null
+  },
+  "medial-geniculate-body": {
+   "id": "medial-geniculate-body",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cuerpo geniculado medial",
+    "en": "Medial geniculate body"
+   },
+   "latin": "Corpus geniculatum mediale",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cuerpo-geniculado-medial",
+    "en": "medial-geniculate-body"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "medial-occipitotemporal-gyrus-parahippocampal": {
+   "id": "medial-occipitotemporal-gyrus-parahippocampal",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Medial occipitotemporal gyrus (Parahippocampal*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "medial-occipitotemporal-gyrus-parahippocampal",
+    "en": "medial-occipitotemporal-gyrus-parahippocampal"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "medulla-oblongata": {
+   "id": "medulla-oblongata",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Bulbo",
+    "en": "Medulla oblongata"
+   },
+   "latin": "Medulla oblongata",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "bulbo",
+    "en": "medulla-oblongata"
+   },
+   "sinonimos": {
+    "es": [
+     "bulbo",
+     "médula oblongada"
+    ],
+    "en": [
+     "medulla"
+    ]
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "Parte más baja del tronco encefálico, entre el puente y la médula espinal; su extremo inferior está cerca del agujero magno.",
+     "en": "The lowest part of the brainstem, between the pons and the spinal cord; its lower end lies near the foramen magnum."
+    },
+    "que_es": {
+     "es": "Segmento del tronco encefálico que contiene núcleos de los pares craneales y vías que conectan el encéfalo con la médula espinal.",
+     "en": "A brainstem segment that contains cranial nerve nuclei and tracts linking the brain with the spinal cord."
+    },
+    "para_que_sirve": {
+     "es": "Aloja los núcleos del vago y participa en el control automático de la respiración y la función cardiovascular.",
+     "en": "Houses the vagal nuclei and takes part in the automatic control of breathing and cardiovascular function."
+    },
+    "relaciones": [
+     "pons",
+     "nucleus-of-solitary-tract",
+     "nucleus-ambiguus",
+     "posterior-nucleus-of-vagus-nerve",
+     "vagus-nerve-x",
+     "g-brainstem"
+    ],
+    "relevancia": [],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Medulla Oblongata",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK551589/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Anatomía del bulbo raquídeo.",
+       "en": "Anatomy of the medulla oblongata."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Medulla Oblongata, NBK551589",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK551589/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "midbrain": {
+   "id": "midbrain",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Mesencéfalo",
+    "en": "Midbrain"
+   },
+   "latin": "Mesencephalon",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "mesencefalo",
+    "en": "midbrain"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "middle-frontal-gyrus": {
+   "id": "middle-frontal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro frontal medio",
+    "en": "Middle frontal gyrus"
+   },
+   "latin": "Gyrus frontalis medius",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-frontal-medio",
+    "en": "middle-frontal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "middle-lobe-of-right-lung": {
+   "id": "middle-lobe-of-right-lung",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo medio del pulmón derecho",
+    "en": "Middle lobe of right lung"
+   },
+   "latin": "Lobus medius pulmonis dextri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-medio-del-pulmon-derecho",
+    "en": "middle-lobe-of-right-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "middle-temporal-gyrus": {
+   "id": "middle-temporal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro temporal medio",
+    "en": "Middle temporal gyrus"
+   },
+   "latin": "Gyrus temporalis medius",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-temporal-medio",
+    "en": "middle-temporal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "motor-nucleus-of-facial-nerve": {
+   "id": "motor-nucleus-of-facial-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo motor del nervio facial",
+    "en": "Motor nucleus of facial nerve"
+   },
+   "latin": "Nucleus nervi facialis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-motor-del-nervio-facial",
+    "en": "motor-nucleus-of-facial-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "mucosa-of-stomach": {
+   "id": "mucosa-of-stomach",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Capa mucosa del estómago",
+    "en": "Mucosa of stomach"
+   },
+   "latin": "Tunica mucosa gastris",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "capa-mucosa-del-estomago",
+    "en": "mucosa-of-stomach"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "nodule-of-vermis": {
+   "id": "nodule-of-vermis",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Nódulo del vermis",
+    "en": "Nodule of vermis"
+   },
+   "latin": "Nodulus vermis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nodulo-del-vermis",
+    "en": "nodule-of-vermis"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "non-coronary-leaflet": {
+   "id": "non-coronary-leaflet",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula no coronaria de la valva aórtica",
+    "en": "Non-coronary leaflet"
+   },
+   "latin": "Valvula noncoronaria valvae aortae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-no-coronaria-de-la-valva-aortica",
+    "en": "non-coronary-leaflet"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "nucleus-ambiguus": {
+   "id": "nucleus-ambiguus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo ambiguo",
+    "en": "Nucleus ambiguus"
+   },
+   "latin": "Nucleus ambiguus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-ambiguo",
+    "en": "nucleus-ambiguus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "nucleus-of-abducens-nerve": {
+   "id": "nucleus-of-abducens-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo del nervio abducens",
+    "en": "Nucleus of abducens nerve"
+   },
+   "latin": "Nucleus nervi abducentis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-del-nervio-abducens",
+    "en": "nucleus-of-abducens-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "nucleus-of-hypoglossal-nerve": {
+   "id": "nucleus-of-hypoglossal-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo del nervio hipogloso",
+    "en": "Nucleus of hypoglossal nerve"
+   },
+   "latin": "Nucleus nervi hypoglossi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-del-nervio-hipogloso",
+    "en": "nucleus-of-hypoglossal-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "nucleus-of-oculomotor-nerve": {
+   "id": "nucleus-of-oculomotor-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo del nervio oculomotor",
+    "en": "Nucleus of oculomotor nerve"
+   },
+   "latin": "Nucleus nervi oculomotorius",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-del-nervio-oculomotor",
+    "en": "nucleus-of-oculomotor-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "nucleus-of-solitary-tract": {
+   "id": "nucleus-of-solitary-tract",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo del tracto solitario",
+    "en": "Nucleus of solitary tract"
+   },
+   "latin": "Nucleus tractus solitarii",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-del-tracto-solitario",
+    "en": "nucleus-of-solitary-tract"
+   },
+   "sinonimos": {
+    "es": [
+     "núcleo solitario",
+     "NTS"
+    ],
+    "en": [
+     "solitary nucleus",
+     "NTS",
+     "nucleus tractus solitarius"
+    ]
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En el bulbo raquídeo, lateral al núcleo motor dorsal (posterior) del vago.",
+     "en": "In the medulla oblongata, lateral to the dorsal (posterior) motor nucleus of the vagus."
+    },
+    "que_es": {
+     "es": "Núcleo sensitivo visceral del tronco encefálico.",
+     "en": "A visceral sensory nucleus of the brainstem."
+    },
+    "para_que_sirve": {
+     "es": "Recibe información de las vísceras a través del vago y del glosofaríngeo, y del gusto a través de los pares VII, IX y X. Participa en el control cardiovascular, respiratorio y digestivo.",
+     "en": "Receives visceral information through the vagus and glossopharyngeal nerves, and taste through cranial nerves VII, IX and X. It takes part in cardiovascular, respiratory and digestive control."
+    },
+    "relaciones": [
+     "vagus-nerve-x",
+     "posterior-nucleus-of-vagus-nerve",
+     "nucleus-ambiguus",
+     "medulla-oblongata",
+     "hypothalamus",
+     "amygdaloid-body",
+     "g-insula"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Es la primera estación cerebral de la información que sube por el vago desde las vísceras, en el eje vago y cerebro.",
+       "en": "It is the first brain relay for information ascending through the vagus from the viscera, in the vagus and brain axis."
+      },
+      "evidencia": "consenso",
+      "fuentes": [
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Nucleus Solitarius, NBK549831",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK549831/"
+       },
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Vagal Nerve Nuclei, NBK545209",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Nucleus Solitarius",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK549831/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Organización y funciones del núcleo solitario.",
+       "en": "Organisation and functions of the solitary nucleus."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Nucleus Solitarius, NBK549831",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK549831/"
+     },
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Vagal Nerve Nuclei, NBK545209",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "nucleus-of-trochlear-nerve": {
+   "id": "nucleus-of-trochlear-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo del nervio troclear",
+    "en": "Nucleus of trochlear nerve"
+   },
+   "latin": "Nucleus nervi trochlearis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-del-nervio-troclear",
+    "en": "nucleus-of-trochlear-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "occipital-pole": {
+   "id": "occipital-pole",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Polo occipital",
+    "en": "Occipital pole"
+   },
+   "latin": "Polus occipitalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "polo-occipital",
+    "en": "occipital-pole"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "occipitotemporal-sulcus-lateral-part": {
+   "id": "occipitotemporal-sulcus-lateral-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Occipitotemporal sulcus (Lateral part*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "occipitotemporal-sulcus-lateral-part",
+    "en": "occipitotemporal-sulcus-lateral-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "oesophagus": {
+   "id": "oesophagus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Esófago",
+    "en": "Oesophagus"
+   },
+   "latin": "Oesophagus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "esofago",
+    "en": "oesophagus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "olfactory-sulcus": {
+   "id": "olfactory-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco olfatorio",
+    "en": "Olfactory sulcus"
+   },
+   "latin": "Sulcus olfactorius",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-olfatorio",
+    "en": "olfactory-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "olive": {
+   "id": "olive",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Oliva",
+    "en": "Olive"
+   },
+   "latin": "Oliva",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "oliva",
+    "en": "olive"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "opercular-part-of-inferior-frontal-gyrus": {
+   "id": "opercular-part-of-inferior-frontal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Parte opercular del giro frontal inferior",
+    "en": "Opercular part of inferior frontal gyrus"
+   },
+   "latin": "Pars opercularis gyri frontalis inferioris",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "parte-opercular-del-giro-frontal-inferior",
+    "en": "opercular-part-of-inferior-frontal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "optic-chiasm": {
+   "id": "optic-chiasm",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Quiasma óptico",
+    "en": "Optic chiasm"
+   },
+   "latin": "Chiasma opticum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "quiasma-optico",
+    "en": "optic-chiasm"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "optic-tract": {
+   "id": "optic-tract",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Tracto óptico",
+    "en": "Optic tract"
+   },
+   "latin": "Tractus opticus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "tracto-optico",
+    "en": "optic-tract"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "orbital-gyri": {
+   "id": "orbital-gyri",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giros orbitales",
+    "en": "Orbital gyri"
+   },
+   "latin": "Gyri orbitales",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giros-orbitales",
+    "en": "orbital-gyri"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "orbital-gyri-frontomarginal-gyrus-and-sulcus": {
+   "id": "orbital-gyri-frontomarginal-gyrus-and-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Orbital gyri (Frontomarginal gyrus and sulcus*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "orbital-gyri-frontomarginal-gyrus-and-sulcus",
+    "en": "orbital-gyri-frontomarginal-gyrus-and-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "orbital-part-of-inferior-frontal-gyrus": {
+   "id": "orbital-part-of-inferior-frontal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Orbital part of  inferior frontal gyrus"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "orbital-part-of-inferior-frontal-gyrus",
+    "en": "orbital-part-of-inferior-frontal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "orbital-sulci-h-shaped-orbital-sulci": {
+   "id": "orbital-sulci-h-shaped-orbital-sulci",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Orbital sulci (H-shaped orbital sulci*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "orbital-sulci-h-shaped-orbital-sulci",
+    "en": "orbital-sulci-h-shaped-orbital-sulci"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "orbital-sulci-lateral-orbital-sulcus": {
+   "id": "orbital-sulci-lateral-orbital-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Orbital sulci (Lateral Orbital sulcus*)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "orbital-sulci-lateral-orbital-sulcus",
+    "en": "orbital-sulci-lateral-orbital-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "paracentral-gyrus-and-sulcus": {
+   "id": "paracentral-gyrus-and-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Paracentral gyrus and sulcus*"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "paracentral-gyrus-and-sulcus",
+    "en": "paracentral-gyrus-and-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "paracentral-sulcus": {
+   "id": "paracentral-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco paracentral",
+    "en": "Paracentral sulcus"
+   },
+   "latin": "Sulcus paracentralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-paracentral",
+    "en": "paracentral-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "parieto-occipital-sulcus": {
+   "id": "parieto-occipital-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco parieto-occipital",
+    "en": "Parieto-occipital sulcus"
+   },
+   "latin": "Sulcus parietooccipitalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-parieto-occipital",
+    "en": "parieto-occipital-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "peduncle-of-flocculus": {
+   "id": "peduncle-of-flocculus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Pedúnculo del flóculo",
+    "en": "Peduncle of flocculus"
+   },
+   "latin": "Pedunculus flocculi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "pedunculo-del-floculo",
+    "en": "peduncle-of-flocculus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "pons": {
+   "id": "pons",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Puente troncoencefálico",
+    "en": "Pons"
+   },
+   "latin": "Pons",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "puente-troncoencefalico",
+    "en": "pons"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "postcentral-gyrus": {
+   "id": "postcentral-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro poscentral",
+    "en": "Postcentral gyrus"
+   },
+   "latin": "Gyrus postcentralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-poscentral",
+    "en": "postcentral-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "postcentral-sulcus": {
+   "id": "postcentral-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco poscentral",
+    "en": "Postcentral sulcus"
+   },
+   "latin": "Sulcus postcentralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-poscentral",
+    "en": "postcentral-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "posterior-cochlear-nucleus": {
+   "id": "posterior-cochlear-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo coclear posterior",
+    "en": "Posterior cochlear nucleus"
+   },
+   "latin": "Nucleus cochlearis posterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-coclear-posterior",
+    "en": "posterior-cochlear-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "posterior-commissure": {
+   "id": "posterior-commissure",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Comisura posterior",
+    "en": "Posterior commissure"
+   },
+   "latin": "Commissura posterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "comisura-posterior",
+    "en": "posterior-commissure"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "posterior-leaflet-of-left-atrioventricular-valve": {
+   "id": "posterior-leaflet-of-left-atrioventricular-valve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula posterior de la valva atrioventricular izquierda",
+    "en": "Posterior leaflet of left atrioventricular valve"
+   },
+   "latin": "Cuspis posterior valvae atrioventricularis sinistrae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-posterior-de-la-valva-atrioventricular-izquierda",
+    "en": "posterior-leaflet-of-left-atrioventricular-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "posterior-nucleus-of-vagus-nerve": {
+   "id": "posterior-nucleus-of-vagus-nerve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo posterior del nervio vago",
+    "en": "Posterior nucleus of vagus nerve"
+   },
+   "latin": "Nucleus posterior nervi vagi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-posterior-del-nervio-vago",
+    "en": "posterior-nucleus-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [
+     "núcleo motor dorsal del vago"
+    ],
+    "en": [
+     "dorsal motor nucleus of the vagus",
+     "DMV"
+    ]
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En el bulbo raquídeo, por debajo del piso del cuarto ventrículo.",
+     "en": "In the medulla oblongata, beneath the floor of the fourth ventricle."
+    },
+    "que_es": {
+     "es": "Núcleo motor visceral (parasimpático) del nervio vago, también llamado núcleo motor dorsal del vago.",
+     "en": "The visceral (parasympathetic) motor nucleus of the vagus nerve, also called the dorsal motor nucleus of the vagus."
+    },
+    "para_que_sirve": {
+     "es": "Envía fibras parasimpáticas al corazón, los pulmones y el tubo digestivo.",
+     "en": "Sends parasympathetic fibres to the heart, the lungs and the digestive tract."
+    },
+    "relaciones": [
+     "vagus-nerve-x",
+     "nucleus-of-solitary-tract",
+     "nucleus-ambiguus",
+     "medulla-oblongata",
+     "fourth-ventricle"
+    ],
+    "relevancia": [],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Vagal Nerve Nuclei",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Los tres núcleos del vago en el bulbo.",
+       "en": "The three vagal nuclei in the medulla."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Vagal Nerve Nuclei, NBK545209",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "posterior-quadrangular-lobule": {
+   "id": "posterior-quadrangular-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo cuadrangular posterior",
+    "en": "Posterior quadrangular lobule"
+   },
+   "latin": "Lobulus quadrangularis posterior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-cuadrangular-posterior",
+    "en": "posterior-quadrangular-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "posterior-transverse-collateral-sulcus": {
+   "id": "posterior-transverse-collateral-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": " Posterior transverse collateral sulcus"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "posterior-transverse-collateral-sulcus",
+    "en": "posterior-transverse-collateral-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "precentral-gyrus": {
+   "id": "precentral-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro precentral",
+    "en": "Precentral gyrus"
+   },
+   "latin": "Gyrus precentralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-precentral",
+    "en": "precentral-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "precentral-sulcus-inferior-part": {
+   "id": "precentral-sulcus-inferior-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Precentral sulcus (inferior part)*"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "precentral-sulcus-inferior-part",
+    "en": "precentral-sulcus-inferior-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "precentral-sulcus-superior-part": {
+   "id": "precentral-sulcus-superior-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Precentral sulcus (Superior part)*"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "precentral-sulcus-superior-part",
+    "en": "precentral-sulcus-superior-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "precuneus": {
+   "id": "precuneus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Precuneus",
+    "en": "Precuneus"
+   },
+   "latin": "Precuneus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "precuneus",
+    "en": "precuneus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "putamen": {
+   "id": "putamen",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Putamen",
+    "en": "Putamen"
+   },
+   "latin": "Putamen",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "putamen",
+    "en": "putamen"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "pyramid-of-medulla-oblongata": {
+   "id": "pyramid-of-medulla-oblongata",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Pirámide bulbar",
+    "en": "Pyramid of medulla oblongata"
+   },
+   "latin": "Pyramis medullae oblongatae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "piramide-bulbar",
+    "en": "pyramid-of-medulla-oblongata"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "pyramis-of-vermis": {
+   "id": "pyramis-of-vermis",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Pirámide del vermis",
+    "en": "Pyramis of vermis"
+   },
+   "latin": "Pyramis vermis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "piramide-del-vermis",
+    "en": "pyramis-of-vermis"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "red-nucleus": {
+   "id": "red-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo rojo",
+    "en": "Red nucleus"
+   },
+   "latin": "Nucleus ruber",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-rojo",
+    "en": "red-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "right-atrium": {
+   "id": "right-atrium",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Atrio derecho",
+    "en": "Right atrium"
+   },
+   "latin": "Atrium dextrum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "atrio-derecho",
+    "en": "right-atrium"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "right-coronary-leaflet": {
+   "id": "right-coronary-leaflet",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula coronaria aórtica derecha",
+    "en": "Right coronary leaflet"
+   },
+   "latin": "Valvula coronaria dextra aortae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-coronaria-aortica-derecha",
+    "en": "right-coronary-leaflet"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "right-semilunar-leaflet-of-pulmonary-valve": {
+   "id": "right-semilunar-leaflet-of-pulmonary-valve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula semilunar derecha de la valva pulmonar",
+    "en": "Right semilunar leaflet of pulmonary valve"
+   },
+   "latin": "Valvula semilunaris dextra valvae trunci pulmonalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-semilunar-derecha-de-la-valva-pulmonar",
+    "en": "right-semilunar-leaflet-of-pulmonary-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "right-ventricle": {
+   "id": "right-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Ventrículo derecho",
+    "en": "Right ventricle"
+   },
+   "latin": "Ventriculus dexter",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "ventriculo-derecho",
+    "en": "right-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "septal-leaflet-of-right-atrioventricular-valve": {
+   "id": "septal-leaflet-of-right-atrioventricular-valve",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Válvula septal de la valva atrioventricular derecha",
+    "en": "Septal leaflet of right atrioventricular valve"
+   },
+   "latin": "Cuspis septalis valvae atrioventricularis dextrae",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "valvula-septal-de-la-valva-atrioventricular-derecha",
+    "en": "septal-leaflet-of-right-atrioventricular-valve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "septal-nuclei": {
+   "id": "septal-nuclei",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleos septales",
+    "en": "Septal nuclei"
+   },
+   "latin": "Nuclei septales",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleos-septales",
+    "en": "septal-nuclei"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "septal-papillary-muscle-of-right-ventricle": {
+   "id": "septal-papillary-muscle-of-right-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Musculo papilar septal del ventrículo derecho",
+    "en": "Septal papillary muscle of right ventricle"
+   },
+   "latin": "Musculus papillaris septalis ventriculi dextri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "musculo-papilar-septal-del-ventriculo-derecho",
+    "en": "septal-papillary-muscle-of-right-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "septum-pellucidum": {
+   "id": "septum-pellucidum",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Septum pellucidum",
+    "en": "Septum pellucidum"
+   },
+   "latin": "Septum pellucidum",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "septum-pellucidum",
+    "en": "septum-pellucidum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "stomach": {
+   "id": "stomach",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Estómago",
+    "en": "Stomach"
+   },
+   "latin": "Gaster",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "estomago",
+    "en": "stomach"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "straight-gyrus-gyrus-rectus": {
+   "id": "straight-gyrus-gyrus-rectus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Straight gyrus (Gyrus rectus)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "straight-gyrus-gyrus-rectus",
+    "en": "straight-gyrus-gyrus-rectus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "stria-medullaris-thalami": {
+   "id": "stria-medullaris-thalami",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Estrías talámicas medulares",
+    "en": "Stria medullaris thalami"
+   },
+   "latin": "Stria medullaris thalami",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "estrias-talamicas-medulares",
+    "en": "stria-medullaris-thalami"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "stria-terminalis": {
+   "id": "stria-terminalis",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Stria terminalis",
+    "en": "Stria terminalis"
+   },
+   "latin": "Stria terminalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "stria-terminalis",
+    "en": "stria-terminalis"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "subparietal-sulcus": {
+   "id": "subparietal-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco subparietal",
+    "en": "Subparietal sulcus"
+   },
+   "latin": "Sulcus subparietalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-subparietal",
+    "en": "subparietal-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "sulcus-interm-prim-jensen": {
+   "id": "sulcus-interm-prim-jensen",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Sulcus interm_prim-Jensen"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "sulcus-interm-prim-jensen",
+    "en": "sulcus-interm-prim-jensen"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-cerebellar-peduncle": {
+   "id": "superior-cerebellar-peduncle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Pedúnculo cerebeloso superior",
+    "en": "Superior cerebellar peduncle"
+   },
+   "latin": "Pedunculus cerebellaris superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "pedunculo-cerebeloso-superior",
+    "en": "superior-cerebellar-peduncle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-colliculus": {
+   "id": "superior-colliculus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Colículo superior",
+    "en": "Superior colliculus"
+   },
+   "latin": "Colliculus superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "coliculo-superior",
+    "en": "superior-colliculus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-frontal-gyrus": {
+   "id": "superior-frontal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro frontal superior",
+    "en": "Superior frontal gyrus"
+   },
+   "latin": "Gyrus frontalis superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-frontal-superior",
+    "en": "superior-frontal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-frontal-sulcus": {
+   "id": "superior-frontal-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco frontal superior",
+    "en": "Superior frontal sulcus"
+   },
+   "latin": "Sulcus frontalis superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-frontal-superior",
+    "en": "superior-frontal-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-lobe-of-left-lung": {
+   "id": "superior-lobe-of-left-lung",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo superior del pulmón izquierdo",
+    "en": "Superior lobe of left lung"
+   },
+   "latin": "Lobus superior pulmonis sinistri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-superior-del-pulmon-izquierdo",
+    "en": "superior-lobe-of-left-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-lobe-of-right-lung": {
+   "id": "superior-lobe-of-right-lung",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo superior del pulmón derecho",
+    "en": "Superior lobe of right lung"
+   },
+   "latin": "Lobus superior pulmonis dextri",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-superior-del-pulmon-derecho",
+    "en": "superior-lobe-of-right-lung"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-occipital-gyri": {
+   "id": "superior-occipital-gyri",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giros occipitales superiores",
+    "en": "Superior occipital gyri"
+   },
+   "latin": "Gyri occipitales superiores",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giros-occipitales-superiores",
+    "en": "superior-occipital-gyri"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-parietal-lobule": {
+   "id": "superior-parietal-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo parietal superior",
+    "en": "Superior parietal lobule"
+   },
+   "latin": "Lobulus parietalis superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-parietal-superior",
+    "en": "superior-parietal-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-salivatory-nucleus": {
+   "id": "superior-salivatory-nucleus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleo salival superior",
+    "en": "Superior salivatory nucleus"
+   },
+   "latin": "Nucleus salivatorius superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleo-salival-superior",
+    "en": "superior-salivatory-nucleus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-semilunar-lobule": {
+   "id": "superior-semilunar-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Lóbulo semilunar superior",
+    "en": "Superior semilunar lobule"
+   },
+   "latin": "Lobulus semilunaris superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "lobulo-semilunar-superior",
+    "en": "superior-semilunar-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-temporal-gyrus-lateral-part": {
+   "id": "superior-temporal-gyrus-lateral-part",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Superior temporal gyrus (Lateral part)"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "superior-temporal-gyrus-lateral-part",
+    "en": "superior-temporal-gyrus-lateral-part"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "superior-temporal-sulcus": {
+   "id": "superior-temporal-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco temporal superior",
+    "en": "Superior temporal sulcus"
+   },
+   "latin": "Sulcus temporalis superior",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-temporal-superior",
+    "en": "superior-temporal-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "supramarginal-gyrus": {
+   "id": "supramarginal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giro supramarginal",
+    "en": "Supramarginal gyrus"
+   },
+   "latin": "Gyrus supramarginalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giro-supramarginal",
+    "en": "supramarginal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "temporal-plane": {
+   "id": "temporal-plane",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Plano temporal",
+    "en": "Temporal plane"
+   },
+   "latin": "Planum temporale",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "plano-temporal",
+    "en": "temporal-plane"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "temporal-pole": {
+   "id": "temporal-pole",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Polo temporal",
+    "en": "Temporal pole"
+   },
+   "latin": "Polus temporalis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "polo-temporal",
+    "en": "temporal-pole"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "thalamus": {
+   "id": "thalamus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Tálamo",
+    "en": "Thalamus"
+   },
+   "latin": "Thalamus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "talamo",
+    "en": "thalamus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En el diencéfalo, a cada lado del tercer ventrículo, por encima del hipotálamo.",
+     "en": "In the diencephalon, on each side of the third ventricle, above the hypothalamus."
+    },
+    "que_es": {
+     "es": "Masa par de sustancia gris formada por muchos núcleos.",
+     "en": "A paired mass of grey matter made of many nuclei."
+    },
+    "para_que_sirve": {
+     "es": "Retransmite y modula información sensitiva y motora hacia la corteza, y participa en la regulación de la vigilia y la atención.",
+     "en": "Relays and modulates sensory and motor information to the cortex, and takes part in regulating wakefulness and attention."
+    },
+    "relaciones": [
+     "hypothalamus",
+     "caudate-nucleus",
+     "g-diencephalon",
+     "third-ventricle"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "La vía corta de las respuestas de miedo va del tálamo a la amígdala sin pasar primero por la corteza.",
+       "en": "The short route of fear responses runs from the thalamus to the amygdala without passing through the cortex first."
+      },
+      "evidencia": "moderada",
+      "fuentes": [
+       {
+        "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Amygdala, NBK537102",
+        "verificada": false,
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK537102/"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Thalamus",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK542184/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Núcleos talámicos y sus conexiones.",
+       "en": "Thalamic nuclei and their connections."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Thalamus, NBK542184",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK542184/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "third-ventricle": {
+   "id": "third-ventricle",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Tercer ventrículo",
+    "en": "Third ventricle"
+   },
+   "latin": "Ventriculus tertius",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "tercer-ventriculo",
+    "en": "third-ventricle"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "thyroid-cartilage": {
+   "id": "thyroid-cartilage",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Cartílago tiroideo",
+    "en": "Thyroid cartilage"
+   },
+   "latin": "Cartilago thyreoidea",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "cartilago-tiroideo",
+    "en": "thyroid-cartilage"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "tonsil-of-cerebellum": {
+   "id": "tonsil-of-cerebellum",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Amígdala del cerebelo",
+    "en": "Tonsil of cerebellum"
+   },
+   "latin": "Tonsilla cerebelli",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "amigdala-del-cerebelo",
+    "en": "tonsil-of-cerebellum"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "trachea": {
+   "id": "trachea",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Tráquea",
+    "en": "Trachea"
+   },
+   "latin": "Trachea",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "traquea",
+    "en": "trachea"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "transverse-frontopolar-gyrus-and-sulcus": {
+   "id": "transverse-frontopolar-gyrus-and-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "PENDIENTE",
+    "en": "Transverse frontopolar gyrus and sulcus*"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "transverse-frontopolar-gyrus-and-sulcus",
+    "en": "transverse-frontopolar-gyrus-and-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "transverse-occipital-sulcus": {
+   "id": "transverse-occipital-sulcus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Surco occipital transversal",
+    "en": "Transverse occipital sulcus"
+   },
+   "latin": "Sulcus occipitalis transversus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "surco-occipital-transversal",
+    "en": "transverse-occipital-sulcus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "transverse-temporal-gyri": {
+   "id": "transverse-temporal-gyri",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Giros temporales transversos",
+    "en": "Transverse temporal gyri"
+   },
+   "latin": "Gyri temporales transversi",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "giros-temporales-transversos",
+    "en": "transverse-temporal-gyri"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "triangular-part-of-inferior-frontal-gyrus": {
+   "id": "triangular-part-of-inferior-frontal-gyrus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Parte triangular del giro frontal inferior",
+    "en": "Triangular part of inferior frontal gyrus"
+   },
+   "latin": "Pars triangularis gyri frontalis inferioris",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "parte-triangular-del-giro-frontal-inferior",
+    "en": "triangular-part-of-inferior-frontal-gyrus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "tuber-of-vermis": {
+   "id": "tuber-of-vermis",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Tubérculo del vermis",
+    "en": "Tuber of vermis"
+   },
+   "latin": "Tuber vermis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "tuberculo-del-vermis",
+    "en": "tuber-of-vermis"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "uvula-of-vermis": {
+   "id": "uvula-of-vermis",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Úvula del vermis",
+    "en": "Uvula of vermis"
+   },
+   "latin": "Uvula vermis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "uvula-del-vermis",
+    "en": "uvula-of-vermis"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "vagus-nerve-x": {
+   "id": "vagus-nerve-x",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Nervio vago (X)",
+    "en": "Vagus nerve (X)"
+   },
+   "latin": "Nervus vagus (X)",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nervio-vago-x",
+    "en": "vagus-nerve-x"
+   },
+   "sinonimos": {
+    "es": [
+     "neumogástrico",
+     "par craneal X",
+     "décimo par",
+     "nervio vago"
+    ],
+    "en": [
+     "cranial nerve X",
+     "CN X",
+     "pneumogastric nerve",
+     "vagus"
+    ]
+   },
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "Sale del bulbo raquídeo, deja el cráneo por el agujero yugular, donde tiene sus ganglios superior e inferior, y desciende por el cuello hacia el tórax y el abdomen. En este modelo el vago izquierdo termina a la altura del final de la tráquea.",
+     "en": "Arises from the medulla oblongata, leaves the skull through the jugular foramen, where it has its superior and inferior ganglia, and descends through the neck toward the thorax and abdomen. In this model the left vagus ends at the level of the lower trachea."
+    },
+    "que_es": {
+     "es": "Décimo par craneal y el más largo. Nervio mixto con fibras motoras, sensitivas y parasimpáticas.",
+     "en": "The tenth and longest cranial nerve. A mixed nerve with motor, sensory and parasympathetic fibres."
+    },
+    "para_que_sirve": {
+     "es": "Participa en la regulación involuntaria de la frecuencia cardíaca, la respiración y la digestión, e inerva músculos de la faringe y la laringe que intervienen en la deglución y la fonación.",
+     "en": "Takes part in the involuntary regulation of heart rate, breathing and digestion, and supplies pharyngeal and laryngeal muscles involved in swallowing and phonation."
+    },
+    "relaciones": [
+     "medulla-oblongata",
+     "posterior-nucleus-of-vagus-nerve",
+     "nucleus-ambiguus",
+     "nucleus-of-solitary-tract"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "La variabilidad de la frecuencia cardíaca se usa en investigación como indicador de la actividad vagal cardíaca y se estudia en relación con la regulación emocional.",
+       "en": "Heart rate variability is used in research as an index of cardiac vagal activity and is studied in relation to emotion regulation."
+      },
+      "evidencia": "moderada",
+      "fuentes": [
+       {
+        "cita": "Laborde S, Mosley E, Thayer JF. Heart Rate Variability and Cardiac Vagal Tone in Psychophysiological Research. Front Psychol. 2017;8:213. doi:10.3389/fpsyg.2017.00213",
+        "verificada": false,
+        "url": "https://doi.org/10.3389/fpsyg.2017.00213"
+       },
+       {
+        "cita": "Thayer JF, Lane RD. A model of neurovisceral integration in emotion regulation and dysregulation. J Affect Disord. 2000;61(3):201-216. doi:10.1016/s0165-0327(00)00338-4",
+        "verificada": false,
+        "url": "https://doi.org/10.1016/s0165-0327(00)00338-4"
+       }
+      ]
+     },
+     {
+      "texto": {
+       "es": "Teoría polivagal: muy difundida en psicoterapia, con críticas publicadas sobre sus bases anatómicas y evolutivas.",
+       "en": "Polyvagal theory: widely used in psychotherapy, with published critiques of its anatomical and evolutionary claims."
+      },
+      "evidencia": "debatida",
+      "fuentes": [
+       {
+        "cita": "Porges SW. The polyvagal perspective. Biol Psychol. 2007;74(2):116-143. doi:10.1016/j.biopsycho.2006.06.009",
+        "verificada": false,
+        "url": "https://doi.org/10.1016/j.biopsycho.2006.06.009"
+       },
+       {
+        "cita": "Grossman P. Fundamental challenges and likely refutations of the five basic premises of the polyvagal theory. Biol Psychol. 2023;180:108589. doi:10.1016/j.biopsycho.2023.108589",
+        "verificada": false,
+        "url": "https://doi.org/10.1016/j.biopsycho.2023.108589"
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Cranial Nerve 10 (Vagus Nerve)",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK537171/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Recorrido, núcleos y ganglios, con correlación clínica.",
+       "en": "Course, nuclei and ganglia, with clinical correlation."
+      }
+     },
+     {
+      "titulo": "Vagus nerve: Anatomy, function and branches (Kenhub)",
+      "url": "https://www.kenhub.com/en/library/anatomy/the-vagus-nerve",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Descripción de los ramos por región.",
+       "en": "Description of the branches by region."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Cranial Nerve 10 (Vagus Nerve), NBK537171",
+      "verificada": false,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK537171/"
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": false,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
+  },
+  "vestibular-nuclei": {
+   "id": "vestibular-nuclei",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Núcleos vestibulares",
+    "en": "Vestibular nuclei"
+   },
+   "latin": "Nuclei vestibulares",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "nucleos-vestibulares",
+    "en": "vestibular-nuclei"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "white-matter-of-telencephalon": {
+   "id": "white-matter-of-telencephalon",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Sustancia blanca del telencéfalo",
+    "en": "White matter of telencephalon"
+   },
+   "latin": "Substantia alba telencephali",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "sustancia-blanca-del-telencefalo",
+    "en": "white-matter-of-telencephalon"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "wing-of-central-lobule": {
+   "id": "wing-of-central-lobule",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Ala del lóbulo central",
+    "en": "Wing of central lobule"
+   },
+   "latin": "Ala lobuli centralis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "ala-del-lobulo-central",
+    "en": "wing-of-central-lobule"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  }
+ }
+}

@@ -1,3 +1,5 @@
+node_modules/
+dist/
 # Added by rb vendor
 .rockbuilt/
 .claude/settings.local.json
@@ -13,3 +15,6 @@ blob-report/
 playwright/.auth/
 e2e/.auth/
 e2e/.explore/
+pipeline/.cache/
+pipeline/salida/
+__pycache__/

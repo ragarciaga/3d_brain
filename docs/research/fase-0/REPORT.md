@@ -42,7 +42,9 @@ python -I docs/research/fase-0/scripts/inv.py -- inventario.tsv ruta/a/Startup.b
 
 Existen como mallas (por lado salvo donde se indica): hipocampo, cuerpo amigdalino, tálamo, hipotálamo (una pieza), ínsula, giros del cíngulo (por partes), núcleo caudado, putamen, globo pálido, núcleo lentiforme, fórnix, cuerpo calloso, comisura del hipocampo, habénula, glándula pineal, cuerpos geniculados lateral y medial, núcleos septales, septo pelúcido, hipófisis, mesencéfalo, puente, bulbo, oliva, cerebelo, ventrículos laterales, tercero y cuarto, acueducto, plexos coroideos y 111 mallas de giros y surcos (parcelación tipo Destrieux, por ejemplo `Opercular part of inferior frontal gyrus`, `Straight gyrus (Gyrus rectus)`).
 
-No existen: sustancia gris periacueductal, locus coeruleus, núcleos del rafe, núcleo accumbens, área postrema, cuerpos mamilares, núcleo anterior del tálamo, agujero yugular como objeto.
+Cuerpos mamilares: sí existen, por lado, escritos `Mamillary body` (con una sola m); una primera búsqueda por "mammillary" no los encontró.
+
+No existen: sustancia gris periacueductal, locus coeruleus, núcleos del rafe, núcleo accumbens, área postrema, núcleo anterior del tálamo, agujero yugular como objeto.
 
 ### Jerarquía
 
@@ -80,7 +82,7 @@ De 322 estructuras únicas del sistema nervioso (sin sufijo de lado), 293 casan 
 
 | Fuente | Qué aporta | Licencia | Veredicto |
 |---|---|---|---|
-| SPL/NAC Brain Atlas (Open Anatomy, Harvard), espejo `stity/spl-brain-atlas` | Etiquetas de núcleo accumbens, cuerpos mamilares y tracto mamilotalámico, por lado | Licencia de 3D Slicer (permisiva, pide reconocimiento) | Candidata. Requiere alineación con el cerebro de Z-Anatomy y confirmar compatibilidad en un ADR |
+| SPL/NAC Brain Atlas (Open Anatomy, Harvard), espejo `stity/spl-brain-atlas` | Etiquetas de núcleo accumbens y tracto mamilotalámico, por lado (los mamilares ya vienen en Z-Anatomy) | Licencia de 3D Slicer (permisiva, pide reconocimiento) | Candidata. Requiere alineación con el cerebro de Z-Anatomy y confirmar compatibilidad en un ADR |
 | Brainstem Navigator (MGH, NITRC) | Núcleos del tronco encefálico | Solo investigación no comercial; prohíbe redistribuir | Descartada |
 | CIT168 (Caltech) | Núcleos subcorticales | Licencia de los datos sin confirmar | No usar hasta confirmarla |
 | Modelos de la Universidad de Dundee | Pares craneales | CC BY-NC-SA en los que se pudo verificar | Incompatible con CC BY-SA |
