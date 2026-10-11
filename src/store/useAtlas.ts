@@ -8,6 +8,7 @@ import {
   desplazamientosExplosion,
   promedio,
   sumar,
+  type Lado,
   type Nivel,
   type Vec3,
 } from '../lib/explosion';
@@ -40,6 +41,12 @@ function ancestroBloque(pieza: string): string {
     p = nodos[p]?.padre ?? null;
   }
   return ultimo;
+}
+
+/** Lado anatómico de una pieza; sin lado (o vacío) cuenta como medio. */
+export function ladoDe(pieza: string): Lado {
+  const l = nodos[pieza]?.lado;
+  return l === 'l' || l === 'r' ? l : 'medio';
 }
 
 export function bloqueDe(pieza: string, nivel: Nivel): string {
@@ -128,9 +135,17 @@ export function piezasVisibles(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] 
   return todasLasPiezas.filter((p) => !s.ocultas.has(p) && (!s.aislar || s.aislar.piezas.has(p)));
 }
 
+/** Piezas sobre las que se encuadra la cámara: las de estudio visibles del encéfalo; si no hay, las de estudio visibles. */
+export function piezasDeEncuadre(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] {
+  const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
+  const encefalo = new Set(piezasBajo('g-brain'));
+  const foco = visibles.filter((p) => encefalo.has(p));
+  return foco.length ? foco : visibles;
+}
+
 function recalcularBase(s: Estado): Record<string, Vec3> {
   const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-  return desplazamientosExplosion(s.centros, visibles, (p) => bloqueDe(p, s.nivel), s.explosion);
+  return desplazamientosExplosion(s.centros, visibles, (p) => bloqueDe(p, s.nivel), s.explosion, ladoDe);
 }
 
 /** Desplazamiento objetivo de una pieza (la animación se acerca a este valor). */
@@ -224,14 +239,21 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   separar: (piezas) => {
     const s = get();
-    const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-    const conjunto = promedio(visibles.map((p) => s.centros[p]!).filter(Boolean));
-    const centro = promedio(piezas.map((p) => s.centros[p]!).filter(Boolean));
-    const d = desplazamientoSeparar(centro, conjunto);
+    // Conjunto armado: las piezas de estudio que se dibujan (misma condición que `visible` en Visor.tsx,
+    // donde "aislar con contexto" deja las demás como fantasma pero sí dibujadas).
+    const dibujadas = todasLasPiezas.filter(
+      (p) =>
+        nodos[p]?.clase === 'estudio' &&
+        !s.ocultas.has(p) &&
+        (!s.aislar || s.aislar.modo === 'contexto' || s.aislar.piezas.has(p)),
+    );
+    const conjunto = promedio(dibujadas.map((p) => s.centros[p]!).filter(Boolean));
     const separadas = { ...s.separadas };
     const devueltas = new Set(s.devueltas);
     for (const p of piezas) {
-      separadas[p] = d;
+      const centro = s.centros[p];
+      if (!centro) continue;
+      separadas[p] = desplazamientoSeparar(centro, conjunto, ladoDe(p));
       devueltas.delete(p);
     }
     set({ separadas, devueltas });

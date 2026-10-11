@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { cajaBlenderAGltf, type Caja } from '../scripts/lib/modelo.ts';
-import { DIRECCIONES, desfaseVerticalPx, esSeleccionable } from '../src/lib/vistas';
+import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../src/lib/vistas';
 
 const cajas = (JSON.parse(readFileSync('pipeline/cajas.json', 'utf8')) as { cajas: Record<string, Caja> }).cajas;
 const centro = (nombre: string) => {
@@ -58,5 +58,26 @@ describe('encuadre con la hoja de la ficha en celular', () => {
   it('un alto inválido no desplaza', () => {
     expect(desfaseVerticalPx(Number.NaN, 600)).toBe(0);
     expect(desfaseVerticalPx(100, 0)).toBe(0);
+  });
+});
+
+describe('distancia de encuadre según el campo de visión más estrecho', () => {
+  const rad = (g: number) => g * (Math.PI / 180);
+  it('en pantalla apaisada usa el campo vertical, como antes', () => {
+    expect(distanciaEncuadre(0.1, 40, 16 / 9)).toBeCloseTo((0.1 / Math.sin(rad(20))) * 1.1, 12);
+  });
+  it('en celular vertical usa el campo horizontal y aleja más', () => {
+    const aspecto = 390 / 844;
+    const fovH = 2 * Math.atan(Math.tan(rad(20)) * aspecto);
+    const d = distanciaEncuadre(0.1, 40, aspecto);
+    expect(d).toBeGreaterThan(distanciaEncuadre(0.1, 40, 16 / 9));
+    expect(d).toBeCloseTo((0.1 / Math.sin(fovH / 2)) * 1.1, 12);
+  });
+  it('tiene un mínimo de 5 cm (por el margen, 0,055)', () => {
+    expect(distanciaEncuadre(0.001, 40, 16 / 9)).toBeCloseTo(0.055, 12);
+  });
+  it('un aspecto no válido cuenta como 1', () => {
+    expect(distanciaEncuadre(0.1, 40, 0)).toBe(distanciaEncuadre(0.1, 40, 1));
+    expect(distanciaEncuadre(0.1, 40, Number.NaN)).toBe(distanciaEncuadre(0.1, 40, 1));
   });
 });

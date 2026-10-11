@@ -11,9 +11,10 @@ interface VentanaAtlas {
       aislar: { modo: string } | null;
       seleccion: { entrada: string | null };
       pedirCamara(p: { encuadrar: string[] }): void;
+      base: Record<string, number[]>;
     };
   };
-  __camara: { objetivoEnPantalla: (() => { x: number; y: number }) | null };
+  __camara: { objetivoEnPantalla: (() => { x: number; y: number }) | null; leer: (() => number[]) | null };
 }
 
 const aislarActual = (page: Page) =>
@@ -22,6 +23,18 @@ const aislarActual = (page: Page) =>
 /** Altura (px del lienzo) a la que la cámara tiene puesto el objetivo; -1 si el visor aún no la da. */
 const objetivoY = (page: Page) =>
   page.evaluate(() => (window as unknown as VentanaAtlas).__camara.objetivoEnPantalla?.()?.y ?? -1);
+
+/** Posición y objetivo de la cámara: [px, py, pz, tx, ty, tz]; vacío si el visor aún no la da. */
+const leerCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.leer?.() ?? []);
+
+/** Distancia de la cámara a su objetivo y la dirección (unitaria) desde la que mira. */
+async function vistaDeCamara(page: Page) {
+  const c = await leerCamara(page);
+  if (c.length !== 6) return { distancia: -1, direccion: [0, 0, 0] };
+  const v = [c[0]! - c[3]!, c[1]! - c[4]!, c[2]! - c[5]!];
+  const distancia = Math.hypot(v[0]!, v[1]!, v[2]!);
+  return { distancia, direccion: v.map((x) => x / distancia) };
+}
 
 async function modeloCargado(page: Page) {
   await expect(page.getByTestId('piezas')).toHaveText(/287 (piezas|pieces)/, { timeout: 150_000 });
@@ -137,6 +150,37 @@ test('fragmentar y reensamblar: todas las piezas vuelven exactamente a su sitio'
   await expect(page.getByTestId('contador-armado')).toContainText(/0 de \d+ en su sitio/);
   await page.getByTestId('reensamblar').click();
   await expect.poll(desplazadas).toBe(0);
+});
+
+test('a 100 % la cámara se aleja para mostrar el conjunto desarmado y al reensamblar vuelve', async ({ page }) => {
+  await abrir(page, '/es');
+  await modeloCargado(page);
+  await expect.poll(async () => (await vistaDeCamara(page)).distancia).toBeGreaterThan(0);
+  const inicial = await vistaDeCamara(page);
+  await page.getByTestId('explosion').fill('100');
+  await expect
+    .poll(
+      async () => {
+        const v = await vistaDeCamara(page);
+        const punto = v.direccion.reduce((a, x, i) => a + x * inicial.direccion[i]!, 0);
+        return v.distancia > 2 * inicial.distancia && punto > 0.99;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
+  // Las piezas profundas también salen del núcleo.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const b = (window as unknown as VentanaAtlas).__atlas.getState().base['thalamus-l'] ?? [0, 0, 0];
+        return Math.hypot(b[0]!, b[1]!, b[2]!);
+      }),
+    )
+    .toBeGreaterThanOrEqual(0.05);
+  await page.getByTestId('reensamblar').click();
+  await expect
+    .poll(async () => Math.abs((await vistaDeCamara(page)).distancia - inicial.distancia) / inicial.distancia, { timeout: 20_000 })
+    .toBeLessThan(0.05);
 });
 
 test('modo revisión: el docente marca campos y el contador sube', async ({ page }) => {

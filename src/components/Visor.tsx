@@ -19,9 +19,9 @@ import type { Idioma } from '../data/tipos';
 import { acercar, CERO, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
 import { crearLectorMovimiento } from '../lib/movimiento';
-import { DIRECCIONES, desfaseVerticalPx, esSeleccionable } from '../lib/vistas';
+import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombrePieza, nombreVisible } from '../lib/nombres';
-import { fueraDeSitio, objetivo, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
+import { fueraDeSitio, objetivo, piezasDeEncuadre, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
 import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
@@ -374,8 +374,8 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     if (!c || caja.isEmpty()) return;
     const centro = caja.getCenter(new THREE.Vector3());
     const radio = caja.getBoundingSphere(new THREE.Sphere()).radius;
-    const fov = ((camera as THREE.PerspectiveCamera).fov ?? 40) * (Math.PI / 180);
-    const dist = Math.max(radio / Math.sin(fov / 2), 0.05) * 1.1;
+    const cam = camera as THREE.PerspectiveCamera;
+    const dist = distanciaEncuadre(radio, cam.fov ?? 40, cam.aspect ?? 1);
     const d = new THREE.Vector3(...direccion).normalize();
     void c.setLookAt(centro.x + d.x * dist, centro.y + d.y * dist, centro.z + d.z * dist, centro.x, centro.y, centro.z, animar && !reducirMovimiento());
   };
@@ -404,11 +404,7 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
       const dir: [number, number, number] = pos && obj ? (pos.sub(obj).normalize().toArray() as [number, number, number]) : DIRECCIONES.inicio;
       mirar(dir, caja, true);
     } else if (pedido.vista) {
-      const s = useAtlas.getState();
-      const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-      const encefalo = new Set(piezasDeEntrada('g-brain'));
-      const foco = visibles.filter((p) => encefalo.has(p));
-      mirar(DIRECCIONES[pedido.vista], cajaDe(foco.length ? foco : visibles), true);
+      mirar(DIRECCIONES[pedido.vista], cajaDe(piezasDeEncuadre(useAtlas.getState())), true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedido]);

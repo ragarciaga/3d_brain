@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { piezasDeEntrada } from '../src/data/atlas';
-import { bloqueDe, fueraDeSitio, hayFiltros, objetivo, piezasVisibles, useAtlas } from '../src/store/useAtlas';
+import { desplazamientoSeparar, promedio, type Vec3 } from '../src/lib/explosion';
+import { bloqueDe, fueraDeSitio, hayFiltros, ladoDe, objetivo, piezasDeEncuadre, piezasVisibles, useAtlas } from '../src/store/useAtlas';
 
 const centros = Object.fromEntries(
   ['hippocampus-l', 'hippocampus-r', 'thalamus-l', 'thalamus-r', 'precentral-gyrus-l', 'postcentral-gyrus-l'].map((p, i) => [
@@ -11,7 +12,15 @@ const centros = Object.fromEntries(
 
 describe('estado del atlas', () => {
   beforeEach(() => {
-    useAtlas.setState({ ocultas: new Set(), aislar: null, explosion: 0, separadas: {}, devueltas: new Set(), armando: null });
+    useAtlas.setState({
+      ocultas: new Set(),
+      aislar: null,
+      explosion: 0,
+      nivel: 'piezas',
+      separadas: {},
+      devueltas: new Set(),
+      armando: null,
+    });
     useAtlas.getState().setCentros(centros);
   });
 
@@ -57,6 +66,106 @@ describe('estado del atlas', () => {
     useAtlas.getState().alternarVisibles(piezasDeEntrada('g-temporal-lobe'), false);
     const visibles = new Set(piezasVisibles(useAtlas.getState()));
     expect(piezasDeEntrada('g-temporal-lobe').some((p) => visibles.has(p))).toBe(false);
+  });
+
+  it('separar dos piezas bilaterales en "aislar con contexto" manda la izquierda a +X y la derecha a -X', () => {
+    // Con el mismo centro en x, solo el lado de cada pieza decide hacia dónde sale.
+    useAtlas.getState().setCentros({ ...centros, 'hippocampus-l': [0.01, 1.6, 0], 'hippocampus-r': [0.01, 1.6, 0] });
+    useAtlas.getState().aislarPiezas(['hippocampus-l', 'hippocampus-r'], 'contexto');
+    useAtlas.getState().separar(['hippocampus-l', 'hippocampus-r']);
+    const { separadas } = useAtlas.getState();
+    expect(separadas['hippocampus-l']![0]).toBeGreaterThan(0);
+    expect(separadas['hippocampus-r']![0]).toBeLessThan(0);
+  });
+
+  it('separar una pieza r cuyo centro quedó en x positivo la manda a -X, y una l en x negativo a +X', () => {
+    useAtlas.getState().setCentros({ ...centros, 'hippocampus-r': [0.02, 1.6, 0], 'hippocampus-l': [-0.02, 1.6, 0] });
+    useAtlas.getState().separar(['hippocampus-r', 'hippocampus-l']);
+    const { separadas } = useAtlas.getState();
+    expect(separadas['hippocampus-r']![0]).toBeLessThan(0);
+    expect(separadas['hippocampus-l']![0]).toBeGreaterThan(0);
+  });
+
+  it('el conjunto armado de "separar" incluye los fantasmas de "aislar con contexto"', () => {
+    const todos = Object.values(centros);
+    const conjunto = promedio(todos);
+    useAtlas.getState().aislarPiezas(['thalamus-l'], 'contexto');
+    useAtlas.getState().separar(['thalamus-l']);
+    const esperado = desplazamientoSeparar(centros['thalamus-l'] as Vec3, conjunto, 'l');
+    const real = useAtlas.getState().separadas['thalamus-l']!;
+    for (let i = 0; i < 3; i++) expect(real[i]).toBeCloseTo(esperado[i]!, 9);
+  });
+
+  it('en explosión, una pieza r con centro en x positivo se aleja hacia -X', () => {
+    useAtlas.getState().setCentros({ ...centros, 'hippocampus-r': [0.02, 1.6, 0] });
+    useAtlas.getState().setExplosion(1);
+    expect(useAtlas.getState().base['hippocampus-r']![0]).toBeLessThanOrEqual(0);
+  });
+
+  it('separar omite las piezas sin centro', () => {
+    useAtlas.getState().separar(['hippocampus-l', 'amygdaloid-body-l']);
+    const { separadas } = useAtlas.getState();
+    expect(separadas['hippocampus-l']).toBeDefined();
+    expect(separadas['amygdaloid-body-l']).toBeUndefined();
+  });
+
+  it('por hemisferios, las piezas de un lado se mueven juntas y cada lado se va al suyo', () => {
+    useAtlas.getState().setNivel('hemisferios');
+    useAtlas.getState().setExplosion(1);
+    const { base } = useAtlas.getState();
+    expect(base['hippocampus-l']).toEqual(base['precentral-gyrus-l']);
+    expect(base['hippocampus-l']![0]).toBeGreaterThan(0);
+    expect(base['hippocampus-r']![0]).toBeLessThan(0);
+  });
+
+  it('por lóbulos, los giros del mismo lóbulo y lado se mueven juntos, como dice bloqueDe', () => {
+    useAtlas.getState().setCentros({ ...centros, 'superior-frontal-gyrus-l': [0.05, 1.7, 0.09] });
+    useAtlas.getState().setNivel('lobulos');
+    useAtlas.getState().setExplosion(1);
+    const { base } = useAtlas.getState();
+    expect(bloqueDe('superior-frontal-gyrus-l', 'lobulos')).toBe(bloqueDe('precentral-gyrus-l', 'lobulos'));
+    expect(base['superior-frontal-gyrus-l']).toEqual(base['precentral-gyrus-l']);
+    expect(bloqueDe('postcentral-gyrus-l', 'lobulos')).not.toBe(bloqueDe('precentral-gyrus-l', 'lobulos'));
+    expect(base['postcentral-gyrus-l']).not.toEqual(base['precentral-gyrus-l']);
+  });
+
+  it.each(['hemisferios', 'lobulos', 'piezas'] as const)('reensamblar con explosión y piezas separadas deja todo en cero (nivel %s)', (nivel) => {
+    const s = useAtlas.getState();
+    s.setNivel(nivel);
+    s.setExplosion(0.6);
+    s.separar(['thalamus-r', 'hippocampus-l']);
+    expect(fueraDeSitio(useAtlas.getState(), 'thalamus-r')).toBe(true);
+    useAtlas.getState().reensamblarTodo();
+    for (const p of Object.keys(centros)) expect(objetivo(useAtlas.getState(), p)).toEqual([0, 0, 0]);
+  });
+
+  it('ladoDe: sin lado cuenta como medio', () => {
+    expect(ladoDe('hippocampus-l')).toBe('l');
+    expect(ladoDe('hippocampus-r')).toBe('r');
+    expect(ladoDe('corpus-callosum')).toBe('medio');
+    expect(ladoDe('no-existe')).toBe('medio');
+  });
+});
+
+describe('piezas para encuadrar la cámara', () => {
+  beforeEach(() => {
+    useAtlas.setState({ ocultas: new Set(), aislar: null });
+  });
+
+  it('sin filtros son las 253 piezas del encéfalo y ningún vago', () => {
+    const piezas = piezasDeEncuadre(useAtlas.getState());
+    expect(piezas).toHaveLength(253);
+    expect(piezas.some((p) => p.startsWith('vagus-nerve'))).toBe(false);
+  });
+
+  it('aislando los dos hipocampos con "solo", son esos dos', () => {
+    useAtlas.getState().aislarPiezas(['hippocampus-l', 'hippocampus-r'], 'solo');
+    expect(piezasDeEncuadre(useAtlas.getState()).sort()).toEqual(['hippocampus-l', 'hippocampus-r']);
+  });
+
+  it('con solo el vago aislado, son las dos piezas del vago', () => {
+    useAtlas.getState().aislarPiezas(['vagus-nerve-x-l', 'vagus-nerve-x-r'], 'solo');
+    expect(piezasDeEncuadre(useAtlas.getState()).sort()).toEqual(['vagus-nerve-x-l', 'vagus-nerve-x-r']);
   });
 });
 
