@@ -31,6 +31,17 @@ test('la interfaz en inglés no muestra textos en español', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Reassemble' })).toBeVisible();
 });
 
+test('la pantalla de licencia abierta directo respeta el idioma de la URL', async ({ page }) => {
+  await abrir(page, '/en/licencia');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Sources and license');
+  await expect(page.getByRole('link', { name: 'Back to the atlas' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await abrir(page, '/es/licencia');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fuentes y licencia');
+  await expect(page.getByRole('link', { name: 'Volver al atlas' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+});
+
 test('búsqueda bilingüe: con la interfaz en español, "amygdala" abre la amígdala', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);

@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import i18n from '../i18n';
 import { leer, serializar } from '../lib/enlaces';
 import { useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
@@ -43,11 +42,6 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const [menu, setMenu] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const entrada = slug ? entradaPorSlug(slug, idioma) : undefined; // react-router ya decodificó el slug
-
-  useEffect(() => {
-    if (i18n.language !== idioma) void i18n.changeLanguage(idioma);
-    document.documentElement.lang = idioma;
-  }, [idioma]);
 
   useEffect(() => {
     document.title = t('app.titulo');
