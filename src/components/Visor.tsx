@@ -18,9 +18,11 @@ import {
 import type { Idioma } from '../data/tipos';
 import { acercar, CERO, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
-import { DIRECCIONES, esSeleccionable } from '../lib/vistas';
+import { crearLectorMovimiento } from '../lib/movimiento';
+import { DIRECCIONES, desfaseVerticalPx, esSeleccionable } from '../lib/vistas';
 import { nombrePieza, nombreVisible } from '../lib/nombres';
 import { fueraDeSitio, objetivo, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
+import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
 
@@ -38,15 +40,19 @@ interface MallaCargada {
 export const cajasPiezas = new Map<string, THREE.Box3>();
 
 /** Acceso a la cámara para "Compartir esta vista". */
-export const camaraActual: { leer: (() => number[]) | null } = { leer: null };
+export const camaraActual: {
+  leer: (() => number[]) | null;
+  /** Posición en pantalla (px del lienzo) del punto que mira la cámara; para pruebas. */
+  objetivoEnPantalla: (() => { x: number; y: number }) | null;
+} = { leer: null, objetivoEnPantalla: null };
 
 const raycastNulo = () => null;
 
 /** Un arrastre para rotar no es un toque (R3F dispara onClick aunque el puntero se haya movido). */
 const ARRASTRE_PX = 4;
 
-export const reducirMovimiento = () =>
-  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+/** Se lee una sola vez (no por pieza y por cuadro) y se actualiza cuando el sistema cambia la preferencia. */
+export const reducirMovimiento = crearLectorMovimiento(typeof window !== 'undefined' ? window.matchMedia?.bind(window) : undefined);
 
 function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idioma: Idioma }) {
   const grupo = useRef<THREE.Group>(null);
@@ -58,6 +64,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const fantasma = useAtlas((s) => !!s.aislar && s.aislar.modo === 'contexto' && !s.aislar.piezas.has(id));
   const seleccionada = useAtlas((s) => piezasSeleccionadas(s.seleccion).includes(id));
   const mallaSel = useAtlas((s) => s.seleccion.malla);
+  const ubicando = useAtlas((s) => !!s.ubicando);
   const revisando = useAtlas((s) => !!s.revisor);
   const shift = useAtlas((s) => s.shift);
   const [encima, setEncima] = useState(false);
@@ -75,7 +82,8 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   });
 
   // Una pieza oculta nunca se toca; un fantasma (aislar con contexto) solo con Shift, para sumarlo.
-  const seleccionable = esSeleccionable({ visible, referencia, fantasma, shift });
+  // Al proponer una posición (revisión) también los órganos de referencia reciben el toque.
+  const seleccionable = esSeleccionable({ visible, referencia, fantasma, shift, ubicando });
 
   const alTocar = (e: ThreeEvent<MouseEvent>) => {
     if (!seleccionable || e.delta > ARRASTRE_PX) return;
@@ -323,7 +331,10 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
   const controles = useRef<CameraControls>(null);
   const cargado = useAtlas((s) => s.cargado);
   const pedido = useAtlas((s) => s.camara);
+  const hoja = useAtlas((s) => s.hoja);
   const { camera } = useThree();
+  const tamano = useThree((s) => s.size);
+  const obtener = useThree((s) => s.get);
 
   useEffect(() => {
     camaraActual.leer = () => {
@@ -333,10 +344,30 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
       const obj = c.getTarget(new THREE.Vector3());
       return [pos.x, pos.y, pos.z, obj.x, obj.y, obj.z];
     };
+    camaraActual.objetivoEnPantalla = () => {
+      const p = controles.current?.getTarget(new THREE.Vector3()).project(obtener().camera) ?? new THREE.Vector3();
+      const { width, height } = obtener().size;
+      return { x: ((p.x + 1) / 2) * width, y: ((1 - p.y) / 2) * height };
+    };
     return () => {
       camaraActual.leer = null;
+      camaraActual.objetivoEnPantalla = null;
     };
-  }, []);
+  }, [obtener]);
+
+  // En celular la ficha tapa la parte baja del visor: se corre la imagen hacia arriba para que lo que
+  // se mira quede en la parte visible. No mueve ninguna pieza; solo cambia la ventana de la cámara.
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const dy = desfaseVerticalPx(hoja, tamano.height);
+    if (dy > 0) cam.setViewOffset(tamano.width, tamano.height, 0, dy, tamano.width, tamano.height);
+    else cam.clearViewOffset();
+    cam.updateProjectionMatrix();
+    return () => {
+      cam.clearViewOffset();
+      cam.updateProjectionMatrix();
+    };
+  }, [camera, hoja, tamano.width, tamano.height]);
 
   const mirar = (direccion: [number, number, number], caja: THREE.Box3, animar: boolean) => {
     const c = controles.current;
@@ -428,30 +459,32 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
         inicioPuntero.current = { x: e.clientX, y: e.clientY };
       }}
     >
-      <Canvas
-        camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
-        onPointerMissed={(e) => {
-          const i = inicioPuntero.current;
-          if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
-          const s = useAtlas.getState();
-          if (s.ubicando) return;
-          // Tocar el vacío deselecciona: la URL vuelve a /:lang para que el estado y la URL coincidan.
-          window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
-        }}
-      >
-        <color attach="background" args={['#e8ecf0']} />
-        <hemisphereLight args={['#ffffff', '#8a94a6', 1.1]} />
-        <directionalLight position={[1, 3, 2]} intensity={1.6} />
-        <directionalLight position={[-2, 1, -1]} intensity={0.6} />
-        <Suspense fallback={<Html center><div className="cargando">{t('visor.cargando')}</div></Html>}>
-          <Modelo idioma={idioma} />
-          <Marcadores idioma={idioma} />
-        </Suspense>
-        <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />
-        <MedidorCuadros />
-      </Canvas>
+      <BarreraVisor alReintentar={() => useGLTF.clear(URL_MODELO)}>
+        <Canvas
+          camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
+          dpr={[1, 2]}
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          onPointerMissed={(e) => {
+            const i = inicioPuntero.current;
+            if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
+            const s = useAtlas.getState();
+            if (s.ubicando) return;
+            // Tocar el vacío deselecciona: la URL vuelve a /:lang para que el estado y la URL coincidan.
+            window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
+          }}
+        >
+          <color attach="background" args={['#e8ecf0']} />
+          <hemisphereLight args={['#ffffff', '#8a94a6', 1.1]} />
+          <directionalLight position={[1, 3, 2]} intensity={1.6} />
+          <directionalLight position={[-2, 1, -1]} intensity={0.6} />
+          <Suspense fallback={<Html center><div className="cargando">{t('visor.cargando')}</div></Html>}>
+            <Modelo idioma={idioma} />
+            <Marcadores idioma={idioma} />
+          </Suspense>
+          <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />
+          <MedidorCuadros />
+        </Canvas>
+      </BarreraVisor>
     </div>
   );
 }

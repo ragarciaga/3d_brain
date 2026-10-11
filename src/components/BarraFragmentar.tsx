@@ -1,7 +1,7 @@
 // Fragmentar (F6) y reensamblar (F7).
 import { useTranslation } from 'react-i18next';
 import type { Nivel } from '../lib/explosion';
-import { fueraDeSitio, useAtlas } from '../store/useAtlas';
+import { fueraDeSitio, hayFiltros, useAtlas } from '../store/useAtlas';
 
 export default function BarraFragmentar() {
   const { t } = useTranslation();
@@ -9,7 +9,7 @@ export default function BarraFragmentar() {
   const nivel = useAtlas((s) => s.nivel);
   const armando = useAtlas((s) => s.armando);
   const enSitio = useAtlas((s) => (s.armando ? s.armando.total.filter((p) => !fueraDeSitio(s, p)).length : 0));
-  const aislar = useAtlas((s) => s.aislar);
+  const filtrado = useAtlas((s) => hayFiltros(s));
   const st = useAtlas.getState;
 
   return (
@@ -53,8 +53,8 @@ export default function BarraFragmentar() {
           {t('fragmentar.armar')}
         </button>
       )}
-      {aislar && (
-        <button type="button" onClick={() => st().salirAislar()}>
+      {filtrado && (
+        <button type="button" onClick={() => st().mostrarTodo()} data-testid="mostrar-todo">
           {t('acciones.mostrarTodo')}
         </button>
       )}

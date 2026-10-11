@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router'
 import BarreraErrores from './components/BarreraErrores';
 import Licencia from './components/Licencia';
 import Pagina from './components/Pagina';
+import { camaraActual } from './components/Visor';
 import i18n, { idiomaDelNavegador } from './i18n';
 import { useAtlas } from './store/useAtlas';
 import './estilos.css';
@@ -23,8 +24,12 @@ function Ruta() {
   return <Pagina slug={resto || undefined} />;
 }
 
-// Acceso al estado solo en desarrollo, para las pruebas E2E.
-if (import.meta.env.DEV) (window as unknown as { __atlas: typeof useAtlas }).__atlas = useAtlas;
+// Acceso al estado y a la cámara solo en desarrollo, para las pruebas E2E.
+if (import.meta.env.DEV) {
+  const w = window as unknown as { __atlas: typeof useAtlas; __camara: typeof camaraActual };
+  w.__atlas = useAtlas;
+  w.__camara = camaraActual;
+}
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 

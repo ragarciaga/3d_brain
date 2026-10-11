@@ -5,7 +5,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-inferior-ganglion-of-vagus-nerve",
@@ -13,7 +16,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-auricular-branch-of-vagus-nerve",
@@ -21,7 +27,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-pharyngeal-branch-of-vagus-nerve",
@@ -29,7 +38,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-superior-laryngeal-nerve",
@@ -37,7 +49,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-superior-cervical-cardiac-branches-of-vagus-nerve",
@@ -45,7 +60,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-inferior-cervical-cardiac-branches-of-vagus-nerve",
@@ -53,7 +71,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-recurrent-laryngeal-nerve",
@@ -61,7 +82,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-thoracic-cardiac-branches-of-vagus-nerve",
@@ -69,7 +93,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-bronchial-branches-of-vagus-nerve",
@@ -77,7 +104,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-pulmonary-plexus",
@@ -85,7 +115,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-oesophageal-plexus",
@@ -93,7 +126,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-anterior-vagal-trunk",
@@ -101,7 +137,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-posterior-vagal-trunk",
@@ -109,7 +148,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-anterior-gastric-branches-of-anterior-vagal-trunk",
@@ -117,7 +159,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
@@ -125,7 +170,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-hepatic-branches-of-anterior-vagal-trunk",
@@ -133,7 +181,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-coeliac-branches-of-posterior-vagal-trunk",
@@ -141,7 +192,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-jugular-foramen",
@@ -149,7 +203,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-caerulean-nucleus",
@@ -157,7 +214,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-raphe-nuclei-of-medulla-oblongata",
@@ -165,7 +225,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-area-postrema",
@@ -173,7 +236,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-nucleus-accumbens",
@@ -181,7 +247,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-periaqueductal-grey",
@@ -189,7 +258,10 @@
   "ancla": "aqueduct-of-midbrain",
   "posicion": null,
   "estado": "aproximada",
-  "fuente_ubicacion": "StatPearls (NCBI Bookshelf), Neuroanatomy, Periaqueductal Gray, NBK554391 (por verificar): rodea el acueducto del mesencéfalo"
+  "fuente_ubicacion": {
+   "es": "StatPearls (NCBI Bookshelf), Neuroanatomy, Periaqueductal Gray, NBK554391 (por verificar): rodea el acueducto del mesencéfalo",
+   "en": "StatPearls (NCBI Bookshelf), Neuroanatomy, Periaqueductal Gray, NBK554391 (to be verified): it surrounds the cerebral aqueduct of the midbrain"
+  }
  },
  {
   "id": "m-anterior-nuclei-of-thalamus",
@@ -197,7 +269,10 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  },
  {
   "id": "m-wernicke-area",
@@ -205,6 +280,9 @@
   "ancla": null,
   "posicion": null,
   "estado": "sin_ubicar",
-  "fuente_ubicacion": ""
+  "fuente_ubicacion": {
+   "es": "",
+   "en": ""
+  }
  }
 ]

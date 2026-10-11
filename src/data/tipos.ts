@@ -77,7 +77,7 @@ export interface Marcador {
   ancla: string | null; // pieza o estructura cuyo centro da la posición aproximada
   posicion: [number, number, number] | null; // glTF, Y arriba; null = sin ubicar
   estado: 'sin_ubicar' | 'aproximada' | 'validada';
-  fuente_ubicacion: string;
+  fuente_ubicacion: Bilingue; // vacío ("") si no hay fuente escrita
 }
 
 export interface GrupoEstudio {
