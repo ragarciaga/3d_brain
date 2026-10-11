@@ -1,0 +1,19 @@
+Modelo 3D y contenido del atlas
+================================
+
+Licencia: Creative Commons Atribución-CompartirIgual 4.0 Internacional (CC BY-SA 4.0)
+Texto legal: https://creativecommons.org/licenses/by-sa/4.0/legalcode.es
+
+Cubre:
+- public/modelos/*.glb y pipeline/cajas.json: obra derivada de Z-Anatomy
+  (https://github.com/Z-Anatomy/Models-of-human-anatomy, CC BY-SA 4.0), a su vez construido
+  sobre BodyParts3D, © The Database Center for Life Science (DBCLS), CC BY-SA 2.1 Japón.
+- src/data/*.json y pipeline/mapeo.csv: fichas, grupos, marcadores y nombres. Los nombres en
+  latín, inglés y español provienen de Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy).
+
+Crédito requerido al reutilizar: "Atlas 3D de cerebro y nervio vago, a partir de Z-Anatomy y
+BodyParts3D (DBCLS)", con enlace a esta licencia, indicando si hubo cambios. Las obras derivadas
+deben compartirse bajo la misma licencia.
+
+Las fuentes externas citadas en las fichas (StatPearls, Kenhub, artículos) conservan sus propias
+licencias: se enlazan, nunca se copian.

@@ -1,0 +1,648 @@
+:root {
+  --fondo: #e8ecf0;
+  --panel: #f7f8fa;
+  --texto: #1d2430;
+  --texto-suave: #4b5565;
+  --borde: #cfd6df;
+  --acento: #2f5fd0;
+  --acento-texto: #ffffff;
+  --aviso: #8a4b00;
+  --aviso-fondo: #fff3df;
+  --ok: #1d7a46;
+  --peligro: #b3261e;
+  --radio: 8px;
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --fuente-texto: Georgia, 'Times New Roman', serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--fuente);
+  color: var(--texto);
+  background: var(--fondo);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--borde);
+  background: #fff;
+  border-radius: var(--radio);
+  padding: 0.3rem 0.6rem;
+}
+
+button:hover {
+  border-color: var(--acento);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--acento);
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--borde);
+  flex-wrap: wrap;
+}
+
+.marca {
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--texto);
+  white-space: nowrap;
+}
+
+.boton-menu {
+  display: none;
+}
+
+.buscador {
+  position: relative;
+  flex: 1 1 260px;
+  max-width: 460px;
+}
+
+.buscador input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: #fff;
+}
+
+.buscar-resultados {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.buscar-resultados li {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.buscar-resultados li.activo,
+.buscar-resultados li:hover {
+  background: #e9effc;
+}
+
+.res-ubicacion {
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.sin-resultados {
+  color: var(--texto-suave);
+}
+
+.interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.selector-idioma {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-weight: 600;
+}
+
+.mensaje {
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+  background: #e6f4ea;
+  color: var(--ok);
+}
+
+.cuerpo {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr 360px;
+  min-height: 0;
+}
+
+.panel-izq {
+  overflow: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--borde);
+  padding: 0.6rem;
+}
+
+.panel-izq h2 {
+  font-size: 0.95rem;
+  margin: 0.4rem 0;
+}
+
+.grupos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.9em;
+}
+
+.chip.activo {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
+.arbol ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.arbol-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 1.9rem;
+  border-radius: 6px;
+}
+
+.arbol-fila.activo {
+  background: #dfe8fb;
+}
+
+.arbol-abrir {
+  width: 1.4rem;
+  min-width: 1.4rem;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: center;
+}
+
+.arbol-nombre {
+  border: none;
+  background: none;
+  padding: 0.15rem 0.2rem;
+  text-align: start;
+  flex: 1;
+  font-size: 0.92em;
+}
+
+.arbol-contador {
+  font-size: 0.78em;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.arbol-aislar {
+  border: none;
+  background: none;
+  padding: 0 0.3rem;
+  color: var(--texto-suave);
+}
+
+.arbol-icono {
+  color: #ff8c1a;
+}
+
+.centro {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vistas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.35rem 0.5rem;
+  align-items: center;
+}
+
+.vistas button {
+  font-size: 0.85em;
+}
+
+.metricas {
+  margin-inline-start: auto;
+  font-size: 0.82em;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.visor {
+  flex: 1;
+  min-height: 0;
+  touch-action: none;
+}
+
+.visor-ubicando canvas {
+  cursor: crosshair;
+}
+
+.cargando {
+  background: #fff;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radio);
+  white-space: nowrap;
+}
+
+.etiqueta-3d {
+  background: rgba(20, 24, 32, 0.85);
+  color: #fff;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.ficha {
+  overflow: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--borde);
+  padding: 0.8rem;
+}
+
+.ficha-vacia {
+  color: var(--texto-suave);
+}
+
+.ficha-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.ficha h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.ficha h3 {
+  font-size: 0.95rem;
+  margin: 0.9rem 0 0.3rem;
+}
+
+.ficha h4 {
+  font-size: 0.88rem;
+  margin: 0.6rem 0 0.2rem;
+}
+
+.ficha p,
+.ficha li {
+  font-family: var(--fuente-texto);
+}
+
+.ficha-latin {
+  font-style: italic;
+  margin: 0.2rem 0;
+}
+
+.ficha-padre,
+.ficha-otro,
+.ficha-fuente-nombre,
+.ficha-version {
+  font-size: 0.85em;
+  color: var(--texto-suave);
+  margin: 0.15rem 0;
+}
+
+.cerrar {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.6rem 0;
+}
+
+.acciones button {
+  font-size: 0.85em;
+}
+
+.estado {
+  display: inline-block;
+  font-size: 0.85em;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+}
+
+.estado-verificado {
+  background: #e6f4ea;
+  color: var(--ok);
+}
+
+.etiqueta-aviso {
+  color: var(--aviso);
+  font-size: 0.85em;
+}
+
+.en-preparacion {
+  color: var(--texto-suave);
+  font-style: italic;
+}
+
+.evidencia {
+  font-size: 0.8em;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+}
+
+.evidencia-debatida {
+  border-color: var(--peligro);
+  color: var(--peligro);
+}
+
+.fuentes,
+.recursos,
+.relaciones,
+.relevancia {
+  padding-inline-start: 1.1rem;
+  margin: 0.2rem 0;
+}
+
+.recurso-tipo {
+  font-size: 0.8em;
+  color: var(--texto-suave);
+}
+
+.recurso-nota {
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.revision-control {
+  margin: 0.3rem 0 0.6rem;
+  padding: 0.4rem;
+  border: 1px dashed var(--acento);
+  border-radius: var(--radio);
+  background: #f1f5ff;
+}
+
+.revision-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.revision-control textarea {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.chip-correcto.activo {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.chip-corregir.activo {
+  background: var(--aviso);
+  border-color: var(--aviso);
+}
+
+.chip-no_es_mi_area.activo {
+  background: var(--texto-suave);
+  border-color: var(--texto-suave);
+}
+
+.boton-primario {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
+.panel-revision {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  background: #e9effc;
+  border-bottom: 1px solid var(--borde);
+  position: relative;
+}
+
+.dialogo-revision {
+  position: absolute;
+  z-index: 40;
+  top: 100%;
+  inset-inline-end: 0.8rem;
+  width: min(480px, calc(100vw - 1.6rem));
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 0.8rem;
+}
+
+.dialogo-revision ul {
+  padding-inline-start: 1rem;
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  background: var(--panel);
+  border-top: 1px solid var(--borde);
+}
+
+.barra-campo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.barra-deslizador input {
+  width: 160px;
+}
+
+.barra output {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.2em;
+}
+
+.pie {
+  font-size: 0.82em;
+  padding: 0.35rem 0.8rem;
+  background: var(--panel);
+  border-top: 1px solid var(--borde);
+  color: var(--texto-suave);
+}
+
+.aviso-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 24, 32, 0.45);
+  padding: 1rem;
+}
+
+.aviso-caja {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  max-width: 460px;
+}
+
+.pagina-texto {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  background: var(--panel);
+  min-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Celular: el visor ocupa la pantalla; árbol en cajón lateral; ficha en hoja inferior. */
+@media (max-width: 900px) {
+  .boton-menu {
+    display: inline-block;
+  }
+
+  .encabezado {
+    gap: 0.4rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .marca,
+  .compartir-encabezado {
+    display: none;
+  }
+
+  .barra {
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.9em;
+  }
+
+  .buscador {
+    order: 10;
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .cuerpo {
+    grid-template-columns: 1fr;
+    position: relative;
+  }
+
+  .panel-izq {
+    position: absolute;
+    z-index: 20;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: min(85vw, 340px);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.15);
+  }
+
+  .menu-abierto .panel-izq {
+    transform: none;
+  }
+
+  .ficha {
+    position: absolute;
+    z-index: 15;
+    inset-inline: 0;
+    bottom: 0;
+    max-height: 48%;
+    border-left: none;
+    border-top: 1px solid var(--borde);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.12);
+  }
+
+  .ficha-vacia {
+    display: none;
+  }
+
+  .barra-deslizador input {
+    width: 110px;
+  }
+
+  .vistas button {
+    padding: 0.2rem 0.4rem;
+  }
+}
