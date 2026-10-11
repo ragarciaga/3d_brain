@@ -93,7 +93,7 @@ export function resumenMarkdown(estructura: string, envios: Envio[], versionActu
     const propuesta = limpiar(r.propuesta ?? (r.posicion ? `posición ${r.posicion.join(', ')}` : r.ramo ? `ramo: ${r.ramo} (${r.malla})` : ''));
     const comentario = r.comentario ? ` Comentario: ${limpiar(r.comentario)}` : '';
     const vieja = r.version !== versionActual ? ' (desactualizada)' : '';
-    lineas.push(`| ${revisor} | ${r.campo} | ${r.idioma ?? ''} | ${r.veredicto} | ${propuesta}${comentario} | ${r.version}${vieja} |`);
+    lineas.push(`| ${limpiar(revisor)} | ${limpiar(r.campo)} | ${r.idioma ?? ''} | ${r.veredicto} | ${propuesta}${comentario} | ${limpiar(r.version)}${vieja} |`);
   }
   lineas.push('', 'Siguiente paso: preparar el cambio en `src/data/estructuras.json` y que el editor lo apruebe (tier C).');
   return lineas.join('\n');
@@ -105,4 +105,27 @@ export function resumenConsolidado(envios: Envio[], versionDe: (id: string) => s
   const partes = ids.map((id) => resumenMarkdown(id, envios.filter((e) => e.estructura === id), versionDe(id)));
   const total = ultimasRespuestas(envios).length;
   return [`# Revisiones docentes (${total} respuestas, ${ids.length} estructuras)`, '', ...partes].join('\n\n');
+}
+
+export interface Importacion {
+  /** Nombre de archivo -> contenido: un `<id>.md` por estructura y `resumen.md` con todo. */
+  archivos: Map<string, string>;
+  validos: number;
+  invalidas: number;
+}
+
+/**
+ * Todo el trabajo del script de importación sin tocar el disco: el CSV entra como texto y salen los
+ * archivos por escribir. Solo cuentan los envíos de estructuras que existen en `estructuras`.
+ */
+export function importar(csvTexto: string, estructuras: Record<string, { ficha: { version: string } | null }>): Importacion {
+  const ids = new Set(Object.keys(estructuras));
+  const versionDe = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
+  const { envios, invalidas } = leerEnvios(parsearCsv(csvTexto), ids);
+  const porEstructura = new Map<string, Envio[]>();
+  for (const e of envios) porEstructura.set(e.estructura, [...(porEstructura.get(e.estructura) ?? []), e]);
+  const archivos = new Map<string, string>();
+  for (const [id, lista] of porEstructura) archivos.set(`${id}.md`, resumenMarkdown(id, lista, versionDe(id)));
+  archivos.set('resumen.md', resumenConsolidado(envios, versionDe));
+  return { archivos, validos: envios.length, invalidas };
 }
