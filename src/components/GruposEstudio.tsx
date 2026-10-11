@@ -4,7 +4,7 @@ import { grupos, piezasDeGrupo } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { useAtlas } from '../store/useAtlas';
 
-export default function GruposEstudio({ idioma }: { idioma: Idioma }) {
+export default function GruposEstudio({ idioma, alElegir }: { idioma: Idioma; alElegir?: () => void }) {
   const { t } = useTranslation();
   const activo = useAtlas((s) => s.grupoActivo);
   const ambos = useAtlas((s) => s.ambos);
@@ -29,6 +29,7 @@ export default function GruposEstudio({ idioma }: { idioma: Idioma }) {
                 s.activarGrupo(g.id, piezas);
                 s.pedirCamara({ encuadrar: piezas });
               }
+              alElegir?.(); // en celular, el cajón se cierra para ver el resultado
             }}
           >
             {g.nombre[idioma]}

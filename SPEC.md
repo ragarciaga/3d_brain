@@ -212,7 +212,7 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
   - Marcadores: "Proponer posición". El revisor toca el punto correcto en el modelo y se envían las coordenadas.
   - Trazos del vago: el revisor toca un trazo y elige de una lista qué ramo es, "no es un ramo" o "no sé".
   - Pasos de circuitos y casos clásicos, cuando existan (fase 2).
-- **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre, por cada estructura revisada, un formulario de Google del editor ya lleno con sus respuestas, y el revisor solo confirma. Si la revisión no cabe en un enlace, se envía en partes. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
+- **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre, por cada estructura revisada, un formulario de Google del editor ya lleno con sus respuestas (código, estructura y revisión), y el revisor solo confirma. Nombre, rol y consentimiento se dan una sola vez, en un formulario de registro del revisor. Si la revisión no cabe en un enlace, se envía en partes. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
 - **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
 - **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando una ficha tiene el visto bueno de los tres roles (anatomía, psicología, traducción) en un idioma, pasa a "verificada" con revisor y fecha.
 - **Vista del revisor:** lista de lo que le falta por revisar y de lo que ya revisó.
@@ -401,7 +401,7 @@ La app separa geometría y contenido:
 }
 ```
 
-El ejemplo es ilustrativo: su texto no está revisado. El esquema definitivo, incluido el registro de revisión por campo que exige F24, se fija en el spec de F4.
+El ejemplo es ilustrativo: su texto no está revisado. El esquema vigente está en `src/data/tipos.ts` (por ejemplo, `ficha.version`, `ficha.relevancia` y `ficha.fuentes` con `verificada`); las respuestas de revisión por campo (F24) están en `src/lib/revision.ts`.
 
 ### Otros archivos de datos
 
@@ -459,8 +459,8 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Cuerpo calloso, fórnix, comisura del hipocampo | Mallas |
 | Mesencéfalo, puente, bulbo raquídeo | Mallas, por lado |
 | Cerebelo | Mallas |
-| Ventrículos laterales, tercero y cuarto, acueducto cerebral, plexos coroideos | Mallas |
-| Núcleo accumbens | Por completar (atlas SPL/NAC) |
+| Ventrículos laterales, tercero y cuarto, acueducto cerebral, plexos coroideos | Mallas (pineal y plexos coroideos vienen fuera del grupo Brain de Z-Anatomy y el pipeline los agrega) |
+| Núcleo accumbens | Marcador sin ubicar; por completar con el atlas SPL/NAC |
 | Sustancia gris periacueductal, locus coeruleus, núcleos del rafe, área postrema, núcleo anterior del tálamo | Marcadores |
 
 **Nervio vago (ambos lados)**
@@ -475,7 +475,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Troncos vagales anterior y posterior, ramos gástricos, hepáticos y celíacos | Marcadores |
 | Agujero yugular | Marcador |
 
-**Áreas funcionales:** Broca con las piezas de la parte opercular y triangular del giro frontal inferior (sujeto a revisión); Wernicke como región marcada.
+**Áreas funcionales:** Broca con las piezas de la parte opercular y triangular del giro frontal inferior (sujeto a revisión); Wernicke como marcador sin ubicar (`m-wernicke-area`) hasta que un revisor proponga su posición.
 
 **Órganos de referencia (translúcidos, sin ficha de estudio):** corazón (cavidades y paredes), pulmones (lóbulos), laringe (cartílagos), tráquea, esófago y estómago. Vienen por partes y se agrupan.
 
@@ -496,17 +496,16 @@ Fuente: Z-Anatomy, atlas en Blender construido sobre BodyParts3D, licencia CC BY
 1. **Descargar** `Z-Anatomy.zip` del commit fijado y extraer `Startup.blend` (307 MB, 7.184 objetos).
 2. **Listar** con `listar.py` (Blender sin ventana, `bpy` 5.2.2): todos los objetos, no solo mallas, con tipo (malla o curva), colecciones, padre, número de vértices y modificadores. Salida: `estructuras.txt`.
 3. **Confirmar** el inventario de la sección 8 contra la lista.
-4. **Mapear** en `mapeo.csv` cada objeto a un `id` de la app, con nombre en español, inglés y latín tomados de `TA2.csv` (293 de 322 estructuras del sistema nervioso casan exacto). Lo que no casa va `PENDIENTE`. Columnas: `nombre_malla, id, es, en, latin, padre, grupos, fuente_nombre`.
+4. **Mapear** en `mapeo.csv` cada objeto a un `id` de la app, con nombre en español, inglés y latín tomados de `TA2.csv` (293 de 322 estructuras del sistema nervioso casan exacto). Lo que no casa va `PENDIENTE`. Columnas: `nombre_malla, pieza, estructura, lado, en, es, latin, padre, tipo, fuente_nombre`. `mapear.py` también escribe la jerarquía del árbol (`src/data/arbol.json`) y siembra `src/data/estructuras.json` sin tocar entradas existentes.
 5. **Medir** en Blender la caja envolvente en coordenadas del mundo de cada objeto mapeado y guardarla en `pipeline/cajas.json`.
 6. **Extraer** con `extraer.py`:
    - conserva `matrix_world` de cada pieza antes de borrar sus padres (los rótulos de grupo), para que ninguna se desplace;
    - convierte las curvas (nervios) en mallas;
    - aplica los modificadores (subdivisión, espejo, skin, solidify); sin esto, el núcleo del tracto solitario sale como 5 puntos;
-   - exporta la jerarquía de grupos para el árbol (F2) aparte de la geometría;
    - exporta `atlas.glb`.
 7. **Comprimir** con gltf-transform. Los nervios no se simplifican en la versión completa, porque son delgados y se deforman.
 8. **Generar la versión liviana** solo si la medición lo pide (F19).
-9. **Validar** (`npm run check:modelo`, corre en cada CI): número de piezas igual al de `mapeo.csv`, caja de cada pieza igual a `cajas.json` con tolerancia de 0,1 mm (descontando el giro global de ejes) y pesos dentro del presupuesto.
+9. **Validar** (`npm run check:modelo`, corre en cada CI): cada malla del GLB, incluidos los trazos del vago y las mallas de toque, coincide con su caja en `cajas.json` con tolerancia de 0,1 mm (descontando el giro global de ejes), no falta ni sobra ninguna, y el peso está dentro del presupuesto. Que cada fila de `mapeo.csv` tenga su pieza en el árbol lo prueba `tests/datos.test.ts`.
 
 El pipeline corre en la nube (sesión de Claude Code) o en el portátil, con `pip install bpy` o con `blender -b --python`. No necesita abrir la interfaz de Blender.
 
@@ -553,7 +552,7 @@ TypeScript se fija en 6.0.3 porque typescript-eslint aún no soporta la 7. Decis
 
 ### Selección de piezas delgadas
 
-Cada nervio tiene una versión invisible y más gruesa que solo sirve para detectar el clic o el toque. El árbol y la búsqueda son siempre una alternativa para seleccionar. En modo revisión (F24), los trazos del vago se seleccionan uno por uno.
+Cada nervio (en el modelo actual, los dos vagos) tiene una versión invisible y más gruesa que solo sirve para detectar el clic o el toque. El árbol y la búsqueda son siempre una alternativa para seleccionar. En modo revisión (F24), los trazos del vago se seleccionan uno por uno.
 
 ### Páginas para buscadores (F20)
 

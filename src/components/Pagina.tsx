@@ -6,6 +6,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { leer, serializar } from '../lib/enlaces';
+import { accionEscape, esCampoDeTexto } from '../lib/teclado';
 import { useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
 import AvisoPrimeraVisita from './Aviso';
@@ -14,6 +15,7 @@ import Buscador from './Buscador';
 import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
 import PanelRevision from './PanelRevision';
+import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
 import Vistas from './Vistas';
 
@@ -41,7 +43,25 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const revisor = useAtlas((s) => s.revisor);
   const [menu, setMenu] = useState(false);
   const [mensaje, setMensaje] = useState('');
+  const movil = useMovil();
+  const panel = useRef<HTMLElement>(null);
+  const botonMenu = useRef<HTMLButtonElement>(null);
   const entrada = slug ? entradaPorSlug(slug, idioma) : undefined; // react-router ya decodificó el slug
+  const noEncontrada = !!slug && !entrada;
+
+  // Al abrir el cajón del celular el foco entra en él; cerrado, queda inerte (sin foco ni lector de pantalla).
+  useEffect(() => {
+    if (!menu || !movil) return;
+    panel.current?.querySelector<HTMLElement>('button, input, select, a[href]')?.focus({ preventScroll: true });
+  }, [menu, movil]);
+
+  // Elegir un grupo de estudio cierra el cajón del celular; el foco vuelve al botón del menú (como con
+  // Escape) en vez de quedar en BODY. Si el cajón no estaba abierto en celular, no se mueve el foco.
+  const alElegirGrupo = useCallback(() => {
+    const abiertoEnCelular = movil && menu;
+    setMenu(false);
+    if (abiertoEnCelular) botonMenu.current?.focus();
+  }, [movil, menu]);
 
   useEffect(() => {
     document.title = t('app.titulo');
@@ -106,6 +126,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       const ruta = e ? `/${idioma}/${encodeURIComponent(e.slug[idioma])}` : `/${idioma}`;
       // Elegir la misma estructura que ya está en la URL no cambia la ruta: se resalta de nuevo aquí.
       const misma = encodeURI(decodeURI(location.pathname)).endsWith(ruta);
+      // Búsqueda, árbol y relaciones llevan el foco a la ficha; un toque en el visor no.
+      useAtlas.getState().pedirFocoFicha(id && !desdeVisor ? id : null);
       if (misma && desdeVisor) return; // el toque en el visor ya dejó la selección como está
       if (id && misma) resaltar(id);
       else if (!misma) navigate(ruta);
@@ -117,7 +139,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   useEffect(() => {
     const s = useAtlas.getState();
     if (!entrada) {
-      if (!slug) s.seleccionar(null);
+      if (!slug) s.deseleccionar(); // sin estructura en la URL tampoco queda el resto como fantasma
       return;
     }
     if (s.seleccion.entrada === entrada) return; // vino del visor o del árbol: ya está resaltada
@@ -136,11 +158,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     };
     const alElegir = (e: Event) => irA((e as CustomEvent<{ entrada: string }>).detail.entrada);
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        const s = useAtlas.getState();
-        if (s.ubicando) s.setUbicando(null);
-        else if (s.aislar) s.salirAislar();
-      }
+      if (e.key !== 'Escape') return;
+      const s = useAtlas.getState();
+      const accion = accionEscape({ menuAbierto: menu, ubicando: !!s.ubicando, aislado: !!s.aislar, enCampo: esCampoDeTexto(e.target as HTMLElement | null) });
+      if (accion === 'cerrar-menu') {
+        setMenu(false);
+        botonMenu.current?.focus();
+      } else if (accion === 'cancelar-ubicar') s.setUbicando(null);
+      else if (accion === 'salir-aislar') s.salirAislar();
     };
     window.addEventListener('atlas:seleccion', alSeleccionar);
     window.addEventListener('atlas:elegir', alElegir);
@@ -150,7 +175,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       window.removeEventListener('atlas:elegir', alElegir);
       window.removeEventListener('keydown', alTeclear);
     };
-  }, [irA]);
+  }, [irA, menu]);
 
   const compartir = useCallback(async () => {
     const s = useAtlas.getState();
@@ -181,7 +206,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   return (
     <div className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}`}>
       <header className="encabezado">
-        <button type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq" onClick={() => setMenu(!menu)}>
+        <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq" onClick={() => setMenu(!menu)}>
           {t('menu.boton')}
         </button>
         <Link to={`/${idioma}`} className="marca">
@@ -199,7 +224,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           </Link>
         </nav>
         <button type="button" className="compartir-encabezado" onClick={() => void compartir()}>
-          {t('compartir.vista')}
+          <span className="compartir-largo">{t('compartir.vista')}</span>
+          <span className="compartir-corto">{t('compartir.corto')}</span>
         </button>
         {revisor && (
           <button
@@ -219,6 +245,11 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           </button>
         )}
       </header>
+      {noEncontrada && (
+        <p className="mensaje mensaje-aviso" role="alert" data-testid="no-encontrada">
+          {t('ruta.noEncontrada')} <Link to={`/${idioma}`}>{t('ruta.volver')}</Link>
+        </p>
+      )}
       {mensaje && (
         <p className="mensaje" role="status">
           {mensaje}
@@ -226,8 +257,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       )}
       <PanelRevision idioma={idioma} alElegir={irA} />
       <div className="cuerpo">
-        <aside id="panel-izq" className="panel-izq">
-          <GruposEstudio idioma={idioma} />
+        <aside id="panel-izq" ref={panel} className="panel-izq" inert={movil && !menu}>
+          <GruposEstudio idioma={idioma} alElegir={alElegirGrupo} />
           <h2 className="titulo-arbol">{t('arbol.titulo')}</h2>
           <Arbol idioma={idioma} alElegir={irA} />
         </aside>

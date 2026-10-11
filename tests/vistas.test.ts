@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { cajaBlenderAGltf, type Caja } from '../scripts/lib/modelo.ts';
-import { DIRECCIONES, esSeleccionable } from '../src/lib/vistas';
+import { DIRECCIONES, desfaseVerticalPx, esSeleccionable } from '../src/lib/vistas';
 
 const cajas = (JSON.parse(readFileSync('pipeline/cajas.json', 'utf8')) as { cajas: Record<string, Caja> }).cajas;
 const centro = (nombre: string) => {
@@ -41,4 +41,22 @@ describe('qué piezas responden a toques (F5)', () => {
   it('un órgano de referencia nunca', () => expect(esSeleccionable({ ...base, referencia: true, shift: true })).toBe(false));
   it('un fantasma de "aislar con contexto" no', () => expect(esSeleccionable({ ...base, fantasma: true })).toBe(false));
   it('un fantasma sí con Shift, para sumarlo al aislamiento', () => expect(esSeleccionable({ ...base, fantasma: true, shift: true })).toBe(true));
+  it('al proponer una posición, un órgano de referencia sí recibe el toque', () =>
+    expect(esSeleccionable({ ...base, referencia: true, ubicando: true })).toBe(true));
+  it('al proponer una posición, una pieza oculta sigue sin recibirlo', () =>
+    expect(esSeleccionable({ ...base, visible: false, referencia: true, ubicando: true })).toBe(false));
+  it('sin proponer posición, el órgano de referencia sigue sin seleccionarse', () =>
+    expect(esSeleccionable({ ...base, referencia: true, ubicando: false })).toBe(false));
+});
+
+describe('encuadre con la hoja de la ficha en celular', () => {
+  it('sin hoja no hay desfase', () => expect(desfaseVerticalPx(0, 600)).toBe(0));
+  it('el objetivo sube la mitad del alto de la hoja, para quedar centrado en lo que se ve', () => {
+    expect(desfaseVerticalPx(404, 600)).toBe(202);
+  });
+  it('nunca pasa de la mitad del visor', () => expect(desfaseVerticalPx(900, 600)).toBe(300));
+  it('un alto inválido no desplaza', () => {
+    expect(desfaseVerticalPx(Number.NaN, 600)).toBe(0);
+    expect(desfaseVerticalPx(100, 0)).toBe(0);
+  });
 });

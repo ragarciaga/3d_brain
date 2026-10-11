@@ -1,5 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { clavesFaltantes, diferencias } from '../scripts/lib/i18n.ts';
+
+describe('textos de los botones de revisión', () => {
+  const en = JSON.parse(readFileSync('src/i18n/en.json', 'utf8')) as { revision: Record<string, string> };
+  it('"Correct" y la acción de corregir no se confunden en inglés', () => {
+    const { correcto, corregir } = en.revision;
+    expect(corregir!.startsWith(correcto!)).toBe(false);
+    expect(corregir).toBe('Suggest a fix');
+  });
+});
 
 describe('check:i18n', () => {
   it('detecta una clave que solo existe en un idioma', () => {

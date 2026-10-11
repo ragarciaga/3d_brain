@@ -495,6 +495,25 @@
    },
    "ficha": null
   },
+  "choroid-plexus": {
+   "id": "choroid-plexus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Plexo coroideo",
+    "en": "Choroid plexus"
+   },
+   "latin": "Plexus chorioideus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "plexo-coroideo",
+    "en": "choroid-plexus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
   "cingulate-gyrus-and-sulcus-middle-anterior-part": {
    "id": "cingulate-gyrus-and-sulcus-middle-anterior-part",
    "tipo": "estructura",
@@ -1621,14 +1640,14 @@
    "id": "g-vagus-nerve-x",
    "tipo": "grupo",
    "nombre": {
-    "es": "Nervio vago (X)",
-    "en": "Vagus nerve (X)"
+    "es": "Nervio vago (ambos lados)",
+    "en": "Vagus nerve (both sides)"
    },
    "latin": "Nervus vagus (X)",
-   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "fuente_nombre": "interfaz",
    "slug": {
-    "es": "nervio-vago-x-2",
-    "en": "vagus-nerve-x-2"
+    "es": "nervio-vago-ambos-lados",
+    "en": "vagus-nerve-both-sides"
    },
    "sinonimos": {
     "es": [],
@@ -2534,8 +2553,8 @@
    "latin": "Rami gastrici anteriores trunci vagalis anterioris",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-anterior-gastric-branches-of-anterior-vagal-trunk",
-    "en": "m-anterior-gastric-branches-of-anterior-vagal-trunk"
+    "es": "ramos-gastricos-anteriores-del-tronco-vagal-anterior",
+    "en": "anterior-gastric-branches-of-anterior-vagal-trunk"
    },
    "sinonimos": {
     "es": [],
@@ -2553,8 +2572,8 @@
    "latin": "Nuclei anteriores thalami",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-anterior-nuclei-of-thalamus",
-    "en": "m-anterior-nuclei-of-thalamus"
+    "es": "nucleos-anteriores-del-talamo",
+    "en": "anterior-nuclei-of-thalamus"
    },
    "sinonimos": {
     "es": [],
@@ -2572,8 +2591,8 @@
    "latin": "Truncus vagalis anterior",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-anterior-vagal-trunk",
-    "en": "m-anterior-vagal-trunk"
+    "es": "tronco-vagal-anterior",
+    "en": "anterior-vagal-trunk"
    },
    "sinonimos": {
     "es": [],
@@ -2591,8 +2610,8 @@
    "latin": "Area postrema",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-area-postrema",
-    "en": "m-area-postrema"
+    "es": "area-postrema",
+    "en": "area-postrema"
    },
    "sinonimos": {
     "es": [],
@@ -2610,8 +2629,8 @@
    "latin": "Ramus auricularis nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-auricular-branch-of-vagus-nerve",
-    "en": "m-auricular-branch-of-vagus-nerve"
+    "es": "ramo-auricular-del-nervio-vago",
+    "en": "auricular-branch-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2629,8 +2648,8 @@
    "latin": "Rami bronchiales nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-bronchial-branches-of-vagus-nerve",
-    "en": "m-bronchial-branches-of-vagus-nerve"
+    "es": "ramos-bronquiales-del-nervio-vago",
+    "en": "bronchial-branches-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2648,8 +2667,8 @@
    "latin": "Nucleus caeruleus",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-caerulean-nucleus",
-    "en": "m-caerulean-nucleus"
+    "es": "locus-caeruleo",
+    "en": "caerulean-nucleus"
    },
    "sinonimos": {
     "es": [],
@@ -2667,8 +2686,8 @@
    "latin": "Rami coeliaci trunci vagalis posteriores",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-coeliac-branches-of-posterior-vagal-trunk",
-    "en": "m-coeliac-branches-of-posterior-vagal-trunk"
+    "es": "ramos-celiacos-del-tronco-vagal-posterior",
+    "en": "coeliac-branches-of-posterior-vagal-trunk"
    },
    "sinonimos": {
     "es": [],
@@ -2686,8 +2705,8 @@
    "latin": "Rami hepatici trunci vagalis anterioris",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-hepatic-branches-of-anterior-vagal-trunk",
-    "en": "m-hepatic-branches-of-anterior-vagal-trunk"
+    "es": "ramos-hepaticos-del-tronco-vagal-anterior",
+    "en": "hepatic-branches-of-anterior-vagal-trunk"
    },
    "sinonimos": {
     "es": [],
@@ -2705,8 +2724,8 @@
    "latin": "Rami cardiaci cervicales inferiores nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-inferior-cervical-cardiac-branches-of-vagus-nerve",
-    "en": "m-inferior-cervical-cardiac-branches-of-vagus-nerve"
+    "es": "ramos-cardiacos-cervicales-inferiores-del-nervio-vago",
+    "en": "inferior-cervical-cardiac-branches-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2724,8 +2743,8 @@
    "latin": "Ganglion inferius nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-inferior-ganglion-of-vagus-nerve",
-    "en": "m-inferior-ganglion-of-vagus-nerve"
+    "es": "ganglio-inferior-del-nervio-vago",
+    "en": "inferior-ganglion-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2743,8 +2762,8 @@
    "latin": "Foramen jugulare",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-jugular-foramen",
-    "en": "m-jugular-foramen"
+    "es": "foramen-yugular",
+    "en": "jugular-foramen"
    },
    "sinonimos": {
     "es": [],
@@ -2762,8 +2781,8 @@
    "latin": "Nucleus accumbens",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-nucleus-accumbens",
-    "en": "m-nucleus-accumbens"
+    "es": "nucleo-accumbens",
+    "en": "nucleus-accumbens"
    },
    "sinonimos": {
     "es": [],
@@ -2781,8 +2800,8 @@
    "latin": "Plexus oesophageus",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-oesophageal-plexus",
-    "en": "m-oesophageal-plexus"
+    "es": "plexo-esofagico",
+    "en": "oesophageal-plexus"
    },
    "sinonimos": {
     "es": [],
@@ -2798,10 +2817,10 @@
     "en": "Periaqueductal grey"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "SPEC del proyecto (nombre por confirmar en TA2)",
+   "fuente_nombre": "PENDIENTE",
    "slug": {
-    "es": "m-periaqueductal-grey",
-    "en": "m-periaqueductal-grey"
+    "es": "sustancia-gris-periacueductal",
+    "en": "periaqueductal-grey"
    },
    "sinonimos": {
     "es": [],
@@ -2819,8 +2838,8 @@
    "latin": "Ramus pharyngeus nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-pharyngeal-branch-of-vagus-nerve",
-    "en": "m-pharyngeal-branch-of-vagus-nerve"
+    "es": "ramo-faringeo-del-nervio-vago",
+    "en": "pharyngeal-branch-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2838,8 +2857,8 @@
    "latin": "Rami gastrici posteriores trunci vagalis posteriores",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
-    "en": "m-posterior-gastric-branches-of-posterior-vagal-trunk"
+    "es": "ramos-gastricos-posteriores-del-tronco-vagal-posterior",
+    "en": "posterior-gastric-branches-of-posterior-vagal-trunk"
    },
    "sinonimos": {
     "es": [],
@@ -2857,8 +2876,8 @@
    "latin": "Truncus vagalis posterior",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-posterior-vagal-trunk",
-    "en": "m-posterior-vagal-trunk"
+    "es": "tronco-vagal-posterior",
+    "en": "posterior-vagal-trunk"
    },
    "sinonimos": {
     "es": [],
@@ -2876,8 +2895,8 @@
    "latin": "Plexus pulmonalis",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-pulmonary-plexus",
-    "en": "m-pulmonary-plexus"
+    "es": "plexo-pulmonar",
+    "en": "pulmonary-plexus"
    },
    "sinonimos": {
     "es": [],
@@ -2895,8 +2914,8 @@
    "latin": "Nuclei raphes medullae oblongatae",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-raphe-nuclei-of-medulla-oblongata",
-    "en": "m-raphe-nuclei-of-medulla-oblongata"
+    "es": "nucleos-del-rafe-del-bulbo-raquideo",
+    "en": "raphe-nuclei-of-medulla-oblongata"
    },
    "sinonimos": {
     "es": [],
@@ -2914,8 +2933,8 @@
    "latin": "Nervus laryngeus recurrens",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-recurrent-laryngeal-nerve",
-    "en": "m-recurrent-laryngeal-nerve"
+    "es": "nervio-laringeo-recurrente",
+    "en": "recurrent-laryngeal-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2933,8 +2952,8 @@
    "latin": "Rami cardiaci cervicales superiores nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-superior-cervical-cardiac-branches-of-vagus-nerve",
-    "en": "m-superior-cervical-cardiac-branches-of-vagus-nerve"
+    "es": "ramos-cardiacos-cervicales-superiores-del-nervio-vago",
+    "en": "superior-cervical-cardiac-branches-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2952,8 +2971,8 @@
    "latin": "Ganglion superius nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-superior-ganglion-of-vagus-nerve",
-    "en": "m-superior-ganglion-of-vagus-nerve"
+    "es": "ganglio-superior-del-nervio-vago",
+    "en": "superior-ganglion-of-vagus-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2971,8 +2990,8 @@
    "latin": "Nervus laryngeus superior",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-superior-laryngeal-nerve",
-    "en": "m-superior-laryngeal-nerve"
+    "es": "nervio-laringeo-superior",
+    "en": "superior-laryngeal-nerve"
    },
    "sinonimos": {
     "es": [],
@@ -2990,8 +3009,27 @@
    "latin": "Rami cardiaci thoracici nervi vagi",
    "fuente_nombre": "TA2 (Z-Anatomy)",
    "slug": {
-    "es": "m-thoracic-cardiac-branches-of-vagus-nerve",
-    "en": "m-thoracic-cardiac-branches-of-vagus-nerve"
+    "es": "ramos-cardiacos-toracicos-del-nervio-vago",
+    "en": "thoracic-cardiac-branches-of-vagus-nerve"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "m-wernicke-area": {
+   "id": "m-wernicke-area",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Área de Wernicke",
+    "en": "Wernicke's area"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "area-de-wernicke",
+    "en": "wernickes-area"
    },
    "sinonimos": {
     "es": [],
@@ -3819,6 +3857,25 @@
    "slug": {
     "es": "pedunculo-del-floculo",
     "en": "peduncle-of-flocculus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "pineal-gland": {
+   "id": "pineal-gland",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Glándula pineal",
+    "en": "Pineal gland"
+   },
+   "latin": "Glandula pinealis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "glandula-pineal",
+    "en": "pineal-gland"
    },
    "sinonimos": {
     "es": [],

@@ -89,10 +89,13 @@ interface Estado {
   respuestas: Record<string, Respuesta>;
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
   shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)
+  hoja: number; // alto (px) de la hoja inferior de la ficha en celular; 0 si no hay o es escritorio
+  enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
 
   setAmbos(v: boolean): void;
   setCentros(c: Record<string, Vec3>): void;
   seleccionar(s: Partial<Seleccion> | null): void;
+  deseleccionar(): void;
   alternarVisibles(piezas: string[], visibles: boolean): void;
   mostrarTodo(): void;
   activarGrupo(id: string | null, piezas?: string[]): void;
@@ -112,6 +115,13 @@ interface Estado {
   cargarRespuestas(r: Record<string, Respuesta>): void;
   setUbicando(id: string | null): void;
   setShift(v: boolean): void;
+  setHoja(px: number): void;
+  pedirFocoFicha(entrada: string | null): void;
+}
+
+/** Si hay algo que "Mostrar todo" deshacer: piezas ocultas, aislamiento o un grupo de estudio activo. */
+export function hayFiltros(s: Pick<Estado, 'ocultas' | 'aislar' | 'grupoActivo'>): boolean {
+  return s.ocultas.size > 0 || !!s.aislar || !!s.grupoActivo;
 }
 
 export function piezasVisibles(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] {
@@ -156,6 +166,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   respuestas: {},
   ubicando: null,
   shift: false,
+  hoja: 0,
+  enfocarFicha: null,
 
   setAmbos: (v) => set({ ambos: v }),
   setCentros: (c) => {
@@ -164,6 +176,11 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   seleccionar: (s) =>
     set({ seleccion: s ? { entrada: null, pieza: null, malla: null, ...s } : { entrada: null, pieza: null, malla: null } }),
+  // Sin selección no tiene sentido dejar el resto como fantasma ("aislar con contexto" lo puso al resaltar).
+  deseleccionar: () => {
+    set({ seleccion: { entrada: null, pieza: null, malla: null } });
+    if (get().aislar?.modo === 'contexto') get().salirAislar();
+  },
   alternarVisibles: (piezas, visibles) => {
     const ocultas = new Set(get().ocultas);
     for (const p of piezas) {
@@ -252,6 +269,10 @@ export const useAtlas = create<Estado>((set, get) => ({
   setShift: (v) => {
     if (get().shift !== v) set({ shift: v });
   },
+  setHoja: (px) => {
+    if (get().hoja !== px) set({ hoja: px });
+  },
+  pedirFocoFicha: (entrada) => set({ enfocarFicha: entrada }),
 }));
 
 /** Piezas que resalta la selección actual. */

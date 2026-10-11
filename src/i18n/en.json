@@ -124,6 +124,8 @@
   },
   "visor": {
     "cargando": "Loading the model...",
+    "error": "The 3D model could not be shown. You can keep using the tree, search and cards.",
+    "reintentar": "Retry",
     "fps": "{{n}} fps",
     "piezas_one": "{{count}} piece",
     "piezas_other": "{{count}} pieces"
@@ -135,7 +137,7 @@
     "respuestas_other": "{{count}} answers",
     "veredicto": "Your review of this field",
     "correcto": "Correct",
-    "corregir": "Correct it",
+    "corregir": "Suggest a fix",
     "no_es_mi_area": "Not my field",
     "propuesta": "Proposed change",
     "propuestaAyuda": "Write the correct text or the change you propose, with its source if you have it.",
@@ -171,6 +173,7 @@
   },
   "compartir": {
     "vista": "Share this view",
+    "corto": "Share",
     "copiado": "Link copied."
   },
   "aviso": {
@@ -192,6 +195,10 @@
     "codigoTitulo": "Code",
     "codigo": "Application code: MIT license.",
     "avisosTitulo": "Notices",
+    "volver": "Back to the atlas"
+  },
+  "ruta": {
+    "noEncontrada": "We could not find that structure.",
     "volver": "Back to the atlas"
   },
   "error": {

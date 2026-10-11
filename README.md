@@ -45,6 +45,9 @@ npm run test:e2e
 - docs/brief.md y docs/adr/: decisiones.
 - pipeline/README.md: cómo se genera el modelo desde Z-Anatomy.
 - docs/research/fase-0/REPORT.md: qué trae y qué no trae el modelo.
+- docs/operacion.md: guía del editor (publicar, revisar, regenerar, trabajar con el harness).
+- docs/revision-docente.md: cómo funciona la revisión de los docentes.
+- docs/progress.md: estado actual y siguiente paso.
 
 ## Créditos y licencias
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { piezasDeEntrada } from '../src/data/atlas';
-import { bloqueDe, fueraDeSitio, objetivo, piezasVisibles, useAtlas } from '../src/store/useAtlas';
+import { bloqueDe, fueraDeSitio, hayFiltros, objetivo, piezasVisibles, useAtlas } from '../src/store/useAtlas';
 
 const centros = Object.fromEntries(
   ['hippocampus-l', 'hippocampus-r', 'thalamus-l', 'thalamus-r', 'precentral-gyrus-l', 'postcentral-gyrus-l'].map((p, i) => [
@@ -57,6 +57,59 @@ describe('estado del atlas', () => {
     useAtlas.getState().alternarVisibles(piezasDeEntrada('g-temporal-lobe'), false);
     const visibles = new Set(piezasVisibles(useAtlas.getState()));
     expect(piezasDeEntrada('g-temporal-lobe').some((p) => visibles.has(p))).toBe(false);
+  });
+});
+
+describe('salir de la selección y "Mostrar todo"', () => {
+  beforeEach(() => {
+    useAtlas.setState({
+      ocultas: new Set(),
+      aislar: null,
+      grupoActivo: null,
+      seleccion: { entrada: null, pieza: null, malla: null },
+    });
+  });
+
+  it('deseleccionar limpia la selección y sale del fantasma ("aislar con contexto")', () => {
+    const s = useAtlas.getState();
+    s.seleccionar({ entrada: 'hippocampus' });
+    s.aislarPiezas(piezasDeEntrada('hippocampus'), 'contexto');
+    useAtlas.getState().deseleccionar();
+    expect(useAtlas.getState().seleccion.entrada).toBeNull();
+    expect(useAtlas.getState().aislar).toBeNull();
+  });
+
+  it('deseleccionar no toca un aislamiento "solo" que el usuario pidió', () => {
+    const s = useAtlas.getState();
+    s.seleccionar({ entrada: 'hippocampus' });
+    s.aislarPiezas(piezasDeEntrada('hippocampus'), 'solo');
+    useAtlas.getState().deseleccionar();
+    expect(useAtlas.getState().seleccion.entrada).toBeNull();
+    expect(useAtlas.getState().aislar?.modo).toBe('solo');
+  });
+
+  it('hayFiltros es verdadero con piezas ocultas, con aislamiento o con un grupo activo, y falso sin nada', () => {
+    expect(hayFiltros(useAtlas.getState())).toBe(false);
+    useAtlas.getState().alternarVisibles(['hippocampus-l'], false);
+    expect(hayFiltros(useAtlas.getState())).toBe(true);
+    useAtlas.getState().mostrarTodo();
+    useAtlas.getState().aislarPiezas(['hippocampus-l'], 'solo');
+    expect(hayFiltros(useAtlas.getState())).toBe(true);
+    useAtlas.getState().mostrarTodo();
+    useAtlas.setState({ grupoActivo: 'sistema-limbico' });
+    expect(hayFiltros(useAtlas.getState())).toBe(true);
+  });
+
+  it('mostrarTodo borra piezas ocultas, aislamiento y grupo activo', async () => {
+    const { piezasDeGrupo } = await import('../src/data/atlas');
+    useAtlas.getState().activarGrupo('sistema-limbico', piezasDeGrupo('sistema-limbico'));
+    useAtlas.getState().aislarPiezas(['hippocampus-l'], 'solo');
+    useAtlas.getState().mostrarTodo();
+    const s = useAtlas.getState();
+    expect(s.ocultas.size).toBe(0);
+    expect(s.aislar).toBeNull();
+    expect(s.grupoActivo).toBeNull();
+    expect(hayFiltros(s)).toBe(false);
   });
 });
 

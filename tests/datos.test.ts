@@ -2,8 +2,9 @@
 // nada huérfano) se verifica aquí, no a mano.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { arbol, estructuras, grupos, marcadores, nodos, piezasDeEntrada } from '../src/data/atlas';
+import { arbol, entradaPorSlug, estructuras, grupos, marcadores, nodos, piezasDeEntrada } from '../src/data/atlas';
 import { crearBuscador } from '../src/lib/busqueda';
+import { nombre } from '../src/lib/nombres';
 
 const idiomas = ['es', 'en'] as const;
 
@@ -23,11 +24,65 @@ describe('datos del atlas', () => {
     expect(arbol.raices.length).toBeGreaterThan(0);
   });
 
+  it('cada fila de mapeo.csv tiene su pieza en el árbol', () => {
+    const csv = readFileSync('pipeline/mapeo.csv', 'utf8').trim().split('\n').slice(1);
+    const mallas = csv.map((l) => (l.startsWith('"') ? l.slice(1, l.indexOf('"', 1)) : l.split(',')[0]!));
+    expect(mallas.length).toBeGreaterThan(0);
+    const delArbol = new Set(Object.values(nodos).filter((n) => n.tipo === 'pieza').map((n) => n.malla));
+    expect(mallas.filter((m) => !delArbol.has(m))).toEqual([]);
+  });
+
+  it('la glándula pineal y el plexo coroideo están en el árbol y en estructuras.json', () => {
+    for (const id of ['pineal-gland', 'choroid-plexus']) expect(estructuras[id], id).toBeTruthy();
+    const piezas = Object.values(nodos).filter((n) => n.tipo === 'pieza');
+    expect(piezas.some((n) => n.estructura === 'pineal-gland')).toBe(true);
+    expect(piezas.filter((n) => n.estructura === 'choroid-plexus').map((n) => n.id).sort()).toEqual(['choroid-plexus-l', 'choroid-plexus-r']);
+  });
+
+  it('el marcador del área de Wernicke existe sin ubicar, bajo el lóbulo temporal', () => {
+    const m = marcadores.find((x) => x.id === 'm-wernicke-area');
+    expect(m?.padre).toBe('g-temporal-lobe');
+    expect(m?.estado).toBe('sin_ubicar');
+    expect(m?.posicion).toBeNull();
+    expect(estructuras['m-wernicke-area']?.tipo).toBe('marcador');
+  });
+
   it('los slugs son únicos por idioma', () => {
     for (const i of idiomas) {
       const slugs = Object.values(estructuras).map((e) => e.slug[i]);
       expect(new Set(slugs).size).toBe(slugs.length);
     }
+  });
+
+  it('los marcadores tienen slugs reales por idioma, no su id', () => {
+    for (const m of marcadores) {
+      const e = estructuras[m.id]!;
+      for (const i of idiomas) {
+        expect(e.slug[i], `${m.id} ${i}`).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+        expect(e.slug[i], `${m.id} ${i}`).not.toMatch(/^m-/);
+      }
+    }
+    expect(estructuras['m-wernicke-area']!.slug).toEqual({ es: 'area-de-wernicke', en: 'wernickes-area' });
+    expect(estructuras['m-periaqueductal-grey']!.slug).toEqual({ es: 'sustancia-gris-periacueductal', en: 'periaqueductal-grey' });
+  });
+
+  it('la fuente de ubicación de un marcador es bilingüe y la nota en inglés existe si existe la de español', () => {
+    for (const m of marcadores) {
+      expect(typeof m.fuente_ubicacion.es, m.id).toBe('string');
+      expect(typeof m.fuente_ubicacion.en, m.id).toBe('string');
+      expect(m.fuente_ubicacion.en.trim() === '', `${m.id} falta la nota en inglés`).toBe(m.fuente_ubicacion.es.trim() === '');
+    }
+    const pag = marcadores.find((m) => m.id === 'm-periaqueductal-grey')!;
+    expect(pag.fuente_ubicacion.en).toContain('cerebral aqueduct of the midbrain');
+    expect(estructuras['m-periaqueductal-grey']!.fuente_nombre).toBe('PENDIENTE');
+  });
+
+  it('el grupo del vago no repite el nombre de la estructura del vago ni su slug', () => {
+    const g = estructuras['g-vagus-nerve-x']!;
+    expect(g.nombre).toEqual({ es: 'Nervio vago (ambos lados)', en: 'Vagus nerve (both sides)' });
+    expect(g.slug).toEqual({ es: 'nervio-vago-ambos-lados', en: 'vagus-nerve-both-sides' });
+    expect(g.fuente_nombre).toBe('interfaz');
+    expect(estructuras['vagus-nerve-x']!.slug.es).toBe('nervio-vago-x');
   });
 
   it('toda ficha tiene los dos idiomas, fuentes y estado de revisión', () => {
@@ -81,6 +136,17 @@ describe('datos del atlas', () => {
   });
 });
 
+describe('rutas por slug (F11)', () => {
+  it('las mayúsculas en el slug no impiden resolverlo', () => {
+    expect(entradaPorSlug('HIPOCAMPO', 'es')).toBe('hippocampus');
+    expect(entradaPorSlug('Hippocampus', 'en')).toBe('hippocampus');
+  });
+
+  it('un slug que no existe no resuelve a nada', () => {
+    expect(entradaPorSlug('no-existe', 'es')).toBeUndefined();
+  });
+});
+
 describe('búsqueda bilingüe (F3)', () => {
   const b = crearBuscador(Object.values(estructuras));
   it.each([
@@ -93,6 +159,14 @@ describe('búsqueda bilingüe (F3)', () => {
     ['hypothalamus', 'hypothalamus'],
   ])('"%s" encuentra %s', (q, id) => {
     expect(b.buscar(q).slice(0, 3)).toContain(id);
+  });
+
+  it('"nervio vago" no devuelve dos resultados con el mismo nombre', () => {
+    for (const i of idiomas) {
+      const nombres = b.buscar('nervio vago').map((id) => nombre(estructuras[id], i));
+      expect(nombres.length).toBeGreaterThan(1);
+      expect(new Set(nombres).size, nombres.join(' | ')).toBe(nombres.length);
+    }
   });
 
   it('tolera errores de digitación', () => {

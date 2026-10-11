@@ -18,3 +18,4 @@ e2e/.explore/
 pipeline/.cache/
 pipeline/salida/
 __pycache__/
+.venv-pipeline/

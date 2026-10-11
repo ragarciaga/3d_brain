@@ -108,8 +108,9 @@ for (const e of Object.values(estructuras)) {
   for (const i of ['es', 'en'] as const) for (const s of e.sinonimos[i]) if (!porSinonimo[i].has(aSlug(s))) porSinonimo[i].set(aSlug(s), e.id);
 }
 
-/** Resuelve un slug en el idioma pedido, en el otro (enlaces cruzados) o por sinónimo. */
-export function entradaPorSlug(slug: string, idioma: Idioma): string | undefined {
+/** Resuelve un slug en el idioma pedido, en el otro (enlaces cruzados) o por sinónimo. Las mayúsculas no cuentan. */
+export function entradaPorSlug(slugPedido: string, idioma: Idioma): string | undefined {
+  const slug = slugPedido.toLowerCase();
   const otro: Idioma = idioma === 'es' ? 'en' : 'es';
   return porSlug[idioma].get(slug) ?? porSlug[otro].get(slug) ?? porSinonimo[idioma].get(slug) ?? porSinonimo[otro].get(slug);
 }

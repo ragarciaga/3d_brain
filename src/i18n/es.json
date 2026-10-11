@@ -124,6 +124,8 @@
   },
   "visor": {
     "cargando": "Cargando el modelo...",
+    "error": "No se pudo mostrar el modelo 3D. Puedes seguir usando el árbol, la búsqueda y las fichas.",
+    "reintentar": "Reintentar",
     "fps": "{{n}} cuadros/s",
     "piezas_one": "{{count}} pieza",
     "piezas_other": "{{count}} piezas"
@@ -171,6 +173,7 @@
   },
   "compartir": {
     "vista": "Compartir esta vista",
+    "corto": "Compartir",
     "copiado": "Enlace copiado."
   },
   "aviso": {
@@ -192,6 +195,10 @@
     "codigoTitulo": "Código",
     "codigo": "Código de la aplicación: licencia MIT.",
     "avisosTitulo": "Avisos",
+    "volver": "Volver al atlas"
+  },
+  "ruta": {
+    "noEncontrada": "No encontramos esa estructura.",
     "volver": "Volver al atlas"
   },
   "error": {

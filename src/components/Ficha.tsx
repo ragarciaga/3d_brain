@@ -1,11 +1,12 @@
 // Ficha de pieza (F4), recursos (F9) y controles de revisión por campo (F24).
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { nombre, nombreNodo, nombrePendiente, nombrePieza, nombreVisible } from '../lib/nombres';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
+import { CONSULTA_MOVIL } from './useMovil';
 
 const otro = (i: Idioma): Idioma => (i === 'es' ? 'en' : 'es');
 
@@ -247,8 +248,35 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const ambos = useAtlas((s) => s.ambos);
   const revisor = useAtlas((s) => s.revisor);
   const ubicando = useAtlas((s) => s.ubicando);
+  const enfocar = useAtlas((s) => s.enfocarFicha);
   const id = seleccion.entrada;
   const e: Estructura | undefined = id ? estructuras[id] : undefined;
+  const ficha = useRef<HTMLElement>(null);
+  const refTitulo = useRef<HTMLHeadingElement>(null);
+
+  // Elegir desde la búsqueda, el árbol o una relación lleva el foco al título de la ficha, que así se anuncia.
+  useEffect(() => {
+    if (!enfocar || enfocar !== id || !refTitulo.current) return;
+    refTitulo.current.focus({ preventScroll: true });
+    useAtlas.getState().pedirFocoFicha(null);
+  }, [enfocar, id]);
+
+  // En celular la ficha es una hoja inferior: el visor necesita su alto para no dejar el objetivo detrás.
+  useEffect(() => {
+    const el = ficha.current;
+    const mq = window.matchMedia(CONSULTA_MOVIL);
+    const medir = () => useAtlas.getState().setHoja(id && el && mq.matches ? Math.round(el.getBoundingClientRect().height) : 0);
+    medir();
+    mq.addEventListener('change', medir);
+    const ro = typeof ResizeObserver === 'undefined' || !el ? null : new ResizeObserver(medir);
+    if (el) ro?.observe(el);
+    return () => {
+      mq.removeEventListener('change', medir);
+      ro?.disconnect();
+      useAtlas.getState().setHoja(0);
+    };
+  }, [id, e]);
+
   if (!id || !e) {
     return (
       <aside className="ficha ficha-vacia" aria-label={t('ficha.titulo')}>
@@ -275,9 +303,11 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, ambos, t) : nombreVisible(e, idioma, ambos);
 
   return (
-    <aside className="ficha" aria-labelledby="ficha-titulo" data-testid="ficha" data-entrada={id}>
+    <aside ref={ficha} className="ficha" aria-labelledby="ficha-titulo" data-testid="ficha" data-entrada={id}>
       <header className="ficha-cabecera">
-        <h2 id="ficha-titulo">{titulo}</h2>
+        <h2 id="ficha-titulo" ref={refTitulo} tabIndex={-1}>
+          {titulo}
+        </h2>
         <button type="button" className="cerrar" aria-label={t('ficha.cerrar')} onClick={alCerrar}>
           ×
         </button>
@@ -317,7 +347,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         <section className="ficha-campo">
           <h3>{t('marcador.titulo')}</h3>
           <p>{t(`marcador.explica_${marcador.estado}`)}</p>
-          {marcador.fuente_ubicacion && <p className="recurso-nota">{marcador.fuente_ubicacion}</p>}
+          {marcador.fuente_ubicacion[idioma] && <p className="recurso-nota">{marcador.fuente_ubicacion[idioma]}</p>}
           {revisor && (
             <>
               <button type="button" className="boton-primario" onClick={() => useAtlas.getState().setUbicando(ubicando === id ? null : id)}>
