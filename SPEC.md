@@ -80,7 +80,7 @@ Cada función tiene un ID para referenciarla en commits, issues y prompts a Clau
 
 - Rotar arrastrando, zoom con rueda o pellizco, desplazar con clic derecho o dos dedos.
 - Botones de vista anatómica: anterior, posterior, lateral izquierda, lateral derecha, superior, inferior.
-- Doble clic sobre una pieza encuadra la cámara en ella.
+- Doble clic sobre una pieza encuadra la cámara en ella, salvo sobre una pieza separada, que la devuelve (F7), y durante el armado pieza por pieza, cuando no hace nada.
 
 **Criterio de aceptación:** con todas las piezas visibles, la rotación se siente fluida en los equipos de referencia y cada botón de vista lleva a la orientación correcta.
 

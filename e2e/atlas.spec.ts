@@ -665,8 +665,15 @@ test('armar pieza por pieza, modo reto: se arrastra la pieza hasta su sitio y la
   const c0 = await leerCamara(page);
   const contador = page.getByTestId('contador-armado');
   await expect(contador).toHaveText('0 de 2 en su sitio');
-  // Un clic sin arrastre no selecciona ni devuelve.
   const l = await enPantalla(page, 'thalamus-l');
+  // Mientras dura el modo el doble clic no hace nada: ni devuelve, ni encuadra la cámara ni selecciona.
+  await page.mouse.dblclick(l.actual.x, l.actual.y);
+  await page.waitForTimeout(1500);
+  await expect(contador).toHaveText('0 de 2 en su sitio');
+  const cDoble = await leerCamara(page);
+  expect(Math.max(...c0.map((v, i) => Math.abs(v - cDoble[i]!)))).toBeLessThan(1e-6);
+  expect(await piezaSeleccionada(page)).toBeNull();
+  // Un clic sin arrastre no selecciona ni devuelve.
   await page.mouse.click(l.actual.x, l.actual.y);
   await expect(contador).toHaveText('0 de 2 en su sitio');
   expect(await piezaSeleccionada(page)).toBeNull();
