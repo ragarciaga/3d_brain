@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # para correr también con blender -b --python
 
-from comun import (RAICES_REFERENCIA, RAIZ, RAIZ_ENCEFALO, VAGO, abrir_blend, ancestros,
+from comun import (EXTRAS_ESTUDIO, RAICES_REFERENCIA, RAIZ, RAIZ_ENCEFALO, VAGO, abrir_blend, ancestros,
                    es_geometria, leer_ta2, nombre_base, nombre_grupo, slug)
 
 PENDIENTE = "PENDIENTE"
@@ -96,6 +96,8 @@ def main():
         anc = [a.name for a in ancestros(o)]
         if RAIZ_ENCEFALO in anc:
             seleccion.append((o, "estudio", None, RAIZ_ENCEFALO))
+        elif o.name in EXTRAS_ESTUDIO:
+            seleccion.append((o, "estudio", EXTRAS_ESTUDIO[o.name], None))
         elif o.name in VAGO:
             seleccion.append((o, "estudio", RAIZ_VAGO, None))
         else:

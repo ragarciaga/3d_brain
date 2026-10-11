@@ -30,6 +30,8 @@ Caudate nucleus.r,caudate-nucleus-r,caudate-nucleus,r,Caudate nucleus,Núcleo ca
 Central lobule,central-lobule,central-lobule,,Central lobule,Lóbulo central,Lobulus centralis vermis,g-cerebellum,estudio,TA2 (Z-Anatomy)
 Central sulcus.l,central-sulcus-l,central-sulcus,l,Central sulcus,Surco central,Sulcus centralis,g-interlobar-sulci,estudio,TA2 (Z-Anatomy)
 Central sulcus.r,central-sulcus-r,central-sulcus,r,Central sulcus,Surco central,Sulcus centralis,g-interlobar-sulci,estudio,TA2 (Z-Anatomy)
+Choroid plexus.l,choroid-plexus-l,choroid-plexus,l,Choroid plexus,Plexo coroideo,Plexus chorioideus,g-telencephalon,estudio,TA2 (Z-Anatomy)
+Choroid plexus.r,choroid-plexus-r,choroid-plexus,r,Choroid plexus,Plexo coroideo,Plexus chorioideus,g-telencephalon,estudio,TA2 (Z-Anatomy)
 Cingulate gyrus (Posteroventral part*).l,cingulate-gyrus-posteroventral-part-l,cingulate-gyrus-posteroventral-part,l,Cingulate gyrus (Posteroventral part*),PENDIENTE,PENDIENTE,g-limbic-lobe,estudio,PENDIENTE
 Cingulate gyrus (Posteroventral part*).r,cingulate-gyrus-posteroventral-part-r,cingulate-gyrus-posteroventral-part,r,Cingulate gyrus (Posteroventral part*),PENDIENTE,PENDIENTE,g-limbic-lobe,estudio,PENDIENTE
 Cingulate gyrus and sulcus (Middle anterior part).l,cingulate-gyrus-and-sulcus-middle-anterior-part-l,cingulate-gyrus-and-sulcus-middle-anterior-part,l,Cingulate gyrus and sulcus (Middle anterior part),PENDIENTE,PENDIENTE,g-limbic-lobe,estudio,PENDIENTE
@@ -182,6 +184,7 @@ Parieto-occipital sulcus.l,parieto-occipital-sulcus-l,parieto-occipital-sulcus,l
 Parieto-occipital sulcus.r,parieto-occipital-sulcus-r,parieto-occipital-sulcus,r,Parieto-occipital sulcus,Surco parieto-occipital,Sulcus parietooccipitalis,g-interlobar-sulci,estudio,TA2 (Z-Anatomy)
 Peduncle of flocculus.l,peduncle-of-flocculus-l,peduncle-of-flocculus,l,Peduncle of flocculus,Pedúnculo del flóculo,Pedunculus flocculi,g-cerebellum,estudio,TA2 (Z-Anatomy)
 Peduncle of flocculus.r,peduncle-of-flocculus-r,peduncle-of-flocculus,r,Peduncle of flocculus,Pedúnculo del flóculo,Pedunculus flocculi,g-cerebellum,estudio,TA2 (Z-Anatomy)
+Pineal gland,pineal-gland,pineal-gland,,Pineal gland,Glándula pineal,Glandula pinealis,g-diencephalon,estudio,TA2 (Z-Anatomy)
 Pons.l,pons-l,pons,l,Pons,Puente troncoencefálico,Pons,g-brainstem,estudio,TA2 (Z-Anatomy)
 Pons.r,pons-r,pons,r,Pons,Puente troncoencefálico,Pons,g-brainstem,estudio,TA2 (Z-Anatomy)
 Postcentral gyrus.l,postcentral-gyrus-l,postcentral-gyrus,l,Postcentral gyrus,Giro poscentral,Gyrus postcentralis,g-parietal-lobe,estudio,TA2 (Z-Anatomy)

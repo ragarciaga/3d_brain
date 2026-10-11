@@ -198,5 +198,13 @@
   "posicion": null,
   "estado": "sin_ubicar",
   "fuente_ubicacion": ""
+ },
+ {
+  "id": "m-wernicke-area",
+  "padre": "g-temporal-lobe",
+  "ancla": null,
+  "posicion": null,
+  "estado": "sin_ubicar",
+  "fuente_ubicacion": ""
  }
 ]

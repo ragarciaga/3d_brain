@@ -13,7 +13,7 @@ python3.13 -m venv .venv-pipeline
 ## Pasos
 
 ```bash
-python pipeline/descargar.py          # Z-Anatomy (commit fijado) y TA2.csv en pipeline/.cache/
+python pipeline/descargar.py          # Z-Anatomy (commit fijado) y TA2.csv en pipeline/.cache/, con SHA-256 verificado
 python pipeline/listar.py             # inventario completo: pipeline/salida/estructuras.txt
 python pipeline/mapear.py             # pipeline/mapeo.csv, src/data/arbol.json, siembra estructuras.json
 python pipeline/extraer.py            # pipeline/salida/atlas-crudo.glb y pipeline/cajas.json
@@ -45,7 +45,9 @@ Alternativa con Blender instalado (sin pip), desde la carpeta del repositorio:
 
 ## Qué hace cada paso y por qué
 
-- `mapear.py` toma el encéfalo completo (`Brain.g`), los dos vagos y los órganos de referencia.
+- `mapear.py` toma el encéfalo completo (`Brain.g`), los dos vagos y los órganos de referencia, más la
+  glándula pineal y los plexos coroideos, que Z-Anatomy cuelga de otros grupos (lista
+  `EXTRAS_ESTUDIO` en `comun.py`, con el grupo que reciben en nuestro árbol).
   Nombres en latín y español desde TA2 por coincidencia exacta; lo que no coincide queda
   `PENDIENTE`. Nunca sobrescribe entradas existentes de `src/data/estructuras.json`.
 - `extraer.py` evalúa cada pieza con sus modificadores, convierte curvas (nervios) a malla, hornea

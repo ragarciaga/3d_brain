@@ -23,6 +23,21 @@ describe('datos del atlas', () => {
     expect(arbol.raices.length).toBeGreaterThan(0);
   });
 
+  it('la glándula pineal y el plexo coroideo están en el árbol y en estructuras.json', () => {
+    for (const id of ['pineal-gland', 'choroid-plexus']) expect(estructuras[id], id).toBeTruthy();
+    const piezas = Object.values(nodos).filter((n) => n.tipo === 'pieza');
+    expect(piezas.some((n) => n.estructura === 'pineal-gland')).toBe(true);
+    expect(piezas.filter((n) => n.estructura === 'choroid-plexus').map((n) => n.id).sort()).toEqual(['choroid-plexus-l', 'choroid-plexus-r']);
+  });
+
+  it('el marcador del área de Wernicke existe sin ubicar, bajo el lóbulo temporal', () => {
+    const m = marcadores.find((x) => x.id === 'm-wernicke-area');
+    expect(m?.padre).toBe('g-temporal-lobe');
+    expect(m?.estado).toBe('sin_ubicar');
+    expect(m?.posicion).toBeNull();
+    expect(estructuras['m-wernicke-area']?.tipo).toBe('marcador');
+  });
+
   it('los slugs son únicos por idioma', () => {
     for (const i of idiomas) {
       const slugs = Object.values(estructuras).map((e) => e.slug[i]);

@@ -6,7 +6,7 @@ async function abrir(page: Page, ruta: string, conAviso = false) {
 }
 
 async function modeloCargado(page: Page) {
-  await expect(page.getByTestId('piezas')).toHaveText(/284 (piezas|pieces)/, { timeout: 150_000 });
+  await expect(page.getByTestId('piezas')).toHaveText(/287 (piezas|pieces)/, { timeout: 150_000 });
 }
 
 test('carga el modelo, muestra piezas, cuadros por segundo, aviso educativo y licencia', async ({ page }) => {
@@ -67,13 +67,13 @@ test('árbol y grupos: ocultar un grupo y filtrar el sistema límbico', async ({
   await abrir(page, '/es');
   await modeloCargado(page);
   const encefalo = page.locator('.arbol-fila', { has: page.locator('[data-nodo="g-brain"]') });
-  await expect(encefalo.locator('.arbol-contador')).toHaveText('250/250');
+  await expect(encefalo.locator('.arbol-contador')).toHaveText('253/253');
   await page.locator('[data-grupo="sistema-limbico"]').click();
-  await expect(encefalo.locator('.arbol-contador')).not.toHaveText('250/250');
+  await expect(encefalo.locator('.arbol-contador')).not.toHaveText('253/253');
   await page.locator('[data-grupo="sistema-limbico"]').click();
-  await expect(encefalo.locator('.arbol-contador')).toHaveText('250/250');
+  await expect(encefalo.locator('.arbol-contador')).toHaveText('253/253');
   await encefalo.getByRole('checkbox').uncheck();
-  await expect(encefalo.locator('.arbol-contador')).toHaveText('0/250');
+  await expect(encefalo.locator('.arbol-contador')).toHaveText('0/253');
 });
 
 test('fragmentar y reensamblar: todas las piezas vuelven exactamente a su sitio', async ({ page }) => {

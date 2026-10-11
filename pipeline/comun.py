@@ -10,6 +10,9 @@ CACHE = RAIZ / ".cache"
 COMMIT_Z_ANATOMY = "9de5d6912a1b0df9cab739d57f00e036b0496ddc"
 URL_ZIP = f"https://github.com/Z-Anatomy/Models-of-human-anatomy/raw/{COMMIT_Z_ANATOMY}/Z-Anatomy.zip"
 URL_TA2 = f"https://raw.githubusercontent.com/Z-Anatomy/Models-of-human-anatomy/{COMMIT_Z_ANATOMY}/TA2.csv"
+# SHA-256 de lo que se descarga en ese commit. descargar.py los verifica antes de usar los archivos.
+SHA256_ZIP = "e029688545627bd0214b269e1063143abb580aad72b2c2445d6d8a9a0d9da736"
+SHA256_TA2 = "0f9092a328b27dcd15d696d9f9a4087deb229a1aad21b75876657622de835974"
 BLEND = CACHE / "Z-Anatomy" / "Startup.blend"
 TA2 = CACHE / "TA2.csv"
 
@@ -20,6 +23,15 @@ SUFIJOS_APOYO = (".g", ".t", ".j", ".i", ".el", ".er")
 # Raíces de lo que se exporta. Estudio: el encéfalo completo y el vago. Referencia: órganos
 # translúcidos del recorrido del vago (SPEC sección 8).
 RAIZ_ENCEFALO = "Brain.g"
+# Objetos de estudio que Z-Anatomy no cuelga de Brain.g pero que son parte del encéfalo, con el grupo
+# que reciben en nuestro árbol. La glándula pineal está en Endocrine glands.g y los plexos coroideos
+# en Cranial pia.g. Terminologia Anatomica ubica la pineal en el epitálamo (diencéfalo) y el plexo
+# coroideo en el ventrículo lateral, junto a lateral-ventricle-l/r (g-telencephalon).
+EXTRAS_ESTUDIO = {
+    "Pineal gland": "g-diencephalon",
+    "Choroid plexus.l": "g-telencephalon",
+    "Choroid plexus.r": "g-telencephalon",
+}
 VAGO = ("Vagus nerve (X).l", "Vagus nerve (X).r")
 RAICES_REFERENCIA = ("Heart.g", "Lungs.g", "Laryngeal cartilages.g", "Trachea", "Oesophagus", "Stomach")
 

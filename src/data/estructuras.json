@@ -495,6 +495,25 @@
    },
    "ficha": null
   },
+  "choroid-plexus": {
+   "id": "choroid-plexus",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Plexo coroideo",
+    "en": "Choroid plexus"
+   },
+   "latin": "Plexus chorioideus",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "plexo-coroideo",
+    "en": "choroid-plexus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
   "cingulate-gyrus-and-sulcus-middle-anterior-part": {
    "id": "cingulate-gyrus-and-sulcus-middle-anterior-part",
    "tipo": "estructura",
@@ -2999,6 +3018,25 @@
    },
    "ficha": null
   },
+  "m-wernicke-area": {
+   "id": "m-wernicke-area",
+   "tipo": "marcador",
+   "nombre": {
+    "es": "Área de Wernicke",
+    "en": "Wernicke's area"
+   },
+   "latin": "PENDIENTE",
+   "fuente_nombre": "PENDIENTE",
+   "slug": {
+    "es": "area-de-wernicke",
+    "en": "wernickes-area"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
   "mamillary-body": {
    "id": "mamillary-body",
    "tipo": "estructura",
@@ -3819,6 +3857,25 @@
    "slug": {
     "es": "pedunculo-del-floculo",
     "en": "peduncle-of-flocculus"
+   },
+   "sinonimos": {
+    "es": [],
+    "en": []
+   },
+   "ficha": null
+  },
+  "pineal-gland": {
+   "id": "pineal-gland",
+   "tipo": "estructura",
+   "nombre": {
+    "es": "Glándula pineal",
+    "en": "Pineal gland"
+   },
+   "latin": "Glandula pinealis",
+   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "slug": {
+    "es": "glandula-pineal",
+    "en": "pineal-gland"
    },
    "sinonimos": {
     "es": [],

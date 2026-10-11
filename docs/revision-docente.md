@@ -82,8 +82,11 @@ node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Revisión del
 ```
 
 Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
-`resumen.md` con toda la importación. Las filas malformadas o con ids que no existen se descartan
-y se cuentan; el texto libre va citado y sin menciones `@`.
+`resumen.md` con toda la importación. Las filas malformadas se descartan y se cuentan, sin detener
+la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
+idioma distinto de es o en, textos que no son texto o una posición que no son tres números. El
+texto libre va como código en línea y sin menciones `@`, y cada fila lleva la marca temporal del
+envío.
 
 3. Crea el issue de la importación con el resumen:
 

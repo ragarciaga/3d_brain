@@ -70,6 +70,8 @@
     "g-projection-fibres-of-telencephalon",
     "g-temporal-lobe",
     "g-walls-of-lateral-ventricle",
+    "choroid-plexus-l",
+    "choroid-plexus-r",
     "lateral-ventricle-l",
     "lateral-ventricle-r",
     "stria-terminalis-l",
@@ -774,6 +776,30 @@
    "clase": "estudio",
    "curva": false
   },
+  "choroid-plexus-l": {
+   "id": "choroid-plexus-l",
+   "tipo": "pieza",
+   "en": "Choroid plexus",
+   "padre": "g-telencephalon",
+   "hijos": [],
+   "lado": "l",
+   "malla": "Choroid plexus.l",
+   "estructura": "choroid-plexus",
+   "clase": "estudio",
+   "curva": false
+  },
+  "choroid-plexus-r": {
+   "id": "choroid-plexus-r",
+   "tipo": "pieza",
+   "en": "Choroid plexus",
+   "padre": "g-telencephalon",
+   "hijos": [],
+   "lado": "r",
+   "malla": "Choroid plexus.r",
+   "estructura": "choroid-plexus",
+   "clase": "estudio",
+   "curva": false
+  },
   "g-limbic-lobe": {
    "id": "g-limbic-lobe",
    "tipo": "grupo",
@@ -1207,6 +1233,7 @@
     "optic-chiasm-r",
     "optic-tract-l",
     "optic-tract-r",
+    "pineal-gland",
     "thalamus-l",
     "thalamus-r",
     "third-ventricle"
@@ -2838,6 +2865,18 @@
    "lado": "r",
    "malla": "Peduncle of flocculus.r",
    "estructura": "peduncle-of-flocculus",
+   "clase": "estudio",
+   "curva": false
+  },
+  "pineal-gland": {
+   "id": "pineal-gland",
+   "tipo": "pieza",
+   "en": "Pineal gland",
+   "padre": "g-diencephalon",
+   "hijos": [],
+   "lado": "",
+   "malla": "Pineal gland",
+   "estructura": "pineal-gland",
    "clase": "estudio",
    "curva": false
   },
