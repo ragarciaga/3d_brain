@@ -59,9 +59,10 @@ En Windows (PowerShell), con la ruta donde quedó el archivo:
 node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Revisión del atlas.csv"
 ```
 
-Esto escribe un resumen por estructura en `pipeline/salida/revisiones/` (no se sube a git). Cada
-resumen se vuelve un issue con la etiqueta `rb:needs-human`; Claude prepara el cambio y tú lo
-apruebas. Los issues muestran el código del revisor, nunca su nombre.
+Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
+`resumen.md` con toda la importación. `resumen.md` se vuelve un issue con la etiqueta
+`rb:needs-human`; Claude prepara el cambio y tú lo apruebas. Los issues muestran el código del
+revisor, nunca su nombre, y las filas con ids que no existen se descartan.
 
 ## 5. Marcar una ficha como verificada
 

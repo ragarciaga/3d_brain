@@ -1,14 +1,8 @@
 // Grupos de estudio (F2): filtros rápidos transversales a la jerarquía.
 import { useTranslation } from 'react-i18next';
-import { grupos, piezasDeEntrada } from '../data/atlas';
+import { grupos, piezasDeGrupo } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { useAtlas } from '../store/useAtlas';
-
-export function piezasDeGrupo(id: string): string[] {
-  const g = grupos.find((x) => x.id === id);
-  if (!g) return [];
-  return [...new Set(g.miembros.flatMap((m) => piezasDeEntrada(m)))];
-}
 
 export default function GruposEstudio({ idioma }: { idioma: Idioma }) {
   const { t } = useTranslation();

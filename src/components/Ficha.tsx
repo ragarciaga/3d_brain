@@ -98,7 +98,7 @@ function ListaFuentes({ fuentes }: { fuentes: Fuente[] }) {
   );
 }
 
-/** Recursos propios y heredados de grupos padre y grupos de estudio (F9). */
+/** Recursos heredados de los grupos padre en el árbol (F9). */
 function recursosHeredados(id: string): Recurso[] {
   const res: Recurso[] = [];
   let p = padreDeEntrada(id);

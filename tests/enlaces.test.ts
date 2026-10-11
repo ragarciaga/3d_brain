@@ -16,3 +16,12 @@ describe('enlaces compartibles (F11)', () => {
     expect(leer(serializar({ camara: cam })).camara).toEqual(cam);
   });
 });
+
+describe('alias de URL por sinónimo (F11)', () => {
+  it('/es/amigdala y /es/insula resuelven, como en el ejemplo del SPEC', async () => {
+    const { entradaPorSlug } = await import('../src/data/atlas');
+    expect(entradaPorSlug('amigdala', 'es')).toBe('amygdaloid-body');
+    expect(entradaPorSlug('insula', 'es')).toBe('g-insula');
+    expect(entradaPorSlug('amygdala', 'en')).toBe('amygdaloid-body');
+  });
+});

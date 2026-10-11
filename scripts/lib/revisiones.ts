@@ -42,8 +42,14 @@ export interface Envio {
   marcaTemporal: string;
 }
 
-/** Busca en cada fila la celda con la carga JSON de la app ({"v":1,...}). */
-export function leerEnvios(filas: string[][]): { envios: Envio[]; invalidas: number } {
+const ID_VALIDO = /^[a-z0-9-]+$/;
+
+/**
+ * Busca en cada fila la celda con la carga JSON de la app ({"v":1,...}). El CSV viene de un
+ * formulario público: un envío solo vale si su estructura (y la de cada respuesta) es un id
+ * conocido y con forma de slug, así nadie puede escribir fuera de la carpeta de salida.
+ */
+export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envios: Envio[]; invalidas: number } {
   const envios: Envio[] = [];
   let invalidas = 0;
   for (const fila of filas.slice(1)) {
@@ -54,7 +60,12 @@ export function leerEnvios(filas: string[][]): { envios: Envio[]; invalidas: num
     }
     try {
       const d = JSON.parse(celda) as { revisor: string; estructura: string; respuestas: Respuesta[] };
-      envios.push({ revisor: d.revisor, estructura: d.estructura, respuestas: d.respuestas, marcaTemporal: fila[0] ?? '' });
+      const ok = (id: unknown) => typeof id === 'string' && ID_VALIDO.test(id) && (!idsValidos || idsValidos.has(id));
+      if (!ok(d.estructura) || !Array.isArray(d.respuestas) || !d.respuestas.every((r) => ok(r.estructura))) {
+        invalidas++;
+        continue;
+      }
+      envios.push({ revisor: String(d.revisor).slice(0, 40), estructura: d.estructura, respuestas: d.respuestas, marcaTemporal: fila[0] ?? '' });
     } catch {
       invalidas++;
     }
@@ -86,4 +97,12 @@ export function resumenMarkdown(estructura: string, envios: Envio[], versionActu
   }
   lineas.push('', 'Siguiente paso: preparar el cambio en `src/data/estructuras.json` y que el editor lo apruebe (tier C).');
   return lineas.join('\n');
+}
+
+/** Un solo resumen con todas las estructuras de la importación (un issue por importación). */
+export function resumenConsolidado(envios: Envio[], versionDe: (id: string) => string): string {
+  const ids = [...new Set(envios.map((e) => e.estructura))].sort();
+  const partes = ids.map((id) => resumenMarkdown(id, envios.filter((e) => e.estructura === id), versionDe(id)));
+  const total = ultimasRespuestas(envios).length;
+  return [`# Revisiones docentes (${total} respuestas, ${ids.length} estructuras)`, '', ...partes].join('\n\n');
 }

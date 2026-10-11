@@ -8,8 +8,8 @@ equipos de referencia y arrancar el piloto con los revisores.
 
 ## Current state
 - Works: pipeline de la fase 0 reproducible (338 mallas, 6,49 MB, posiciones verificadas al 0,1 mm);
-  F1 a F7, F9, F10, F11 y F24; aviso educativo y pantalla de licencia; 43 pruebas unitarias y
-  7 E2E en verde; build para GitHub Pages.
+  F1 a F7, F9, F10, F11 y F24; aviso educativo y pantalla de licencia; 59 pruebas unitarias y
+  9 E2E en verde; build para GitHub Pages.
 - Broken: nada conocido. Rendimiento real sin medir: en la nube solo hay WebGL por software.
 - Pending (editor): fusionar el PR; activar GitHub Pages (Settings, Pages, Source: GitHub Actions);
   crear el formulario de Google de revisión (docs/revision-docente.md); conseguir revisores;

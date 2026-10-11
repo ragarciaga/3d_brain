@@ -24,12 +24,12 @@ contenido con fuente y revisión docente. Si una función no refuerza alguno, no
 Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y docs/adr/.
 
 ## Stack
-- Node.js 24 LTS, TypeScript 6.0.3 estricto (https://www.typescriptlang.org/docs/)
+- Node.js 24 LTS (`engines` admite 22.18 o superior por el CI del harness), TypeScript 6.0.3 estricto (https://www.typescriptlang.org/docs/)
 - Vite 8.3.4 + React 19.3.0 (https://vite.dev, https://react.dev)
 - three 0.186.1, @react-three/fiber 9.8.1, @react-three/drei 10.7.9 (https://threejs.org/docs/, https://r3f.docs.pmnd.rs)
 - zustand 5.0.15, react-router 8.4.0, i18next 26.4.3 + react-i18next 17.0.16, fuse.js 7.5.0, idb-keyval 6.3.0
 - Vitest 5.0.3, Playwright 1.64.0 (https://vitest.dev, https://playwright.dev)
-- Pipeline: Python 3.13 + bpy 5.2.2 (Blender sin ventana, https://docs.blender.org/api/current/), @gltf-transform/cli 4.5.1
+- Pipeline: Python 3.13 + bpy 5.2.2 (Blender sin ventana, https://docs.blender.org/api/current/), @gltf-transform/core y /functions 4.5.1 con meshoptimizer 1.3.0
 - Hosting: GitHub Pages, sin backend
 
 ## Conventions

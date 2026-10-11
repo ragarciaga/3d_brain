@@ -213,12 +213,12 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
   - Trazos del vago: el revisor toca un trazo y elige de una lista qué ramo es, "no es un ramo" o "no sé".
   - Pasos de circuitos y casos clásicos, cuando existan (fase 2).
 - **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre un formulario de Google del editor, ya lleno con todas las respuestas, y el revisor solo confirma. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
-- **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha que se vuelve issue. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
+- **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
 - **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando una ficha tiene el visto bueno de los tres roles (anatomía, psicología, traducción) en un idioma, pasa a "verificada" con revisor y fecha.
 - **Vista del revisor:** lista de lo que le falta por revisar y de lo que ya revisó.
 - **Privacidad:** el formulario pide consentimiento explícito para mostrar el nombre del revisor en las fichas (Ley 1581 de 2012). La app no guarda datos de revisores en un servidor propio.
 
-**Criterio:** un revisor marca tres campos como correctos, propone un cambio en un cuarto y ubica un marcador; tras enviar, la hoja del editor tiene cinco respuestas con estructura, campo, idioma, versión y coordenadas, y el script genera un issue con las cinco.
+**Criterio:** un revisor marca tres campos como correctos, propone un cambio en un cuarto y ubica un marcador; tras enviar, la hoja del editor tiene las cinco respuestas con estructura, campo, idioma, versión y coordenadas (en dos envíos, porque el marcador es su propia entrada), y el script genera un resumen de la importación con las cinco, que es el cuerpo de un solo issue.
 
 ### Estudio activo (fase 2)
 

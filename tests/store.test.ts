@@ -59,3 +59,15 @@ describe('estado del atlas', () => {
     expect(piezasDeEntrada('g-temporal-lobe').some((p) => visibles.has(p))).toBe(false);
   });
 });
+
+describe('grupos de estudio (F2)', () => {
+  it('elegir "Sistema límbico" deja visibles exactamente sus piezas', async () => {
+    const { piezasDeGrupo } = await import('../src/data/atlas');
+    const piezas = piezasDeGrupo('sistema-limbico');
+    expect(piezas.length).toBeGreaterThan(10);
+    useAtlas.getState().activarGrupo('sistema-limbico', piezas);
+    expect(piezasVisibles(useAtlas.getState()).sort()).toEqual([...piezas].sort());
+    useAtlas.getState().activarGrupo(null);
+    expect(useAtlas.getState().ocultas.size).toBe(0);
+  });
+});

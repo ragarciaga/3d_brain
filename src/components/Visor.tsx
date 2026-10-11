@@ -18,6 +18,7 @@ import {
 import type { Idioma } from '../data/tipos';
 import { acercar, CERO, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
+import { DIRECCIONES, esSeleccionable } from '../lib/vistas';
 import { nombrePieza, nombreVisible } from '../lib/nombres';
 import { fueraDeSitio, objetivo, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
 import { colorDePieza } from './colores';
@@ -74,7 +75,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   });
 
   // Una pieza oculta nunca se toca; un fantasma (aislar con contexto) solo con Shift, para sumarlo.
-  const seleccionable = visible && !referencia && (!fantasma || shift);
+  const seleccionable = esSeleccionable({ visible, referencia, fantasma, shift });
 
   const alTocar = (e: ThreeEvent<MouseEvent>) => {
     if (!seleccionable || e.delta > ARRASTRE_PX) return;
@@ -306,15 +307,6 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
   );
 }
 
-const DIRECCIONES: Record<Vista | 'inicio', [number, number, number]> = {
-  anterior: [0, 0, 1],
-  posterior: [0, 0, -1],
-  'lateral-izq': [1, 0, 0],
-  'lateral-der': [-1, 0, 0],
-  superior: [0, 1, 0.0001],
-  inferior: [0, -1, 0.0001],
-  inicio: [0.75, 0.3, 0.9],
-};
 
 /** Caja de las piezas donde están ahora (posición original más su desplazamiento). */
 function cajaDe(piezas: string[]): THREE.Box3 {
