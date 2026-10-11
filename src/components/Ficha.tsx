@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { estructuras, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { nombre, nombreNodo, nombrePendiente, nombrePieza, nombreVisible } from '../lib/nombres';
+import { accionAlPulsar, estadoAislar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
 import { CONSULTA_MOVIL } from './useMovil';
@@ -148,6 +149,10 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
   const { t } = useTranslation();
   const piezas = piezasDeEntrada(id);
   const s = useAtlas.getState;
+  // Los hooks van antes del retorno temprano: el orden de hooks no puede depender de si hay piezas.
+  const aislado = useAtlas((st) => estadoAislar(st.aislar, 'solo', piezas));
+  const conContexto = useAtlas((st) => estadoAislar(st.aislar, 'contexto', piezas));
+  const separado = useAtlas((st) => estadoSeparar(st.separadas, st.devueltas, piezas));
   if (!piezas.length) {
     return (
       <div className="acciones">
@@ -157,19 +162,22 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
       </div>
     );
   }
+  const alternarAislar = (estado: Pulsado, modo: 'solo' | 'contexto') => () =>
+    accionAlPulsar(estado) === 'desactivar' ? s().salirAislar() : s().aislarPiezas(piezas, modo);
   return (
     <div className="acciones" role="group" aria-label={t('acciones.titulo')}>
-      <button type="button" onClick={() => s().aislarPiezas(piezas, 'solo')}>
+      <button type="button" {...propsPulsado(aislado)} onClick={alternarAislar(aislado, 'solo')}>
         {t('acciones.aislar')}
       </button>
-      <button type="button" onClick={() => s().aislarPiezas(piezas, 'contexto')}>
+      <button type="button" {...propsPulsado(conContexto)} onClick={alternarAislar(conContexto, 'contexto')}>
         {t('acciones.aislarContexto')}
       </button>
-      <button type="button" onClick={() => s().separar(piezas)}>
+      <button
+        type="button"
+        {...propsPulsado(separado)}
+        onClick={() => (accionAlPulsar(separado) === 'desactivar' ? s().devolver(piezas) : s().separar(piezas))}
+      >
         {t('acciones.separar')}
-      </button>
-      <button type="button" onClick={() => s().devolver(piezas)}>
-        {t('acciones.devolver')}
       </button>
       <button type="button" onClick={() => s().alternarVisibles(piezas, false)}>
         {t('acciones.ocultar')}

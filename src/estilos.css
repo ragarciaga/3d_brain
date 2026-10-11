@@ -272,6 +272,12 @@ a {
   color: var(--texto-suave);
 }
 
+.arbol-aislar.activo {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
 .arbol-icono {
   color: #ff8c1a;
 }
@@ -306,6 +312,10 @@ a {
   flex: 1;
   min-height: 0;
   touch-action: none;
+  /* Arrastrar una pieza (modo reto) no debe seleccionar texto ni abrir el menú de pulsación larga. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .visor-ubicando canvas {
@@ -410,6 +420,19 @@ a {
 
 .acciones button {
   font-size: 0.85em;
+}
+
+.acciones button.activo {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
+/* Parcial: la forma (borde punteado) distingue el estado, no solo el color. */
+.acciones button.parcial,
+.arbol-aislar.parcial {
+  border: 2px dashed var(--acento);
+  background: #dfe8fb;
 }
 
 .estado {
@@ -542,6 +565,30 @@ a {
   padding: 0.45rem 0.8rem;
   background: var(--panel);
   border-top: 1px solid var(--borde);
+}
+
+.armado {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.armado-ayuda {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+.armado-modos {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.armado button.activo {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
 }
 
 .barra-campo {

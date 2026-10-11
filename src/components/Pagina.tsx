@@ -160,11 +160,18 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       const s = useAtlas.getState();
-      const accion = accionEscape({ menuAbierto: menu, ubicando: !!s.ubicando, aislado: !!s.aislar, enCampo: esCampoDeTexto(e.target as HTMLElement | null) });
+      const accion = accionEscape({
+        menuAbierto: menu,
+        ubicando: !!s.ubicando,
+        armando: !!s.armando,
+        aislado: !!s.aislar,
+        enCampo: esCampoDeTexto(e.target as HTMLElement | null),
+      });
       if (accion === 'cerrar-menu') {
         setMenu(false);
         botonMenu.current?.focus();
       } else if (accion === 'cancelar-ubicar') s.setUbicando(null);
+      else if (accion === 'terminar-armado') s.terminarArmado();
       else if (accion === 'salir-aislar') s.salirAislar();
     };
     window.addEventListener('atlas:seleccion', alSeleccionar);
