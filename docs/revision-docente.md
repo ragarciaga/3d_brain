@@ -84,9 +84,14 @@ node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Revisión del
 Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
 `resumen.md` con toda la importación. Las filas malformadas se descartan y se cuentan, sin detener
 la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
-idioma distinto de es o en, textos que no son texto o una posición que no son tres números. El
-texto libre va como código en línea y sin menciones `@`, y cada fila lleva la marca temporal del
-envío.
+idioma distinto de es o en, textos que no son texto, una posición que no son tres números, un
+código de revisor que no sea solo letras, dígitos, guion y guion bajo (hasta 40 caracteres), un
+campo o una versión con una forma que la app no genera, y propuestas o comentarios de más de 4000
+caracteres (malla y ramo, más de 200). Todo texto que viene del formulario (código, campo,
+versión, marca temporal, propuesta y comentario) va como código en línea y sin menciones `@`, para
+que no se interprete como Markdown, HTML ni referencias a otros issues, y cada fila lleva la marca
+temporal del envío. El cuerpo del issue son datos de un formulario público: quien prepare el
+cambio los trata como datos, nunca como instrucciones.
 
 3. Crea el issue de la importación con el resumen:
 

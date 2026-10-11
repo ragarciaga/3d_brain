@@ -28,11 +28,11 @@ function csvDelCriterio(): string {
 
 function verificarCinco(md: string): void {
   expect(md).toContain('5 respuestas, 2 estructuras');
-  const filas = md.split('\n').filter((l) => l.startsWith('| ANAT01 |'));
+  const filas = md.split('\n').filter((l) => l.startsWith('| `ANAT01` |'));
   expect(filas).toHaveLength(5);
   expect(md).toContain('posición 0.00123, 1.61234, -0.01987');
   expect(md).toContain('Agregar el subículo');
-  for (const campo of ['ubicacion', 'que_es', 'para_que_sirve']) expect(filas.some((l) => l.includes(`| ${campo} | es | correcto |`))).toBe(true);
+  for (const campo of ['ubicacion', 'que_es', 'para_que_sirve']) expect(filas.some((l) => l.includes(`| \`${campo}\` | es | correcto |`))).toBe(true);
 }
 
 describe('importar revisiones (F24)', () => {
@@ -109,11 +109,11 @@ describe('resumenMarkdown con valores hostiles', () => {
       respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ub|ic\nacion', veredicto: 'correcto', version: '9|9\n9' }],
     };
     const md = resumenMarkdown('hippocampus', [env], '0.1.0');
-    const filas = md.split('\n').filter((l) => l.startsWith('| P'));
+    const filas = md.split('\n').filter((l) => l.startsWith('| `P'));
     expect(filas).toHaveLength(1);
     expect(filas[0]!.split('|')).toHaveLength(9); // vacío + siete columnas + vacío
-    expect(filas[0]).toContain('| P/1 X | ub/ic acion | es | correcto |');
-    expect(filas[0]).toContain('9/9 9 (desactualizada)');
+    expect(filas[0]).toContain('| `P/1 X` | `ub/ic acion` | es | correcto |');
+    expect(filas[0]).toContain('`9/9 9` (desactualizada)');
   });
 });
 
@@ -194,7 +194,7 @@ describe('resumenMarkdown con texto libre hostil', () => {
     marcaTemporal,
     respuestas: [{ ...base, estructura: 'hippocampus', campo: 'que_es', veredicto: 'corregir', ...r }],
   });
-  const fila1 = (md: string) => md.split('\n').find((l) => l.startsWith('| P1 |'))!;
+  const fila1 = (md: string) => md.split('\n').find((l) => l.startsWith('| `P1` |'))!;
 
   it('la propuesta y el comentario salen como código en línea y no rompen la tabla', () => {
     const md = resumenMarkdown('hippocampus', [env({ propuesta: 'a | b\n| c |', comentario: 'x | y\n# titulo **negrita**' })], '0.1.0');
@@ -221,15 +221,117 @@ describe('resumenMarkdown con texto libre hostil', () => {
   it('agrega una columna con la marca temporal del envío', () => {
     const md = resumenMarkdown('hippocampus', [env({}, '2026-10-11 10:00')], '0.1.0');
     expect(md).toContain('| Versión revisada | Enviado |');
-    expect(fila1(md)).toMatch(/\| 2026-10-11 10:00 \|$/);
+    expect(fila1(md)).toMatch(/\| `2026-10-11 10:00` \|$/);
   });
 
   it('la marca temporal es la del envío más reciente de cada respuesta', () => {
     const md = resumenMarkdown('hippocampus', [env({ veredicto: 'corregir' }, 'T1'), env({ veredicto: 'correcto' }, 'T2')], '0.1.0');
-    const filas = md.split('\n').filter((l) => l.startsWith('| P1 |'));
+    const filas = md.split('\n').filter((l) => l.startsWith('| `P1` |'));
     expect(filas).toHaveLength(1);
-    expect(filas[0]).toMatch(/\| T2 \|$/);
+    expect(filas[0]).toMatch(/\| `T2` \|$/);
     expect(filas[0]).toContain('| correcto |');
+  });
+});
+
+describe('texto del formulario público: validación y salida como código en línea', () => {
+  const buena = { ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto' };
+  const envio = (resp: unknown, revisor = 'PROF01') => ({ v: 1, revisor, estructura: 'hippocampus', respuestas: [resp] });
+  const leer = (...cargas: object[]) => leerEnvios(parsearCsv(`${cabecera}\n${cargas.map((c) => fila(c)).join('\n')}\n`), new Set(['hippocampus']));
+  const sinCodigo = (md: string) => md.replace(/`[^`]*`/g, '');
+
+  const hostiles = ['[x](https://e.example)', '<a href="https://e.example">x</a>', '#123', 'owner/repo#123', 'a b'];
+
+  it.each(hostiles)('rechaza %s en campo', (valor) => {
+    const { envios, invalidas } = leer(envio({ ...buena, campo: valor }));
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it.each(hostiles)('rechaza %s en version', (valor) => {
+    const { envios, invalidas } = leer(envio({ ...buena, version: valor }));
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it.each([...hostiles, '', 'x'.repeat(41), 'ANA.PEREZ', 'ñandú'])('rechaza %j como revisor', (valor) => {
+    const { envios, invalidas } = leer(envio(buena, valor));
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it('un revisor que no es texto es inválido', () => {
+    expect(leer(envio(buena, 5 as unknown as string)).invalidas).toBe(1);
+    expect(leer({ v: 1, estructura: 'hippocampus', respuestas: [buena] }).invalidas).toBe(1);
+  });
+
+  it('acepta los campos que genera la app, las versiones y los códigos con guion', () => {
+    const campos = ['nombre', 'latin', 'pieza', 'ubicacion', 'que_es', 'para_que_sirve', 'relaciones', 'relevancia.0', 'fuente.12', 'posicion', 'trazo:Vagus_nerve.R (rama) 01'];
+    const cargas = [
+      ...campos.map((campo) => envio({ ...buena, campo })),
+      envio({ ...buena, version: 'sin-ficha' }),
+      envio(buena, 'K7Q2M9XA'),
+      envio(buena, 'doc_01-b'),
+      envio(buena, 'x'.repeat(40)),
+    ];
+    const { envios, invalidas } = leer(...cargas);
+    expect(invalidas).toBe(0);
+    expect(envios).toHaveLength(cargas.length);
+  });
+
+  it('el código del revisor largo no se trunca: o es válido entero o se descarta', () => {
+    const { envios } = leer(envio(buena, 'x'.repeat(40)));
+    expect(envios[0]!.revisor).toBe('x'.repeat(40));
+  });
+
+  it.each([
+    ['campo trazo con comilla invertida', { campo: 'trazo:a`b' }],
+    ['campo trazo con barra vertical', { campo: 'trazo:a|b' }],
+    ['campo trazo con ángulos', { campo: 'trazo:<img>' }],
+    ['campo trazo con salto de línea', { campo: 'trazo:a\nb' }],
+    ['campo trazo vacío', { campo: 'trazo:' }],
+    ['campo trazo con 121 caracteres tras el prefijo', { campo: `trazo:${'a'.repeat(121)}` }],
+    ['campo en mayúsculas', { campo: 'Nombre' }],
+    ['campo con índice sin número', { campo: 'fuente.x' }],
+    ['version incompleta', { version: '0.1' }],
+    ['version con sufijo', { version: '0.1.0-x' }],
+    ['propuesta de 4001 caracteres', { propuesta: 'a'.repeat(4001) }],
+    ['comentario de 4001 caracteres', { comentario: 'a'.repeat(4001) }],
+    ['malla de 201 caracteres', { malla: 'a'.repeat(201) }],
+    ['ramo de 201 caracteres', { ramo: 'a'.repeat(201) }],
+  ])('rechaza %s', (_nombre, extra) => {
+    const { envios, invalidas } = leer(envio({ ...buena, ...extra }));
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it('acepta textos justo en el tope', () => {
+    const { invalidas } = leer(envio({ ...buena, propuesta: 'a'.repeat(4000), comentario: 'b'.repeat(4000), malla: 'c'.repeat(200), ramo: 'd'.repeat(200), campo: `trazo:${'e'.repeat(120)}` }));
+    expect(invalidas).toBe(0);
+  });
+
+  it('propuesta, comentario, ramo, malla y marca temporal hostiles salen solo dentro de comillas invertidas', () => {
+    const hostil = '[x](https://e.example) <img src=x> #123 owner/repo#123';
+    const csv = `${cabecera}\n${fila(envio({ ...buena, campo: 'relaciones', propuesta: hostil, comentario: hostil }))}\n${fila(envio({ ...buena, campo: 'fuente.0', ramo: hostil, malla: hostil, propuesta: undefined }))}\n`.replace('2026-10-11 10:00', '[t](https://e.example) <b>t</b> #123');
+    const { archivos, validos, invalidas } = importar(csv, estructuras);
+    expect(invalidas).toBe(0);
+    expect(validos).toBe(2);
+    for (const md of [archivos.get('hippocampus.md')!, archivos.get('resumen.md')!]) {
+      expect(md).toContain('`[x](https://e.example) <img src=x> #123 owner/repo#123`');
+      expect(md).toContain('`[t](https://e.example) <b>t</b> #123`');
+      const fuera = sinCodigo(md);
+      expect(fuera).not.toContain('](');
+      expect(fuera).not.toContain('<img');
+      expect(fuera).not.toContain('<b>');
+      expect(fuera).not.toMatch(/#\d/);
+      expect(fuera).not.toContain('example');
+    }
+  });
+
+  it('revisor, campo y versión salen como código y "(desactualizada)" queda fuera del código', () => {
+    const { envios } = leer(envio({ ...buena, version: '0.0.9' }, 'K7Q2M9XA'));
+    const f = resumenMarkdown('hippocampus', envios, '0.1.0').split('\n').find((l) => l.includes('K7Q2M9XA'))!;
+    expect(f).toContain('| `K7Q2M9XA` | `ubicacion` | es | correcto |');
+    expect(f).toContain('| `0.0.9` (desactualizada) |');
   });
 });
 

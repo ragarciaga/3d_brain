@@ -55,6 +55,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     panel.current?.querySelector<HTMLElement>('button, input, select, a[href]')?.focus({ preventScroll: true });
   }, [menu, movil]);
 
+  // Elegir un grupo de estudio cierra el cajón del celular; el foco vuelve al botón del menú (como con
+  // Escape) en vez de quedar en BODY. Si el cajón no estaba abierto en celular, no se mueve el foco.
+  const alElegirGrupo = useCallback(() => {
+    const abiertoEnCelular = movil && menu;
+    setMenu(false);
+    if (abiertoEnCelular) botonMenu.current?.focus();
+  }, [movil, menu]);
+
   useEffect(() => {
     document.title = t('app.titulo');
   }, [t]);
@@ -250,7 +258,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       <PanelRevision idioma={idioma} alElegir={irA} />
       <div className="cuerpo">
         <aside id="panel-izq" ref={panel} className="panel-izq" inert={movil && !menu}>
-          <GruposEstudio idioma={idioma} alElegir={() => setMenu(false)} />
+          <GruposEstudio idioma={idioma} alElegir={alElegirGrupo} />
           <h2 className="titulo-arbol">{t('arbol.titulo')}</h2>
           <Arbol idioma={idioma} alElegir={irA} />
         </aside>

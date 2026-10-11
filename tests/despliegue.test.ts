@@ -81,6 +81,15 @@ describe('flujo de GitHub Pages (.github/workflows/pages.yml)', () => {
     expect(obtenidas).toEqual(fijadas);
   });
 
+  it('actions/checkout no deja las credenciales en el repositorio (persist-credentials: false)', () => {
+    const iCheckout = indice(/uses:\s*actions\/checkout@/);
+    expect(iCheckout).toBeGreaterThan(-1);
+    // El paso empieza en `- uses:`; su `with:` está más sangrado que el guion, así que cuelga del bloque.
+    const propias = bloque(todas, iCheckout).map((l) => l.trim());
+    expect(propias).toContain('with:');
+    expect(propias).toContain('persist-credentials: false');
+  });
+
   it('configure-pages corre en el job deploy, donde están los permisos que necesita', () => {
     expect(deploy.some((l) => l.includes('actions/configure-pages@'))).toBe(true);
     expect(bloque(todas, iBuild).some((l) => l.includes('actions/configure-pages@'))).toBe(false);
@@ -92,6 +101,26 @@ describe('.gitignore', () => {
     expect(lineas('.gitignore').map((l) => l.trim())).toContain('.venv-pipeline/');
   });
 });
+
+/**
+ * Intérprete de Python 3: en Linux y macOS suele ser `python3`; en Windows puede haber solo `python`
+ * o el lanzador `py -3`. Se usa el primero que corre y dice ser Python 3. Si ninguno sirve, la prueba
+ * falla con un error claro (nunca se omite).
+ */
+const CANDIDATOS_PYTHON: string[][] = [['python3'], ['python'], ['py', '-3']];
+let pythonElegido: string[] | undefined;
+function pythonTres(): string[] {
+  if (pythonElegido) return pythonElegido;
+  for (const c of CANDIDATOS_PYTHON) {
+    const r = spawnSync(c[0]!, [...c.slice(1), '-c', 'import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)'], { encoding: 'utf8' });
+    if (!r.error && r.status === 0) {
+      pythonElegido = c;
+      return c;
+    }
+  }
+  const probados = CANDIDATOS_PYTHON.map((c) => c.join(' ')).join(', ');
+  throw new Error(`No se encontró Python 3 (se probó: ${probados}). Esta prueba necesita Python 3 en el PATH.`);
+}
 
 describe('pipeline/descargar.py: verificar (SHA-256)', () => {
   const carpetas: string[] = [];
@@ -110,9 +139,10 @@ describe('pipeline/descargar.py: verificar (SHA-256)', () => {
       'from descargar import verificar',
       'verificar(sys.argv[1], sys.argv[2])',
     ].join('\n');
-    const r = spawnSync('python3', ['-I', '-B', '-c', guion, ruta, esperado], { encoding: 'utf8' });
+    const [cmd, ...previos] = pythonTres();
+    const r = spawnSync(cmd!, [...previos, '-I', '-B', '-c', guion, ruta, esperado], { encoding: 'utf8' });
     if (r.error) {
-      throw new Error(`No se pudo ejecutar python3 (${r.error.message}). Esta prueba necesita Python 3 en el PATH.`);
+      throw new Error(`No se pudo ejecutar Python 3 (${r.error.message}).`);
     }
     return r;
   }

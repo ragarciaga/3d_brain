@@ -384,6 +384,8 @@ test.describe('celular (390 x 844)', () => {
     await menu.click();
     await page.locator('[data-grupo="sistema-limbico"]').click();
     await expect(panel).toHaveAttribute('inert', '');
+    // ...y el foco vuelve al botón "Estructuras", no a BODY.
+    await expect(menu).toBeFocused();
     // Elegir un elemento del árbol cierra.
     await menu.click();
     await page.locator('[data-nodo="g-brain"]').click();
