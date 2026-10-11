@@ -12,7 +12,8 @@ La app corre entera en el navegador (sin backend), muestra un modelo 3D con cien
 Usaremos Node.js 24 LTS, TypeScript 6.0.3 estricto, Vite 8.3.4 y React 19.3.0, con three 0.186.1, @react-three/fiber 9.8.1 y @react-three/drei 10.7.9 para el 3D; zustand 5.0.15 para el estado; react-router 8.4.0; i18next 26.4.3 con react-i18next 17.0.16; fuse.js 7.5.0; idb-keyval 6.3.0; Vitest 5.0.3 y Playwright 1.64.0. Versiones exactas, sin `^`.
 
 Herramientas de desarrollo (no llegan al navegador), también con versión exacta: ESLint 10.12.0 con
-typescript-eslint 8.71.1, eslint-plugin-react-hooks 7.1.1 y globals 17.13.0; @vitejs/plugin-react
+@eslint/js 10.0.1, typescript-eslint 8.71.1, eslint-plugin-react-hooks 7.1.1 y globals 17.13.0;
+@playwright/mcp 0.0.83 (lo usa el `.mcp.json` del harness); @vitejs/plugin-react
 6.1.2; @types/react, @types/react-dom, @types/three y @types/node; @gltf-transform/core,
 /extensions y /functions 4.5.1 con meshoptimizer 1.3.0 para comprimir y verificar el modelo desde
 Node (en lugar de @gltf-transform/cli, que arrastraba una dependencia con una vulnerabilidad

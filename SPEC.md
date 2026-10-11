@@ -212,7 +212,7 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
   - Marcadores: "Proponer posición". El revisor toca el punto correcto en el modelo y se envían las coordenadas.
   - Trazos del vago: el revisor toca un trazo y elige de una lista qué ramo es, "no es un ramo" o "no sé".
   - Pasos de circuitos y casos clásicos, cuando existan (fase 2).
-- **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre un formulario de Google del editor, ya lleno con todas las respuestas, y el revisor solo confirma. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
+- **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre, por cada estructura revisada, un formulario de Google del editor ya lleno con sus respuestas, y el revisor solo confirma. Si la revisión no cabe en un enlace, se envía en partes. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
 - **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
 - **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando una ficha tiene el visto bueno de los tres roles (anatomía, psicología, traducción) en un idioma, pasa a "verificada" con revisor y fecha.
 - **Vista del revisor:** lista de lo que le falta por revisar y de lo que ya revisó.
@@ -510,11 +510,11 @@ Fuente: Z-Anatomy, atlas en Blender construido sobre BodyParts3D, licencia CC BY
 
 El pipeline corre en la nube (sesión de Claude Code) o en el portátil, con `pip install bpy` o con `blender -b --python`. No necesita abrir la interfaz de Blender.
 
-Comandos de compresión de referencia (confirmar opciones con `--help` antes de usarlos):
+Compresión y validación desde el repositorio (Node, sin la CLI de gltf-transform, que arrastra una dependencia con una vulnerabilidad conocida; ver docs/adr/0001-stack.md):
 
 ```powershell
-npx @gltf-transform/cli inspect atlas.glb
-npx @gltf-transform/cli optimize atlas.glb atlas-opt.glb --compress meshopt --simplify false
+node scripts\comprimir-modelo.ts
+npm run check:modelo
 ```
 
 **Regla que no se negocia:** la posición de cada pieza en el mundo nunca cambia, en ningún paso. El único cambio permitido es el giro global de Z arriba (Blender) a Y arriba (glTF), igual para todas las piezas. Por eso encajan solas en el visor. La validación del paso 9 lo comprueba en cada cambio.
