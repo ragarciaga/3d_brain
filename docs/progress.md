@@ -1,32 +1,34 @@
 # Progress
 
-Updated: 2026-10-12 (revisión docente lista: formularios, guía y propuestas de nombre)
+Updated: 2026-10-12 (revisión docente en marcha: formularios, códigos y guía listos)
 
 ## Current objective
-Hito 1.2 (#17): explosión más amplia, botones de aislar y separar que se alternan, y "Armar pieza
-por pieza" en dos modos (tocar para devolver y reto de arrastrar). Viene de lo que el editor vio al
-probar el sitio publicado.
+Revisión docente (F24) de las fichas, los nombres pendientes, las posiciones de marcadores y los
+trazos del vago. Todo lo anatómico lo validan docentes; el editor solo reparte enlaces y aprueba
+los cambios que salgan de sus revisiones.
 
 ## Current state
-- Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
-  a `main` se publica solo con el workflow `pages`.
-- Works: main en verde (02a1848): typecheck, lint, 172 pruebas unitarias, check:i18n, check:modelo
-  (341 mallas, 287 piezas, 6,53 MB) y build; 25 E2E en CI. F1 a F7, F9, F10, F11 y F24. El hito
-  1.1 (PR #14) pasó verificador, auditor ciego y revisión de seguridad sobre el commit final.
-- Broken: "Reintentar" tras una falla de carga deja un error de React en consola, aunque la app se
-  recupera (#16).
-- Content: 235 de 236 fichas en borrador con fuentes verificadas (#7, PR #22). Los nombres, las
-  fichas, las posiciones de marcadores y los trazos del vago los validan docentes, no el editor.
-- Revisión docente lista para arrancar: formularios de revisión y de registro creados en el Drive de
-  Maysa Digital y conectados a la app (#5); guía para docentes en docs/guia-docentes.md; dudas
-  conocidas en docs/fichas-dudas.md; las 18 propuestas de nombre se ven en la ficha (#8).
+- Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`) con la marca
+  Maysa Brain. Cada merge a `main` se publica solo con el workflow `pages`.
+- Works: main en verde (778b3fc): typecheck, lint, 262 pruebas unitarias, check:i18n, check:modelo
+  (341 mallas, 287 piezas, 6,53 MB), build y 34 E2E. F1 a F6, F9, F10, F11 y F24, más modo estudio,
+  paneles plegables y tema claro u oscuro. "Armar pieza por pieza" (F7) salió del alcance.
+- Content: 235 de 236 fichas en borrador, con fuentes abiertas y contrastadas con PubMed (#7,
+  PR #22). Falta solo el lóbulo grácil. 18 nombres en español y latín siguen PENDIENTE, con
+  propuesta visible en la ficha para los docentes (#8). Dudas para docentes en docs/fichas-dudas.md.
+- Revisión docente lista (PR #23 y #24):
+  - formularios de registro y de revisión en el Drive de Maysa Digital; la app abre el de revisión
+    ya lleno;
+  - 10 códigos de revisor (D01 a D10); padrón y enlaces en la carpeta privada "Maysa Brain
+    (privado)" del Drive de Maysa Digital, nunca en el repositorio;
+  - guía para docentes en docs/guia-docentes.md; guía del editor en docs/revision-docente.md.
+- Broken: nada conocido.
 - Pending (editor):
-  - fusionar #23 (padrón de revisores, #15) y crear los códigos con `node scripts/crear-revisores.ts N`;
-  - conseguir docentes y enviarles su enlace, el formulario de registro y docs/guia-docentes.md;
-  - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
-    del formulario de revisión);
-  - medir en los equipos (#6).
-- Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
+  - enviar a cada docente su enlace, el formulario de registro y la guía; anotar su nombre junto al
+    alias en el documento de enlaces del Drive;
+  - cuando lleguen revisiones: descargar el CSV de respuestas y pedir la importación (#8, #11);
+  - medir en los equipos de referencia (#6).
+- Pending (hito 2): F8 cortes (#9), F12 reportar error (#10).
 
 ## Key decisions
 - 2026-10-11: stack SPA con Vite, React y R3F, see docs/adr/0001-stack.md
@@ -39,14 +41,20 @@ probar el sitio publicado.
 - 2026-10-11: revisión docente por formulario de Google, see docs/adr/0008-revision-docente.md
 - 2026-10-11: el importador de revisiones trata el formulario como entrada no confiable (todo texto
   como código en línea, validación estricta), see docs/revision-docente.md sección 4
-- 2026-10-11: "Armar pieza por pieza" tendrá modo normal (tocar) y modo reto (arrastrar); el editor
-  lo aprobó, va a SPEC F7 en #17
+- 2026-10-12: los issues muestran el alias del revisor (D01...), nunca su código; el padrón vive
+  fuera del repositorio (#15), see docs/adr/0008-revision-docente.md
+- 2026-10-12: el contenido anatómico (nombres, fichas, posiciones, trazos) lo validan docentes, no
+  el editor; las propuestas sin término en TA2 se muestran en la ficha y siguen PENDIENTE hasta esa
+  revisión (#8)
+- 2026-10-12: "Armar pieza por pieza" sale del alcance; cada ficha trae búsquedas de artículos
+  científicos (PR #21)
 
 ## Next steps
-1. Hito 1.2 (#17): plan, SPEC F7, implementación, verificación y merge.
-2. Configurar el formulario de revisión (#5) y repartir enlaces a los docentes.
+1. Repartir los 10 enlaces de docentes (empezar por las 40 fichas del lanzamiento: sistema
+   límbico, ganglios basales, diencéfalo, tronco encefálico y vago).
+2. Importar las primeras revisiones y preparar los cambios (`scripts/importar-revisiones.ts`).
 3. Medir en los equipos de referencia (#6); si el Android baja de 30 cuadros/s, abrir el issue de F19.
-4. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
+4. Hito 2: prototipo de F8 (stencil) y F12. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
