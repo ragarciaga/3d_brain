@@ -18,6 +18,7 @@ import {
 } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { encaja, radioEnPantalla, type Punto2 } from '../lib/armado';
+import { INICIO_INVENTARIO } from '../lib/inventario';
 import { acercar, CERO, sumar, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
 import { crearLectorMovimiento } from '../lib/movimiento';
@@ -83,7 +84,13 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const { t } = useTranslation();
   const nodo = nodos[id]!;
   const referencia = nodo.clase === 'referencia';
-  const visible = useAtlas((s) => !s.ocultas.has(id) && (!s.aislar || s.aislar.piezas.has(id) || s.aislar.modo === 'contexto'));
+  // En el inventario (F6) los órganos de referencia no se mueven y quedarían encima de las repisas: se ocultan.
+  const visible = useAtlas(
+    (s) =>
+      !s.ocultas.has(id) &&
+      (!s.aislar || s.aislar.piezas.has(id) || s.aislar.modo === 'contexto') &&
+      !(referencia && s.explosion > INICIO_INVENTARIO),
+  );
   const fantasma = useAtlas((s) => !!s.aislar && s.aislar.modo === 'contexto' && !s.aislar.piezas.has(id));
   const seleccionada = useAtlas((s) => piezasSeleccionadas(s.seleccion).includes(id));
   const mallaSel = useAtlas((s) => s.seleccion.malla);

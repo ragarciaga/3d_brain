@@ -134,7 +134,7 @@ Shift+clic aísla varias piezas a la vez. Aislar un nodo del árbol aísla todas
 
 #### F6. Fragmentar
 
-- **Explosión global:** un deslizador de 0 a 100 %. Hasta el 70 % aleja cada pieza visible del centro del conjunto (se ve de dónde sale cada una). Del 70 al 100 % cada bloque viaja a su lugar en un **inventario**: repisas sobre el plano frontal, con las piezas derechas a un lado, las izquierdas en espejo al otro y las de la línea media al centro; los lóbulos quedan juntos y de arriba abajo según su altura en el encéfalo. Al entrar al inventario la cámara pasa a la vista anterior.
+- **Explosión global:** un deslizador de 0 a 100 %. Hasta el 70 % aleja cada pieza visible del centro del conjunto (se ve de dónde sale cada una). Del 70 al 100 % cada bloque viaja a su lugar en un **inventario**: repisas sobre el plano frontal, con las piezas derechas a un lado, las izquierdas en espejo al otro y las de la línea media al centro; los lóbulos quedan juntos y de arriba abajo según su altura en el encéfalo. Al entrar al inventario la cámara pasa a la vista anterior y los órganos de referencia, que no se desarman, se ocultan hasta volver por debajo del 70 %.
 - **Separar por nivel:** un selector define qué tan fino se desarma: hemisferios, lóbulos o giros. Con "lóbulos", cada lóbulo se aleja como un bloque con sus giros juntos; con "giros", se separan uno por uno.
 - **Separar una pieza:** desde la ficha, la pieza sale de su sitio y queda resaltada, mientras el resto sigue armado; el mismo botón, pulsado otra vez, la devuelve.
 

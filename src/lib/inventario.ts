@@ -9,7 +9,7 @@ export const SEPARACION_INVENTARIO = 0.008;
 /** Lado mínimo de un bloque en el inventario, para que una pieza diminuta (o sin caja) no quede pegada a la vecina. */
 export const TAMANO_MINIMO = 0.004;
 /** Ancho de cada lado del inventario respecto a la raíz de su área: más de 1 da repisas más anchas que altas. */
-const PROPORCION_LADO = 2;
+const PROPORCION_LADO = 1;
 /** Lo mismo para la columna de la línea media, más angosta para que los lados queden cerca del centro. */
 const PROPORCION_MEDIO = 0.8;
 
