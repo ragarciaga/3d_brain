@@ -201,13 +201,33 @@ describe('estado del atlas', () => {
     expect(base['hippocampus-r']![0]).toBeLessThan(0);
   });
 
-  it('en el inventario (100 %), los bloques se mueven juntos y cada lado queda en el suyo', () => {
+  it('con menos de 8 bloques no hay inventario: al 100 % sigue la radial y cada lado se va al suyo', () => {
     useAtlas.getState().setNivel('hemisferios');
     useAtlas.getState().setExplosion(1);
-    const { base } = useAtlas.getState();
+    const { base, inventario } = useAtlas.getState();
+    expect(inventario).toBe(false);
     expect(base['hippocampus-l']).toEqual(base['precentral-gyrus-l']);
+    expect(base['hippocampus-l']![0]).toBeGreaterThan(0);
+    expect(base['hippocampus-r']![0]).toBeLessThan(0);
+  });
+
+  it('con 8 bloques o más, pasar del 70 % activa el inventario y bajar de nuevo lo apaga', () => {
+    const muchos = Object.fromEntries(
+      ['amygdaloid-body-l', 'amygdaloid-body-r', 'superior-frontal-gyrus-l', 'superior-frontal-gyrus-r'].map((p, i) => [
+        p,
+        [(i % 2 ? -1 : 1) * 0.03, 1.62 + i * 0.01, 0.02] as [number, number, number],
+      ]),
+    );
+    useAtlas.getState().setCentros({ ...centros, ...muchos });
+    useAtlas.getState().setExplosion(INICIO_INVENTARIO);
+    expect(useAtlas.getState().inventario).toBe(false);
+    useAtlas.getState().setExplosion(1);
+    expect(useAtlas.getState().inventario).toBe(true);
+    const { base } = useAtlas.getState();
     expect(centros['hippocampus-l']![0] + base['hippocampus-l']![0]).toBeGreaterThan(0);
     expect(centros['hippocampus-r']![0] + base['hippocampus-r']![0]).toBeLessThan(0);
+    useAtlas.getState().setExplosion(0.5);
+    expect(useAtlas.getState().inventario).toBe(false);
   });
 
   it('por lóbulos, los giros del mismo lóbulo y lado se mueven juntos, como dice bloqueDe', () => {

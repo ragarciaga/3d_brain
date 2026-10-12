@@ -4,6 +4,8 @@ import { desplazamientosExplosion, escalar, origenExplosion, promedio, sumar, re
 
 /** Fracción del deslizador donde termina la explosión radial (ahí llega a su factor 1) y empieza el inventario. */
 export const INICIO_INVENTARIO = 0.7;
+/** Con menos bloques visibles que estos, el inventario no aporta (las piezas se acercarían): el deslizador es radial hasta el 100 %. */
+export const MINIMO_BLOQUES_INVENTARIO = 8;
 /** Espacio entre bloques y entre filas del inventario, en metros. */
 export const SEPARACION_INVENTARIO = 0.008;
 /** Lado mínimo de un bloque en el inventario, para que una pieza diminuta (o sin caja) no quede pegada a la vecina. */
@@ -172,9 +174,20 @@ export function desplazamientosInventario(
 /** Curva suave de 0 a 1 (sin saltos de velocidad al empezar ni al llegar). */
 export const suave = (t: number) => t * t * (3 - 2 * t);
 
+/** Cuántos bloques distintos forman las piezas visibles que tienen centro. */
+export function contarBloques(centros: Record<string, Vec3>, visibles: string[], bloque: (pieza: string) => string): number {
+  return new Set(visibles.filter((p) => centros[p]).map(bloque)).size;
+}
+
+/** Si el deslizador termina en inventario: solo con MINIMO_BLOQUES_INVENTARIO bloques visibles o más. */
+export function usaInventario(centros: Record<string, Vec3>, visibles: string[], bloque: (pieza: string) => string): boolean {
+  return contarBloques(centros, visibles, bloque) >= MINIMO_BLOQUES_INVENTARIO;
+}
+
 /**
  * Desplazamiento del deslizador de explosión (0 a 1). Hasta INICIO_INVENTARIO es la explosión radial,
  * que llega ahí a su factor 1; después cada bloque viaja de su posición radial a su lugar en el inventario.
+ * Con menos de MINIMO_BLOQUES_INVENTARIO bloques no hay inventario: la radial ocupa todo el recorrido.
  */
 export function desplazamientosDeslizador(
   centros: Record<string, Vec3>,
@@ -186,6 +199,7 @@ export function desplazamientosDeslizador(
   lado: (pieza: string) => Lado = () => 'medio',
 ): Record<string, Vec3> {
   const f = Math.min(1, Math.max(0, factor));
+  if (!usaInventario(centros, visibles, bloque)) return desplazamientosExplosion(centros, visibles, bloque, f, lado);
   if (f <= INICIO_INVENTARIO) return desplazamientosExplosion(centros, visibles, bloque, f / INICIO_INVENTARIO, lado);
   const radial = desplazamientosExplosion(centros, visibles, bloque, 1, lado);
   const inventario = desplazamientosInventario(centros, cajas, visibles, bloque, grupo, lado);

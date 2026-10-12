@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { propsPulsado } from '../lib/alternar';
 import { nodos } from '../data/atlas';
 import type { Nivel } from '../lib/explosion';
-import { INICIO_INVENTARIO } from '../lib/inventario';
 import { fueraDeSitio, hayFiltros, piezasDeEncuadre, piezasVisibles, useAtlas } from '../store/useAtlas';
 
 /** Tiempo con el deslizador quieto antes de reencuadrar la cámara (no se reencuadra a cada paso). */
@@ -28,7 +27,7 @@ export default function BarraFragmentar() {
       temporizador.current = null;
       const s = useAtlas.getState();
       // El inventario está en el plano frontal: se mira de frente y entra todo, también el vago.
-      if (s.explosion > INICIO_INVENTARIO) {
+      if (s.inventario) {
         const todas = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
         if (todas.length) s.pedirCamara({ vista: 'anterior', encuadrar: todas });
         return;

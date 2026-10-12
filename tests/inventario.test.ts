@@ -7,6 +7,7 @@ import {
   desplazamientosDeslizador,
   desplazamientosInventario,
   INICIO_INVENTARIO,
+  MINIMO_BLOQUES_INVENTARIO,
   SEPARACION_INVENTARIO,
   type Caja,
 } from '../src/lib/inventario';
@@ -122,5 +123,25 @@ describe('deslizador de explosión (F6)', () => {
     const a = deslizar(INICIO_INVENTARIO);
     const b = deslizar(INICIO_INVENTARIO + 1e-6);
     for (const p of visibles) for (const i of [0, 1, 2]) expect(Math.abs(a[p]![i]! - b[p]![i]!), p).toBeLessThan(1e-6);
+  });
+
+  it('con menos de MINIMO_BLOQUES_INVENTARIO bloques no hay inventario: la radial ocupa todo el recorrido', () => {
+    const pocas = visibles.slice(0, MINIMO_BLOQUES_INVENTARIO - 1);
+    const radial = (f: number) => desplazamientosExplosion(centros, pocas, (p) => p, f, ladoDe);
+    const deslizarPocas = (f: number) => desplazamientosDeslizador(centros, cajas, pocas, (p) => p, grupoInventario, f, ladoDe);
+    expect(deslizarPocas(1)).toEqual(radial(1));
+    expect(deslizarPocas(INICIO_INVENTARIO)).toEqual(radial(INICIO_INVENTARIO));
+  });
+
+  it('con exactamente MINIMO_BLOQUES_INVENTARIO bloques sí hay inventario', () => {
+    const justas = visibles.slice(0, MINIMO_BLOQUES_INVENTARIO);
+    expect(desplazamientosDeslizador(centros, cajas, justas, (p) => p, grupoInventario, 1, ladoDe)).toEqual(
+      desplazamientosInventario(centros, cajas, justas, (p) => p, grupoInventario, ladoDe),
+    );
+  });
+
+  it('por hemisferios hay menos de MINIMO_BLOQUES_INVENTARIO bloques: nunca entra al inventario', () => {
+    const bloques = new Set(visibles.map((p) => bloqueDe(p, 'hemisferios')));
+    expect(bloques.size).toBeLessThan(MINIMO_BLOQUES_INVENTARIO);
   });
 });
