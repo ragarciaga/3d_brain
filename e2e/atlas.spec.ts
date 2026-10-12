@@ -103,12 +103,15 @@ const piezaSeleccionada = (page: Page) => page.evaluate(() => (window as unknown
 const clavesSeparadas = (page: Page) =>
   page.evaluate(() => Object.keys((window as unknown as VentanaAtlas).__atlas.getState().separadas).sort());
 
-/** Tálamo aislado, explosión al 100 % y vista anterior con la cámara quieta: sus dos mitades quedan separadas y a la vista. */
+/**
+ * Tálamo aislado, explosión al 70 % (el máximo de la radial; después empieza el inventario, que pone
+ * las dos mitades juntas en el centro) y vista anterior con la cámara quieta: quedan separadas y a la vista.
+ */
 async function prepararTalamos(page: Page) {
   await abrir(page, '/es/talamo');
   await modeloCargado(page);
   await page.getByTestId('ficha').getByRole('button', { name: 'Aislar', exact: true }).click();
-  await page.getByTestId('explosion').fill('100');
+  await page.getByTestId('explosion').fill('70');
   await page.waitForTimeout(2500);
   await page.locator('[data-vista="anterior"]').click();
   await camaraQuieta(page);
