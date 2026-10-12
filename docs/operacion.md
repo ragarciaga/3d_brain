@@ -1,6 +1,7 @@
 # Operación del atlas: guía del editor
 
-Qué hacer, dónde y con qué comando. Para el porqué de cada decisión, ver `docs/adr/`; para el
+Qué hacer, dónde y con qué comando. Todos los enlaces (sitio, formularios, logos, GitHub) están en
+[docs/enlaces.md](enlaces.md). Para el porqué de cada decisión, ver `docs/adr/`; para el
 alcance, `SPEC.md`; para las reglas que siguen los agentes, `AGENTS.md`.
 
 ## Mapa del repositorio

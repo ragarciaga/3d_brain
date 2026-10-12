@@ -1,31 +1,39 @@
 # Progress
 
-Updated: 2026-10-12 (revisión docente lista: formularios, guía y propuestas de nombre)
+Updated: 2026-10-12 (Maysa Brain, modo estudio, medición de carga y enlaces importantes)
+
+Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
 ## Current objective
-Hito 1.2 (#17): explosión más amplia, botones de aislar y separar que se alternan, y "Armar pieza
-por pieza" en dos modos (tocar para devolver y reto de arrastrar). Viene de lo que el editor vio al
-probar el sitio publicado.
+Medir la carga en los equipos de referencia (#6) con `?medir=1` y decidir con esos datos si se
+adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la revisión docente.
 
 ## Current state
 - Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
   a `main` se publica solo con el workflow `pages`.
-- Works: main en verde (02a1848): typecheck, lint, 172 pruebas unitarias, check:i18n, check:modelo
-  (341 mallas, 287 piezas, 6,53 MB) y build; 25 E2E en CI. F1 a F7, F9, F10, F11 y F24. El hito
-  1.1 (PR #14) pasó verificador, auditor ciego y revisión de seguridad sobre el commit final.
-- Broken: "Reintentar" tras una falla de carga deja un error de React en consola, aunque la app se
-  recupera (#16).
+- Nombre y marca: **Maysa Brain**, con logo propio (`public/marca/`) y paleta de Maysa; modo claro y
+  oscuro con botón.
+- Interfaz: modo estudio (PR #25): cerebro a pantalla completa, riel de herramientas, ficha a la
+  izquierda con descripción y "Recursos y artículos de referencia", explosión vertical a la derecha
+  (al 100 % las piezas quedan en inventario, mínimo 8 bloques), brújula de vistas y búsqueda con
+  Ctrl+K. Paneles laterales plegables. Se quitó "Armar pieza por pieza".
+- Works: typecheck, lint, 269 pruebas unitarias, check:i18n, check:modelo (341 mallas, 287 piezas,
+  6,53 MB) y build; 35 E2E. F1 a F7, F9, F10, F11 y F24. Bugs #16 (Reintentar) y #19 (Separar)
+  cerrados.
+- Medición: `?medir=1` abre un panel con tiempos de código, descarga y preparación del modelo,
+  primer cuadro, cuadros por segundo y GPU, con botón para copiar (docs/operacion.md). Medido en el
+  entorno de Claude: código 1,1 s, descarga del modelo 2,4 s, preparación 1 s, cerebro a los 4,5 s;
+  la descarga del modelo empieza cuando termina el código.
 - Content: 235 de 236 fichas en borrador con fuentes verificadas (#7, PR #22). Los nombres, las
   fichas, las posiciones de marcadores y los trazos del vago los validan docentes, no el editor.
-- Revisión docente lista para arrancar: formularios de revisión y de registro creados en el Drive de
-  Maysa Digital y conectados a la app (#5); guía para docentes en docs/guia-docentes.md; dudas
-  conocidas en docs/fichas-dudas.md; las 18 propuestas de nombre se ven en la ficha (#8).
+- Revisión docente lista: formularios de revisión y de registro conectados (#5), padrón de
+  revisores con 10 códigos creados (#15, privados en `pipeline/revisores.local.json`), guía en
+  docs/guia-docentes.md, dudas en docs/fichas-dudas.md, 18 propuestas de nombre visibles (#8).
 - Pending (editor):
-  - fusionar #23 (padrón de revisores, #15) y crear los códigos con `node scripts/crear-revisores.ts N`;
-  - conseguir docentes y enviarles su enlace, el formulario de registro y docs/guia-docentes.md;
+  - medir en iPad, celular y PC con `?medir=1` y pegar los resultados en #6;
+  - enviar a cada docente su enlace, el formulario de registro y docs/guia-docentes.md;
   - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
-    del formulario de revisión);
-  - medir en los equipos (#6).
+    del formulario de revisión).
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
 
 ## Key decisions
@@ -39,14 +47,18 @@ probar el sitio publicado.
 - 2026-10-11: revisión docente por formulario de Google, see docs/adr/0008-revision-docente.md
 - 2026-10-11: el importador de revisiones trata el formulario como entrada no confiable (todo texto
   como código en línea, validación estricta), see docs/revision-docente.md sección 4
-- 2026-10-11: "Armar pieza por pieza" tendrá modo normal (tocar) y modo reto (arrastrar); el editor
-  lo aprobó, va a SPEC F7 en #17
+- 2026-10-12: el producto se llama Maysa Brain; se quita "Armar pieza por pieza" (lo importante son
+  las fichas); explosión radial hasta 70 % y luego inventario; modo estudio para no parecerse a
+  otros atlas. Ver SPEC.md F6, F7, F9 y §15.
+- 2026-10-12: un código privado por docente (10 creados); los códigos nunca van al repositorio.
+- 2026-10-12: medir antes de optimizar la carga; `?medir=1` da los datos.
 
 ## Next steps
-1. Hito 1.2 (#17): plan, SPEC F7, implementación, verificación y merge.
-2. Configurar el formulario de revisión (#5) y repartir enlaces a los docentes.
-3. Medir en los equipos de referencia (#6); si el Android baja de 30 cuadros/s, abrir el issue de F19.
-4. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
+1. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
+   empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
+   issue de F19.
+2. Repartir enlaces a los docentes e importar las primeras revisiones.
+3. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->

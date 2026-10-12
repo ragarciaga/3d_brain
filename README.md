@@ -6,7 +6,11 @@ fuente, nivel de evidencia y revisor visible, y se vuelve a armar sin perder la 
 
 **Uso educativo. No es una herramienta clínica ni de diagnóstico.**
 
-Estado: hito 1, piloto con docentes. Las fichas están en borrador hasta que las revisen docentes.
+Estado: hito 1, piloto con docentes. 235 de 236 fichas están escritas con fuentes verificadas y
+siguen en borrador hasta que las revisen docentes.
+
+**Sitio:** https://ragarciaga.github.io/3d_brain/ · **Todos los enlaces del proyecto:**
+[docs/enlaces.md](docs/enlaces.md)
 
 ## Correrlo en local
 
@@ -19,12 +23,17 @@ Abre http://localhost:3000. Requiere Node.js 22.18 o superior (recomendado 24 LT
 
 ## Qué trae
 
-- Visor 3D con vistas anatómicas, árbol de estructuras, grupos de estudio y búsqueda bilingüe
-  (español, inglés, latín y sinónimos, tolerante a tildes y errores).
-- Ficha por estructura con fuentes, nivel de evidencia y estado de revisión por idioma.
-- Fragmentar por hemisferios, lóbulos o piezas, separar, devolver y armar pieza por pieza.
+- Modo estudio: el cerebro a pantalla completa; un riel abre el árbol, los grupos de estudio y la
+  búsqueda (Ctrl+K) solo cuando se piden.
+- Búsqueda bilingüe (español, inglés, latín y sinónimos, tolerante a tildes y errores).
+- Ficha por estructura a la izquierda: qué es, función, ubicación, relaciones, relevancia en
+  psicología con nivel de evidencia, recursos, búsquedas de artículos científicos y fuentes.
+- Fragmentar por hemisferios, lóbulos o piezas con el deslizador vertical (separado e inventario),
+  separar y devolver piezas, y vistas con una brújula anatómica.
+- Tema claro u oscuro y logo propio (`public/marca/`).
 - Enlaces por estructura e idioma (`/es/hipocampo`, `/en/hippocampus`) y "Compartir esta vista".
 - Modo revisión docente por campo (`/es/revision?r=CODIGO`): ver docs/revision-docente.md.
+- Medición de carga para los equipos de referencia (`?medir=1`): ver docs/operacion.md.
 
 ## Verificación
 
@@ -40,6 +49,7 @@ npm run test:e2e
 
 ## Documentos
 
+- docs/enlaces.md: **todos los enlaces del proyecto** (sitio, formularios, logos, GitHub).
 - SPEC.md: alcance y funciones (F1 a F24).
 - AGENTS.md: reglas del proyecto para agentes y personas.
 - docs/brief.md y docs/adr/: decisiones.
