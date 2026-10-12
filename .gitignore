@@ -19,3 +19,6 @@ pipeline/.cache/
 pipeline/salida/
 __pycache__/
 .venv-pipeline/
+
+# Padrón privado de revisores (código -> alias); el repositorio es público (#15)
+pipeline/revisores.local.json

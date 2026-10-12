@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { importar, leerEnvios, parsearCsv, resumenConsolidado, resumenMarkdown, ultimasRespuestas, type Envio } from '../scripts/lib/revisiones.ts';
+import { agregarRevisores, aplicarPadron, errorDePadron, importar, leerEnvios, parsearCsv, resumenConsolidado, resumenMarkdown, ultimasRespuestas, type Envio } from '../scripts/lib/revisiones.ts';
 import { urlFormulario, type Respuesta } from '../src/lib/revision';
 
 const fila = (carga: object, nombre = 'Ana') => `2026-10-11 10:00,X,Y,"${JSON.stringify(carga).replace(/"/g, '""')}",${nombre}`;
 const cabecera = 'Marca temporal,Código,Estructura,Revisión,Nombre';
 const base = { idioma: 'es' as const, version: '0.1.0', fecha: 'x' };
+/** Padrón de prueba: todos los códigos que usan estas pruebas, con su alias. */
+const padron = { ANAT01: 'D01', PROF01: 'D02', P1: 'D03', X: 'D04' };
 const estructuras = {
   hippocampus: { ficha: { version: '0.1.0' } },
   'm-periaqueductal-grey': { ficha: null },
@@ -26,9 +28,10 @@ function csvDelCriterio(): string {
   return `${cabecera}\n${fila(JSON.parse(celda(ficha, 'hippocampus')))}\n${fila(JSON.parse(celda(marcador, 'm-periaqueductal-grey')))}\n`;
 }
 
-function verificarCinco(md: string): void {
+/** `revisor`: el código si el resumen sale directo de leerEnvios, el alias si sale de importar(). */
+function verificarCinco(md: string, revisor = 'ANAT01'): void {
   expect(md).toContain('5 respuestas, 2 estructuras');
-  const filas = md.split('\n').filter((l) => l.startsWith('| `ANAT01` |'));
+  const filas = md.split('\n').filter((l) => l.startsWith(`| \`${revisor}\` |`));
   expect(filas).toHaveLength(5);
   expect(md).toContain('posición 0.00123, 1.61234, -0.01987');
   expect(md).toContain('Agregar el subículo');
@@ -66,11 +69,12 @@ describe('importar revisiones (F24)', () => {
   });
 
   it('criterio F24 de punta a punta: importar() devuelve un resumen.md con las cinco y un archivo por estructura', () => {
-    const { archivos, validos, invalidas } = importar(csvDelCriterio(), estructuras);
+    const { archivos, validos, invalidas } = importar(csvDelCriterio(), estructuras, padron);
     expect(validos).toBe(2);
     expect(invalidas).toBe(0);
     expect([...archivos.keys()].sort()).toEqual(['hippocampus.md', 'm-periaqueductal-grey.md', 'resumen.md']);
-    verificarCinco(archivos.get('resumen.md')!);
+    verificarCinco(archivos.get('resumen.md')!, 'D01');
+    expect(archivos.get('resumen.md')).not.toContain('ANAT01');
     expect(archivos.get('hippocampus.md')).toContain('Agregar el subículo');
     expect(archivos.get('hippocampus.md')).not.toContain('posición 0.00123');
     expect(archivos.get('m-periaqueductal-grey.md')).toContain('posición 0.00123, 1.61234, -0.01987');
@@ -81,7 +85,7 @@ describe('importar revisiones (F24)', () => {
     const desconocido = { v: 1, revisor: 'P1', estructura: 'no-existe', respuestas: [{ ...base, estructura: 'no-existe', campo: 'a', veredicto: 'correcto' }] };
     const ruta = { v: 1, revisor: 'P1', estructura: '../../../AGENTS', respuestas: [{ ...base, estructura: '../../../AGENTS', campo: 'a', veredicto: 'correcto' }] };
     const mezclada = { v: 1, revisor: 'P1', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'no-existe', campo: 'a', veredicto: 'correcto' }] };
-    const { archivos, validos, invalidas } = importar(`${cabecera}\n${fila(ok)}\n${fila(desconocido)}\n${fila(ruta)}\n${fila(mezclada)}\n`, estructuras);
+    const { archivos, validos, invalidas } = importar(`${cabecera}\n${fila(ok)}\n${fila(desconocido)}\n${fila(ruta)}\n${fila(mezclada)}\n`, estructuras, padron);
     expect([...archivos.keys()].sort()).toEqual(['hippocampus.md', 'resumen.md']);
     expect(validos).toBe(1);
     expect(invalidas).toBe(3);
@@ -180,7 +184,7 @@ describe('leerEnvios rechaza respuestas mal formadas sin abortar la importación
 
   it('importar() sigue produciendo resumen con una fila mala en medio', () => {
     const csv = `${cabecera}\n${fila(envio({ ...buena, posicion: [1, 2] }))}\n${fila(envio(buena))}\n`;
-    const { validos, invalidas, archivos } = importar(csv, estructuras);
+    const { validos, invalidas, archivos } = importar(csv, estructuras, padron);
     expect(validos).toBe(1);
     expect(invalidas).toBe(1);
     expect(archivos.get('resumen.md')).toContain('1 respuestas, 1 estructuras');
@@ -312,7 +316,7 @@ describe('texto del formulario público: validación y salida como código en l�
   it('propuesta, comentario, ramo, malla y marca temporal hostiles salen solo dentro de comillas invertidas', () => {
     const hostil = '[x](https://e.example) <img src=x> #123 owner/repo#123';
     const csv = `${cabecera}\n${fila(envio({ ...buena, campo: 'relaciones', propuesta: hostil, comentario: hostil }))}\n${fila(envio({ ...buena, campo: 'fuente.0', ramo: hostil, malla: hostil, propuesta: undefined }))}\n`.replace('2026-10-11 10:00', '[t](https://e.example) <b>t</b> #123');
-    const { archivos, validos, invalidas } = importar(csv, estructuras);
+    const { archivos, validos, invalidas } = importar(csv, estructuras, padron);
     expect(invalidas).toBe(0);
     expect(validos).toBe(2);
     for (const md of [archivos.get('hippocampus.md')!, archivos.get('resumen.md')!]) {
@@ -351,5 +355,46 @@ describe('reenvíos', () => {
 
   it('dos revisores sobre el mismo campo son dos respuestas distintas', () => {
     expect(ultimasRespuestas([env('P1', [r('es', 'correcto')]), env('P2', [r('es', 'corregir')])])).toHaveLength(2);
+  });
+});
+
+describe('padrón privado de revisores (#15)', () => {
+  const ok = { v: 1, revisor: 'PROF01', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto' }] };
+  const intruso = { ...ok, revisor: 'ZZZZ9999' };
+
+  it('el resumen muestra el alias, nunca el código, y descarta los códigos fuera del padrón', () => {
+    const { archivos, validos, desconocidos } = importar(`${cabecera}\n${fila(ok)}\n${fila(intruso)}\n`, estructuras, padron);
+    expect(validos).toBe(1);
+    expect(desconocidos).toBe(1);
+    for (const md of archivos.values()) {
+      expect(md).not.toContain('PROF01');
+      expect(md).not.toContain('ZZZZ9999');
+    }
+    expect(archivos.get('hippocampus.md')).toContain('`D02`');
+    expect(archivos.get('resumen.md')).toContain('Se descartaron 1 envíos con un código que no está en el padrón');
+  });
+
+  it('un código que coincide con una propiedad de Object no cuenta como conocido', () => {
+    const { envios, desconocidos } = aplicarPadron([{ revisor: 'constructor', estructura: 'hippocampus', respuestas: [], marcaTemporal: '' }], padron);
+    expect(envios).toEqual([]);
+    expect(desconocidos).toBe(1);
+  });
+
+  it('valida el padrón: objeto, códigos válidos y alias D01, D02... sin repetir', () => {
+    expect(errorDePadron(padron)).toBeNull();
+    expect(errorDePadron([])).toMatch(/objeto/);
+    expect(errorDePadron({ 'mal código': 'D01' })).toMatch(/código inválido/);
+    expect(errorDePadron({ AAAA1111: 'Ana' })).toMatch(/alias inválido/);
+    expect(errorDePadron({ AAAA1111: 'D01', BBBB2222: 'D01' })).toMatch(/repetido/);
+  });
+
+  it('agregarRevisores crea códigos de 8 caracteres sin repetir y alias consecutivos', () => {
+    let i = 0;
+    const azar = (max: number) => (i++ * 7) % max;
+    const { padron: nuevo, nuevos } = agregarRevisores({ EXISTENT: 'D02' }, 10, azar);
+    expect(nuevos.map((x) => x[1])).toEqual(['D03', 'D04', 'D05', 'D06', 'D07', 'D08', 'D09', 'D10', 'D11', 'D12']);
+    expect(Object.keys(nuevo)).toHaveLength(11);
+    for (const [codigo] of nuevos) expect(codigo).toMatch(/^[A-HJKMNP-Z2-9]{8}$/);
+    expect(errorDePadron(nuevo)).toBeNull();
   });
 });
