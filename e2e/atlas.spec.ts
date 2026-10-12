@@ -711,17 +711,27 @@ test('los botones Aislar, Aislar con contexto y Separar se activan con un toque 
 test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {
   await abrir(page, '/es/talamo');
   await modeloCargado(page);
+  // Primero el encuadre de la estructura elegida (llega un instante después de cargar).
+  await expect.poll(async () => (await vistaDeCamara(page)).distancia, { timeout: 20_000 }).toBeLessThan(0.2);
   await camaraQuieta(page);
   await page.getByTestId('ficha').getByRole('button', { name: 'Separar', exact: true }).click();
-  await camaraQuieta(page);
-  const lienzo = (await page.getByTestId('visor').locator('canvas').boundingBox())!;
-  for (const pieza of ['thalamus-l', 'thalamus-r']) {
-    const { actual } = await enPantalla(page, pieza);
-    expect(actual.x, pieza).toBeGreaterThan(lienzo.x);
-    expect(actual.x, pieza).toBeLessThan(lienzo.x + lienzo.width);
-    expect(actual.y, pieza).toBeGreaterThan(lienzo.y);
-    expect(actual.y, pieza).toBeLessThan(lienzo.y + lienzo.height);
-  }
+  // Con WebGL por software el visor dibuja pocos cuadros por segundo: dos lecturas seguidas pueden caer
+  // en el mismo cuadro a mitad del reencuadre. Se espera el resultado final, no que la cámara "parezca" quieta.
+  const dentro = () =>
+    page.evaluate(() => {
+      const w = window as unknown as {
+        __camara: { piezaEnPantalla?: (p: string) => { actual: { x: number; y: number } } | null };
+      };
+      const lienzo = document.querySelector('[data-testid="visor"] canvas')!.getBoundingClientRect();
+      return ['thalamus-l', 'thalamus-r'].every((p) => {
+        const r = w.__camara.piezaEnPantalla?.(p);
+        return !!r && r.actual.x > 0 && r.actual.x < lienzo.width && r.actual.y > 0 && r.actual.y < lienzo.height;
+      });
+    });
+  await expect.poll(dentro, { timeout: 20_000 }).toBe(true);
+  // Y se queda así cuando la cámara termina de moverse.
+  await page.waitForTimeout(2000);
+  expect(await dentro()).toBe(true);
 });
 
 test('el doble clic sobre una pieza separada la devuelve y el toque la selecciona', async ({ page }) => {
