@@ -180,10 +180,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Anterior occipital sulcus*"
+    "en": "Anterior occipital sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "anterior-occipital-sulcus",
     "en": "anterior-occipital-sulcus"
@@ -519,17 +519,20 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Cingulate gyrus and sulcus (Middle anterior part)"
+    "en": "Middle-anterior part of the cingulate gyrus and sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "cingulate-gyrus-and-sulcus-middle-anterior-part",
     "en": "cingulate-gyrus-and-sulcus-middle-anterior-part"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "aMCC",
+     "anterior midcingulate cortex"
+    ]
    },
    "ficha": null
   },
@@ -538,17 +541,20 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Cingulate gyrus and sulcus (Middle posterior part)"
+    "en": "Middle-posterior part of the cingulate gyrus and sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "cingulate-gyrus-and-sulcus-middle-posterior-part",
     "en": "cingulate-gyrus-and-sulcus-middle-posterior-part"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "pMCC",
+     "posterior midcingulate cortex"
+    ]
    },
    "ficha": null
   },
@@ -557,17 +563,19 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Cingulate gyrus and sulcus (Posterior dorsal part)"
+    "en": "Posterior-dorsal part of the cingulate gyrus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "cingulate-gyrus-and-sulcus-posterior-dorsal-part",
     "en": "cingulate-gyrus-and-sulcus-posterior-dorsal-part"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "dPCC"
+    ]
    },
    "ficha": null
   },
@@ -575,18 +583,21 @@
    "id": "cingulate-gyrus-posteroventral-part",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Cingulate gyrus (Posteroventral part*)"
+    "es": "Istmo del giro del cíngulo",
+    "en": "Isthmus of cingulate gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Isthmus gyri cinguli",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5514; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "cingulate-gyrus-posteroventral-part",
+    "es": "istmo-del-giro-del-cingulo",
     "en": "cingulate-gyrus-posteroventral-part"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "posterior-ventral part of the cingulate gyrus",
+     "vPCC"
+    ]
    },
    "ficha": null
   },
@@ -594,18 +605,20 @@
    "id": "cingulate-sulcus-marginal-part",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Cingulate sulcus (Marginal part*)"
+    "es": "Rama marginal del surco cingulado",
+    "en": "Marginal branch of cingulate sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Ramus marginalis sulci cinguli",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5478; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "cingulate-sulcus-marginal-part",
+    "es": "rama-marginal-del-surco-cingulado",
     "en": "cingulate-sulcus-marginal-part"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "marginal part of the cingulate sulcus"
+    ]
    },
    "ficha": null
   },
@@ -1279,11 +1292,11 @@
    "id": "g-left-lung",
    "tipo": "grupo",
    "nombre": {
-    "es": "Pulmon izquierdo",
+    "es": "Pulmón izquierdo",
     "en": "Left lung"
    },
    "latin": "Pulmo sinister",
-   "fuente_nombre": "TA2 (Z-Anatomy)",
+   "fuente_nombre": "TA2 (Z-Anatomy); tilde corregida (TA2.csv trae \"Pulmon\")",
    "slug": {
     "es": "pulmon-izquierdo",
     "en": "left-lung"
@@ -2073,17 +2086,19 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Inferior occipital gyrus and sulcus*"
+    "en": "Inferior occipital gyrus and sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "inferior-occipital-gyrus-and-sulcus",
     "en": "inferior-occipital-gyrus-and-sulcus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "O3"
+    ]
    },
    "ficha": null
   },
@@ -2206,17 +2221,19 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Insula (Subcentral gyrus and ant. and post. sulci*)"
+    "en": "Subcentral gyrus (central operculum) and sulci"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "insula-subcentral-gyrus-and-ant-and-post-sulci",
     "en": "insula-subcentral-gyrus-and-ant-and-post-sulci"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "central operculum"
+    ]
    },
    "ficha": null
   },
@@ -2263,10 +2280,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Lat_Fis-ant-Horizont"
+    "en": "Horizontal ramus of the anterior segment of the lateral sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "lat-fis-ant-horizont",
     "en": "lat-fis-ant-horizont"
@@ -2282,10 +2299,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Lat_Fis-ant-Vertical"
+    "en": "Vertical ramus of the anterior segment of the lateral sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "lat-fis-ant-vertical",
     "en": "lat-fis-ant-vertical"
@@ -2300,18 +2317,21 @@
    "id": "lat-fis-post",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Lat_Fis-post"
+    "es": "Rama posterior del surco lateral",
+    "en": "Posterior ramus of lateral sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Ramus posterior sulci lateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5474; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "lat-fis-post",
+    "es": "rama-posterior-del-surco-lateral",
     "en": "lat-fis-post"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "posterior ramus of the Sylvian fissure",
+     "posterior segment of the lateral sulcus"
+    ]
    },
    "ficha": null
   },
@@ -2339,17 +2359,20 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Lateral occipital gyrus (Middle occipital gyrus*)"
+    "en": "Middle occipital gyrus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "lateral-occipital-gyrus-middle-occipital-gyrus",
     "en": "lateral-occipital-gyrus-middle-occipital-gyrus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "O2",
+     "lateral occipital gyrus"
+    ]
    },
    "ficha": null
   },
@@ -2528,13 +2551,13 @@
    "id": "lunate-sulcus",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
+    "es": "Surco lunar",
     "en": "Lunate sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Sulcus lunatus",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5483",
    "slug": {
-    "es": "lunate-sulcus",
+    "es": "surco-lunar",
     "en": "lunate-sulcus"
    },
    "sinonimos": {
@@ -2816,15 +2839,20 @@
     "es": "Sustancia gris periacueductal",
     "en": "Periaqueductal grey"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Substantia grisea periaquaeductalis",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5909",
    "slug": {
     "es": "sustancia-gris-periacueductal",
     "en": "periaqueductal-grey"
    },
    "sinonimos": {
-    "es": [],
-    "en": []
+    "es": [
+     "sustancia gris peri-acueductal"
+    ],
+    "en": [
+     "PAG",
+     "periaqueductal gray"
+    ]
    },
    "ficha": null
   },
@@ -3085,18 +3113,22 @@
    "id": "medial-occipitotemporal-gyrus-parahippocampal",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Medial occipitotemporal gyrus (Parahippocampal*)"
+    "es": "Giro parahipocampal",
+    "en": "Parahippocampal gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Gyrus parahippocampalis",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5515; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "medial-occipitotemporal-gyrus-parahippocampal",
+    "es": "giro-parahipocampal",
     "en": "medial-occipitotemporal-gyrus-parahippocampal"
    },
    "sinonimos": {
-    "es": [],
-    "en": []
+    "es": [
+     "circunvolución parahipocampal"
+    ],
+    "en": [
+     "parahippocampal part of the medial occipitotemporal gyrus"
+    ]
    },
    "ficha": null
   },
@@ -3565,10 +3597,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Occipitotemporal sulcus (Lateral part*)"
+    "en": "Lateral occipitotemporal sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "occipitotemporal-sulcus-lateral-part",
     "en": "occipitotemporal-sulcus-lateral-part"
@@ -3717,17 +3749,20 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Orbital gyri (Frontomarginal gyrus and sulcus*)"
+    "en": "Fronto-marginal gyrus and sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "orbital-gyri-frontomarginal-gyrus-and-sulcus",
     "en": "orbital-gyri-frontomarginal-gyrus-and-sulcus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "fronto-marginal gyrus of Wernicke",
+     "sulcus of Wernicke"
+    ]
    },
    "ficha": null
   },
@@ -3735,18 +3770,20 @@
    "id": "orbital-part-of-inferior-frontal-gyrus",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Orbital part of  inferior frontal gyrus"
+    "es": "Parte orbital del giro frontal inferior",
+    "en": "Orbital part of inferior frontal gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Pars orbitalis gyri frontalis inferioris",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5448; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "orbital-part-of-inferior-frontal-gyrus",
+    "es": "parte-orbital-del-giro-frontal-inferior",
     "en": "orbital-part-of-inferior-frontal-gyrus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "Orbital part of  inferior frontal gyrus"
+    ]
    },
    "ficha": null
   },
@@ -3754,18 +3791,20 @@
    "id": "orbital-sulci-h-shaped-orbital-sulci",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Orbital sulci (H-shaped orbital sulci*)"
+    "es": "Surcos orbitales",
+    "en": "Orbital sulci"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Sulci orbitales",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5465; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "orbital-sulci-h-shaped-orbital-sulci",
+    "es": "surcos-orbitales",
     "en": "orbital-sulci-h-shaped-orbital-sulci"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "H-shaped orbital sulci"
+    ]
    },
    "ficha": null
   },
@@ -3774,10 +3813,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Orbital sulci (Lateral Orbital sulcus*)"
+    "en": "Lateral orbital sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "orbital-sulci-lateral-orbital-sulcus",
     "en": "orbital-sulci-lateral-orbital-sulcus"
@@ -3793,10 +3832,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Paracentral gyrus and sulcus*"
+    "en": "Paracentral lobule and sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "paracentral-gyrus-and-sulcus",
     "en": "paracentral-gyrus-and-sulcus"
@@ -4103,10 +4142,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": " Posterior transverse collateral sulcus"
+    "en": "Posterior transverse collateral sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "posterior-transverse-collateral-sulcus",
     "en": "posterior-transverse-collateral-sulcus"
@@ -4141,10 +4180,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Precentral sulcus (inferior part)*"
+    "en": "Inferior part of the precentral sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "precentral-sulcus-inferior-part",
     "en": "precentral-sulcus-inferior-part"
@@ -4160,10 +4199,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Precentral sulcus (Superior part)*"
+    "en": "Superior part of the precentral sulcus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "precentral-sulcus-superior-part",
     "en": "precentral-sulcus-superior-part"
@@ -4444,18 +4483,21 @@
    "id": "straight-gyrus-gyrus-rectus",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Straight gyrus (Gyrus rectus)"
+    "es": "Giro recto",
+    "en": "Straight gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Gyrus rectus",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5462; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "straight-gyrus-gyrus-rectus",
+    "es": "giro-recto",
     "en": "straight-gyrus-gyrus-rectus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "Straight gyrus (Gyrus rectus)",
+     "gyrus rectus"
+    ]
    },
    "ficha": null
   },
@@ -4521,17 +4563,19 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Sulcus interm_prim-Jensen"
+    "en": "Sulcus intermedius primus (of Jensen)"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "sulcus-interm-prim-jensen",
     "en": "sulcus-interm-prim-jensen"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "sulcus of Jensen"
+    ]
    },
    "ficha": null
   },
@@ -4730,10 +4774,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Superior temporal gyrus (Lateral part)"
+    "en": "Lateral aspect of the superior temporal gyrus"
    },
    "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2)",
    "slug": {
     "es": "superior-temporal-gyrus-lateral-part",
     "en": "superior-temporal-gyrus-lateral-part"
@@ -4991,18 +5035,20 @@
    "id": "transverse-frontopolar-gyrus-and-sulcus",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Transverse frontopolar gyrus and sulcus*"
+    "es": "Giro y surco frontopolar transverso",
+    "en": "Transverse frontopolar gyrus and sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Gyrus et sulcus transversus frontopolar",
+   "fuente_nombre": "TA2 (Z-Anatomy), fila 7210, agregada por Z-Anatomy y no verificada contra TA2 oficial; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
    "slug": {
-    "es": "transverse-frontopolar-gyrus-and-sulcus",
+    "es": "giro-y-surco-frontopolar-transverso",
     "en": "transverse-frontopolar-gyrus-and-sulcus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "transverse frontopolar gyri and sulci"
+    ]
    },
    "ficha": null
   },
