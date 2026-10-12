@@ -561,7 +561,8 @@ a {
   background: var(--panel);
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta);
-  padding: 1rem;
+  padding: 1.1rem 1.1rem 1.4rem;
+  line-height: 1.55;
 }
 
 .ficha-vacia {
@@ -575,10 +576,15 @@ a {
   gap: 0.5rem;
 }
 
+.ficha-titulos {
+  min-width: 0;
+}
+
 .ficha h2 {
-  margin: 0;
-  font-size: 1.35rem;
-  letter-spacing: -0.01em;
+  margin: 0.15rem 0 0;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
 }
 
 .ficha h3 {
@@ -587,47 +593,100 @@ a {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--menta);
-  margin: 1.1rem 0 0.35rem;
+  margin: 0 0 0.35rem;
 }
 
 .ficha h4 {
-  font-size: 0.88rem;
-  margin: 0.6rem 0 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  margin: 0.9rem 0 0.4rem;
 }
 
-.ficha p,
-.ficha li {
-  font-family: var(--fuente-texto);
+.ficha p {
+  margin: 0;
+}
+
+/* Cada bloque de la ficha separado por aire, no por líneas. */
+.ficha-campo {
+  margin-top: 1.3rem;
+}
+
+/* Lóbulo o grupo, con el color de la pieza en el modelo. */
+.ficha-padre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.ficha-punto {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  flex: none;
 }
 
 .ficha-latin {
   font-style: italic;
-  margin: 0.2rem 0;
+  font-family: var(--fuente-texto);
+  color: var(--texto-suave);
+  margin-top: 0.15rem;
 }
 
-.ficha-padre,
 .ficha-otro,
-.ficha-fuente-nombre,
 .ficha-version {
-  font-size: 0.85em;
+  font-size: 0.82em;
   color: var(--texto-suave);
-  margin: 0.15rem 0;
+  margin-top: 0.3rem;
+}
+
+.ficha-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+  margin-top: 0.7rem;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+.ficha-grupos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+}
+
+.etiqueta-grupo {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--acento-suave);
+  color: var(--menta);
 }
 
 .cerrar {
   font-size: 1.2rem;
   line-height: 1;
+  flex: none;
 }
 
 .acciones {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  margin: 0.6rem 0;
+  margin: 0.9rem 0 0;
 }
 
 .acciones button {
-  font-size: 0.85em;
+  font-size: 0.8em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
 }
 
 .acciones button.activo {
@@ -643,10 +702,43 @@ a {
   background: var(--acento-suave);
 }
 
+/* Descripción: el bloque principal de la ficha. */
+.ficha-descripcion {
+  margin-top: 1.2rem;
+  padding: 1rem 1rem 1.05rem;
+  border-radius: var(--radio);
+  background: var(--elevado);
+  border-left: 3px solid var(--acento);
+}
+
+.ficha-descripcion .ficha-campo {
+  margin-top: 0.9rem;
+}
+
+.ficha-descripcion .ficha-campo:first-child {
+  margin-top: 0;
+}
+
+.ficha-lead {
+  font-size: 1.02rem;
+  color: var(--texto);
+}
+
+.ficha-preparacion p + p {
+  margin-top: 0.4rem;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.ficha-preparacion .enlace {
+  margin-top: 0.6rem;
+}
+
 .estado {
   display: inline-block;
-  font-size: 0.85em;
-  padding: 0.1rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.1rem 0.55rem;
   border-radius: 999px;
   background: var(--aviso-fondo);
   color: var(--aviso);
@@ -663,15 +755,19 @@ a {
 }
 
 .en-preparacion {
-  color: var(--texto-suave);
-  font-style: italic;
+  font-weight: 600;
+  color: var(--texto);
 }
 
 .evidencia {
-  font-size: 0.8em;
-  padding: 0.05rem 0.45rem;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.05rem 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--borde);
+  color: var(--texto-suave);
+  margin-bottom: 0.35rem;
 }
 
 .evidencia-debatida {
@@ -679,22 +775,160 @@ a {
   color: var(--peligro);
 }
 
-.articulos,
-.fuentes,
-.recursos,
-.relaciones,
-.relevancia {
+.fuentes {
   padding-inline-start: 1.1rem;
-  margin: 0.2rem 0;
-}
-
-.recurso-tipo {
-  font-size: 0.8em;
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
   color: var(--texto-suave);
 }
 
+.fuentes li + li {
+  margin-top: 0.35rem;
+}
+
+.fuentes a {
+  color: var(--texto-suave);
+  text-decoration-color: var(--borde);
+}
+
+.fuentes a:hover {
+  color: var(--acento);
+}
+
+.relevancia .fuentes {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Relaciones como etiquetas que se pueden tocar. */
+.relaciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.relaciones a {
+  display: inline-block;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.relaciones a:hover {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+/* Relevancia: una tarjeta por afirmación. */
+.relevancia {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.relevancia > li {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+/* Recursos y búsquedas como tarjetas enlazadas. */
+.tarjetas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tarjeta-enlace {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  color: var(--texto);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.tarjeta-enlace:hover {
+  border-color: var(--acento);
+  background: var(--acento-suave);
+}
+
+.tarjeta-enlace strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tarjeta-etiquetas {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.recurso-tipo,
+.recurso-idioma {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--menta);
+}
+
+.recurso-idioma {
+  color: var(--aviso);
+}
+
 .recurso-nota {
-  font-size: 0.85em;
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.ficha-referencias > .recurso-nota,
+[data-testid='articulos'] > .recurso-nota {
+  margin-top: 0.5rem;
+}
+
+.recursos-grupo {
+  margin-top: 0.9rem;
+}
+
+.recursos-grupo summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  margin-bottom: 0.4rem;
+}
+
+.interruptor-pequeno {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  margin-bottom: 0.5rem;
+}
+
+.ficha-fuentes {
+  margin-top: 1.3rem;
+  border-top: 1px solid var(--borde);
+  padding-top: 0.8rem;
+}
+
+.ficha-fuentes summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--texto-suave);
 }
 
