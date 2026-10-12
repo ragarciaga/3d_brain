@@ -226,12 +226,12 @@ test('fragmentar y reensamblar: todas las piezas vuelven exactamente a su sitio'
   await expect.poll(desplazadas).toBe(0);
 });
 
-test('a 100 % la cámara se aleja para mostrar el conjunto desarmado y al reensamblar vuelve', async ({ page }) => {
+test('a 70 % la cámara se aleja sin girar, a 100 % mira el inventario de frente y al reensamblar vuelve', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
   await expect.poll(async () => (await vistaDeCamara(page)).distancia).toBeGreaterThan(0);
   const inicial = await vistaDeCamara(page);
-  await page.getByTestId('explosion').fill('100');
+  await page.getByTestId('explosion').fill('70');
   await expect
     .poll(
       async () => {
@@ -251,6 +251,17 @@ test('a 100 % la cámara se aleja para mostrar el conjunto desarmado y al reensa
       }),
     )
     .toBeGreaterThanOrEqual(0.05);
+  // Inventario: la cámara pasa a la vista anterior (+Z) y se aleja para que entren todas las piezas.
+  await page.getByTestId('explosion').fill('100');
+  await expect
+    .poll(
+      async () => {
+        const v = await vistaDeCamara(page);
+        return v.direccion[2]! > 0.99 && v.distancia > 2 * inicial.distancia;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
   await page.getByTestId('reensamblar').click();
   await expect
     .poll(async () => Math.abs((await vistaDeCamara(page)).distancia - inicial.distancia) / inicial.distancia, { timeout: 20_000 })

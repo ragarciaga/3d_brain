@@ -2,8 +2,10 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { propsPulsado } from '../lib/alternar';
+import { nodos } from '../data/atlas';
 import type { Nivel } from '../lib/explosion';
-import { fueraDeSitio, hayFiltros, piezasDeEncuadre, useAtlas } from '../store/useAtlas';
+import { INICIO_INVENTARIO } from '../lib/inventario';
+import { fueraDeSitio, hayFiltros, piezasDeEncuadre, piezasVisibles, useAtlas } from '../store/useAtlas';
 
 /** Tiempo con el deslizador quieto antes de reencuadrar la cámara (no se reencuadra a cada paso). */
 const ESPERA_ENCUADRE_MS = 300;
@@ -25,6 +27,12 @@ export default function BarraFragmentar() {
     temporizador.current = setTimeout(() => {
       temporizador.current = null;
       const s = useAtlas.getState();
+      // El inventario está en el plano frontal: se mira de frente y entra todo, también el vago.
+      if (s.explosion > INICIO_INVENTARIO) {
+        const todas = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
+        if (todas.length) s.pedirCamara({ vista: 'anterior', encuadrar: todas });
+        return;
+      }
       const foco = piezasDeEncuadre(s);
       if (foco.length) s.pedirCamara({ encuadrar: foco });
     }, ESPERA_ENCUADRE_MS);

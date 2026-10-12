@@ -346,6 +346,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
 
   useEffect(() => {
     const centros: Record<string, Vec3> = {};
+    const cajas: Record<string, [Vec3, Vec3]> = {};
     cajasPiezas.clear();
     for (const [pieza, mallas] of porPieza) {
       const caja = new THREE.Box3();
@@ -357,9 +358,10 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       cajasPiezas.set(pieza, caja);
       const c = caja.getCenter(new THREE.Vector3());
       centros[pieza] = [c.x, c.y, c.z];
+      cajas[pieza] = [caja.min.toArray(), caja.max.toArray()];
     }
     useMetricas.getState().setPiezas(porPieza.size);
-    setCentros(centros);
+    setCentros(centros, cajas);
   }, [porPieza, setCentros]);
 
   return (
@@ -529,6 +531,8 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     if (pedido.camara && pedido.camara.length === 6) {
       const [a, b, c, d, e, f] = pedido.camara as [number, number, number, number, number, number];
       void controles.current?.setLookAt(a, b, c, d, e, f, !reducirMovimiento());
+    } else if (pedido.encuadrar?.length && pedido.vista) {
+      mirar(DIRECCIONES[pedido.vista], cajaDe(pedido.encuadrar), true);
     } else if (pedido.encuadrar?.length) {
       const caja = cajaDe(pedido.encuadrar);
       const pos = controles.current?.getPosition(new THREE.Vector3());

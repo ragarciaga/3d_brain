@@ -5,7 +5,6 @@ import { nodos, piezasBajo, piezasDeEntrada, todasLasPiezas } from '../data/atla
 import {
   CERO,
   desplazamientoSeparar,
-  desplazamientosExplosion,
   promedio,
   sumar,
   type Lado,
@@ -13,6 +12,7 @@ import {
   type Vec3,
 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
+import { desplazamientosDeslizador, type Caja } from '../lib/inventario';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
@@ -41,6 +41,11 @@ function ancestroBloque(pieza: string): string {
     p = nodos[p]?.padre ?? null;
   }
   return ultimo;
+}
+
+/** Grupo que comparte fila en el inventario (F6): el lóbulo, sin importar el lado. */
+export function grupoInventario(pieza: string): string {
+  return ancestroBloque(pieza);
 }
 
 /** Lado anatómico de una pieza; sin lado (o vacío) cuenta como medio. */
@@ -92,6 +97,7 @@ interface Estado {
   armando: { modo: ModoArmado; total: string[] } | null;
   grupoActivo: string | null;
   centros: Record<string, Vec3>;
+  cajas: Record<string, Caja>; // caja original de cada pieza, para el inventario
   cargado: boolean;
   camara: PedidoCamara | null;
   // Modo revisión (F24)
@@ -103,7 +109,7 @@ interface Estado {
   enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
 
   setAmbos(v: boolean): void;
-  setCentros(c: Record<string, Vec3>): void;
+  setCentros(c: Record<string, Vec3>, cajas?: Record<string, Caja>): void;
   seleccionar(s: Partial<Seleccion> | null): void;
   deseleccionar(): void;
   alternarVisibles(piezas: string[], visibles: boolean): void;
@@ -149,7 +155,7 @@ export function piezasDeEncuadre(s: Pick<Estado, 'ocultas' | 'aislar'>): string[
 
 function recalcularBase(s: Estado): Record<string, Vec3> {
   const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-  return desplazamientosExplosion(s.centros, visibles, (p) => bloqueDe(p, s.nivel), s.explosion, ladoDe);
+  return desplazamientosDeslizador(s.centros, s.cajas, visibles, (p) => bloqueDe(p, s.nivel), grupoInventario, s.explosion, ladoDe);
 }
 
 /** Desplazamiento objetivo de una pieza (la animación se acerca a este valor). */
@@ -184,6 +190,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   armando: null,
   grupoActivo: null,
   centros: {},
+  cajas: {},
   cargado: false,
   camara: null,
   revisor: null,
@@ -194,8 +201,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   enfocarFicha: null,
 
   setAmbos: (v) => set({ ambos: v }),
-  setCentros: (c) => {
-    set({ centros: c, cargado: true });
+  setCentros: (c, cajas = {}) => {
+    set({ centros: c, cajas, cargado: true });
     set({ base: recalcularBase(get()) });
   },
   seleccionar: (s) =>
