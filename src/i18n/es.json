@@ -71,7 +71,15 @@
     "version": "Versión del contenido",
     "fuentePendiente": "pendiente de confirmar",
     "latin": "Latín",
-    "gruposDeEstudio": "Grupos de estudio"
+    "gruposDeEstudio": "Grupos de estudio",
+    "articulos": {
+      "titulo": "Artículos científicos",
+      "pubmed": "Revisiones en PubMed (inglés)",
+      "europepmc": "Artículos de acceso abierto en Europe PMC (inglés)",
+      "scholar": "Google Académico",
+      "scielo": "SciELO (español, acceso abierto)",
+      "nota": "Búsquedas automáticas por el nombre de la estructura. El atlas no revisa los resultados: contrasta lo que leas con la ficha y con tu docente."
+    }
   },
   "recurso": {
     "video": "video",
@@ -105,17 +113,7 @@
     "lobulos": "lóbulos",
     "piezas": "piezas",
     "explosion": "Explosión",
-    "reensamblar": "Reensamblar",
-    "armar": "Armar pieza por pieza",
-    "ayudaTocar": "Toca cada pieza que está fuera de su sitio para devolverla. Mientras armas, tocar una pieza no abre su ficha.",
-    "ayudaReto": "Arrastra cada pieza hasta su sitio: si la sueltas cerca, encaja; si no, vuelve a donde estaba. Para girar la vista, arrastra el fondo.",
-    "nadaQueArmar": "No hay piezas fuera de su sitio. Mueve el deslizador de explosión para desarmar el conjunto.",
-    "modo": "Modo",
-    "modoTocar": "Tocar",
-    "modoReto": "Reto: arrastrar",
-    "contador": "{{n}} de {{total}} en su sitio",
-    "armadoCompleto": "Las {{total}} piezas están en su sitio",
-    "terminar": "Terminar"
+    "reensamblar": "Reensamblar"
   },
   "vistas": {
     "titulo": "Vistas anatómicas",
@@ -209,5 +207,9 @@
     "titulo": "Algo salió mal",
     "texto": "La página tuvo un error. Vuelve al inicio del atlas.",
     "volver": "Volver al inicio"
+  },
+  "tema": {
+    "aOscuro": "Cambiar a tema oscuro",
+    "aClaro": "Cambiar a tema claro"
   }
 }

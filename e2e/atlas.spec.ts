@@ -71,7 +71,7 @@ async function camaraQuieta(page: Page) {
 
 /**
  * Dónde está una pieza (`actual`) y dónde va (`casa`), en coordenadas de la página. Se espera a que dos
- * lecturas separadas 300 ms coincidan: al armar, la barra crece y el lienzo cambia de tamaño un instante
+ * lecturas separadas 300 ms coincidan: si la barra o la ficha cambian de alto, el lienzo cambia de tamaño un instante
  * después, y una posición leída antes de eso cae en otro punto.
  */
 async function enPantalla(page: Page, pieza: string): Promise<{ casa: Punto; actual: Punto }> {
@@ -130,6 +130,33 @@ test('carga el modelo, muestra piezas, cuadros por segundo, aviso educativo y li
   await expect(page.getByTestId('licencia')).toContainText('CC BY-SA 4.0');
 });
 
+test('con red lenta se ve el aviso de carga, el modelo carga y la página no lanza errores', async ({ page, context }) => {
+  // Antes, el aviso era un <Html> de drei dentro del lienzo y al desmontarse lanzaba removeChild.
+  const errores: string[] = [];
+  page.on('pageerror', (e) => errores.push(e.message));
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 80, downloadThroughput: (20 * 1024 * 1024) / 8, uploadThroughput: 1e6 });
+  await abrir(page, '/es');
+  await expect(page.getByTestId('cargando')).toBeVisible();
+  await modeloCargado(page);
+  await expect(page.getByTestId('cargando')).toHaveCount(0);
+  expect(errores).toEqual([]);
+});
+
+test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await abrir(page, '/es');
+  const tema = () => page.evaluate(() => document.documentElement.dataset.tema);
+  await expect.poll(tema).toBe('claro');
+  const boton = page.getByTestId('boton-tema');
+  await expect(boton).toHaveAccessibleName('Cambiar a tema oscuro');
+  await boton.click();
+  await expect.poll(tema).toBe('oscuro');
+  await expect(boton).toHaveAccessibleName('Cambiar a tema claro');
+  await page.reload();
+  await expect.poll(tema).toBe('oscuro');
+});
+
 test('la interfaz en inglés no muestra textos en español', async ({ page }) => {
   await abrir(page, '/en', true);
   await expect(page.getByRole('dialog', { name: 'Before you start' })).toBeVisible();
@@ -160,6 +187,21 @@ test('búsqueda bilingüe: con la interfaz en español, "amygdala" abre la amíg
   await expect(page.getByTestId('ficha')).toHaveAttribute('data-entrada', 'amygdaloid-body');
   await page.getByRole('combobox', { name: /Buscar/ }).fill('neumogastrico');
   await expect(page.getByRole('option').first()).toContainText('Nervio vago');
+});
+
+test('la ficha trae búsquedas de artículos científicos, también si está en preparación', async ({ page }) => {
+  await abrir(page, '/es/hipocampo');
+  const articulos = page.getByTestId('articulos');
+  await expect(articulos.getByRole('heading', { name: 'Artículos científicos' })).toBeVisible();
+  const pubmed = articulos.locator('a[data-base="pubmed"]');
+  await expect(pubmed).toHaveAttribute('href', 'https://pubmed.ncbi.nlm.nih.gov/?term=%22hippocampus%22&filter=pubt.review');
+  await expect(pubmed).toHaveAttribute('target', '_blank');
+  await expect(articulos.locator('a[data-base="scielo"]')).toHaveAttribute('href', /search\.scielo\.org\/\?q=%22hipocampo%22/);
+  await expect(articulos.getByRole('link')).toHaveCount(4);
+  // Una estructura sin ficha escrita también trae las búsquedas.
+  await abrir(page, '/es/nucleo-accesorio-del-nervio-oculomotor');
+  await expect(page.getByTestId('ficha')).toContainText('Ficha en preparación.');
+  await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /accessory%20nucleus%20of%20oculomotor%20nerve/);
 });
 
 test('URL por estructura e idioma: cambiar de idioma conserva la estructura', async ({ page }) => {
@@ -223,8 +265,8 @@ test('fragmentar y reensamblar: todas las piezas vuelven exactamente a su sitio'
       return Object.values(atlas.getState().base).filter((v) => v.some((x) => x !== 0)).length;
     });
   await expect.poll(desplazadas).toBeGreaterThan(100);
-  await page.getByRole('button', { name: 'Armar pieza por pieza' }).click();
-  await expect(page.getByTestId('contador-armado')).toContainText(/0 de \d+ en su sitio/);
+  // "Armar pieza por pieza" salió del alcance (docs/v2.md): la barra ya no lo ofrece.
+  await expect(page.getByRole('button', { name: 'Armar pieza por pieza' })).toHaveCount(0);
   await page.getByTestId('reensamblar').click();
   await expect.poll(desplazadas).toBe(0);
 });
@@ -429,11 +471,17 @@ test('si el modelo no carga, el árbol, la búsqueda y las fichas siguen y se pu
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
   await expect(error).toBeVisible();
-  // Reintentar vuelve a pedir el modelo (ya sin bloqueo) y monta el visor.
+  // Reintentar vuelve a pedir el modelo (ya sin bloqueo) y monta el visor sin errores de React (#16).
+  const errores: string[] = [];
+  page.on('pageerror', (e) => errores.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errores.push(m.text());
+  });
   await page.unroute('**/modelos/atlas.glb');
   await page.getByRole('button', { name: 'Reintentar' }).click();
   await modeloCargado(page);
   await expect(page.getByTestId('visor-error')).toHaveCount(0);
+  expect(errores).toEqual([]);
 });
 
 test('si WebGL falla, solo el visor muestra el error: el árbol y la búsqueda siguen y no sale la página global', async ({ page }) => {
@@ -625,41 +673,8 @@ test('los botones Aislar, Aislar con contexto y Separar se activan con un toque 
   expect(await aislarActual(page)).toBeNull();
 });
 
-test('armar pieza por pieza, modo tocar: un toque devuelve la pieza y no abre la ficha', async ({ page }) => {
+test('el doble clic sobre una pieza separada la devuelve y el toque la selecciona', async ({ page }) => {
   await prepararTalamos(page);
-  const armar = page.getByRole('button', { name: 'Armar pieza por pieza' });
-  await expect(armar).not.toHaveAttribute('title');
-  await armar.click();
-  await expect(page.getByTestId('barra-armado')).toBeVisible();
-  await expect(page.getByTestId('ayuda-armado')).toContainText('Toca cada pieza que está fuera de su sitio para devolverla.');
-  await expect(page.getByTestId('contador-armado')).toHaveText('0 de 2 en su sitio');
-  // Tocar el fondo tampoco cierra la ficha ni cambia la URL mientras se arma.
-  const lienzo = (await page.getByTestId('visor').locator('canvas').boundingBox())!;
-  await page.mouse.click(lienzo.x + 15, lienzo.y + 15);
-  await page.waitForTimeout(500);
-  await expect(page).toHaveURL(/\/es\/talamo$/);
-  await expect(page.getByTestId('ficha')).toBeVisible();
-  // Un clic sobre una pieza desplazada la devuelve sin seleccionar nada.
-  const l = await enPantalla(page, 'thalamus-l');
-  await page.mouse.click(l.actual.x, l.actual.y);
-  await expect(page.getByTestId('contador-armado')).toHaveText('1 de 2 en su sitio');
-  await expect(page).toHaveURL(/\/es\/talamo$/);
-  expect(await piezaSeleccionada(page)).toBeNull();
-  // Mientras dura el modo el doble clic no hace nada más: ni encuadra la cámara ni selecciona.
-  const r = await enPantalla(page, 'thalamus-r');
-  const antes = await leerCamara(page);
-  await page.mouse.dblclick(r.actual.x, r.actual.y);
-  await expect(page.getByTestId('contador-armado')).toHaveText('Las 2 piezas están en su sitio');
-  await page.waitForTimeout(1500);
-  const despues = await leerCamara(page);
-  expect(Math.max(...antes.map((v, i) => Math.abs(v - despues[i]!)))).toBeLessThan(1e-6);
-  await expect(page).toHaveURL(/\/es\/talamo$/);
-  expect(await piezaSeleccionada(page)).toBeNull();
-  // Escape sale del modo, no del aislamiento.
-  await page.keyboard.press('Escape');
-  await expect(page.getByTestId('barra-armado')).toHaveCount(0);
-  expect(await aislarActual(page)).toBe('solo');
-  // Fuera del modo, el doble clic sobre una pieza separada la devuelve y el toque vuelve a seleccionar.
   await page.getByTestId('reensamblar').click();
   await page.waitForTimeout(600);
   await page.getByTestId('ficha').getByRole('button', { name: 'Separar', exact: true }).click();
@@ -669,73 +684,4 @@ test('armar pieza por pieza, modo tocar: un toque devuelve la pieza y no abre la
   await page.mouse.dblclick(sep.actual.x, sep.actual.y);
   await esperarPulsado(page.getByTestId('ficha').getByRole('button', { name: 'Separar', exact: true }), 'mixed');
   expect(await piezaSeleccionada(page)).toBe('thalamus-l');
-});
-
-test('armar pieza por pieza, modo reto: se arrastra la pieza hasta su sitio y la cámara no se mueve', async ({ page }) => {
-  await prepararTalamos(page);
-  await page.getByRole('button', { name: 'Armar pieza por pieza' }).click();
-  await page.getByRole('button', { name: 'Reto: arrastrar' }).click();
-  await expect(page.getByTestId('ayuda-armado')).toContainText('Arrastra cada pieza hasta su sitio');
-  const c0 = await leerCamara(page);
-  const contador = page.getByTestId('contador-armado');
-  await expect(contador).toHaveText('0 de 2 en su sitio');
-  const l = await enPantalla(page, 'thalamus-l');
-  // Mientras dura el modo el doble clic no hace nada: ni devuelve, ni encuadra la cámara ni selecciona.
-  await page.mouse.dblclick(l.actual.x, l.actual.y);
-  await page.waitForTimeout(1500);
-  await expect(contador).toHaveText('0 de 2 en su sitio');
-  const cDoble = await leerCamara(page);
-  expect(Math.max(...c0.map((v, i) => Math.abs(v - cDoble[i]!)))).toBeLessThan(1e-6);
-  expect(await piezaSeleccionada(page)).toBeNull();
-  // Un clic sin arrastre no selecciona ni devuelve.
-  await page.mouse.click(l.actual.x, l.actual.y);
-  await expect(contador).toHaveText('0 de 2 en su sitio');
-  expect(await piezaSeleccionada(page)).toBeNull();
-  await expect(page).toHaveURL(/\/es\/talamo$/);
-  // Arrastrar hasta su sitio la encaja; la cámara no cambia.
-  await page.mouse.move(l.actual.x, l.actual.y);
-  await page.mouse.down();
-  await page.mouse.move(l.casa.x, l.casa.y, { steps: 10 });
-  await page.mouse.up();
-  await expect(contador).toHaveText('1 de 2 en su sitio');
-  const c1 = await leerCamara(page);
-  expect(Math.max(...c0.map((v, i) => Math.abs(v - c1[i]!)))).toBeLessThan(1e-6);
-  // Soltar lejos de su sitio no cuenta: la pieza vuelve a donde estaba y un segundo arrastre la encaja.
-  const r = await enPantalla(page, 'thalamus-r');
-  // Más lejos que la tolerancia máxima (80 px), aun después de acercarla un 25 %.
-  expect(Math.hypot(r.actual.x - r.casa.x, r.actual.y - r.casa.y) * 0.75).toBeGreaterThan(80);
-  await page.mouse.move(r.actual.x, r.actual.y);
-  await page.mouse.down();
-  await page.mouse.move(r.actual.x + 0.25 * (r.casa.x - r.actual.x), r.actual.y + 0.25 * (r.casa.y - r.actual.y), { steps: 10 });
-  await page.mouse.up();
-  await expect(contador).toHaveText('1 de 2 en su sitio');
-  await page.waitForTimeout(2000);
-  await page.mouse.move(r.actual.x, r.actual.y);
-  await page.mouse.down();
-  await page.mouse.move(r.casa.x, r.casa.y, { steps: 10 });
-  await page.mouse.up();
-  await expect(contador).toHaveText('Las 2 piezas están en su sitio');
-  await page.getByRole('button', { name: 'Terminar' }).click();
-  await expect(page.getByTestId('barra-armado')).toHaveCount(0);
-});
-
-test.describe('celular, armar pieza por pieza', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-
-  test('un toque con el dedo sobre una pieza desplazada la devuelve', async ({ page }) => {
-    await abrir(page, '/es/talamo');
-    await modeloCargado(page);
-    await page.getByTestId('ficha').getByRole('button', { name: 'Aislar', exact: true }).click();
-    await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
-    await expect(page.getByTestId('ficha')).toHaveCount(0);
-    await page.getByTestId('explosion').fill('100');
-    await page.waitForTimeout(2500);
-    await page.locator('[data-vista="anterior"]').click();
-    await camaraQuieta(page);
-    await page.getByRole('button', { name: 'Armar pieza por pieza' }).click();
-    await expect(page.getByTestId('contador-armado')).toHaveText('0 de 2 en su sitio');
-    const l = await enPantalla(page, 'thalamus-l');
-    await page.touchscreen.tap(l.actual.x, l.actual.y);
-    await expect(page.getByTestId('contador-armado')).toHaveText('1 de 2 en su sitio');
-  });
 });

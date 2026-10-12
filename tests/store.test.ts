@@ -21,7 +21,6 @@ describe('estado del atlas', () => {
       nivel: 'piezas',
       separadas: {},
       devueltas: new Set(),
-      armando: null,
       seleccion: { entrada: null, pieza: null, malla: null },
     });
     useAtlas.getState().setCentros(centros);
@@ -44,72 +43,12 @@ describe('estado del atlas', () => {
     for (const p of Object.keys(centros)) expect(objetivo(useAtlas.getState(), p)).toEqual([0, 0, 0]);
   });
 
-  it('armar pieza por pieza cuenta las piezas devueltas', () => {
-    const s = useAtlas.getState();
-    s.setExplosion(0.5);
-    s.armarPiezaPorPieza();
-    const total = useAtlas.getState().armando!.total;
-    expect(total.length).toBeGreaterThan(1);
-    useAtlas.getState().devolver([total[0]!]);
+  it('devolver una pieza con explosión la deja en su sitio y las demás siguen fuera', () => {
+    useAtlas.getState().setExplosion(0.5);
+    useAtlas.getState().devolver(['thalamus-l']);
     const st = useAtlas.getState();
-    expect(st.armando!.total.filter((p) => !fueraDeSitio(st, p))).toEqual([total[0]]);
-  });
-
-  describe('armar pieza por pieza', () => {
-    it('sin explosión entra igual, en modo tocar y con total vacío; al mover la explosión el total se recalcula', () => {
-      useAtlas.getState().armarPiezaPorPieza();
-      expect(useAtlas.getState().armando).toEqual({ modo: 'tocar', total: [] });
-      useAtlas.getState().setExplosion(0.5);
-      expect(useAtlas.getState().armando!.modo).toBe('tocar');
-      expect(useAtlas.getState().armando!.total.length).toBeGreaterThan(1);
-    });
-
-    it('armarPiezaPorPieza("reto") entra en modo reto', () => {
-      useAtlas.getState().setExplosion(0.5);
-      useAtlas.getState().armarPiezaPorPieza('reto');
-      expect(useAtlas.getState().armando!.modo).toBe('reto');
-      expect(useAtlas.getState().armando!.total.length).toBeGreaterThan(1);
-    });
-
-    it('mover la explosión durante el reto conserva el modo reto', () => {
-      useAtlas.getState().armarPiezaPorPieza('reto');
-      useAtlas.getState().setExplosion(0.7);
-      expect(useAtlas.getState().armando!.modo).toBe('reto');
-      expect(useAtlas.getState().armando!.total.length).toBeGreaterThan(1);
-    });
-
-    it('setModoArmado cambia el modo y conserva el total', () => {
-      useAtlas.getState().setExplosion(0.5);
-      useAtlas.getState().armarPiezaPorPieza();
-      const total = useAtlas.getState().armando!.total;
-      useAtlas.getState().setModoArmado('reto');
-      expect(useAtlas.getState().armando).toEqual({ modo: 'reto', total });
-    });
-
-    it('setModoArmado sin modo activo no hace nada', () => {
-      useAtlas.getState().setModoArmado('reto');
-      expect(useAtlas.getState().armando).toBeNull();
-    });
-
-    it('el total no incluye las piezas de referencia, aunque estén separadas', () => {
-      useAtlas.getState().setExplosion(0.5);
-      useAtlas.setState({ separadas: { stomach: [0.1, 0, 0] } });
-      expect(fueraDeSitio(useAtlas.getState(), 'stomach')).toBe(true);
-      useAtlas.getState().armarPiezaPorPieza();
-      const { total } = useAtlas.getState().armando!;
-      expect(total).not.toContain('stomach');
-      expect(total.length).toBeGreaterThan(1);
-    });
-
-    it('terminarArmado y reensamblarTodo dejan armando en null', () => {
-      useAtlas.getState().setExplosion(0.5);
-      useAtlas.getState().armarPiezaPorPieza();
-      useAtlas.getState().terminarArmado();
-      expect(useAtlas.getState().armando).toBeNull();
-      useAtlas.getState().armarPiezaPorPieza('reto');
-      useAtlas.getState().reensamblarTodo();
-      expect(useAtlas.getState().armando).toBeNull();
-    });
+    expect(fueraDeSitio(st, 'thalamus-l')).toBe(false);
+    expect(fueraDeSitio(st, 'thalamus-r')).toBe(true);
   });
 
   it('estadoAislar sigue las acciones reales: true, mixed al sumar otra pieza, false al salir', () => {

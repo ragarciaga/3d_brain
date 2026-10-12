@@ -71,7 +71,15 @@
     "version": "Content version",
     "fuentePendiente": "pending confirmation",
     "latin": "Latin",
-    "gruposDeEstudio": "Study groups"
+    "gruposDeEstudio": "Study groups",
+    "articulos": {
+      "titulo": "Scientific articles",
+      "pubmed": "Reviews on PubMed",
+      "europepmc": "Open access articles on Europe PMC",
+      "scholar": "Google Scholar",
+      "scielo": "SciELO (Spanish, open access)",
+      "nota": "Automatic searches by the structure name. The atlas does not review the results: check what you read against the entry and your teacher."
+    }
   },
   "recurso": {
     "video": "video",
@@ -105,17 +113,7 @@
     "lobulos": "lobes",
     "piezas": "pieces",
     "explosion": "Explosion",
-    "reensamblar": "Reassemble",
-    "armar": "Assemble piece by piece",
-    "ayudaTocar": "Tap each piece that is out of place to put it back. While you assemble, tapping a piece does not open its card.",
-    "ayudaReto": "Drag each piece to its place: drop it close and it snaps in; otherwise it goes back. To rotate the view, drag the background.",
-    "nadaQueArmar": "No pieces are out of place. Move the explosion slider to take the set apart.",
-    "modo": "Mode",
-    "modoTocar": "Tap",
-    "modoReto": "Challenge: drag",
-    "contador": "{{n}} of {{total}} in place",
-    "armadoCompleto": "All {{total}} pieces are in place",
-    "terminar": "Finish"
+    "reensamblar": "Reassemble"
   },
   "vistas": {
     "titulo": "Anatomical views",
@@ -209,5 +207,9 @@
     "titulo": "Something went wrong",
     "texto": "The page hit an error. Go back to the start of the atlas.",
     "volver": "Back to start"
+  },
+  "tema": {
+    "aOscuro": "Switch to dark theme",
+    "aClaro": "Switch to light theme"
   }
 }

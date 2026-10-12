@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { estructuras, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { nombre, nombreNodo, nombrePendiente, nombrePieza, nombreVisible } from '../lib/nombres';
+import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
@@ -235,6 +236,28 @@ function RevisionTrazo({ malla, version }: { malla: string; version: string }) {
   );
 }
 
+/** Búsquedas de artículos científicos por el nombre de la entrada (F9); salen aunque la ficha esté en preparación. */
+function Articulos({ nombreEn, nombreEs }: { nombreEn: string; nombreEs: string }) {
+  const { t } = useTranslation();
+  const enlaces = enlacesArticulos(nombreEn, nombreEs);
+  if (!enlaces.length) return null;
+  return (
+    <section className="ficha-campo" data-testid="articulos">
+      <h3>{t('ficha.articulos.titulo')}</h3>
+      <ul className="articulos">
+        {enlaces.map((l) => (
+          <li key={l.base}>
+            <a href={l.url} target="_blank" rel="noopener noreferrer" data-base={l.base}>
+              {t(`ficha.articulos.${l.base}`)}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="recurso-nota">{t('ficha.articulos.nota')}</p>
+    </section>
+  );
+}
+
 /** Grupos de estudio que incluyen la entrada, con sus fuentes (sin convertirlas en recursos). */
 function GruposDeLaEntrada({ id, idioma }: { id: string; idioma: Idioma }) {
   const { t } = useTranslation();
@@ -437,6 +460,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </>
       )}
       {!f && <Recursos propios={[]} heredados={recursosHeredados(id)} idioma={idioma} />}
+      <Articulos nombreEn={e.nombre.en} nombreEs={e.nombre.es} />
     </aside>
   );
 }
