@@ -6,8 +6,9 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { leer, serializar } from '../lib/enlaces';
+import { guardarPaneles, leerPaneles, type Paneles } from '../lib/paneles';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
-import { useAtlas } from '../store/useAtlas';
+import { piezasDeEncuadre, piezasSeleccionadas, useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
 import AvisoPrimeraVisita from './Aviso';
 import BarraFragmentar from './BarraFragmentar';
@@ -15,6 +16,7 @@ import BotonTema from './BotonTema';
 import Buscador from './Buscador';
 import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
+import { IconoMarca, PalabraMarca } from './Marca';
 import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
@@ -43,6 +45,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const ambos = useAtlas((s) => s.ambos);
   const revisor = useAtlas((s) => s.revisor);
   const [menu, setMenu] = useState(false);
+  const [paneles, setPaneles] = useState<Paneles>(leerPaneles);
+  const [plegadaCon, setPlegadaCon] = useState<string | null>(null); // entrada elegida cuando se plegó la ficha
   const [mensaje, setMensaje] = useState('');
   const movil = useMovil();
   const panel = useRef<HTMLElement>(null);
@@ -67,6 +71,21 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   useEffect(() => {
     document.title = t('app.titulo');
   }, [t]);
+
+  // Paneles plegables (pantallas anchas). Al cambiar el ancho del visor se reencuadra, así el cerebro
+  // aprovecha el espacio.
+  const cambiarPaneles = useCallback((p: Paneles) => {
+    setPaneles(p);
+    guardarPaneles(p);
+    setTimeout(() => {
+      const s = useAtlas.getState();
+      const sel = piezasSeleccionadas(s.seleccion);
+      const foco = sel.length ? sel : piezasDeEncuadre(s);
+      if (foco.length) s.pedirCamara({ encuadrar: foco });
+    }, 60);
+  }, []);
+  // Plegada, la ficha vuelve a salir al elegir otra estructura.
+  const derVisible = paneles.der || (!!entrada && entrada !== plegadaCon);
 
   // Estado inicial desde la URL compartida.
   useEffect(() => {
@@ -210,13 +229,17 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const rutaOtro = entrada ? `/${otro}/${encodeURIComponent(estructuras[entrada]!.slug[otro])}` : `/${otro}`;
 
   return (
-    <div className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}`}>
+    <div
+      className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${paneles.izq ? '' : ' sin-izq'}${derVisible ? '' : ' sin-der'}`}
+    >
       <header className="encabezado">
         <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq" onClick={() => setMenu(!menu)}>
           {t('menu.boton')}
         </button>
         <Link to={`/${idioma}`} className="marca">
-          {t('app.marca')}
+          <IconoMarca className="marca-icono" />
+          <PalabraMarca className="marca-palabra" />
+          <span className="solo-lector">{t('app.marca')}</span>
         </Link>
         <Buscador idioma={idioma} alElegir={irA} />
         <label className="interruptor">
@@ -272,6 +295,33 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
         <main className="centro">
           <Vistas />
           <Visor idioma={idioma} vistaInicial={inicial.vista} camaraInicial={inicial.camara} />
+          <button
+            type="button"
+            className="plegar plegar-izq"
+            data-testid="plegar-izq"
+            aria-controls="panel-izq"
+            aria-expanded={paneles.izq}
+            aria-label={t(paneles.izq ? 'paneles.ocultarArbol' : 'paneles.mostrarArbol')}
+            title={t(paneles.izq ? 'paneles.ocultarArbol' : 'paneles.mostrarArbol')}
+            onClick={() => cambiarPaneles({ ...paneles, izq: !paneles.izq })}
+          >
+            <span aria-hidden="true">{paneles.izq ? '‹' : '›'}</span>
+          </button>
+          <button
+            type="button"
+            className="plegar plegar-der"
+            data-testid="plegar-der"
+            aria-controls="panel-ficha"
+            aria-expanded={derVisible}
+            aria-label={t(derVisible ? 'paneles.ocultarFicha' : 'paneles.mostrarFicha')}
+            title={t(derVisible ? 'paneles.ocultarFicha' : 'paneles.mostrarFicha')}
+            onClick={() => {
+              if (derVisible) setPlegadaCon(entrada ?? null);
+              cambiarPaneles({ ...paneles, der: !derVisible });
+            }}
+          >
+            <span aria-hidden="true">{derVisible ? '›' : '‹'}</span>
+          </button>
         </main>
         <Ficha
           idioma={idioma}

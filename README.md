@@ -1,4 +1,4 @@
-# Atlas 3D de cerebro y nervio vago
+# Maysa Brain: atlas 3D del cerebro y el nervio vago
 
 Atlas 3D web, público, gratuito y bilingüe (español e inglés) del cerebro y el nervio vago, para
 estudiantes de psicología y ciencias de la salud. Se desarma en piezas, cada pieza tiene ficha con

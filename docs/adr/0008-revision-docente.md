@@ -22,3 +22,20 @@ F24 agrega un modo revisión con enlace personal por revisor. Las respuestas se 
 - Positive: cero cuentas para los docentes, costo cero, trazabilidad por campo y versión.
 - Negative: depende de Google; las URL prellenadas tienen límite de largo (se envía una revisión por ficha); el código del enlace atribuye pero no autentica, así que el editor valida cada respuesta.
 - Revisit when: haya más de unos 20 revisores activos o aparezcan respuestas falsas.
+
+## Actualización 2026-10-12: alias públicos y padrón privado (#15)
+
+El repositorio es público y los issues de importación mostraban el código de cada revisor, que
+bastaba para enviar revisiones a su nombre. Ahora:
+
+- Cada docente tiene un código aleatorio (8 caracteres sin letras ni dígitos confundibles) y un
+  alias público (D01, D02...). El padrón código -> alias vive solo en el portátil del editor
+  (`pipeline/revisores.local.json`, ignorado por git); `scripts/crear-revisores.ts` lo crea.
+- `scripts/importar-revisiones.ts` exige el padrón, cambia cada código por su alias y descarta los
+  envíos con códigos que no están en él. Los issues solo muestran alias.
+- Antes de marcar una ficha como verificada con el nombre de un docente, el editor se lo confirma
+  por un canal propio.
+
+Se descartó el formulario con inicio de sesión de Google: obliga a tener cuenta y guarda correos
+(más datos personales). Costo de la solución elegida: cero.
+

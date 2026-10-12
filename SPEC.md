@@ -1,6 +1,6 @@
 # Spec: Atlas 3D de cerebro y nervio vago
 
-Nombre provisional. Versión 0.3, 11 de octubre de 2026.
+Nombre: Maysa Brain (decidido por el editor el 12 de octubre de 2026). Versión 0.3, 11 de octubre de 2026.
 
 **Cambios frente a la versión 0.2**
 
@@ -214,7 +214,7 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
   - Trazos del vago: el revisor toca un trazo y elige de una lista qué ramo es, "no es un ramo" o "no sé".
   - Pasos de circuitos y casos clásicos, cuando existan (fase 2).
 - **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" abre, por cada estructura revisada, un formulario de Google del editor ya lleno con sus respuestas (código, estructura y revisión), y el revisor solo confirma. Nombre, rol y consentimiento se dan una sola vez, en un formulario de registro del revisor. Si la revisión no cabe en un enlace, se envía en partes. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
-- **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
+- **Procesamiento:** las respuestas llegan a una hoja de cálculo del editor. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen y con códigos que no están en el padrón privado de revisores (`pipeline/revisores.local.json`, fuera de git). Los issues muestran el alias del revisor (D01, D02...), nunca su código ni su nombre. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
 - **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando una ficha tiene el visto bueno de los tres roles (anatomía, psicología, traducción) en un idioma, pasa a "verificada" con revisor y fecha.
 - **Vista del revisor:** lista de lo que le falta por revisar y de lo que ya revisó.
 - **Privacidad:** el formulario pide consentimiento explícito para mostrar el nombre del revisor en las fichas (Ley 1581 de 2012). La app no guarda datos de revisores en un servidor propio.
@@ -680,11 +680,11 @@ El visor ocupa toda la pantalla. Búsqueda y selector de idioma arriba, árbol y
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
 9. Canal de revisión docente: formulario de Google del editor (F24).
+3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
 
 **Abiertas**
 
 2. ¿Qué docentes pueden revisar neuroanatomía, psicología y traducción? Sin revisores no hay fichas verificadas ni lanzamiento. Se necesitan para el piloto (hito 1).
-3. Nombre definitivo, que funcione igual en español y en inglés. Antes del hito 2.
 4. Dominio propio. Antes del hito 2.
 5. ¿Analítica sin cookies, sí o no? Antes del hito 2.
 7. ¿Qué circuito se construye primero en la fase 2? Propuesto: Papez, por su peso en psicología.

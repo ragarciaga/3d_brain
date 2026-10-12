@@ -1,7 +1,7 @@
 {
   "app": {
-    "titulo": "Atlas 3D: cerebro y nervio vago",
-    "marca": "Atlas cerebro y vago"
+    "titulo": "Maysa Brain: atlas 3D del cerebro y el nervio vago",
+    "marca": "Maysa Brain"
   },
   "menu": {
     "boton": "Estructuras"
@@ -60,12 +60,12 @@
     "verificadoOtroIdioma": "Esta ficha está verificada en el otro idioma; puedes consultarla cambiando el idioma.",
     "ubicacion": "Ubicación",
     "queEs": "Qué es",
-    "paraQueSirve": "Para qué sirve",
+    "paraQueSirve": "Función",
     "relaciones": "Relaciones",
     "relevancia": "Relevancia en psicología",
     "recursos": "Recursos",
     "soloMiIdioma": "Solo en mi idioma",
-    "delGrupo": "Del grupo",
+    "delGrupo": "Del grupo al que pertenece",
     "fuentes": "Fuentes",
     "porVerificar": "(referencia por verificar)",
     "version": "Versión del contenido",
@@ -73,13 +73,21 @@
     "latin": "Latín",
     "gruposDeEstudio": "Grupos de estudio",
     "articulos": {
-      "titulo": "Artículos científicos",
-      "pubmed": "Revisiones en PubMed (inglés)",
-      "europepmc": "Artículos de acceso abierto en Europe PMC (inglés)",
+      "titulo": "Buscar más artículos científicos",
+      "pubmed": "PubMed",
+      "pubmedDesc": "Artículos de revisión revisados por pares, en inglés. Buen punto de partida para estudiar.",
+      "europepmc": "Europe PMC",
+      "europepmcDesc": "Artículos con texto completo gratuito, en inglés.",
       "scholar": "Google Académico",
-      "scielo": "SciELO (español, acceso abierto)",
-      "nota": "Búsquedas automáticas por el nombre de la estructura. El atlas no revisa los resultados: contrasta lo que leas con la ficha y con tu docente."
-    }
+      "scholarDesc": "Todo tipo de literatura académica, en inglés y en español.",
+      "scielo": "SciELO",
+      "scieloDesc": "Revistas latinoamericanas de acceso abierto, en español.",
+      "nota": "Son búsquedas automáticas por el nombre de la estructura: el atlas no revisa los resultados. Contrasta lo que leas con la ficha y con tu docente."
+    },
+    "descripcion": "Descripción",
+    "referencias": "Recursos y artículos de referencia",
+    "enPreparacionTexto": "La descripción de esta estructura se está escribiendo con fuentes y la revisarán docentes. Mientras tanto puedes ubicarla en el modelo y buscar artículos abajo.",
+    "verFichaDe": "Ver la ficha de {{nombre}}"
   },
   "recurso": {
     "video": "video",
@@ -211,5 +219,11 @@
   "tema": {
     "aOscuro": "Cambiar a tema oscuro",
     "aClaro": "Cambiar a tema claro"
+  },
+  "paneles": {
+    "ocultarArbol": "Ocultar el panel de estructuras",
+    "mostrarArbol": "Mostrar el panel de estructuras",
+    "ocultarFicha": "Ocultar la ficha",
+    "mostrarFicha": "Mostrar la ficha"
   }
 }

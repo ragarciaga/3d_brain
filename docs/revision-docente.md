@@ -49,22 +49,32 @@ app la parte y muestra un enlace por parte.
 
 ## 3. Invitar a cada docente
 
-Genera para cada docente un código aleatorio que no se pueda adivinar (no uses `ANAT01` o `PSI01`:
-cualquiera podría enviar revisiones a nombre de otro). En PowerShell:
+Cada docente tiene un código aleatorio de 8 caracteres que no se puede adivinar y un alias público
+(D01, D02...). El repositorio es público, así que el código nunca aparece en él: solo el alias (#15).
+
+Los códigos se crean con un script que llena el **padrón privado** `pipeline/revisores.local.json`
+(código y alias; git lo ignora) y escribe `pipeline/salida/enlaces-docentes.md` con el enlace de
+cada uno. Para agregar docentes, desde la carpeta del repositorio en tu portátil:
 
 ```powershell
--join ((48..57) + (65..90) | Get-Random -Count 8 | ForEach-Object { [char]$_ })
+cd C:\Users\TU_USUARIO\proyectos\3d_brain
+node scripts/crear-revisores.ts 10
 ```
 
-Guarda tú la lista de códigos y nombres (no la subas al repositorio). Mándale a cada docente el
-enlace del formulario de registro y su enlace personal de revisión:
+Si el padrón ya existe, los nuevos siguen la numeración (D11, D12...). Guarda una copia del padrón
+fuera del repositorio (por ejemplo en tu Drive): sin él no se pueden importar las revisiones.
+
+Mándale a cada docente, por un canal privado (correo o WhatsApp), el enlace del formulario de
+registro y su enlace personal de revisión, y anota su nombre junto al alias en tu copia de
+`enlaces-docentes.md`:
 
 ```
-https://ragarciaga.github.io/3d_brain/es/revision?r=K7Q2M9XA
+https://ragarciaga.github.io/3d_brain/es/revision?r=CODIGO
 ```
 
-El código atribuye la revisión; no es una contraseña. Antes de aprobar un cambio, coteja en la
-hoja que el código corresponda a un docente registrado.
+El código atribuye la revisión; no es una contraseña. Por eso nunca se publica, el importador
+descarta los envíos con códigos que no están en el padrón y, antes de marcar una ficha como
+verificada con el nombre de un docente, se le confirma por su canal propio.
 
 ## 4. Procesar las revisiones
 
@@ -75,6 +85,9 @@ hoja que el código corresponda a un docente registrado.
 node scripts/importar-revisiones.ts respuestas.csv
 ```
 
+El importador lee el padrón de `pipeline/revisores.local.json` (o de la ruta que le pases como
+segundo argumento) y no corre sin él.
+
 En Windows (PowerShell), con la ruta donde quedó el archivo:
 
 ```powershell
@@ -82,7 +95,8 @@ node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Revisión del
 ```
 
 Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
-`resumen.md` con toda la importación. Las filas malformadas se descartan y se cuentan, sin detener
+`resumen.md` con toda la importación. Cada revisor aparece con su alias, nunca con su código; los
+envíos con un código fuera del padrón se descartan y el resumen dice cuántos fueron. Las filas malformadas se descartan y se cuentan, sin detener
 la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
 idioma distinto de es o en, textos que no son texto, una posición que no son tres números, un
 código de revisor que no sea solo letras, dígitos, guion y guion bajo (hasta 40 caracteres), un
@@ -100,10 +114,11 @@ node tools/rockbuilt/rb.mjs gh issue-create --title "Revisiones docentes (fecha)
 ```
 
 Claude prepara el cambio en `src/data/estructuras.json` y tú lo apruebas. Los issues muestran el
-código del revisor, nunca su nombre.
+alias del revisor, nunca su código ni su nombre.
 
 ## 5. Marcar una ficha como verificada
 
 Cuando una ficha tiene el visto bueno de los tres roles en un idioma, en `src/data/estructuras.json`
 se cambia `revision.<idioma>.estado` a `verificado` con `revisado_por` (el nombre del registro) y
-`fecha`. Las pruebas fallan si una ficha queda verificada sin revisor o sin fecha.
+`fecha`. Antes de poner el nombre, confírmale al docente por su canal propio (correo o WhatsApp)
+que esa revisión es suya. Las pruebas fallan si una ficha queda verificada sin revisor o sin fecha.

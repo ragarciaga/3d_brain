@@ -1,7 +1,7 @@
 {
   "app": {
-    "titulo": "3D Atlas: brain and vagus nerve",
-    "marca": "Brain and vagus atlas"
+    "titulo": "Maysa Brain: 3D atlas of the brain and the vagus nerve",
+    "marca": "Maysa Brain"
   },
   "menu": {
     "boton": "Structures"
@@ -60,12 +60,12 @@
     "verificadoOtroIdioma": "This card is verified in the other language; switch language to read it.",
     "ubicacion": "Location",
     "queEs": "What it is",
-    "paraQueSirve": "What it does",
+    "paraQueSirve": "Function",
     "relaciones": "Relations",
     "relevancia": "Relevance in psychology",
     "recursos": "Resources",
     "soloMiIdioma": "Only in my language",
-    "delGrupo": "From the group",
+    "delGrupo": "From its group",
     "fuentes": "Sources",
     "porVerificar": "(reference to be verified)",
     "version": "Content version",
@@ -73,13 +73,21 @@
     "latin": "Latin",
     "gruposDeEstudio": "Study groups",
     "articulos": {
-      "titulo": "Scientific articles",
-      "pubmed": "Reviews on PubMed",
-      "europepmc": "Open access articles on Europe PMC",
+      "titulo": "Search more scientific articles",
+      "pubmed": "PubMed",
+      "pubmedDesc": "Peer-reviewed review articles. A good starting point to study.",
+      "europepmc": "Europe PMC",
+      "europepmcDesc": "Articles with free full text.",
       "scholar": "Google Scholar",
-      "scielo": "SciELO (Spanish, open access)",
-      "nota": "Automatic searches by the structure name. The atlas does not review the results: check what you read against the entry and your teacher."
-    }
+      "scholarDesc": "All kinds of academic literature, in English and Spanish.",
+      "scielo": "SciELO",
+      "scieloDesc": "Latin American open access journals, in Spanish.",
+      "nota": "These are automatic searches by the structure name: the atlas does not review the results. Check what you read against the card and your teacher."
+    },
+    "descripcion": "Description",
+    "referencias": "Resources and reference articles",
+    "enPreparacionTexto": "The description of this structure is being written with sources and will be reviewed by teachers. Meanwhile you can find it on the model and search articles below.",
+    "verFichaDe": "See the card for {{nombre}}"
   },
   "recurso": {
     "video": "video",
@@ -211,5 +219,11 @@
   "tema": {
     "aOscuro": "Switch to dark theme",
     "aClaro": "Switch to light theme"
+  },
+  "paneles": {
+    "ocultarArbol": "Hide the structures panel",
+    "mostrarArbol": "Show the structures panel",
+    "ocultarFicha": "Hide the structure card",
+    "mostrarFicha": "Show the structure card"
   }
 }

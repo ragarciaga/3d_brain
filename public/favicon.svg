@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="26" r="20" fill="#7fa8d6"/><path d="M32 44 C30 52 34 58 31 63" stroke="#e5c12e" stroke-width="4" fill="none"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Mitad anterior del cerebro: contorno y giros (verde principal) -->
+  <path d="M33 9.5 C29.5 7.5 24 8.5 21.5 12 C15.5 11.5 11 16 11.5 21.5 C6.5 23.5 4.5 30 7.5 34.5 C5.5 40 9.5 46 16 46 H26" stroke="#21C45D" stroke-width="4.6"/>
+  <path d="M13 30 C16.5 27.5 20.5 28.5 21.5 32.5" stroke="#21C45D" stroke-width="3.8"/>
+  <path d="M20.5 18.5 C20.5 22.5 24.5 24.5 28 22" stroke="#21C45D" stroke-width="3.8"/>
+  <path d="M14.5 39.5 C18 37 22 38 23.5 41.5" stroke="#21C45D" stroke-width="3.8"/>
+  <!-- Mitad posterior como circuito (menta): tronco central y ramas que salen a nodos -->
+  <path d="M33 9.5 V44" stroke="#34D399" stroke-width="3.4"/>
+  <path d="M33 17 H42 L48 11" stroke="#34D399" stroke-width="3.4"/>
+  <circle cx="51" cy="8.5" r="3" stroke="#34D399" stroke-width="2.9"/>
+  <path d="M33 26.5 H56" stroke="#34D399" stroke-width="3.4"/>
+  <circle cx="59.6" cy="26.5" r="3" stroke="#34D399" stroke-width="2.9"/>
+  <path d="M33 35.5 H43 L49 41.5" stroke="#34D399" stroke-width="3.4"/>
+  <circle cx="51.8" cy="44.2" r="3" stroke="#34D399" stroke-width="2.9"/>
+  <!-- Nervio vago: baja del tronco hasta un nodo -->
+  <path d="M33 44 V50 C33 53.5 29 54 29 57" stroke="#34D399" stroke-width="3.4"/>
+  <circle cx="29" cy="60" r="3.2" fill="#34D399"/>
+</svg>

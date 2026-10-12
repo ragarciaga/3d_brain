@@ -143,6 +143,34 @@ test('con red lenta se ve el aviso de carga, el modelo carga y la página no lan
   expect(errores).toEqual([]);
 });
 
+test('los paneles laterales se pliegan, el visor se agranda y la ficha vuelve al elegir una estructura', async ({ page }) => {
+  await abrir(page, '/es');
+  await modeloCargado(page);
+  const ancho = async () => (await page.getByTestId('visor').locator('canvas').boundingBox())!.width;
+  const inicial = await ancho();
+  const izq = page.getByTestId('plegar-izq');
+  const der = page.getByTestId('plegar-der');
+  await expect(izq).toHaveAttribute('aria-expanded', 'true');
+  await izq.click();
+  await der.click();
+  await expect(izq).toHaveAttribute('aria-expanded', 'false');
+  await expect(der).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#panel-izq')).toBeHidden();
+  await expect(page.locator('#panel-ficha')).toBeHidden();
+  await expect.poll(ancho).toBeGreaterThan(inicial + 500);
+  // La preferencia se conserva al recargar.
+  await page.reload();
+  await modeloCargado(page);
+  await expect(page.locator('#panel-izq')).toBeHidden();
+  // Elegir una estructura con la ficha plegada la vuelve a mostrar.
+  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('ficha')).toBeVisible();
+  await expect(der).toHaveAttribute('aria-expanded', 'true');
+  await izq.click();
+  await expect(page.locator('#panel-izq')).toBeVisible();
+});
+
 test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await abrir(page, '/es');
@@ -369,7 +397,7 @@ test('volver al inicio desde una estructura (marca o atrás) deja el modo fantas
   await abrir(page, '/es/hipocampo');
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
   await expect.poll(() => aislarActual(page)).toBe('contexto');
-  await page.getByRole('link', { name: 'Atlas cerebro y vago' }).click();
+  await page.getByRole('link', { name: 'Maysa Brain' }).click();
   await expect(page).toHaveURL(/\/es$/);
   await expect(page.getByTestId('ficha')).toHaveCount(0);
   await expect.poll(() => aislarActual(page)).toBeNull();
@@ -540,6 +568,12 @@ test.describe('celular (390 x 844)', () => {
     await expect(page.locator('.mensaje')).toBeVisible();
   });
 
+  test('en celular no hay botones para plegar paneles (el árbol es cajón y la ficha, hoja)', async ({ page }) => {
+    await abrir(page, '/es');
+    await expect(page.getByTestId('plegar-izq')).toBeHidden();
+    await expect(page.getByTestId('plegar-der')).toBeHidden();
+  });
+
   test('el cajón de estructuras cerrado no se enfoca; abre con foco dentro, se cierra con Escape o al elegir', async ({ page }) => {
     await abrir(page, '/es');
     const panel = page.locator('#panel-izq');
@@ -672,6 +706,32 @@ test('los botones Aislar, Aislar con contexto y Separar se activan con un toque 
   await arbolAislar.click();
   await esperarPulsado(arbolAislar, 'false');
   expect(await aislarActual(page)).toBeNull();
+});
+
+test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {
+  await abrir(page, '/es/talamo');
+  await modeloCargado(page);
+  // Primero el encuadre de la estructura elegida (llega un instante después de cargar).
+  await expect.poll(async () => (await vistaDeCamara(page)).distancia, { timeout: 20_000 }).toBeLessThan(0.2);
+  await camaraQuieta(page);
+  await page.getByTestId('ficha').getByRole('button', { name: 'Separar', exact: true }).click();
+  // Con WebGL por software el visor dibuja pocos cuadros por segundo: dos lecturas seguidas pueden caer
+  // en el mismo cuadro a mitad del reencuadre. Se espera el resultado final, no que la cámara "parezca" quieta.
+  const dentro = () =>
+    page.evaluate(() => {
+      const w = window as unknown as {
+        __camara: { piezaEnPantalla?: (p: string) => { actual: { x: number; y: number } } | null };
+      };
+      const lienzo = document.querySelector('[data-testid="visor"] canvas')!.getBoundingClientRect();
+      return ['thalamus-l', 'thalamus-r'].every((p) => {
+        const r = w.__camara.piezaEnPantalla?.(p);
+        return !!r && r.actual.x > 0 && r.actual.x < lienzo.width && r.actual.y > 0 && r.actual.y < lienzo.height;
+      });
+    });
+  await expect.poll(dentro, { timeout: 20_000 }).toBe(true);
+  // Y se queda así cuando la cámara termina de moverse.
+  await page.waitForTimeout(2000);
+  expect(await dentro()).toBe(true);
 });
 
 test('el doble clic sobre una pieza separada la devuelve y el toque la selecciona', async ({ page }) => {

@@ -8,6 +8,7 @@ import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
+import { colorDePieza } from './colores';
 import { CONSULTA_MOVIL } from './useMovil';
 
 const otro = (i: Idioma): Idioma => (i === 'es' ? 'en' : 'es');
@@ -119,30 +120,36 @@ function Recursos({ propios, heredados, idioma }: { propios: Recurso[]; heredado
   const filtrar = (l: Recurso[]) => (soloMiIdioma ? l.filter((r) => r.idioma === idioma) : l);
   const item = (r: Recurso, i: number) => (
     <li key={`${r.url}-${i}`}>
-      <a href={r.url} target="_blank" rel="noopener noreferrer">
-        {r.titulo}
-      </a>{' '}
-      <span className="recurso-tipo">{t(`recurso.${r.tipo}`)}</span>
-      {r.idioma !== idioma && <span className="etiqueta-aviso"> {t(`idioma.en_${r.idioma}`)}</span>}
-      <div className="recurso-nota">{r.nota[idioma]}</div>
+      <a className="tarjeta-enlace" href={r.url} target="_blank" rel="noopener noreferrer">
+        <span className="tarjeta-etiquetas">
+          <span className="recurso-tipo">{t(`recurso.${r.tipo}`)}</span>
+          {r.idioma !== idioma && <span className="recurso-idioma">{t(`idioma.en_${r.idioma}`)}</span>}
+        </span>
+        <strong>{r.titulo}</strong>
+        <span className="recurso-nota">{r.nota[idioma]}</span>
+      </a>
     </li>
   );
   if (!propios.length && !heredados.length) return null;
+  const mezcla = [...propios, ...heredados].some((r) => r.idioma !== idioma);
   return (
-    <section className="ficha-campo">
-      <h3>{t('ficha.recursos')}</h3>
-      <label className="interruptor">
-        <input type="checkbox" checked={soloMiIdioma} onChange={(e) => setSoloMiIdioma(e.target.checked)} />{' '}
-        {t('ficha.soloMiIdioma')}
-      </label>
-      <ul className="recursos">{filtrar(propios).map(item)}</ul>
-      {heredados.length > 0 && (
-        <>
-          <h4>{t('ficha.delGrupo')}</h4>
-          <ul className="recursos">{filtrar(heredados).map(item)}</ul>
-        </>
+    <>
+      {mezcla && (
+        <label className="interruptor interruptor-pequeno">
+          <input type="checkbox" checked={soloMiIdioma} onChange={(e) => setSoloMiIdioma(e.target.checked)} />{' '}
+          {t('ficha.soloMiIdioma')}
+        </label>
       )}
-    </section>
+      {propios.length > 0 && <ul className="tarjetas recursos">{filtrar(propios).map(item)}</ul>}
+      {heredados.length > 0 && (
+        <details className="recursos-grupo" open={!propios.length}>
+          <summary>
+            {t('ficha.delGrupo')} ({filtrar(heredados).length})
+          </summary>
+          <ul className="tarjetas recursos">{filtrar(heredados).map(item)}</ul>
+        </details>
+      )}
+    </>
   );
 }
 
@@ -176,7 +183,13 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
       <button
         type="button"
         {...propsPulsado(separado)}
-        onClick={() => (accionAlPulsar(separado) === 'desactivar' ? s().devolver(piezas) : s().separar(piezas))}
+        onClick={() => {
+          if (accionAlPulsar(separado) === 'desactivar') s().devolver(piezas);
+          else s().separar(piezas);
+          // La cámara suele estar muy cerca de la estructura: sin reencuadrar, las piezas separadas
+          // quedan detrás de ella o fuera del lienzo (#19). Se encuadra sin girar.
+          s().pedirCamara({ encuadrar: piezas });
+        }}
       >
         {t('acciones.separar')}
       </button>
@@ -242,19 +255,20 @@ function Articulos({ nombreEn, nombreEs }: { nombreEn: string; nombreEs: string 
   const enlaces = enlacesArticulos(nombreEn, nombreEs);
   if (!enlaces.length) return null;
   return (
-    <section className="ficha-campo" data-testid="articulos">
-      <h3>{t('ficha.articulos.titulo')}</h3>
-      <ul className="articulos">
+    <div data-testid="articulos">
+      <h4>{t('ficha.articulos.titulo')}</h4>
+      <ul className="tarjetas articulos">
         {enlaces.map((l) => (
           <li key={l.base}>
-            <a href={l.url} target="_blank" rel="noopener noreferrer" data-base={l.base}>
-              {t(`ficha.articulos.${l.base}`)}
+            <a className="tarjeta-enlace" href={l.url} target="_blank" rel="noopener noreferrer" data-base={l.base}>
+              <strong>{t(`ficha.articulos.${l.base}`)}</strong>
+              <span className="recurso-nota">{t(`ficha.articulos.${l.base}Desc`)}</span>
             </a>
           </li>
         ))}
       </ul>
       <p className="recurso-nota">{t('ficha.articulos.nota')}</p>
-    </section>
+    </div>
   );
 }
 
@@ -267,8 +281,13 @@ function GruposDeLaEntrada({ id, idioma }: { id: string; idioma: Idioma }) {
   );
   if (!lista.length) return null;
   return (
-    <p className="ficha-padre">
-      {t('ficha.gruposDeEstudio')}: {lista.map((g) => g.nombre[idioma]).join(', ')}
+    <p className="ficha-grupos">
+      <span className="solo-lector">{t('ficha.gruposDeEstudio')}: </span>
+      {lista.map((g) => (
+        <span key={g.id} className="etiqueta-grupo">
+          {g.nombre[idioma]}
+        </span>
+      ))}
     </p>
   );
 }
@@ -310,7 +329,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
 
   if (!id || !e) {
     return (
-      <aside className="ficha ficha-vacia" aria-label={t('ficha.titulo')}>
+      <aside id="panel-ficha" className="ficha ficha-vacia" aria-label={t('ficha.titulo')}>
         <p>{t('ficha.vacia')}</p>
       </aside>
     );
@@ -333,25 +352,45 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const estadoOtro = f?.revision[otro(idioma)]?.estado ?? 'borrador';
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, ambos, t) : nombreVisible(e, idioma, ambos);
 
+  const piezas = piezasDeEntrada(id);
+  const color = piezas.length ? colorDePieza(piezas[0]!) : null;
+  const fichaPadre = padre && estructuras[padre]?.ficha ? padre : null;
+
   return (
-    <aside ref={ficha} className="ficha" aria-labelledby="ficha-titulo" data-testid="ficha" data-entrada={id}>
+    <aside id="panel-ficha" ref={ficha} className="ficha" aria-labelledby="ficha-titulo" data-testid="ficha" data-entrada={id}>
       <header className="ficha-cabecera">
-        <h2 id="ficha-titulo" ref={refTitulo} tabIndex={-1}>
-          {titulo}
-        </h2>
+        <div className="ficha-titulos">
+          {padre && (
+            <p className="ficha-padre">
+              {color && <span className="ficha-punto" style={{ background: color }} aria-hidden="true" />}
+              <span className="solo-lector">{t('buscar.en', { lugar: '' })}</span>
+              {nombreNodo(padre, idioma, false, t)}
+            </p>
+          )}
+          <h2 id="ficha-titulo" ref={refTitulo} tabIndex={-1}>
+            {titulo}
+          </h2>
+          <p className="ficha-latin">
+            <span lang="la">{e.latin && e.latin !== PENDIENTE ? e.latin : t('ficha.latinPendiente')}</span>
+          </p>
+        </div>
         <button type="button" className="cerrar" aria-label={t('ficha.cerrar')} onClick={alCerrar}>
           ×
         </button>
       </header>
-      <p className="ficha-latin">
-        <span lang="la">{e.latin && e.latin !== PENDIENTE ? e.latin : t('ficha.latinPendiente')}</span>
-      </p>
       {ambos && <p className="ficha-otro">{t(`idioma.nombre_${otro(idioma)}`)}: {nombre(e, otro(idioma))}</p>}
       {nombrePendiente(e, idioma) && <p className="etiqueta-aviso">{t('ficha.nombrePendiente')}</p>}
-      {padre && <p className="ficha-padre">{t('buscar.en', { lugar: nombreNodo(padre, idioma, false, t) })}</p>}
-      <p className="ficha-fuente-nombre">
-        {t('ficha.fuenteNombre')}: {e.fuente_nombre === PENDIENTE ? t('ficha.fuentePendiente') : e.fuente_nombre}
-      </p>
+      <div className="ficha-meta">
+        {f && (
+          <span className={`estado estado-${estadoIdioma}`}>
+            {t(`estado.${estadoIdioma}`)}
+            {f.revision[idioma]?.revisado_por ? ` · ${f.revision[idioma]!.revisado_por}, ${f.revision[idioma]!.fecha}` : ''}
+          </span>
+        )}
+        <span className="ficha-fuente-nombre">
+          {t('ficha.fuenteNombre')}: {e.fuente_nombre === PENDIENTE ? t('ficha.fuentePendiente') : e.fuente_nombre}
+        </span>
+      </div>
       <GruposDeLaEntrada id={id} idioma={idioma} />
       {revisor && (
         <div className="ficha-campo">
@@ -362,7 +401,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
           {rev('nombre', 'es')}
           {rev('nombre', 'en')}
           {rev('latin')}
-          {piezasDeEntrada(id).length > 0 && (
+          {piezas.length > 0 && (
             <>
               <h3>{t('revision.pieza')}</h3>
               {rev('pieza')}
@@ -391,25 +430,35 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       )}
 
       {!f ? (
-        <p className="en-preparacion">{t('ficha.enPreparacion')}</p>
+        <section className="ficha-descripcion ficha-preparacion">
+          <p className="en-preparacion">{t('ficha.enPreparacion')}</p>
+          <p>{t('ficha.enPreparacionTexto')}</p>
+          {fichaPadre && (
+            <button
+              type="button"
+              className="enlace"
+              onClick={() => window.dispatchEvent(new CustomEvent('atlas:elegir', { detail: { entrada: fichaPadre } }))}
+            >
+              {t('ficha.verFichaDe', { nombre: nombreVisible(estructuras[fichaPadre]!, idioma, ambos) })}
+            </button>
+          )}
+        </section>
       ) : (
         <>
-          <p className={`estado estado-${estadoIdioma}`}>
-            {t(`estado.${estadoIdioma}`)}
-            {f.revision[idioma]?.revisado_por ? ` · ${f.revision[idioma]!.revisado_por}, ${f.revision[idioma]!.fecha}` : ''}
-          </p>
           {estadoIdioma !== 'verificado' && estadoOtro === 'verificado' && (
             <p className="etiqueta-aviso">{t('ficha.verificadoOtroIdioma')}</p>
           )}
-          <Campo titulo={t('ficha.ubicacion')} revision={rev('ubicacion', idioma)}>
-            <p>{f.ubicacion[idioma]}</p>
-          </Campo>
-          <Campo titulo={t('ficha.queEs')} revision={rev('que_es', idioma)}>
-            <p>{f.que_es[idioma]}</p>
-          </Campo>
-          <Campo titulo={t('ficha.paraQueSirve')} revision={rev('para_que_sirve', idioma)}>
-            <p>{f.para_que_sirve[idioma]}</p>
-          </Campo>
+          <section className="ficha-descripcion" aria-label={t('ficha.descripcion')}>
+            <Campo titulo={t('ficha.queEs')} revision={rev('que_es', idioma)}>
+              <p className="ficha-lead">{f.que_es[idioma]}</p>
+            </Campo>
+            <Campo titulo={t('ficha.paraQueSirve')} revision={rev('para_que_sirve', idioma)}>
+              <p>{f.para_que_sirve[idioma]}</p>
+            </Campo>
+            <Campo titulo={t('ficha.ubicacion')} revision={rev('ubicacion', idioma)}>
+              <p>{f.ubicacion[idioma]}</p>
+            </Campo>
+          </section>
           {f.relaciones.length > 0 && (
             <Campo titulo={t('ficha.relaciones')} revision={rev('relaciones')}>
               <ul className="relaciones">
@@ -437,10 +486,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
               <ul className="relevancia">
                 {f.relevancia.map((a, i) => (
                   <li key={i}>
+                    <span className={`evidencia evidencia-${a.evidencia}`}>{t(`evidencia.${a.evidencia}`)}</span>
                     <p>{a.texto[idioma]}</p>
-                    <p>
-                      <span className={`evidencia evidencia-${a.evidencia}`}>{t(`evidencia.${a.evidencia}`)}</span>
-                    </p>
                     <ListaFuentes fuentes={a.fuentes} />
                     {rev(`relevancia.${i}`, idioma)}
                   </li>
@@ -448,19 +495,27 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
               </ul>
             </section>
           )}
-          <Recursos propios={f.recursos} heredados={recursosHeredados(id)} idioma={idioma} />
-          <section className="ficha-campo">
-            <h3>{t('ficha.fuentes')}</h3>
-            <ListaFuentes fuentes={f.fuentes} />
-            {revisor && f.fuentes.map((_, i) => <div key={i}>{rev(`fuente.${i}`)}</div>)}
-          </section>
+        </>
+      )}
+
+      <section className="ficha-campo ficha-referencias">
+        <h3>{t('ficha.referencias')}</h3>
+        <Recursos propios={f?.recursos ?? []} heredados={recursosHeredados(id)} idioma={idioma} />
+        <Articulos nombreEn={e.nombre.en} nombreEs={e.nombre.es} />
+      </section>
+
+      {f && (
+        <details className="ficha-fuentes" open={!!revisor}>
+          <summary>
+            {t('ficha.fuentes')} ({f.fuentes.length})
+          </summary>
+          <ListaFuentes fuentes={f.fuentes} />
+          {revisor && f.fuentes.map((_, i) => <div key={i}>{rev(`fuente.${i}`)}</div>)}
           <p className="ficha-version">
             {t('ficha.version')}: {f.version}
           </p>
-        </>
+        </details>
       )}
-      {!f && <Recursos propios={[]} heredados={recursosHeredados(id)} idioma={idioma} />}
-      <Articulos nombreEn={e.nombre.en} nombreEs={e.nombre.es} />
     </aside>
   );
 }
