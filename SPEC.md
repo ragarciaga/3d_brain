@@ -1,6 +1,6 @@
 # Spec: Atlas 3D de cerebro y nervio vago
 
-Nombre provisional. Versión 0.3, 11 de octubre de 2026.
+Nombre: Maysa Brain (decidido por el editor el 12 de octubre de 2026). Versión 0.3, 11 de octubre de 2026.
 
 **Cambios frente a la versión 0.2**
 
@@ -680,11 +680,11 @@ El visor ocupa toda la pantalla. Búsqueda y selector de idioma arriba, árbol y
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
 9. Canal de revisión docente: formulario de Google del editor (F24).
+3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
 
 **Abiertas**
 
 2. ¿Qué docentes pueden revisar neuroanatomía, psicología y traducción? Sin revisores no hay fichas verificadas ni lanzamiento. Se necesitan para el piloto (hito 1).
-3. Nombre definitivo, que funcione igual en español y en inglés. Antes del hito 2.
 4. Dominio propio. Antes del hito 2.
 5. ¿Analítica sin cookies, sí o no? Antes del hito 2.
 7. ¿Qué circuito se construye primero en la fase 2? Propuesto: Papez, por su peso en psicología.

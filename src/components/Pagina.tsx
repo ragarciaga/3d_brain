@@ -16,6 +16,7 @@ import BotonTema from './BotonTema';
 import Buscador from './Buscador';
 import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
+import { IconoMarca, PalabraMarca } from './Marca';
 import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
@@ -236,7 +237,9 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           {t('menu.boton')}
         </button>
         <Link to={`/${idioma}`} className="marca">
-          {t('app.marca')}
+          <IconoMarca className="marca-icono" />
+          <PalabraMarca className="marca-palabra" />
+          <span className="solo-lector">{t('app.marca')}</span>
         </Link>
         <Buscador idioma={idioma} alElegir={irA} />
         <label className="interruptor">

@@ -20,6 +20,9 @@
   --velo: rgba(19, 23, 32, 0.45);
   --visor-luz: #ffffff;
   --visor-fondo: #e9edf2;
+  --logo-a: #137236;
+  --logo-b: #10b77f;
+  --logo-texto: #131720;
   --radio: 10px;
   --radio-tarjeta: 16px;
   --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -48,6 +51,9 @@
   --velo: rgba(0, 0, 0, 0.6);
   --visor-luz: #20222d;
   --visor-fondo: #0d0f16;
+  --logo-a: #21c45d;
+  --logo-b: #34d399;
+  --logo-texto: #e1e7ef;
   color-scheme: dark;
 }
 
@@ -151,14 +157,15 @@ a {
   white-space: nowrap;
 }
 
-/* Sello de la marca: un punto verde con halo menta. */
-.marca::before {
-  content: '';
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: var(--acento);
-  box-shadow: 0 0 0 4px var(--acento-suave);
+/* Logo de Maysa Brain (src/components/Marca.tsx). */
+.marca-icono {
+  height: 2rem;
+  width: auto;
+}
+
+.marca-palabra {
+  height: 0.95rem;
+  width: auto;
 }
 
 .boton-menu {

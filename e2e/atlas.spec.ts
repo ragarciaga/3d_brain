@@ -397,7 +397,7 @@ test('volver al inicio desde una estructura (marca o atrás) deja el modo fantas
   await abrir(page, '/es/hipocampo');
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
   await expect.poll(() => aislarActual(page)).toBe('contexto');
-  await page.getByRole('link', { name: 'Atlas cerebro y vago' }).click();
+  await page.getByRole('link', { name: 'Maysa Brain' }).click();
   await expect(page).toHaveURL(/\/es$/);
   await expect(page.getByTestId('ficha')).toHaveCount(0);
   await expect.poll(() => aislarActual(page)).toBeNull();
