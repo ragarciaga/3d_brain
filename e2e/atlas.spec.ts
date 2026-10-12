@@ -187,7 +187,7 @@ test('la ficha trae búsquedas de artículos científicos, también si está en 
   await expect(articulos.getByRole('link')).toHaveCount(4);
   // Una estructura sin ficha escrita también trae las búsquedas.
   await abrir(page, '/es/nucleo-accesorio-del-nervio-oculomotor');
-  await expect(page.getByTestId('ficha')).toContainText('En preparación');
+  await expect(page.getByTestId('ficha')).toContainText('Ficha en preparación.');
   await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /accessory%20nucleus%20of%20oculomotor%20nerve/);
 });
 
