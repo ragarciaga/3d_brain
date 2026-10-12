@@ -25,10 +25,11 @@
   },
   "buscar": {
     "etiqueta": "Buscar una estructura",
-    "placeholder": "Buscar (Ctrl+K): hipocampo, amygdala, vago...",
+    "placeholder": "Hipocampo, amygdala, vago...",
     "resultados": "Resultados de la búsqueda",
     "sinResultados": "Sin resultados",
-    "en": "en {{lugar}}"
+    "en": "en {{lugar}}",
+    "ayudaPaleta": "Escribe en español o en inglés. Enter abre la estructura; Escape cierra."
   },
   "acciones": {
     "titulo": "Acciones de la pieza",
@@ -121,7 +122,10 @@
     "lobulos": "lóbulos",
     "piezas": "piezas",
     "explosion": "Explosión",
-    "reensamblar": "Reensamblar"
+    "reensamblar": "Reensamblar",
+    "marcaInventario": "Inventario",
+    "marcaSeparado": "Separado",
+    "marcaArmado": "Armado"
   },
   "vistas": {
     "titulo": "Vistas anatómicas",
@@ -130,7 +134,15 @@
     "lateral-izq": "Lateral izq.",
     "lateral-der": "Lateral der.",
     "superior": "Superior",
-    "inferior": "Inferior"
+    "inferior": "Inferior",
+    "corto": {
+      "anterior": "Ant",
+      "posterior": "Post",
+      "lateral-izq": "Izq",
+      "lateral-der": "Der",
+      "superior": "Sup",
+      "inferior": "Inf"
+    }
   },
   "visor": {
     "cargando": "Cargando el modelo...",
@@ -220,10 +232,10 @@
     "aOscuro": "Cambiar a tema oscuro",
     "aClaro": "Cambiar a tema claro"
   },
-  "paneles": {
-    "ocultarArbol": "Ocultar el panel de estructuras",
-    "mostrarArbol": "Mostrar el panel de estructuras",
-    "ocultarFicha": "Ocultar la ficha",
-    "mostrarFicha": "Mostrar la ficha"
+  "riel": {
+    "titulo": "Paneles",
+    "estructuras": "Estructuras",
+    "grupos": "Grupos",
+    "buscar": "Buscar"
   }
 }

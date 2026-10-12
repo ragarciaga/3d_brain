@@ -595,35 +595,54 @@ Se crea a medida que cada función la necesita, no por adelantado.
 
 ## 11. Interfaz
 
+Modo estudio (decidido por el editor el 12 de octubre de 2026): el cerebro es el protagonista y los
+paneles salen solo cuando se piden. La disposición se aparta a propósito de los atlas de tres
+paneles fijos con barra inferior.
+
 ### Escritorio
 
 ```
-+-------------------+-------------------------------+-------------------+
-| Buscar (Ctrl+K)   |                     [ES | EN] | Ficha             |
-| Grupos de estudio |                               | Amígdala          |
-| Circuitos         |          Visor 3D             | Qué es            |
-| Árbol             |                               | Para qué sirve    |
-|  [x] Encéfalo     |                               | Recursos, notas   |
-|  [x] Nervio vago  |                               | [Aislar][Enlace]  |
-+-------------------+-------------------------------+-------------------+
-| Separar por: [lóbulos]  Explosión [----o----] 40%  Corte: [coronal]   |
-| [Reensamblar]                                          [Repaso de hoy]|
-+-----------------------------------------------------------------------+
++----+------------------------------------------------------------+
+| MAYSA BRAIN                                     ES  EN  (tema)  |
++----+------------------------------------------------------------+
+| ⌥  |                                          métricas          |
+|Est.|                                                  +------+  |
+| ◎  |                Visor 3D a pantalla completa      |nivel |  |
+|Grup|                                                  |  ▲   |  |
+| ⌕  |                                                  |  |   |  |
+|Busc|                                                  |  ●   |  |
+|    |                                                  |  ⟲   |  |
+|    |                                        brújula   +------+  |
++----+------------------------------------------------------------+
 ```
 
-En modo revisión (F24), la ficha muestra junto a cada campo los botones Correcto, Corregir y No es mi área, y la barra inferior muestra cuántas respuestas lleva el revisor y el botón "Enviar revisión".
+- **Riel** a la izquierda: Estructuras, Grupos y Buscar. Estructuras y Grupos abren un cajón sobre el
+  visor (árbol y grupos de estudio); el mismo botón, tocar el modelo o Escape lo cierran.
+- **Buscar** abre una paleta flotante (también con Ctrl+K). Escape la cierra sin tocar el resto.
+- **Ficha como página de lectura a la izquierda:** aparece solo al elegir una estructura, ocupa unos
+  400 px y el visor se reencuadra en el espacio que queda. Cerrarla devuelve la pantalla completa.
+  Orden: cabecera (lóbulo con el color de la pieza, nombre, latín, estado), acciones, descripción
+  destacada (qué es, función, ubicación), relaciones, relevancia en psicología, recursos y artículos
+  de referencia, y fuentes plegadas.
+- **Explosión vertical** a la derecha del visor: nivel (hemisferios, lóbulos, piezas), deslizador
+  con las marcas Armado, Separado e Inventario, y Reensamblar.
+- **Brújula de vistas** en la esquina inferior derecha: superior, inferior, izquierda, derecha y
+  posterior alrededor de la vista anterior.
+
+En modo revisión (F24), la ficha muestra junto a cada campo los botones Correcto, Corregir y No es mi área, y una barra arriba muestra cuántas respuestas lleva el revisor y el botón "Enviar revisión".
 
 ### Celular
 
-El visor ocupa toda la pantalla. Búsqueda y selector de idioma arriba, árbol y circuitos en un cajón lateral, ficha en una hoja inferior que se desliza hacia arriba. Fragmentar y cortar quedan en una barra inferior compacta con pestañas.
+El visor ocupa toda la pantalla. Arriba: botón "Estructuras" (abre el cajón), lupa (abre la paleta),
+idioma y tema. La ficha es una hoja inferior. La explosión y la brújula van arriba, sobre el visor,
+para que la hoja no las tape. No hay riel.
 
-### Dirección visual (propuesta, por decidir)
+### Dirección visual
 
-- **Color con lógica de atlas anatómico:** nervios en amarillo, como en los atlas impresos; cada lóbulo con su color fijo en árbol, visor y ficha para que funcione como pista de memoria.
+- **Paleta Maysa** con tema oscuro y claro; el tema lo elige la persona y, si no elige, sigue al sistema.
+- **Color con lógica de atlas anatómico:** nervios en amarillo, como en los atlas impresos; cada lóbulo con su color fijo en visor y ficha para que funcione como pista de memoria.
 - **El color nunca es la única pista:** todo lo que se distingue por color también tiene nombre o etiqueta, para personas con daltonismo.
-- **Fondo** gris frío claro, parecido a un negatoscopio, para que las piezas resalten sin cansar la vista.
-- **Tipografía:** Atkinson Hyperlegible para la interfaz (diseñada para legibilidad) y Source Serif 4 para el texto largo de las fichas. Ambas cubren tildes y eñes.
-- Animación solo cuando responde a una acción: separar, devolver, encuadrar, avanzar en un circuito.
+- Animación solo cuando responde a una acción: separar, devolver, encuadrar, abrir un panel.
 
 ## 12. Requisitos no funcionales
 

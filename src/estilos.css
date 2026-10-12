@@ -172,10 +172,61 @@ a {
   display: none;
 }
 
+.espacio {
+  flex: 1;
+}
+
+/* La lupa del encabezado solo hace falta en celular; en pantallas anchas está en el riel. */
+.boton-buscar {
+  display: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+  place-items: center;
+}
+
+/* Paleta de búsqueda (F3): flota sobre todo, arriba al centro. */
+.paleta-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--velo);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 1rem 1rem;
+}
+
+.paleta {
+  width: min(620px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+  padding: 0.8rem;
+}
+
+.paleta .buscador input {
+  font-size: 1.05rem;
+  padding: 0.7rem 1rem;
+}
+
+.paleta .buscar-resultados {
+  position: static;
+  margin-top: 0.5rem;
+  box-shadow: none;
+}
+
+.paleta-ayuda {
+  margin: 0.6rem 0.2rem 0;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
 .buscador {
   position: relative;
   flex: 1 1 260px;
-  max-width: 460px;
 }
 
 .buscador input {
@@ -280,19 +331,51 @@ a {
   display: none;
 }
 
-/* Tarjetas flotantes sobre el fondo: árbol, visor y ficha. */
+/* Modo estudio: el riel a la izquierda, la ficha como página de lectura cuando hay una estructura
+   elegida y el visor en todo el espacio que queda. El árbol y los grupos salen en un cajón sobre el
+   visor. */
 .cuerpo {
   flex: 1;
+  position: relative;
   display: grid;
-  grid-template-columns: 300px 1fr 360px;
-  grid-template-areas: 'izq centro ficha';
+  grid-template-columns: 4.5rem 1fr;
+  grid-template-areas: 'riel centro';
   gap: 0.6rem;
-  padding: 0 0.6rem;
+  padding: 0 0.6rem 0 0;
   min-height: 0;
 }
 
-.panel-izq {
-  grid-area: izq;
+.con-ficha .cuerpo {
+  grid-template-columns: 4.5rem minmax(320px, 400px) 1fr;
+  grid-template-areas: 'riel ficha centro';
+}
+
+.riel {
+  grid-area: riel;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.2rem;
+}
+
+.riel button {
+  width: 3.6rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.2rem;
+  border: none;
+  background: none;
+  border-radius: var(--radio);
+  color: var(--texto-suave);
+  font-size: 0.68rem;
+}
+
+.riel button:hover,
+.riel button.activo {
+  background: var(--acento-suave);
+  color: var(--menta);
 }
 
 .centro {
@@ -303,56 +386,35 @@ a {
   grid-area: ficha;
 }
 
-/* Paneles plegables (solo en pantallas anchas; en celular son cajón y hoja). */
-.plegar {
-  position: absolute;
-  z-index: 5;
-  bottom: 0.6rem;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border-radius: 50%;
-  background: var(--panel);
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.plegar-izq {
-  left: 0.6rem;
-}
-
-.plegar-der {
-  right: 0.6rem;
-}
-
-@media (min-width: 901px) {
-  .sin-izq .cuerpo {
-    grid-template-columns: 1fr 360px;
-    grid-template-areas: 'centro ficha';
-  }
-
-  .sin-der .cuerpo {
-    grid-template-columns: 300px 1fr;
-    grid-template-areas: 'izq centro';
-  }
-
-  .sin-izq.sin-der .cuerpo {
-    grid-template-columns: 1fr;
-    grid-template-areas: 'centro';
-  }
-
-  .sin-izq .panel-izq,
-  .sin-der .ficha {
-    display: none;
-  }
+/* Sin estructura elegida no hay página de lectura: el visor ocupa todo. */
+.ficha-vacia {
+  display: none;
 }
 
 .panel-izq {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  bottom: 0;
+  left: 4.8rem;
+  width: min(85vw, 340px);
   overflow: auto;
   background: var(--panel);
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta);
   padding: 0.8rem;
+  box-shadow: var(--sombra);
+  transform: translateX(-120%);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.2s ease, opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.menu-abierto .panel-izq {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  transition: transform 0.2s ease, opacity 0.2s ease, visibility 0s;
 }
 
 .panel-izq h2 {
@@ -466,37 +528,153 @@ a {
   background: radial-gradient(ellipse at 50% 42%, var(--visor-luz) 0%, var(--visor-fondo) 72%);
 }
 
-.vistas {
+.metricas {
   position: absolute;
   z-index: 5;
-  inset-inline: 0.6rem;
   top: 0.6rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
-  pointer-events: none;
-}
-
-.vistas > * {
-  pointer-events: auto;
-}
-
-.vistas button {
-  font-size: 0.82em;
-  background: var(--panel);
-  border-radius: 999px;
-  padding: 0.25rem 0.7rem;
-}
-
-.metricas {
-  margin-inline-start: auto;
+  right: 0.7rem;
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
   background: var(--panel);
-  font-size: 0.78em;
+  font-size: 0.72rem;
   color: var(--texto-suave);
   font-variant-numeric: tabular-nums;
+}
+
+/* Brújula de vistas anatómicas (F1). */
+.brujula {
+  position: absolute;
+  z-index: 5;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(3, 2.4rem);
+  grid-template-rows: repeat(3, 2.4rem);
+  gap: 0.2rem;
+  padding: 0.35rem;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  box-shadow: var(--sombra);
+}
+
+.brujula button {
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.66rem;
+  font-weight: 600;
+  background: var(--elevado);
+}
+
+.brujula .b-arriba {
+  grid-area: 1 / 2;
+}
+
+.brujula .b-izquierda {
+  grid-area: 2 / 1;
+}
+
+.brujula .b-centro {
+  grid-area: 2 / 2;
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
+.brujula .b-derecha {
+  grid-area: 2 / 3;
+}
+
+.brujula .b-abajo {
+  grid-area: 3 / 2;
+}
+
+.brujula .b-esquina {
+  grid-area: 3 / 3;
+  font-size: 0.6rem;
+}
+
+/* Explosión vertical (F6, F7): niveles, deslizador con marcas y reensamblar. */
+.dock {
+  position: absolute;
+  z-index: 5;
+  top: 2.6rem;
+  right: 0.8rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.55rem;
+  border-radius: var(--radio-tarjeta);
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  box-shadow: var(--sombra);
+  width: 6.6rem;
+}
+
+.dock-niveles {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+}
+
+.dock-niveles button {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 999px;
+}
+
+.dock-niveles button.activo {
+  background: var(--acento-suave);
+  border-color: var(--acento);
+  color: var(--menta);
+}
+
+.dock-deslizador {
+  position: relative;
+  height: 9rem;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 0.4rem;
+}
+
+.dock-deslizador input {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 100%;
+  width: 1.4rem;
+  margin: 0;
+}
+
+.dock-marcas {
+  position: absolute;
+  inset: 0.45rem auto 0.45rem 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.6rem;
+  color: var(--texto-suave);
+}
+
+.dock-marcas li {
+  position: absolute;
+  left: 0;
+  transform: translateY(50%);
+  white-space: nowrap;
+}
+
+.dock-valor {
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.dock-reensamblar,
+.dock-mostrar {
+  font-size: 0.68rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 999px;
+  width: 100%;
 }
 
 .visor {
@@ -1002,34 +1180,6 @@ a {
   padding-inline-start: 1rem;
 }
 
-/* Barra de fragmentar: un dock flotante bajo el visor. */
-.barra {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-  margin: 0.6rem 0.6rem 0;
-  padding: 0.5rem 0.9rem;
-  background: var(--panel);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio-tarjeta);
-}
-
-.barra-campo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.barra-deslizador input {
-  width: 160px;
-}
-
-.barra output {
-  font-variant-numeric: tabular-nums;
-  min-width: 3.2em;
-}
-
 .pie {
   font-size: 0.78em;
   padding: 0.4rem 0.9rem;
@@ -1080,10 +1230,6 @@ body:has(.pagina-texto) {
     display: inline-block;
   }
 
-  .plegar {
-    display: none;
-  }
-
   .encabezado {
     gap: 0.4rem;
     padding: 0.4rem 0.5rem;
@@ -1102,24 +1248,21 @@ body:has(.pagina-texto) {
     display: inline;
   }
 
-  .barra {
-    gap: 0.35rem;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.9em;
+  .boton-buscar {
+    display: grid;
   }
 
-  .buscador {
-    order: 10;
-    flex-basis: 100%;
-    max-width: none;
-  }
-
-  .cuerpo {
+  /* En celular el riel lo reemplaza el botón "Estructuras" del encabezado. */
+  .cuerpo,
+  .con-ficha .cuerpo {
     grid-template-columns: 1fr;
     grid-template-areas: 'centro';
-    position: relative;
     padding: 0;
     gap: 0;
+  }
+
+  .riel {
+    display: none;
   }
 
   .centro {
@@ -1127,27 +1270,9 @@ body:has(.pagina-texto) {
     border-radius: 0;
   }
 
-  .barra {
-    margin: 0;
-    border-radius: 0;
-    border-inline: none;
-    border-bottom: none;
-  }
-
   .panel-izq {
-    position: absolute;
-    z-index: 20;
-    inset-block: 0;
-    inset-inline-start: 0;
-    width: min(85vw, 340px);
+    left: 0;
     border-radius: 0 var(--radio-tarjeta) var(--radio-tarjeta) 0;
-    transform: translateX(-105%);
-    transition: transform 0.2s ease;
-    box-shadow: var(--sombra);
-  }
-
-  .menu-abierto .panel-izq {
-    transform: none;
   }
 
   .ficha {
@@ -1161,16 +1286,27 @@ body:has(.pagina-texto) {
     box-shadow: var(--sombra);
   }
 
-  .ficha-vacia {
-    display: none;
+  /* Arriba, para que la hoja de la ficha no los tape. */
+  .dock {
+    top: 0.5rem;
+    right: auto;
+    left: 0.4rem;
+    width: 5.4rem;
+    gap: 0.4rem;
+    padding: 0.45rem 0.35rem;
   }
 
-  .barra-deslizador input {
-    width: 110px;
+  .dock-deslizador {
+    height: 6.5rem;
   }
 
-  .vistas button {
-    padding: 0.2rem 0.4rem;
+  .brujula {
+    top: 2.4rem;
+    bottom: auto;
+    right: 0.4rem;
+    grid-template-columns: repeat(3, 1.75rem);
+    grid-template-rows: repeat(3, 1.75rem);
+    padding: 0.25rem;
   }
 }
 

@@ -6,9 +6,8 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { leer, serializar } from '../lib/enlaces';
-import { guardarPaneles, leerPaneles, type Paneles } from '../lib/paneles';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
-import { piezasDeEncuadre, piezasSeleccionadas, useAtlas } from '../store/useAtlas';
+import { useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
 import AvisoPrimeraVisita from './Aviso';
 import BarraFragmentar from './BarraFragmentar';
@@ -20,7 +19,8 @@ import { IconoMarca, PalabraMarca } from './Marca';
 import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
-import Vistas from './Vistas';
+import Vistas, { Metricas } from './Vistas';
+import { IconoArbol, IconoBuscar, IconoGrupos } from './Iconos';
 
 const CLAVE_REVISOR = 'atlas:revisor';
 
@@ -45,8 +45,19 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const ambos = useAtlas((s) => s.ambos);
   const revisor = useAtlas((s) => s.revisor);
   const [menu, setMenu] = useState(false);
-  const [paneles, setPaneles] = useState<Paneles>(leerPaneles);
-  const [plegadaCon, setPlegadaCon] = useState<string | null>(null); // entrada elegida cuando se plegó la ficha
+  const [seccion, setSeccion] = useState<'grupos' | 'arbol'>('arbol'); // qué muestra el cajón del riel
+  const [paleta, setPaleta] = useState(false); // paleta de búsqueda (riel, lupa o Ctrl+K)
+
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaleta(true);
+      }
+    };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, []);
   const [mensaje, setMensaje] = useState('');
   const movil = useMovil();
   const panel = useRef<HTMLElement>(null);
@@ -62,8 +73,10 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
 
   // Elegir un grupo de estudio cierra el cajón del celular; el foco vuelve al botón del menú (como con
   // Escape) en vez de quedar en BODY. Si el cajón no estaba abierto en celular, no se mueve el foco.
+  // En pantallas anchas el cajón sigue abierto para comparar grupos; en celular se cierra para ver el modelo.
   const alElegirGrupo = useCallback(() => {
-    const abiertoEnCelular = movil && menu;
+    if (!movil) return;
+    const abiertoEnCelular = menu;
     setMenu(false);
     if (abiertoEnCelular) botonMenu.current?.focus();
   }, [movil, menu]);
@@ -72,20 +85,16 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     document.title = t('app.titulo');
   }, [t]);
 
-  // Paneles plegables (pantallas anchas). Al cambiar el ancho del visor se reencuadra, así el cerebro
-  // aprovecha el espacio.
-  const cambiarPaneles = useCallback((p: Paneles) => {
-    setPaneles(p);
-    guardarPaneles(p);
-    setTimeout(() => {
-      const s = useAtlas.getState();
-      const sel = piezasSeleccionadas(s.seleccion);
-      const foco = sel.length ? sel : piezasDeEncuadre(s);
-      if (foco.length) s.pedirCamara({ encuadrar: foco });
-    }, 60);
-  }, []);
-  // Plegada, la ficha vuelve a salir al elegir otra estructura.
-  const derVisible = paneles.der || (!!entrada && entrada !== plegadaCon);
+  // Riel (modo estudio): cada botón abre el cajón en su sección; el mismo botón lo cierra.
+  const abrirSeccion = (x: 'grupos' | 'arbol') => {
+    if (menu && seccion === x) {
+      setMenu(false);
+      return;
+    }
+    setSeccion(x);
+    setMenu(true);
+    setTimeout(() => panel.current?.querySelector(x === 'grupos' ? '.grupos' : '.titulo-arbol')?.scrollIntoView({ block: 'start' }), 0);
+  };
 
   // Estado inicial desde la URL compartida.
   useEffect(() => {
@@ -230,7 +239,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
 
   return (
     <div
-      className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${paneles.izq ? '' : ' sin-izq'}${derVisible ? '' : ' sin-der'}`}
+      className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${entrada ? ' con-ficha' : ''}`}
     >
       <header className="encabezado">
         <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq" onClick={() => setMenu(!menu)}>
@@ -241,7 +250,10 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           <PalabraMarca className="marca-palabra" />
           <span className="solo-lector">{t('app.marca')}</span>
         </Link>
-        <Buscador idioma={idioma} alElegir={irA} />
+        <button type="button" className="boton-buscar" aria-label={t('riel.buscar')} title={t('riel.buscar')} onClick={() => setPaleta(true)}>
+          <IconoBuscar />
+        </button>
+        <span className="espacio" />
         <label className="interruptor">
           <input type="checkbox" checked={ambos} onChange={(e) => useAtlas.getState().setAmbos(e.target.checked)} />{' '}
           {t('idioma.ambos')}
@@ -287,41 +299,47 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       )}
       <PanelRevision idioma={idioma} alElegir={irA} />
       <div className="cuerpo">
-        <aside id="panel-izq" ref={panel} className="panel-izq" inert={movil && !menu}>
+        <nav className="riel" aria-label={t('riel.titulo')}>
+          <button
+            type="button"
+            className={menu && seccion === 'arbol' ? 'activo' : undefined}
+            aria-expanded={menu && seccion === 'arbol'}
+            aria-controls="panel-izq"
+            onClick={() => abrirSeccion('arbol')}
+          >
+            <IconoArbol />
+            <span>{t('riel.estructuras')}</span>
+          </button>
+          <button
+            type="button"
+            className={menu && seccion === 'grupos' ? 'activo' : undefined}
+            aria-expanded={menu && seccion === 'grupos'}
+            aria-controls="panel-izq"
+            onClick={() => abrirSeccion('grupos')}
+          >
+            <IconoGrupos />
+            <span>{t('riel.grupos')}</span>
+          </button>
+          <button type="button" aria-haspopup="dialog" onClick={() => setPaleta(true)}>
+            <IconoBuscar />
+            <span>{t('riel.buscar')}</span>
+          </button>
+        </nav>
+        <aside id="panel-izq" ref={panel} className="panel-izq" inert={!menu}>
           <GruposEstudio idioma={idioma} alElegir={alElegirGrupo} />
           <h2 className="titulo-arbol">{t('arbol.titulo')}</h2>
           <Arbol idioma={idioma} alElegir={irA} />
         </aside>
-        <main className="centro">
-          <Vistas />
+        <main
+          className="centro"
+          onPointerDown={() => {
+            if (menu) setMenu(false); // tocar el modelo cierra el cajón
+          }}
+        >
+          <Metricas />
           <Visor idioma={idioma} vistaInicial={inicial.vista} camaraInicial={inicial.camara} />
-          <button
-            type="button"
-            className="plegar plegar-izq"
-            data-testid="plegar-izq"
-            aria-controls="panel-izq"
-            aria-expanded={paneles.izq}
-            aria-label={t(paneles.izq ? 'paneles.ocultarArbol' : 'paneles.mostrarArbol')}
-            title={t(paneles.izq ? 'paneles.ocultarArbol' : 'paneles.mostrarArbol')}
-            onClick={() => cambiarPaneles({ ...paneles, izq: !paneles.izq })}
-          >
-            <span aria-hidden="true">{paneles.izq ? '‹' : '›'}</span>
-          </button>
-          <button
-            type="button"
-            className="plegar plegar-der"
-            data-testid="plegar-der"
-            aria-controls="panel-ficha"
-            aria-expanded={derVisible}
-            aria-label={t(derVisible ? 'paneles.ocultarFicha' : 'paneles.mostrarFicha')}
-            title={t(derVisible ? 'paneles.ocultarFicha' : 'paneles.mostrarFicha')}
-            onClick={() => {
-              if (derVisible) setPlegadaCon(entrada ?? null);
-              cambiarPaneles({ ...paneles, der: !derVisible });
-            }}
-          >
-            <span aria-hidden="true">{derVisible ? '›' : '‹'}</span>
-          </button>
+          <BarraFragmentar />
+          <Vistas />
         </main>
         <Ficha
           idioma={idioma}
@@ -332,11 +350,18 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           }}
         />
       </div>
-      <BarraFragmentar />
       <footer className="pie">
         <span>{t('aviso.educativo')}</span>{' '}
         <Link to={`/${idioma}/licencia`}>{t('licencia.enlace')}</Link>
       </footer>
+      {paleta && (
+        <div className="paleta-fondo" onMouseDown={(e) => e.target === e.currentTarget && setPaleta(false)}>
+          <div className="paleta" role="dialog" aria-modal="true" aria-label={t('buscar.etiqueta')}>
+            <Buscador idioma={idioma} alElegir={irA} alCerrar={() => setPaleta(false)} />
+            <p className="paleta-ayuda">{t('buscar.ayudaPaleta')}</p>
+          </div>
+        </div>
+      )}
       <AvisoPrimeraVisita />
     </div>
   );

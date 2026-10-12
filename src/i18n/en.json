@@ -25,10 +25,11 @@
   },
   "buscar": {
     "etiqueta": "Search for a structure",
-    "placeholder": "Search (Ctrl+K): hippocampus, amígdala, vagus...",
+    "placeholder": "Hippocampus, amígdala, vagus...",
     "resultados": "Search results",
     "sinResultados": "No results",
-    "en": "in {{lugar}}"
+    "en": "in {{lugar}}",
+    "ayudaPaleta": "Type in English or Spanish. Enter opens the structure; Escape closes."
   },
   "acciones": {
     "titulo": "Piece actions",
@@ -121,7 +122,10 @@
     "lobulos": "lobes",
     "piezas": "pieces",
     "explosion": "Explosion",
-    "reensamblar": "Reassemble"
+    "reensamblar": "Reassemble",
+    "marcaInventario": "Inventory",
+    "marcaSeparado": "Apart",
+    "marcaArmado": "Assembled"
   },
   "vistas": {
     "titulo": "Anatomical views",
@@ -130,7 +134,15 @@
     "lateral-izq": "Left lateral",
     "lateral-der": "Right lateral",
     "superior": "Superior",
-    "inferior": "Inferior"
+    "inferior": "Inferior",
+    "corto": {
+      "anterior": "Ant",
+      "posterior": "Post",
+      "lateral-izq": "L",
+      "lateral-der": "R",
+      "superior": "Sup",
+      "inferior": "Inf"
+    }
   },
   "visor": {
     "cargando": "Loading the model...",
@@ -220,10 +232,10 @@
     "aOscuro": "Switch to dark theme",
     "aClaro": "Switch to light theme"
   },
-  "paneles": {
-    "ocultarArbol": "Hide the structures panel",
-    "mostrarArbol": "Show the structures panel",
-    "ocultarFicha": "Hide the structure card",
-    "mostrarFicha": "Show the structure card"
+  "riel": {
+    "titulo": "Panels",
+    "estructuras": "Structures",
+    "grupos": "Groups",
+    "buscar": "Search"
   }
 }

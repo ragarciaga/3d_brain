@@ -49,6 +49,24 @@ async function vistaDeCamara(page: Page) {
   return { distancia, direccion: v.map((x) => x / distancia) };
 }
 
+/** Abre la paleta de búsqueda (Ctrl+K) y devuelve el campo. */
+async function campoBusqueda(page: Page) {
+  const campo = page.getByRole('combobox', { name: /Buscar|Search/ });
+  if (!(await campo.isVisible())) await page.keyboard.press('Control+k');
+  await expect(campo).toBeVisible();
+  return campo;
+}
+
+/** Abre el cajón de estructuras (riel en pantallas anchas, botón del encabezado en celular). */
+async function abrirCajon(page: Page) {
+  // Por el estado, no por si se ve: al cerrarse, el cajón sigue visible 0,2 s mientras se desliza.
+  if (await page.locator('.app.menu-abierto').count()) return;
+  const riel = page.locator('.riel').getByRole('button', { name: 'Estructuras' });
+  if (await riel.isVisible()) await riel.click();
+  else await page.locator('.boton-menu').click();
+  await expect(page.locator('#panel-izq')).toBeVisible();
+}
+
 async function modeloCargado(page: Page) {
   await expect(page.getByTestId('piezas')).toHaveText(/287 (piezas|pieces)/, { timeout: 150_000 });
 }
@@ -143,32 +161,42 @@ test('con red lenta se ve el aviso de carga, el modelo carga y la página no lan
   expect(errores).toEqual([]);
 });
 
-test('los paneles laterales se pliegan, el visor se agranda y la ficha vuelve al elegir una estructura', async ({ page }) => {
+test('modo estudio: el cerebro ocupa todo, el riel abre el cajón y la paleta, y la ficha sale al elegir', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
   const ancho = async () => (await page.getByTestId('visor').locator('canvas').boundingBox())!.width;
-  const inicial = await ancho();
-  const izq = page.getByTestId('plegar-izq');
-  const der = page.getByTestId('plegar-der');
-  await expect(izq).toHaveAttribute('aria-expanded', 'true');
-  await izq.click();
-  await der.click();
-  await expect(izq).toHaveAttribute('aria-expanded', 'false');
-  await expect(der).toHaveAttribute('aria-expanded', 'false');
+  const pantalla = page.viewportSize()!.width;
+  // Sin estructura elegida no hay ficha ni cajón: el visor ocupa casi todo el ancho.
   await expect(page.locator('#panel-izq')).toBeHidden();
-  await expect(page.locator('#panel-ficha')).toBeHidden();
-  await expect.poll(ancho).toBeGreaterThan(inicial + 500);
-  // La preferencia se conserva al recargar.
-  await page.reload();
-  await modeloCargado(page);
+  await expect(page.getByTestId('ficha')).toHaveCount(0);
+  expect(await ancho()).toBeGreaterThan(pantalla * 0.85);
+  // El riel abre el cajón; el mismo botón lo cierra; tocar el modelo también.
+  const estructuras = page.locator('.riel').getByRole('button', { name: 'Estructuras' });
+  await estructuras.click();
+  await expect(page.locator('#panel-izq')).toBeVisible();
+  await expect(estructuras).toHaveAttribute('aria-expanded', 'true');
+  await estructuras.click();
   await expect(page.locator('#panel-izq')).toBeHidden();
-  // Elegir una estructura con la ficha plegada la vuelve a mostrar.
+  await estructuras.click();
+  const visor = (await page.getByTestId('visor').boundingBox())!;
+  await page.getByTestId('visor').click({ position: { x: visor.width - 260, y: 150 } }); // lejos del cajón y del dock
+  await expect(page.locator('#panel-izq')).toBeHidden();
+  // "Buscar" del riel abre la paleta; elegir un resultado la cierra y abre la ficha a la izquierda.
+  await page.locator('.riel').getByRole('button', { name: 'Buscar' }).click();
   await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
   await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Buscar una estructura' })).toHaveCount(0);
   await expect(page.getByTestId('ficha')).toBeVisible();
-  await expect(der).toHaveAttribute('aria-expanded', 'true');
-  await izq.click();
-  await expect(page.locator('#panel-izq')).toBeVisible();
+  const ficha = (await page.getByTestId('ficha').boundingBox())!;
+  const lienzo = (await page.getByTestId('visor').locator('canvas').boundingBox())!;
+  expect(ficha.x).toBeLessThan(lienzo.x);
+  // La explosión es vertical, al lado derecho del visor.
+  const dock = (await page.getByRole('toolbar', { name: 'Fragmentar y reensamblar' }).boundingBox())!;
+  expect(dock.height).toBeGreaterThan(dock.width);
+  expect(dock.x).toBeGreaterThan(lienzo.x + lienzo.width / 2);
+  // ...y no se cruza con la brújula de vistas, que va abajo a la derecha.
+  const brujula = (await page.getByRole('toolbar', { name: 'Vistas anatómicas' }).boundingBox())!;
+  expect(dock.y + dock.height).toBeLessThan(brujula.y);
 });
 
 test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
@@ -208,12 +236,12 @@ test('la pantalla de licencia abierta directo respeta el idioma de la URL', asyn
 test('búsqueda bilingüe: con la interfaz en español, "amygdala" abre la amígdala', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('amygdala');
+  await (await campoBusqueda(page)).fill('amygdala');
   await expect(page.getByRole('option').first()).toContainText('Cuerpo amigdaloide');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/cuerpo-amigdaloide$/);
   await expect(page.getByTestId('ficha')).toHaveAttribute('data-entrada', 'amygdaloid-body');
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('neumogastrico');
+  await (await campoBusqueda(page)).fill('neumogastrico');
   await expect(page.getByRole('option').first()).toContainText('Nervio vago');
 });
 
@@ -246,10 +274,13 @@ test('árbol y grupos: ocultar un grupo y filtrar el sistema límbico', async ({
   await modeloCargado(page);
   const encefalo = page.locator('.arbol-fila', { has: page.locator('[data-nodo="g-brain"]') });
   await expect(encefalo.locator('.arbol-contador')).toHaveText('253/253');
+  await abrirCajon(page);
   await page.locator('[data-grupo="sistema-limbico"]').click();
   await expect(encefalo.locator('.arbol-contador')).not.toHaveText('253/253');
+  await abrirCajon(page);
   await page.locator('[data-grupo="sistema-limbico"]').click();
   await expect(encefalo.locator('.arbol-contador')).toHaveText('253/253');
+  await abrirCajon(page);
   await encefalo.getByRole('checkbox').uncheck();
   await expect(encefalo.locator('.arbol-contador')).toHaveText('0/253');
 });
@@ -261,6 +292,7 @@ test('"Mostrar todo" deshace piezas ocultas, aislamiento y grupo activo, y solo 
   const mostrarTodo = page.getByTestId('mostrar-todo');
   await expect(mostrarTodo).toHaveCount(0);
   // Grupo de estudio activo.
+  await abrirCajon(page);
   await page.locator('[data-grupo="sistema-limbico"]').click();
   await expect(encefalo.locator('.arbol-contador')).not.toHaveText('253/253');
   await expect(mostrarTodo).toBeVisible();
@@ -269,13 +301,14 @@ test('"Mostrar todo" deshace piezas ocultas, aislamiento y grupo activo, y solo 
   await expect(page.locator('[data-grupo="sistema-limbico"]')).toHaveAttribute('aria-pressed', 'false');
   await expect(mostrarTodo).toHaveCount(0);
   // Piezas ocultas a mano.
+  await abrirCajon(page);
   await encefalo.getByRole('checkbox').uncheck();
   await expect(encefalo.locator('.arbol-contador')).toHaveText('0/253');
   await expect(mostrarTodo).toBeVisible();
   await mostrarTodo.click();
   await expect(encefalo.locator('.arbol-contador')).toHaveText('253/253');
   // Aislamiento.
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   await expect.poll(() => aislarActual(page)).toBe('contexto');
   await expect(mostrarTodo).toBeVisible();
@@ -345,7 +378,7 @@ test('modo revisión: el docente marca campos y el contador sube', async ({ page
   await abrir(page, '/es/revision?r=PRUEBA01');
   await modeloCargado(page);
   await expect(page.getByTestId('panel-revision')).toContainText('PRUEBA01');
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
   await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Correcto' }).click();
@@ -354,7 +387,7 @@ test('modo revisión: el docente marca campos y el contador sube', async ({ page
   await page.locator('[data-campo="que_es.es"]').getByRole('textbox', { name: 'Cambio propuesto' }).blur();
   await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
   // El texto propuesto no pasa a otra estructura.
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('tálamo');
+  await (await campoBusqueda(page)).fill('tálamo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/talamo$/);
   await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Corregir' }).click();
@@ -383,12 +416,11 @@ test('tras salir del modo fantasma las piezas se pueden volver a tocar', async (
 test('elegir de nuevo la misma estructura después de deseleccionar vuelve a abrir la ficha', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
-  const buscar = page.getByRole('combobox', { name: /Buscar/ });
-  await buscar.fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
   await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
-  await buscar.fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
 });
@@ -402,7 +434,7 @@ test('volver al inicio desde una estructura (marca o atrás) deja el modo fantas
   await expect(page.getByTestId('ficha')).toHaveCount(0);
   await expect.poll(() => aislarActual(page)).toBeNull();
   // Con el botón atrás del navegador pasa lo mismo.
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('tálamo');
+  await (await campoBusqueda(page)).fill('tálamo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/talamo$/);
   await expect.poll(() => aislarActual(page)).toBe('contexto');
@@ -411,22 +443,23 @@ test('volver al inicio desde una estructura (marca o atrás) deja el modo fantas
   await expect.poll(() => aislarActual(page)).toBeNull();
 });
 
-test('Escape dentro de un campo no sale del aislamiento; fuera de él sí', async ({ page }) => {
+test('Escape en la paleta de búsqueda solo la cierra; fuera de ella sale del aislamiento', async ({ page }) => {
   await abrir(page, '/es/hipocampo');
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
   await expect.poll(() => aislarActual(page)).toBe('contexto');
-  await page.getByRole('combobox', { name: /Buscar/ }).focus();
+  const campo = await campoBusqueda(page);
+  await expect(campo).toBeFocused();
   await page.keyboard.press('Escape');
+  await expect(campo).toHaveCount(0);
   await page.waitForTimeout(300);
   expect(await aislarActual(page)).toBe('contexto');
-  await page.getByRole('combobox', { name: /Buscar/ }).blur();
   await page.keyboard.press('Escape');
   await expect.poll(() => aislarActual(page)).toBeNull();
 });
 
 test('elegir desde la búsqueda o una relación lleva el foco al título de la ficha', async ({ page }) => {
   await abrir(page, '/es');
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   const titulo = page.locator('#ficha-titulo');
   await expect(titulo).toHaveText('Hipocampo');
@@ -443,6 +476,7 @@ test('elegir un nodo del árbol lleva el foco al título de la ficha', async ({ 
   await abrir(page, '/es');
   const titulo = page.locator('#ficha-titulo');
   await expect(titulo).toHaveCount(0);
+  await abrirCajon(page);
   await page.locator('[data-nodo="g-brain"]').click();
   await expect(titulo).toBeVisible();
   await expect(titulo).toBeFocused();
@@ -478,7 +512,7 @@ test('marcadores: la fuente de ubicación sale en el idioma de la interfaz y cad
 
 test('el grupo del vago y la estructura del vago se distinguen en la búsqueda y en la URL', async ({ page }) => {
   await abrir(page, '/es');
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('nervio vago');
+  await (await campoBusqueda(page)).fill('nervio vago');
   const nombres = await page.locator('[role="option"] .res-nombre').allTextContents();
   expect(nombres.length).toBeGreaterThan(1);
   expect(new Set(nombres).size).toBe(nombres.length);
@@ -494,8 +528,9 @@ test('si el modelo no carga, el árbol, la búsqueda y las fichas siguen y se pu
   const error = page.getByTestId('visor-error');
   await expect(error).toContainText('No se pudo mostrar el modelo 3D');
   await expect(page.getByRole('heading', { name: 'Algo salió mal' })).toHaveCount(0);
+  await abrirCajon(page);
   await expect(page.getByRole('navigation', { name: 'Árbol de estructuras' })).toBeVisible();
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
@@ -526,8 +561,9 @@ test('si WebGL falla, solo el visor muestra el error: el árbol y la búsqueda s
   await expect(error).toContainText('No se pudo mostrar el modelo 3D');
   await expect(error.getByRole('button', { name: 'Reintentar' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Algo salió mal' })).toHaveCount(0);
+  await abrirCajon(page);
   await expect(page.getByRole('navigation', { name: 'Árbol de estructuras' })).toBeVisible();
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
@@ -568,10 +604,11 @@ test.describe('celular (390 x 844)', () => {
     await expect(page.locator('.mensaje')).toBeVisible();
   });
 
-  test('en celular no hay botones para plegar paneles (el árbol es cajón y la ficha, hoja)', async ({ page }) => {
+  test('en celular no hay riel: el cajón se abre desde "Estructuras" y la búsqueda desde la lupa', async ({ page }) => {
     await abrir(page, '/es');
-    await expect(page.getByTestId('plegar-izq')).toBeHidden();
-    await expect(page.getByTestId('plegar-der')).toBeHidden();
+    await expect(page.locator('.riel')).toBeHidden();
+    await page.getByRole('button', { name: 'Buscar' }).click();
+    await expect(page.getByRole('combobox', { name: /Buscar/ })).toBeFocused();
   });
 
   test('el cajón de estructuras cerrado no se enfoca; abre con foco dentro, se cierra con Escape o al elegir', async ({ page }) => {
@@ -597,6 +634,7 @@ test.describe('celular (390 x 844)', () => {
     await expect(menu).toBeFocused();
     // Elegir un grupo de estudio cierra.
     await menu.click();
+    await abrirCajon(page);
     await page.locator('[data-grupo="sistema-limbico"]').click();
     await expect(panel).toHaveAttribute('inert', '');
     // ...y el foco vuelve al botón "Estructuras", no a BODY.
@@ -609,7 +647,7 @@ test.describe('celular (390 x 844)', () => {
     // Elegir un resultado de la búsqueda cierra el cajón abierto.
     await menu.click();
     await expect(panel).not.toHaveAttribute('inert', '');
-    await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+    await (await campoBusqueda(page)).fill('hipocampo');
     await page.keyboard.press('Enter');
     await expect(panel).toHaveAttribute('inert', '');
     await expect(page).toHaveURL(/\/es\/hipocampo$/);
@@ -619,7 +657,7 @@ test.describe('celular (390 x 844)', () => {
 test('modo revisión: "Proponer posición" acepta un toque sobre un órgano de referencia', async ({ page }) => {
   await abrir(page, '/es/revision?r=PRUEBA01');
   await modeloCargado(page);
-  await page.getByRole('combobox', { name: /Buscar/ }).fill('sustancia gris periacueductal');
+  await (await campoBusqueda(page)).fill('sustancia gris periacueductal');
   await page.keyboard.press('Enter');
   await expect(page.locator('#ficha-titulo')).toHaveText('Sustancia gris periacueductal');
   await page.getByRole('button', { name: 'Proponer posición' }).click();
@@ -700,9 +738,11 @@ test('los botones Aislar, Aislar con contexto y Separar se activan con un toque 
   // 11. El ◎ del árbol se alterna con "solo" sobre las piezas del nodo.
   const arbolAislar = page.locator('.arbol-fila', { has: page.locator('[data-nodo="g-brain"]') }).locator('.arbol-aislar');
   await esperarPulsado(arbolAislar, 'false');
+  await abrirCajon(page);
   await arbolAislar.click();
   await esperarPulsado(arbolAislar, 'true');
   expect(await aislarActual(page)).toBe('solo');
+  await abrirCajon(page);
   await arbolAislar.click();
   await esperarPulsado(arbolAislar, 'false');
   expect(await aislarActual(page)).toBeNull();
