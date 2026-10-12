@@ -297,7 +297,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
                 transparent={referencia || fantasma}
                 opacity={referencia ? 0.18 : fantasma ? 0.08 : 1}
                 depthWrite={!(referencia || fantasma)}
-                emissive={seleccionada ? '#3a6df0' : encima ? '#444444' : '#000000'}
+                emissive={seleccionada ? '#3c83f6' : encima ? '#444444' : '#000000'}
                 emissiveIntensity={seleccionada ? 0.55 : 0.35}
               />
             )}
@@ -606,7 +606,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
         <Canvas
           camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
           dpr={[1, 2]}
-          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           onPointerMissed={(e) => {
             const i = inicioPuntero.current;
             if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
@@ -616,7 +616,6 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
             window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
           }}
         >
-          <color attach="background" args={['#e8ecf0']} />
           <hemisphereLight args={['#ffffff', '#8a94a6', 1.1]} />
           <directionalLight position={[1, 3, 2]} intensity={1.6} />
           <directionalLight position={[-2, 1, -1]} intensity={0.6} />
