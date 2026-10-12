@@ -20,9 +20,9 @@
   ],
   "fuentes": [
    {
-    "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Limbic System, NBK538491",
-    "verificada": false,
-    "url": "https://www.ncbi.nlm.nih.gov/books/NBK538491/"
+    "cita": "Torrico TJ, Abdijadid S. Neuroanatomy, Limbic System. En: StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing; 2023 Jan. NBK538491. PMID 30860726.",
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK538491/",
+    "verificada": true
    }
   ],
   "estado": "borrador"
@@ -42,9 +42,14 @@
   ],
   "fuentes": [
    {
-    "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Basal Ganglia, NBK537141",
-    "verificada": false,
-    "url": "https://www.ncbi.nlm.nih.gov/books/NBK537141/"
+    "cita": "Young CB, Reddy V, Sonne J. Neuroanatomy, Basal Ganglia. En: StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing; 2023 Jan. NBK537141. PMID 30725826.",
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK537141/",
+    "verificada": true
+   },
+   {
+    "cita": "Driscoll ME, Bollu PC, Tadi P. Neuroanatomy, Nucleus Caudate. En: StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing; 2023 Jan. NBK557407. PMID 32491339.",
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK557407/",
+    "verificada": true
    }
   ],
   "estado": "borrador"
@@ -65,8 +70,8 @@
   "fuentes": [
    {
     "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
-    "verificada": false,
-    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    "verificada": true
    }
   ],
   "estado": "borrador"
@@ -87,8 +92,8 @@
   "fuentes": [
    {
     "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
-    "verificada": false,
-    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    "verificada": true
    }
   ],
   "estado": "borrador"
@@ -111,8 +116,8 @@
   "fuentes": [
    {
     "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
-    "verificada": false,
-    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    "verificada": true
    }
   ],
   "estado": "borrador"
@@ -135,9 +140,9 @@
   ],
   "fuentes": [
    {
-    "cita": "StatPearls (NCBI Bookshelf), Neuroanatomy, Vagal Nerve Nuclei, NBK545209",
-    "verificada": false,
-    "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/"
+    "cita": "Baker E, Lui F. Neuroanatomy, Vagal Nerve Nuclei. En: StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing; 2023 Jan. NBK545209. PMID 31424793.",
+    "url": "https://www.ncbi.nlm.nih.gov/books/NBK545209/",
+    "verificada": true
    }
   ],
   "estado": "borrador"
