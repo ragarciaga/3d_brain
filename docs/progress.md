@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-12 (fichas completas en borrador, fuentes verificadas)
+Updated: 2026-10-12 (revisión docente lista: formularios, guía y propuestas de nombre)
 
 ## Current objective
 Hito 1.2 (#17): explosión más amplia, botones de aislar y separar que se alternan, y "Armar pieza
@@ -15,15 +15,17 @@ probar el sitio publicado.
   1.1 (PR #14) pasó verificador, auditor ciego y revisión de seguridad sobre el commit final.
 - Broken: "Reintentar" tras una falla de carga deja un error de React en consola, aunque la app se
   recupera (#16).
+- Content: 235 de 236 fichas en borrador con fuentes verificadas (#7, PR #22). Los nombres, las
+  fichas, las posiciones de marcadores y los trazos del vago los validan docentes, no el editor.
+- Revisión docente lista para arrancar: formularios de revisión y de registro creados en el Drive de
+  Maysa Digital y conectados a la app (#5); guía para docentes en docs/guia-docentes.md; dudas
+  conocidas en docs/fichas-dudas.md; las 18 propuestas de nombre se ven en la ficha (#8).
 - Pending (editor):
-  - formulario de revisión (#5);
-  - decidir cómo mostrar el código del revisor en los issues (#15);
-  - medir en los equipos (#6);
-  - revisar y fusionar la rama `claude/sleepy-hawking-v3xgho`: 235 de 236 fichas en borrador, todas
-    sus fuentes abiertas y contrastadas con PubMed (#7), y 9 de 27 nombres PENDIENTE resueltos
-    con TA2 (#8); dudas para docentes en docs/fichas-dudas.md;
-  - aprobar o corregir los 18 nombres en español y latín propuestos en #8;
-  - conseguir revisores.
+  - fusionar #23 (padrón de revisores, #15) y crear los códigos con `node scripts/crear-revisores.ts N`;
+  - conseguir docentes y enviarles su enlace, el formulario de registro y docs/guia-docentes.md;
+  - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
+    del formulario de revisión);
+  - medir en los equipos (#6).
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
 
 ## Key decisions

@@ -32,6 +32,12 @@ EXTRAS_ESTUDIO = {
     "Choroid plexus.l": "g-telencephalon",
     "Choroid plexus.r": "g-telencephalon",
 }
+# Piezas que Z-Anatomy cuelga de un grupo equivocado, con el grupo que reciben en nuestro árbol. La
+# valva posterior de la mitral viene dentro de "Right atrioventricular valve.g" (la tricúspide); el
+# modelo no trae grupo de la mitral, así que va al complejo valvular del corazón.
+REUBICAR = {
+    "Posterior leaflet of left atrioventricular valve": "g-valvular-complex-of-heart",
+}
 VAGO = ("Vagus nerve (X).l", "Vagus nerve (X).r")
 RAICES_REFERENCIA = ("Heart.g", "Lungs.g", "Laryngeal cartilages.g", "Trachea", "Oesophagus", "Stomach")
 

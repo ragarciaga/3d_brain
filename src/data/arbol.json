@@ -499,7 +499,8 @@
    "hijos": [
     "g-right-atrioventricular-valve",
     "g-root-of-aorta",
-    "g-root-of-pulmonary-trunk"
+    "g-root-of-pulmonary-trunk",
+    "posterior-leaflet-of-left-atrioventricular-valve"
    ]
   },
   "g-root-of-pulmonary-trunk": {
@@ -1416,7 +1417,6 @@
    "padre": "g-valvular-complex-of-heart",
    "hijos": [
     "inferior-leaflet-of-right-atrioventricular-valve",
-    "posterior-leaflet-of-left-atrioventricular-valve",
     "septal-leaflet-of-right-atrioventricular-valve"
    ]
   },
@@ -3003,7 +3003,7 @@
    "id": "posterior-leaflet-of-left-atrioventricular-valve",
    "tipo": "pieza",
    "en": "Posterior leaflet of left atrioventricular valve",
-   "padre": "g-right-atrioventricular-valve",
+   "padre": "g-valvular-complex-of-heart",
    "hijos": [],
    "lado": "",
    "malla": "Posterior leaflet of left atrioventricular valve",
