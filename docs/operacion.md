@@ -1,6 +1,7 @@
 # Operación del atlas: guía del editor
 
-Qué hacer, dónde y con qué comando. Para el porqué de cada decisión, ver `docs/adr/`; para el
+Qué hacer, dónde y con qué comando. Todos los enlaces (sitio, formularios, logos, GitHub) están en
+[docs/enlaces.md](enlaces.md). Para el porqué de cada decisión, ver `docs/adr/`; para el
 alcance, `SPEC.md`; para las reglas que siguen los agentes, `AGENTS.md`.
 
 ## Mapa del repositorio
@@ -49,6 +50,23 @@ npm run dev
 ```
 
 Abre http://localhost:3000. El número de cuadros por segundo aparece arriba a la derecha del visor.
+
+## Medir la carga en tus equipos (issue 6)
+
+Abre el sitio con `?medir=1` al final de la dirección, en cada equipo (iPad, celular, PC):
+
+```
+https://ragarciaga.github.io/3d_brain/es?medir=1
+```
+
+Aparece un panel con el equipo, la tarjeta gráfica, cuánto tardó el código, la descarga del modelo
+3D, la preparación del modelo, cuándo se vio el cerebro y los cuadros por segundo de los 10 s
+siguientes. Al final dice qué fue lo más lento. "Copiar resultados" copia todo como texto para
+pegarlo en el issue 6 o en el chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo
+quita. No envía nada a ningún servidor.
+
+Mide dos veces en cada equipo: la primera vez (el modelo se descarga) y recargando la página (el
+modelo sale de la memoria del navegador). Si quieres una medición limpia, abre una pestaña privada.
 
 ## Trabajar con Claude Code y Rockbuilt
 

@@ -237,5 +237,29 @@
     "estructuras": "Structures",
     "grupos": "Groups",
     "buscar": "Search"
+  },
+  "medicion": {
+    "titulo": "Load measurement",
+    "equipo": "Device",
+    "pantalla": "Screen",
+    "gpu": "Graphics card",
+    "codigo": "App code",
+    "modelo": "3D model download",
+    "preparar": "Preparing the model",
+    "primerCuadro": "Brain visible at",
+    "fluidez": "Smoothness (10 s)",
+    "fps": "{{promedio}} frames/s on average, minimum {{minimo}}",
+    "esperando": "measuring...",
+    "sinDato": "not available",
+    "desdeCache": "from the browser cache",
+    "copiar": "Copy results",
+    "copiado": "Copied",
+    "copiaManual": "Copy this text:",
+    "cerrar": "Close",
+    "cuello": {
+      "codigo": "The slowest part was downloading the app code.",
+      "modelo": "The slowest part was downloading the 3D model.",
+      "procesamiento": "The slowest part was preparing the model on this device."
+    }
   }
 }

@@ -199,6 +199,36 @@ test('modo estudio: el cerebro ocupa todo, el riel abre el cajón y la paleta, y
   expect(dock.y + dock.height).toBeLessThan(brujula.y);
 });
 
+test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el informe y se cierra (issue 6)', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  // Sin el parámetro no aparece.
+  await abrir(page, '/es');
+  await expect(page.getByTestId('panel-medicion')).toHaveCount(0);
+  await abrir(page, '/es?medir=1');
+  const panel = page.getByTestId('panel-medicion');
+  await expect(panel).toBeVisible();
+  await modeloCargado(page);
+  await expect(page.getByTestId('medicion-modelo')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-codigo')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-primer-cuadro')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
+  // Sigue al navegar dentro de la app.
+  await (await campoBusqueda(page)).fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/es\/hipocampo/);
+  await expect(panel).toBeVisible();
+  await panel.getByRole('button', { name: 'Copiar resultados' }).click();
+  await expect(panel.getByRole('button', { name: 'Copiado' })).toBeVisible();
+  const copiado = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copiado).toContain('Maysa Brain, medición de carga');
+  expect(copiado).toMatch(/Modelo 3D: empezó a los \d+ ms/);
+  // Cerrar lo quita también al recargar.
+  await panel.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(panel).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId('panel-medicion')).toHaveCount(0);
+});
+
 test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await abrir(page, '/es');
