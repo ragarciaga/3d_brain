@@ -1,6 +1,5 @@
 // Visor 3D (F1). Cada pieza se dibuja con la transformación original del GLB, sin tocarla, dentro de
-// un grupo cuyo único papel es sumar el desplazamiento de fragmentar (F6, F7), incluido el temporal del
-// arrastre en el modo reto.
+// un grupo cuyo único papel es sumar el desplazamiento de fragmentar (F6, F7).
 import { CameraControls, Html, useGLTF } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
@@ -17,8 +16,7 @@ import {
   trazoDeMalla,
 } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import { encaja, radioEnPantalla, type Punto2 } from '../lib/armado';
-import { acercar, CERO, sumar, type Vec3 } from '../lib/explosion';
+import { acercar, CERO, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
@@ -41,6 +39,11 @@ interface MallaCargada {
 /** Cajas de cada pieza en el mundo, para encuadrar. Se llenan al cargar el modelo. */
 export const cajasPiezas = new Map<string, THREE.Box3>();
 
+interface Punto2 {
+  x: number;
+  y: number;
+}
+
 /** Acceso a la cámara para "Compartir esta vista". */
 export const camaraActual: {
   leer: (() => number[]) | null;
@@ -56,19 +59,6 @@ const raycastNulo = () => null;
 function aPantalla(p: THREE.Vector3, camara: THREE.Camera, ancho: number, alto: number): Punto2 {
   const q = p.clone().project(camara);
   return { x: ((q.x + 1) / 2) * ancho, y: ((1 - q.y) / 2) * alto };
-}
-
-/** Arrastre en curso de una pieza (modo reto). Todo vive en una referencia: nada de esto pide un nuevo render. */
-interface Arrastre {
-  pointerId: number;
-  inicio: Vec3; // desplazamiento que tenía la pieza al agarrarla
-  p0: THREE.Vector3; // punto del plano de arrastre bajo el puntero al agarrarla
-  plano: THREE.Plane; // perpendicular a la cámara, por el centro de la pieza
-  delta: Vec3; // desplazamiento temporal sumado por el arrastre
-  x0: number;
-  y0: number;
-  movido: boolean;
-  terminar: (cancelado: boolean) => void;
 }
 
 /** Un arrastre para rotar no es un toque (R3F dispara onClick aunque el puntero se haya movido). */
@@ -97,28 +87,13 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const revisando = useAtlas((s) => !!s.revisor);
   const shift = useAtlas((s) => s.shift);
   const [encima, setEncima] = useState(false);
-  const { camera, get } = useThree();
-  const arrastre = useRef<Arrastre | null>(null);
 
   const color = colorDePieza(id);
 
   useFrame((_, dt) => {
     const g = grupo.current;
     if (!g) return;
-    const s = useAtlas.getState();
-    const a = arrastre.current;
-    if (a) {
-      if (s.armando?.modo !== 'reto') {
-        a.terminar(true); // se salió del modo con la pieza en la mano: se suelta donde estaba
-      } else {
-        // Mientras se arrastra, la pieza sigue al puntero: no se acerca a ningún objetivo.
-        const d = sumar(a.inicio, a.delta);
-        desplazamiento.current = d;
-        g.position.set(d[0], d[1], d[2]);
-        return;
-      }
-    }
-    const obj = objetivo(s, id);
+    const obj = objetivo(useAtlas.getState(), id);
     const nuevo = acercar(desplazamiento.current, obj, reducirMovimiento() ? 1 : dt * 6);
     desplazamiento.current = nuevo;
     g.position.set(nuevo[0], nuevo[1], nuevo[2]);
@@ -127,83 +102,6 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   // Una pieza oculta nunca se toca; un fantasma (aislar con contexto) solo con Shift, para sumarlo.
   // Al proponer una posición (revisión) también los órganos de referencia reciben el toque.
   const seleccionable = esSeleccionable({ visible, referencia, fantasma, shift, ubicando });
-
-  // Si la pieza se desmonta con el arrastre en curso, se suelta y se reactivan los controles de la cámara.
-  useEffect(
-    () => () => {
-      arrastre.current?.terminar(true);
-    },
-    [],
-  );
-
-  /** Modo reto: agarrar una pieza fuera de su sitio. La cámara no se mueve mientras dura el arrastre. */
-  const alPresionar = (e: ThreeEvent<PointerEvent>) => {
-    const s = useAtlas.getState();
-    if (s.armando?.modo !== 'reto' || !seleccionable || s.ubicando || !fueraDeSitio(s, id) || arrastre.current) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const caja = cajasPiezas.get(id);
-    if (!caja) return;
-    e.stopPropagation();
-    // El control se apaga aquí, de forma síncrona, antes de que la cámara empiece a girar con este mismo toque.
-    const controles = get().controls as unknown as { enabled: boolean } | null;
-    if (controles) controles.enabled = false;
-    const inicio: Vec3 = [...desplazamiento.current];
-    const centroActual = caja.getCenter(new THREE.Vector3()).add(new THREE.Vector3(...inicio));
-    const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), centroActual);
-    const p0 = e.ray.intersectPlane(plano, new THREE.Vector3());
-    if (!p0) {
-      if (controles) controles.enabled = true;
-      return;
-    }
-    // R3F reemplaza `target` por un objeto con setPointerCapture (los tipos lo siguen declarando como EventTarget).
-    (e.target as unknown as { setPointerCapture(id: number): void }).setPointerCapture(e.pointerId);
-
-    const alSoltar = (ev: PointerEvent) => {
-      if (ev.pointerId === e.pointerId) a.terminar(ev.type === 'pointercancel');
-    };
-    window.addEventListener('pointerup', alSoltar, true);
-    window.addEventListener('pointercancel', alSoltar, true);
-
-    const a: Arrastre = {
-      pointerId: e.pointerId,
-      inicio,
-      p0,
-      plano,
-      delta: [0, 0, 0],
-      x0: e.clientX,
-      y0: e.clientY,
-      movido: false,
-      terminar: (cancelado) => {
-        if (arrastre.current !== a) return;
-        arrastre.current = null;
-        window.removeEventListener('pointerup', alSoltar, true);
-        window.removeEventListener('pointercancel', alSoltar, true);
-        if (controles) controles.enabled = true;
-        // Sin releasePointerCapture: en táctil el navegador ya la soltó y llamarla lanza NotFoundError.
-        const final = sumar(a.inicio, a.delta);
-        desplazamiento.current = final;
-        if (cancelado || !a.movido) return;
-        // Se mide en pantalla lo que la persona ve; ver src/lib/armado.ts.
-        const { width, height } = get().size;
-        const cam = camera as THREE.PerspectiveCamera;
-        const casa = caja.getCenter(new THREE.Vector3());
-        const casaPx = aPantalla(casa, cam, width, height);
-        const actualPx = aPantalla(casa.clone().add(new THREE.Vector3(...final)), cam, width, height);
-        const radio = caja.getBoundingSphere(new THREE.Sphere()).radius;
-        const radioPx = radioEnPantalla(radio, cam.position.distanceTo(casa), cam.fov, height);
-        if (encaja(actualPx, casaPx, radioPx)) useAtlas.getState().devolver([id]);
-      },
-    };
-    arrastre.current = a;
-  };
-
-  const alMover = (e: ThreeEvent<PointerEvent>) => {
-    const a = arrastre.current;
-    if (!a || e.pointerId !== a.pointerId) return;
-    const p = e.ray.intersectPlane(a.plano, new THREE.Vector3());
-    if (p) a.delta = [p.x - a.p0.x, p.y - a.p0.y, p.z - a.p0.z];
-    if (!a.movido && Math.hypot(e.clientX - a.x0, e.clientY - a.y0) > ARRASTRE_PX) a.movido = true;
-  };
 
   const alTocar = (e: ThreeEvent<MouseEvent>) => {
     if (!seleccionable || e.delta > ARRASTRE_PX) return;
@@ -230,11 +128,6 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
       s.setUbicando(null);
       return;
     }
-    // Armando pieza por pieza ningún toque selecciona. En modo tocar, el toque devuelve la pieza.
-    if (s.armando) {
-      if (s.armando.modo === 'tocar' && fueraDeSitio(s, id)) s.devolver([id]);
-      return;
-    }
     const nombreMalla = (e.object.userData.nombreMalla as string | undefined) ?? null;
     const entrada = nodo.estructura ?? null;
     const shift = (e.nativeEvent as MouseEvent).shiftKey;
@@ -254,7 +147,6 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
     if (!seleccionable || e.delta > ARRASTRE_PX) return;
     e.stopPropagation();
     const s = useAtlas.getState();
-    if (s.armando) return; // armando, el doble clic no hace nada (ver alTocar)
     if (fueraDeSitio(s, id)) s.devolver([id]);
     else s.pedirCamara({ encuadrar: [id] });
   };
@@ -265,8 +157,6 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
       visible={visible}
       onClick={alTocar}
       onDoubleClick={alDobleTocar}
-      onPointerDown={alPresionar}
-      onPointerMove={alMover}
       onPointerOver={(e) => {
         if (!seleccionable) return;
         e.stopPropagation();
@@ -424,7 +314,6 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
           renderOrder={5}
           onClick={(e) => {
             e.stopPropagation();
-            if (useAtlas.getState().armando) return; // armando, ningún toque selecciona
             useAtlas.getState().seleccionar({ entrada: p.id });
             window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: p.id } }));
           }}
@@ -572,7 +461,6 @@ function MedidorCuadros() {
 export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma: Idioma; vistaInicial?: Vista; camaraInicial?: number[] }) {
   const { t } = useTranslation();
   const ubicando = useAtlas((s) => s.ubicando);
-  const reto = useAtlas((s) => s.armando?.modo === 'reto');
   const inicioPuntero = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -594,9 +482,6 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
     <div
       className={`visor${ubicando ? ' visor-ubicando' : ''}`}
       data-testid="visor"
-      onContextMenu={(e) => {
-        if (reto) e.preventDefault(); // el menú de pulsación larga no debe interrumpir el arrastre
-      }}
       onPointerDown={(e) => {
         inicioPuntero.current = { x: e.clientX, y: e.clientY };
       }}
@@ -610,7 +495,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
             const i = inicioPuntero.current;
             if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
             const s = useAtlas.getState();
-            if (s.ubicando || s.armando) return; // armando, tocar el vacío tampoco deselecciona
+            if (s.ubicando) return;
             // Tocar el vacío deselecciona: la URL vuelve a /:lang para que el estado y la URL coincidan.
             window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
           }}

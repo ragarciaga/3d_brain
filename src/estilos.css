@@ -605,6 +605,7 @@ a {
   color: var(--peligro);
 }
 
+.articulos,
 .fuentes,
 .recursos,
 .relaciones,
@@ -704,30 +705,6 @@ a {
   background: var(--panel);
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta);
-}
-
-.armado {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.armado-ayuda {
-  margin: 0;
-  flex-basis: 100%;
-}
-
-.armado-modos {
-  display: inline-flex;
-  gap: 0.3rem;
-}
-
-.armado button.activo {
-  background: var(--acento);
-  color: var(--acento-texto);
-  border-color: var(--acento);
 }
 
 .barra-campo {
