@@ -209,5 +209,9 @@
     "titulo": "Something went wrong",
     "texto": "The page hit an error. Go back to the start of the atlas.",
     "volver": "Back to start"
+  },
+  "tema": {
+    "aOscuro": "Switch to dark theme",
+    "aClaro": "Switch to light theme"
   }
 }

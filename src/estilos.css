@@ -27,30 +27,28 @@
   color-scheme: light;
 }
 
-/* Tema oscuro, el de Maysa por defecto: sigue la preferencia del sistema. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #0d0f16;
-    --panel: #161922;
-    --elevado: #20222d;
-    --texto: #e1e7ef;
-    --texto-suave: #8b9bb1;
-    --borde: #2e3342;
-    --acento: #21c45d;
-    --acento-texto: #0d0f16;
-    --acento-suave: rgba(33, 196, 93, 0.14);
-    --menta: #34d399;
-    --aviso: #f59f0a;
-    --aviso-fondo: rgba(245, 159, 10, 0.14);
-    --ok: #10b77f;
-    --ok-fondo: rgba(16, 183, 127, 0.14);
-    --peligro: #ef4343;
-    --sombra: 0 12px 32px rgba(0, 0, 0, 0.45);
-    --velo: rgba(0, 0, 0, 0.6);
-    --visor-luz: #20222d;
-    --visor-fondo: #0d0f16;
-    color-scheme: dark;
-  }
+/* Tema oscuro, el de Maysa. index.html y src/lib/tema.ts ponen data-tema: lo que eligió la persona o, si no eligió, el del sistema. */
+:root[data-tema='oscuro'] {
+  --fondo: #0d0f16;
+  --panel: #161922;
+  --elevado: #20222d;
+  --texto: #e1e7ef;
+  --texto-suave: #8b9bb1;
+  --borde: #2e3342;
+  --acento: #21c45d;
+  --acento-texto: #0d0f16;
+  --acento-suave: rgba(33, 196, 93, 0.14);
+  --menta: #34d399;
+  --aviso: #f59f0a;
+  --aviso-fondo: rgba(245, 159, 10, 0.14);
+  --ok: #10b77f;
+  --ok-fondo: rgba(16, 183, 127, 0.14);
+  --peligro: #ef4343;
+  --sombra: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --velo: rgba(0, 0, 0, 0.6);
+  --visor-luz: #20222d;
+  --visor-fondo: #0d0f16;
+  color-scheme: dark;
 }
 
 * {
@@ -240,6 +238,15 @@ a {
 
 .selector-idioma a:hover {
   color: var(--acento);
+}
+
+.boton-tema {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .compartir-encabezado {

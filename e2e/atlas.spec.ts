@@ -130,6 +130,20 @@ test('carga el modelo, muestra piezas, cuadros por segundo, aviso educativo y li
   await expect(page.getByTestId('licencia')).toContainText('CC BY-SA 4.0');
 });
 
+test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await abrir(page, '/es');
+  const tema = () => page.evaluate(() => document.documentElement.dataset.tema);
+  await expect.poll(tema).toBe('claro');
+  const boton = page.getByTestId('boton-tema');
+  await expect(boton).toHaveAccessibleName('Cambiar a tema oscuro');
+  await boton.click();
+  await expect.poll(tema).toBe('oscuro');
+  await expect(boton).toHaveAccessibleName('Cambiar a tema claro');
+  await page.reload();
+  await expect.poll(tema).toBe('oscuro');
+});
+
 test('la interfaz en inglés no muestra textos en español', async ({ page }) => {
   await abrir(page, '/en', true);
   await expect(page.getByRole('dialog', { name: 'Before you start' })).toBeVisible();

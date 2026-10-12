@@ -6,6 +6,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content="Atlas 3D del cerebro y el nervio vago / 3D atlas of the brain and the vagus nerve" />
     <title>Atlas 3D: cerebro y nervio vago</title>
+    <script>
+      // Tema antes de pintar, para que no parpadee (la lógica completa vive en src/lib/tema.ts).
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem('atlas:tema');
+        } catch (e) {}
+        if (t !== 'claro' && t !== 'oscuro') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+        document.documentElement.dataset.tema = t;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

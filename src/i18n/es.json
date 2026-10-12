@@ -209,5 +209,9 @@
     "titulo": "Algo salió mal",
     "texto": "La página tuvo un error. Vuelve al inicio del atlas.",
     "volver": "Volver al inicio"
+  },
+  "tema": {
+    "aOscuro": "Cambiar a tema oscuro",
+    "aClaro": "Cambiar a tema claro"
   }
 }
