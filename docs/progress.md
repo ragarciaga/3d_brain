@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-11 (hito 1.1 fusionado, sitio publicado)
+Updated: 2026-10-12 (fichas completas en borrador, fuentes verificadas)
 
 ## Current objective
 Hito 1.2 (#17): explosión más amplia, botones de aislar y separar que se alternan, y "Armar pieza
@@ -19,8 +19,10 @@ probar el sitio publicado.
   - formulario de revisión (#5);
   - decidir cómo mostrar el código del revisor en los issues (#15);
   - medir en los equipos (#6);
-  - verificar fuentes (#7);
-  - nombres PENDIENTE (#8);
+  - revisar y fusionar la rama `claude/sleepy-hawking-v3xgho`: 235 de 236 fichas en borrador, todas
+    sus fuentes abiertas y contrastadas con PubMed (#7), y 9 de 27 nombres PENDIENTE resueltos
+    con TA2 (#8); dudas para docentes en docs/fichas-dudas.md;
+  - aprobar o corregir los 18 nombres en español y latín propuestos en #8;
   - conseguir revisores.
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
 

@@ -74,7 +74,8 @@ describe('datos del atlas', () => {
     }
     const pag = marcadores.find((m) => m.id === 'm-periaqueductal-grey')!;
     expect(pag.fuente_ubicacion.en).toContain('cerebral aqueduct of the midbrain');
-    expect(estructuras['m-periaqueductal-grey']!.fuente_nombre).toBe('PENDIENTE');
+    expect(estructuras['m-periaqueductal-grey']!.fuente_nombre).toContain('TA2');
+    expect(estructuras['m-wernicke-area']!.fuente_nombre).toBe('PENDIENTE');
   });
 
   it('el grupo del vago no repite el nombre de la estructura del vago ni su slug', () => {

@@ -227,9 +227,9 @@ test('la ficha trae búsquedas de artículos científicos, también si está en 
   await expect(articulos.locator('a[data-base="scielo"]')).toHaveAttribute('href', /search\.scielo\.org\/\?q=%22hipocampo%22/);
   await expect(articulos.getByRole('link')).toHaveCount(4);
   // Una estructura sin ficha escrita también trae las búsquedas.
-  await abrir(page, '/es/nucleo-accesorio-del-nervio-oculomotor');
+  await abrir(page, '/es/lobulo-gracil');
   await expect(page.getByTestId('ficha')).toContainText('Ficha en preparación.');
-  await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /accessory%20nucleus%20of%20oculomotor%20nerve/);
+  await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /gracile%20lobule/);
 });
 
 test('URL por estructura e idioma: cambiar de idioma conserva la estructura', async ({ page }) => {
@@ -465,14 +465,15 @@ test('ruta desconocida: aviso traducido con enlace al inicio; mayúsculas en el 
 test('marcadores: la fuente de ubicación sale en el idioma de la interfaz y cada marcador tiene su slug', async ({ page }) => {
   await abrir(page, '/en/periaqueductal-grey');
   await expect(page.locator('#ficha-titulo')).toHaveText('Periaqueductal grey');
-  await expect(page.getByTestId('ficha')).toContainText('to be verified');
   await expect(page.getByTestId('ficha')).toContainText('surrounds the cerebral aqueduct of the midbrain');
   await expect(page.getByTestId('ficha')).not.toContainText('rodea');
-  await expect(page.getByTestId('ficha')).toContainText('Name source: pending confirmation');
+  await expect(page.getByTestId('ficha')).toContainText('Name source: TA2');
   await abrir(page, '/es/sustancia-gris-periacueductal');
   await expect(page.getByTestId('ficha')).toContainText('rodea el acueducto del mesencéfalo');
   await abrir(page, '/es/area-de-wernicke');
   await expect(page.locator('#ficha-titulo')).toHaveText('Área de Wernicke');
+  await abrir(page, '/en/wernickes-area');
+  await expect(page.getByTestId('ficha')).toContainText('Name source: pending confirmation');
 });
 
 test('el grupo del vago y la estructura del vago se distinguen en la búsqueda y en la URL', async ({ page }) => {
