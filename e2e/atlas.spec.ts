@@ -199,9 +199,9 @@ test('la ficha trae búsquedas de artículos científicos, también si está en 
   await expect(articulos.locator('a[data-base="scielo"]')).toHaveAttribute('href', /search\.scielo\.org\/\?q=%22hipocampo%22/);
   await expect(articulos.getByRole('link')).toHaveCount(4);
   // Una estructura sin ficha escrita también trae las búsquedas.
-  await abrir(page, '/es/nucleo-accesorio-del-nervio-oculomotor');
+  await abrir(page, '/es/lobulo-gracil');
   await expect(page.getByTestId('ficha')).toContainText('Ficha en preparación.');
-  await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /accessory%20nucleus%20of%20oculomotor%20nerve/);
+  await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /gracile%20lobule/);
 });
 
 test('URL por estructura e idioma: cambiar de idioma conserva la estructura', async ({ page }) => {
