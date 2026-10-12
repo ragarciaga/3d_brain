@@ -130,6 +130,19 @@ test('carga el modelo, muestra piezas, cuadros por segundo, aviso educativo y li
   await expect(page.getByTestId('licencia')).toContainText('CC BY-SA 4.0');
 });
 
+test('con red lenta se ve el aviso de carga, el modelo carga y la página no lanza errores', async ({ page, context }) => {
+  // Antes, el aviso era un <Html> de drei dentro del lienzo y al desmontarse lanzaba removeChild.
+  const errores: string[] = [];
+  page.on('pageerror', (e) => errores.push(e.message));
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 80, downloadThroughput: (20 * 1024 * 1024) / 8, uploadThroughput: 1e6 });
+  await abrir(page, '/es');
+  await expect(page.getByTestId('cargando')).toBeVisible();
+  await modeloCargado(page);
+  await expect(page.getByTestId('cargando')).toHaveCount(0);
+  expect(errores).toEqual([]);
+});
+
 test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await abrir(page, '/es');
@@ -458,11 +471,17 @@ test('si el modelo no carga, el árbol, la búsqueda y las fichas siguen y se pu
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
   await expect(error).toBeVisible();
-  // Reintentar vuelve a pedir el modelo (ya sin bloqueo) y monta el visor.
+  // Reintentar vuelve a pedir el modelo (ya sin bloqueo) y monta el visor sin errores de React (#16).
+  const errores: string[] = [];
+  page.on('pageerror', (e) => errores.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errores.push(m.text());
+  });
   await page.unroute('**/modelos/atlas.glb');
   await page.getByRole('button', { name: 'Reintentar' }).click();
   await modeloCargado(page);
   await expect(page.getByTestId('visor-error')).toHaveCount(0);
+  expect(errores).toEqual([]);
 });
 
 test('si WebGL falla, solo el visor muestra el error: el árbol y la búsqueda siguen y no sale la página global', async ({ page }) => {

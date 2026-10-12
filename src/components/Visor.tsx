@@ -461,6 +461,7 @@ function MedidorCuadros() {
 export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma: Idioma; vistaInicial?: Vista; camaraInicial?: number[] }) {
   const { t } = useTranslation();
   const ubicando = useAtlas((s) => s.ubicando);
+  const cargado = useAtlas((s) => s.cargado);
   const inicioPuntero = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -487,6 +488,13 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
       }}
     >
       <BarreraVisor alReintentar={() => useGLTF.clear(URL_MODELO)}>
+        {/* Aviso de carga fuera del lienzo: con <Html> de drei como fallback de Suspense, al desmontarse
+            React lanzaba removeChild a mitad del montaje y en cargas lentas el visor podía quedar vacío. */}
+        {!cargado && (
+          <div className="cargando cargando-visor" role="status" data-testid="cargando">
+            {t('visor.cargando')}
+          </div>
+        )}
         <Canvas
           camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
           dpr={[1, 2]}
@@ -503,7 +511,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           <hemisphereLight args={['#ffffff', '#8a94a6', 1.1]} />
           <directionalLight position={[1, 3, 2]} intensity={1.6} />
           <directionalLight position={[-2, 1, -1]} intensity={0.6} />
-          <Suspense fallback={<Html center><div className="cargando">{t('visor.cargando')}</div></Html>}>
+          <Suspense fallback={null}>
             <Modelo idioma={idioma} />
             <Marcadores idioma={idioma} />
           </Suspense>
