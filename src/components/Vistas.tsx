@@ -1,23 +1,47 @@
-// Botones de vista anatómica (F1).
+// Vistas anatómicas (F1) como brújula sobre el visor, y las métricas de cuadros y piezas.
 import { useTranslation } from 'react-i18next';
-import { VISTAS } from '../lib/enlaces';
+import type { Vista } from '../lib/enlaces';
 import { useAtlas } from '../store/useAtlas';
 import { useMetricas } from './metricas';
 
-export default function Vistas() {
+/** Posición de cada vista en la brújula (cuadrícula de 3 x 3): superior arriba, inferior abajo, anterior al centro. */
+const BRUJULA: [Vista, string][] = [
+  ['superior', 'b-arriba'],
+  ['lateral-der', 'b-izquierda'],
+  ['anterior', 'b-centro'],
+  ['lateral-izq', 'b-derecha'],
+  ['inferior', 'b-abajo'],
+  ['posterior', 'b-esquina'],
+];
+
+export function Metricas() {
   const { t } = useTranslation();
   const fps = useMetricas((s) => s.fps);
   const piezas = useMetricas((s) => s.piezas);
   return (
-    <div className="vistas" role="toolbar" aria-label={t('vistas.titulo')}>
-      {VISTAS.map((v) => (
-        <button key={v} type="button" data-vista={v} onClick={() => useAtlas.getState().pedirCamara({ vista: v })}>
-          {t(`vistas.${v}`)}
+    <span className="metricas" aria-live="off">
+      <span data-testid="fps">{t('visor.fps', { n: fps })}</span> · <span data-testid="piezas">{t('visor.piezas', { count: piezas })}</span>
+    </span>
+  );
+}
+
+export default function Vistas() {
+  const { t } = useTranslation();
+  return (
+    <div className="brujula" role="toolbar" aria-label={t('vistas.titulo')}>
+      {BRUJULA.map(([v, lugar]) => (
+        <button
+          key={v}
+          type="button"
+          className={lugar}
+          data-vista={v}
+          aria-label={t(`vistas.${v}`)}
+          title={t(`vistas.${v}`)}
+          onClick={() => useAtlas.getState().pedirCamara({ vista: v })}
+        >
+          {t(`vistas.corto.${v}`)}
         </button>
       ))}
-      <span className="metricas" aria-live="off">
-        <span data-testid="fps">{t('visor.fps', { n: fps })}</span> · <span data-testid="piezas">{t('visor.piezas', { count: piezas })}</span>
-      </span>
     </div>
   );
 }

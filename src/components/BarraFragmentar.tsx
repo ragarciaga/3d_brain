@@ -40,48 +40,62 @@ export default function BarraFragmentar() {
     [],
   );
 
+  const pct = Math.round(explosion * 100);
   return (
-    <div className="barra" role="toolbar" aria-label={t('fragmentar.titulo')}>
-      <label className="barra-campo">
-        {t('fragmentar.nivel')}
-        <select value={nivel} onChange={(e) => {
-            st().setNivel(e.target.value as Nivel);
-            if (st().explosion > 0) pedirEncuadre();
-          }}>
-          <option value="hemisferios">{t('fragmentar.hemisferios')}</option>
-          <option value="lobulos">{t('fragmentar.lobulos')}</option>
-          <option value="piezas">{t('fragmentar.piezas')}</option>
-        </select>
-      </label>
-      <label className="barra-campo barra-deslizador">
-        {t('fragmentar.explosion')}
+    <div className="dock" role="toolbar" aria-label={t('fragmentar.titulo')} aria-orientation="vertical">
+      <div className="dock-niveles" role="group" aria-label={t('fragmentar.nivel')}>
+        {(['hemisferios', 'lobulos', 'piezas'] as Nivel[]).map((n) => (
+          <button
+            key={n}
+            type="button"
+            aria-pressed={nivel === n}
+            className={nivel === n ? 'activo' : undefined}
+            onClick={() => {
+              st().setNivel(n);
+              if (st().explosion > 0) pedirEncuadre();
+            }}
+          >
+            {t(`fragmentar.${n}`)}
+          </button>
+        ))}
+      </div>
+      <div className="dock-deslizador">
+        <ol className="dock-marcas" aria-hidden="true">
+          <li style={{ bottom: '100%' }}>{t('fragmentar.marcaInventario')}</li>
+          <li style={{ bottom: '70%' }}>{t('fragmentar.marcaSeparado')}</li>
+          <li style={{ bottom: '0%' }}>{t('fragmentar.marcaArmado')}</li>
+        </ol>
         <input
           type="range"
           min={0}
           max={100}
           step={1}
-          value={Math.round(explosion * 100)}
-          aria-valuetext={`${Math.round(explosion * 100)} %`}
+          value={pct}
+          aria-label={t('fragmentar.explosion')}
+          aria-valuetext={`${pct} %`}
+          aria-orientation="vertical"
           onChange={(e) => {
             st().setExplosion(Number(e.target.value) / 100);
             pedirEncuadre();
           }}
           data-testid="explosion"
         />
-        <output>{Math.round(explosion * 100)} %</output>
-      </label>
+      </div>
+      <output className="dock-valor">{pct} %</output>
       <button
         type="button"
+        className="dock-reensamblar"
         onClick={() => {
           st().reensamblarTodo();
           pedirEncuadre();
         }}
         data-testid="reensamblar"
+        title={t('fragmentar.reensamblar')}
       >
-        {t('fragmentar.reensamblar')}
+        <span aria-hidden="true">⟲</span> {t('fragmentar.reensamblar')}
       </button>
       {filtrado && (
-        <button type="button" onClick={() => st().mostrarTodo()} data-testid="mostrar-todo">
+        <button type="button" className="dock-mostrar" onClick={() => st().mostrarTodo()} data-testid="mostrar-todo">
           {t('acciones.mostrarTodo')}
         </button>
       )}

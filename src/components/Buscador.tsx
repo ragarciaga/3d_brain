@@ -1,4 +1,5 @@
-// Búsqueda bilingüe (F3). Atajo Ctrl+K. Enter o clic: resalta, encuadra y abre la ficha.
+// Búsqueda bilingüe (F3), dentro de la paleta que abre el riel o Ctrl+K. Enter o clic: resalta,
+// encuadra y abre la ficha. Escape cierra la paleta.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras, padreDeEntrada } from '../data/atlas';
@@ -7,7 +8,7 @@ import { crearBuscador } from '../lib/busqueda';
 import { nombreNodo, nombreVisible } from '../lib/nombres';
 import { useAtlas } from '../store/useAtlas';
 
-export default function Buscador({ idioma, alElegir }: { idioma: Idioma; alElegir: (entrada: string) => void }) {
+export default function Buscador({ idioma, alElegir, alCerrar }: { idioma: Idioma; alElegir: (entrada: string) => void; alCerrar: () => void }) {
   const { t } = useTranslation();
   const [q, setQ] = useState('');
   const [abierto, setAbierto] = useState(false);
@@ -18,22 +19,14 @@ export default function Buscador({ idioma, alElegir }: { idioma: Idioma; alElegi
   const resultados = useMemo(() => buscador.buscar(q), [buscador, q]);
 
   useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        input.current?.focus();
-        input.current?.select();
-      }
-    };
-    window.addEventListener('keydown', alTeclear);
-    return () => window.removeEventListener('keydown', alTeclear);
+    input.current?.focus();
   }, []);
 
   const elegir = (id: string) => {
     alElegir(id);
     setAbierto(false);
     setQ('');
-    input.current?.blur();
+    alCerrar();
   };
 
   return (
@@ -63,7 +56,10 @@ export default function Buscador({ idioma, alElegir }: { idioma: Idioma; alElegi
           if (e.key === 'ArrowDown') setActivo((a) => Math.min(a + 1, resultados.length - 1));
           else if (e.key === 'ArrowUp') setActivo((a) => Math.max(a - 1, 0));
           else if (e.key === 'Enter' && resultados[activo]) elegir(resultados[activo]!);
-          else if (e.key === 'Escape') setAbierto(false);
+          else if (e.key === 'Escape') {
+            e.stopPropagation();
+            alCerrar();
+          }
         }}
       />
       {abierto && q.trim().length >= 2 && (
