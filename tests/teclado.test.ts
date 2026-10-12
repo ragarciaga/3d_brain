@@ -20,13 +20,5 @@ describe('accionEscape', () => {
     expect(accionEscape({ ...base, aislado: true, ubicando: true })).toBe('cancelar-ubicar'));
   it('con el cajón abierto lo cierra primero, aunque el foco esté en un campo del cajón', () =>
     expect(accionEscape({ ...base, menuAbierto: true, aislado: true, ubicando: true, enCampo: true })).toBe('cerrar-menu'));
-  it('con el armado activo, Escape lo termina', () => expect(accionEscape({ ...base, armando: true })).toBe('terminar-armado'));
-  it('con armado y aislamiento, Escape sale solo del armado', () =>
-    expect(accionEscape({ ...base, armando: true, aislado: true })).toBe('terminar-armado'));
-  it('dentro de un campo no termina el armado', () => expect(accionEscape({ ...base, armando: true, enCampo: true })).toBeNull());
-  it('cancelar la propuesta de posición y cerrar el cajón van antes que terminar el armado', () => {
-    expect(accionEscape({ ...base, armando: true, ubicando: true })).toBe('cancelar-ubicar');
-    expect(accionEscape({ ...base, armando: true, menuAbierto: true })).toBe('cerrar-menu');
-  });
   it('sin nada que hacer no hace nada', () => expect(accionEscape(base)).toBeNull());
 });

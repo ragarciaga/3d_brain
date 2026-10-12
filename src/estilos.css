@@ -27,30 +27,28 @@
   color-scheme: light;
 }
 
-/* Tema oscuro, el de Maysa por defecto: sigue la preferencia del sistema. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #0d0f16;
-    --panel: #161922;
-    --elevado: #20222d;
-    --texto: #e1e7ef;
-    --texto-suave: #8b9bb1;
-    --borde: #2e3342;
-    --acento: #21c45d;
-    --acento-texto: #0d0f16;
-    --acento-suave: rgba(33, 196, 93, 0.14);
-    --menta: #34d399;
-    --aviso: #f59f0a;
-    --aviso-fondo: rgba(245, 159, 10, 0.14);
-    --ok: #10b77f;
-    --ok-fondo: rgba(16, 183, 127, 0.14);
-    --peligro: #ef4343;
-    --sombra: 0 12px 32px rgba(0, 0, 0, 0.45);
-    --velo: rgba(0, 0, 0, 0.6);
-    --visor-luz: #20222d;
-    --visor-fondo: #0d0f16;
-    color-scheme: dark;
-  }
+/* Tema oscuro, el de Maysa. index.html y src/lib/tema.ts ponen data-tema: lo que eligió la persona o, si no eligió, el del sistema. */
+:root[data-tema='oscuro'] {
+  --fondo: #0d0f16;
+  --panel: #161922;
+  --elevado: #20222d;
+  --texto: #e1e7ef;
+  --texto-suave: #8b9bb1;
+  --borde: #2e3342;
+  --acento: #21c45d;
+  --acento-texto: #0d0f16;
+  --acento-suave: rgba(33, 196, 93, 0.14);
+  --menta: #34d399;
+  --aviso: #f59f0a;
+  --aviso-fondo: rgba(245, 159, 10, 0.14);
+  --ok: #10b77f;
+  --ok-fondo: rgba(16, 183, 127, 0.14);
+  --peligro: #ef4343;
+  --sombra: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --velo: rgba(0, 0, 0, 0.6);
+  --visor-luz: #20222d;
+  --visor-fondo: #0d0f16;
+  color-scheme: dark;
 }
 
 * {
@@ -242,6 +240,15 @@ a {
   color: var(--acento);
 }
 
+.boton-tema {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .compartir-encabezado {
   background: var(--acento);
   color: var(--acento-texto);
@@ -429,10 +436,11 @@ a {
 }
 
 .visor {
+  position: relative;
   flex: 1;
   min-height: 0;
   touch-action: none;
-  /* Arrastrar una pieza (modo reto) no debe seleccionar texto ni abrir el menú de pulsación larga. */
+  /* Girar la vista arrastrando no debe seleccionar texto ni abrir el menú de pulsación larga. */
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -464,6 +472,15 @@ a {
   padding: 0.5rem 0.8rem;
   border-radius: var(--radio);
   white-space: nowrap;
+}
+
+.cargando-visor {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .etiqueta-3d {
@@ -598,6 +615,7 @@ a {
   color: var(--peligro);
 }
 
+.articulos,
 .fuentes,
 .recursos,
 .relaciones,
@@ -697,30 +715,6 @@ a {
   background: var(--panel);
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta);
-}
-
-.armado {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.armado-ayuda {
-  margin: 0;
-  flex-basis: 100%;
-}
-
-.armado-modos {
-  display: inline-flex;
-  gap: 0.3rem;
-}
-
-.armado button.activo {
-  background: var(--acento);
-  color: var(--acento-texto);
-  border-color: var(--acento);
 }
 
 .barra-campo {

@@ -74,9 +74,6 @@ export interface Seleccion {
   malla: string | null; // malla tocada (trazos del vago en modo revisión)
 }
 
-/** Modos de "Armar pieza por pieza" (F7): tocar cada pieza o arrastrarla hasta su sitio (reto). */
-export type ModoArmado = 'tocar' | 'reto';
-
 export interface PedidoCamara {
   vista?: Vista;
   camara?: number[];
@@ -95,7 +92,6 @@ interface Estado {
   inventario: boolean; // el deslizador está en el tramo del inventario (más del 70 % y bloques suficientes)
   separadas: Record<string, Vec3>;
   devueltas: Set<string>;
-  armando: { modo: ModoArmado; total: string[] } | null;
   grupoActivo: string | null;
   centros: Record<string, Vec3>;
   cajas: Record<string, Caja>; // caja original de cada pieza, para el inventario
@@ -123,9 +119,6 @@ interface Estado {
   separar(piezas: string[]): void;
   devolver(piezas: string[]): void;
   reensamblarTodo(): void;
-  armarPiezaPorPieza(modo?: ModoArmado): void;
-  setModoArmado(modo: ModoArmado): void;
-  terminarArmado(): void;
   pedirCamara(p: Omit<PedidoCamara, 't'>): void;
   setRevisor(codigo: string | null): void;
   responder(r: Respuesta): void;
@@ -178,11 +171,6 @@ export function fueraDeSitio(s: Estado, pieza: string): boolean {
   return o[0] !== 0 || o[1] !== 0 || o[2] !== 0;
 }
 
-/** Piezas de estudio visibles que están fuera de su sitio: lo que hay que armar. Las de referencia nunca cuentan. */
-function totalArmado(s: Estado): string[] {
-  return piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio' && fueraDeSitio(s, p));
-}
-
 export const useAtlas = create<Estado>((set, get) => ({
   ambos: false,
   ocultas: new Set(),
@@ -194,7 +182,6 @@ export const useAtlas = create<Estado>((set, get) => ({
   inventario: false,
   separadas: {},
   devueltas: new Set(),
-  armando: null,
   grupoActivo: null,
   centros: {},
   cajas: {},
@@ -255,9 +242,6 @@ export const useAtlas = create<Estado>((set, get) => ({
   setExplosion: (f) => {
     set({ explosion: Math.min(1, Math.max(0, f)), devueltas: new Set() });
     set(recalcularBase(get()));
-    // Mover el deslizador durante el armado cambia qué hay que armar; el modo se conserva.
-    const armando = get().armando;
-    if (armando) set({ armando: { modo: armando.modo, total: totalArmado(get()) } });
   },
   setNivel: (n) => {
     set({ nivel: n });
@@ -295,16 +279,9 @@ export const useAtlas = create<Estado>((set, get) => ({
     set({ separadas, devueltas });
   },
   reensamblarTodo: () => {
-    set({ explosion: 0, separadas: {}, devueltas: new Set(), armando: null });
+    set({ explosion: 0, separadas: {}, devueltas: new Set() });
     set(recalcularBase(get()));
   },
-  // Entra siempre al modo, aunque no haya nada desarmado (total vacío): la barra explica cómo desarmar.
-  armarPiezaPorPieza: (modo = 'tocar') => set({ armando: { modo, total: totalArmado(get()) } }),
-  setModoArmado: (modo) => {
-    const armando = get().armando;
-    if (armando) set({ armando: { modo, total: armando.total } });
-  },
-  terminarArmado: () => set({ armando: null }),
   pedirCamara: (p) => set({ camara: { ...p, t: Date.now() + Math.random() } }),
   setRevisor: (codigo) => set({ revisor: codigo }),
   responder: (r) => set({ respuestas: { ...get().respuestas, [claveRespuesta(r)]: r } }),

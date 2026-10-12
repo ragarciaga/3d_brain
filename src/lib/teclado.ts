@@ -6,23 +6,20 @@ export function esCampoDeTexto(t: { tagName?: string; isContentEditable?: boolea
   return etiqueta === 'INPUT' || etiqueta === 'SELECT' || etiqueta === 'TEXTAREA' || !!t?.isContentEditable;
 }
 
-export type AccionEscape = 'cerrar-menu' | 'cancelar-ubicar' | 'terminar-armado' | 'salir-aislar' | null;
+export type AccionEscape = 'cerrar-menu' | 'cancelar-ubicar' | 'salir-aislar' | null;
 
 /**
- * Qué hace Escape, en orden: cerrar el cajón del celular, cancelar "proponer posición", terminar el
- * armado pieza por pieza, salir del aislamiento. Dentro de un campo de texto no se termina el armado
- * ni se sale del aislamiento. Con el armado y el aislamiento activos, Escape sale solo del armado.
+ * Qué hace Escape, en orden: cerrar el cajón del celular, cancelar "proponer posición", salir del
+ * aislamiento. Dentro de un campo de texto no se sale del aislamiento.
  */
 export function accionEscape(p: {
   menuAbierto: boolean;
   ubicando: boolean;
   aislado: boolean;
   enCampo: boolean;
-  armando?: boolean;
 }): AccionEscape {
   if (p.menuAbierto) return 'cerrar-menu';
   if (p.ubicando) return 'cancelar-ubicar';
-  if (p.armando && !p.enCampo) return 'terminar-armado';
   if (p.aislado && !p.enCampo) return 'salir-aislar';
   return null;
 }

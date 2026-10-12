@@ -11,6 +11,7 @@ import { useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
 import AvisoPrimeraVisita from './Aviso';
 import BarraFragmentar from './BarraFragmentar';
+import BotonTema from './BotonTema';
 import Buscador from './Buscador';
 import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
@@ -163,7 +164,6 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       const accion = accionEscape({
         menuAbierto: menu,
         ubicando: !!s.ubicando,
-        armando: !!s.armando,
         aislado: !!s.aislar,
         enCampo: esCampoDeTexto(e.target as HTMLElement | null),
       });
@@ -171,7 +171,6 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
         setMenu(false);
         botonMenu.current?.focus();
       } else if (accion === 'cancelar-ubicar') s.setUbicando(null);
-      else if (accion === 'terminar-armado') s.terminarArmado();
       else if (accion === 'salir-aislar') s.salirAislar();
     };
     window.addEventListener('atlas:seleccion', alSeleccionar);
@@ -230,6 +229,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
             {otro.toUpperCase()}
           </Link>
         </nav>
+        <BotonTema />
         <button type="button" className="compartir-encabezado" onClick={() => void compartir()}>
           <span className="compartir-largo">{t('compartir.vista')}</span>
           <span className="compartir-corto">{t('compartir.corto')}</span>

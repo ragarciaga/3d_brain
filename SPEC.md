@@ -80,7 +80,7 @@ Cada función tiene un ID para referenciarla en commits, issues y prompts a Clau
 
 - Rotar arrastrando, zoom con rueda o pellizco, desplazar con clic derecho o dos dedos.
 - Botones de vista anatómica: anterior, posterior, lateral izquierda, lateral derecha, superior, inferior.
-- Doble clic sobre una pieza encuadra la cámara en ella, salvo sobre una pieza separada, que la devuelve (F7), y durante el armado pieza por pieza, cuando no hace nada.
+- Doble clic sobre una pieza encuadra la cámara en ella, salvo sobre una pieza separada, que la devuelve (F7).
 
 **Criterio de aceptación:** con todas las piezas visibles, la rotación se siente fluida en los equipos de referencia y cada botón de vista lleva a la orientación correcta.
 
@@ -117,7 +117,7 @@ Contenido de la ficha:
 - Relaciones: estructuras conectadas, cada una clicable.
 - Relevancia en psicología, con nivel de evidencia por afirmación (sección 7).
 - Circuitos en los que participa (fase 2) y casos clásicos (fase 2).
-- Recursos de la pieza (F9) y notas personales (F13).
+- Recursos de la pieza (F9), búsquedas de artículos científicos (F9) y notas personales (F13).
 - Fuentes, revisor, fecha de revisión y estado en ese idioma.
 - Botón "Reportar un error" (F12, hito 2).
 
@@ -145,13 +145,10 @@ Límite real: solo se puede fragmentar hasta el nivel de detalle que trae el mod
 #### F7. Reensamblar
 
 - **Reensamblar todo:** animación corta que devuelve todas las piezas a su sitio.
-- **Devolver una pieza:** con un segundo toque en Separar de la ficha, o con doble clic sobre una pieza separada cuando no se está armando pieza por pieza.
-- **Armar pieza por pieza:** con el conjunto desarmado, se devuelven las piezas una a una. Hay dos modos:
-  - **Tocar:** cada toque sobre una pieza fuera de su sitio la devuelve; mientras dura el modo, tocar no abre la ficha; una barra visible explica qué hacer y muestra el avance ("12 de 40 en su sitio"); funciona con el dedo.
-  - **Reto:** se arrastra cada pieza en el plano de la pantalla; si se suelta cerca de su sitio, encaja y cuenta; si no, vuelve a donde estaba. La tolerancia se mide en pantalla, proporcional al tamaño con que se ve la pieza. Mientras se arrastra, la cámara no se mueve.
-- **Cerrar el armado:** "Terminar", Esc o Reensamblar salen del modo. El reto no reemplaza el rompecabezas (F16, fase 2).
+- **Devolver una pieza:** con un segundo toque en Separar de la ficha, o con doble clic sobre una pieza separada.
+- "Armar pieza por pieza" (tocar y reto) salió del alcance el 12 de octubre de 2026: no aportaba al estudio. Vuelve con la evaluación (F15, F16); ver `docs/v2.md`.
 
-**Criterio:** después de reensamblar, cada pieza queda en su posición exacta original, sin error acumulado. En modo reto, una pieza soltada lejos de su sitio vuelve a su posición desarmada, y una que encaja queda con desplazamiento exactamente cero.
+**Criterio:** después de reensamblar, cada pieza queda en su posición exacta original, sin error acumulado.
 
 #### F8. Planos de corte (hito 2)
 
@@ -174,6 +171,7 @@ Cada pieza tiene su propia lista de recursos: título, enlace, tipo (video, art�
 - Primero aparecen los recursos de la pieza y, aparte, los heredados de su nodo padre o grupo ("del grupo").
 - Se filtran por idioma; los del otro idioma aparecen marcados.
 - Los recursos públicos se curan en el repositorio y pasan por revisión. Los personales son parte de F13.
+- **Artículos científicos:** toda estructura, grupo y marcador con nombre en inglés trae búsquedas listas por su nombre: revisiones en PubMed, acceso abierto en Europe PMC, Google Académico (inglés y español) y SciELO (español). Salen aunque la ficha esté en preparación. Son búsquedas, no contenido: la ficha avisa que el atlas no revisa los resultados. Los términos salen del nombre TA2 (más el nombre alterno del paréntesis cuando es otro nombre, no un calificativo); la lógica vive en `src/lib/articulos.ts`.
 
 #### F10. Idiomas (hito 1)
 
@@ -549,7 +547,6 @@ TypeScript se fija en 6.0.3 porque typescript-eslint aún no soporta la 7. Decis
 - Al soltar el deslizador, al cambiar el nivel con la explosión activa y al reensamblar, la cámara encuadra el conjunto visible sin cambiar la dirección desde la que se mira. En el inventario (más del 70 %) mira desde la vista anterior y encuadra todas las piezas de estudio visibles, vago incluido.
 - Separar por nivel: se usa el centro del nodo del nivel elegido para que sus piezas se muevan como un bloque.
 - Reensamblar: el desplazamiento vuelve a cero con una animación. Como la posición original nunca se tocó, no hay error acumulado.
-- Arrastrar (F7, reto): mientras se arrastra se suma un desplazamiento temporal en el plano perpendicular a la cámara que pasa por el centro de la pieza. Al soltar, si encaja, el desplazamiento vuelve a cero (devolver); si no, el temporal se descarta. La posición original nunca se toca.
 
 ### Planos de corte
 
