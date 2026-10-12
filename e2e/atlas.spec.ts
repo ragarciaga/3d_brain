@@ -395,14 +395,15 @@ test('ruta desconocida: aviso traducido con enlace al inicio; mayúsculas en el 
 test('marcadores: la fuente de ubicación sale en el idioma de la interfaz y cada marcador tiene su slug', async ({ page }) => {
   await abrir(page, '/en/periaqueductal-grey');
   await expect(page.locator('#ficha-titulo')).toHaveText('Periaqueductal grey');
-  await expect(page.getByTestId('ficha')).toContainText('to be verified');
   await expect(page.getByTestId('ficha')).toContainText('surrounds the cerebral aqueduct of the midbrain');
   await expect(page.getByTestId('ficha')).not.toContainText('rodea');
-  await expect(page.getByTestId('ficha')).toContainText('Name source: pending confirmation');
+  await expect(page.getByTestId('ficha')).toContainText('Name source: TA2');
   await abrir(page, '/es/sustancia-gris-periacueductal');
   await expect(page.getByTestId('ficha')).toContainText('rodea el acueducto del mesencéfalo');
   await abrir(page, '/es/area-de-wernicke');
   await expect(page.locator('#ficha-titulo')).toHaveText('Área de Wernicke');
+  await abrir(page, '/en/wernickes-area');
+  await expect(page.getByTestId('ficha')).toContainText('Name source: pending confirmation');
 });
 
 test('el grupo del vago y la estructura del vago se distinguen en la búsqueda y en la URL', async ({ page }) => {
