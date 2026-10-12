@@ -50,6 +50,23 @@ npm run dev
 
 Abre http://localhost:3000. El número de cuadros por segundo aparece arriba a la derecha del visor.
 
+## Medir la carga en tus equipos (issue 6)
+
+Abre el sitio con `?medir=1` al final de la dirección, en cada equipo (iPad, celular, PC):
+
+```
+https://ragarciaga.github.io/3d_brain/es?medir=1
+```
+
+Aparece un panel con el equipo, la tarjeta gráfica, cuánto tardó el código, la descarga del modelo
+3D, la preparación del modelo, cuándo se vio el cerebro y los cuadros por segundo de los 10 s
+siguientes. Al final dice qué fue lo más lento. "Copiar resultados" copia todo como texto para
+pegarlo en el issue 6 o en el chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo
+quita. No envía nada a ningún servidor.
+
+Mide dos veces en cada equipo: la primera vez (el modelo se descarga) y recargando la página (el
+modelo sale de la memoria del navegador). Si quieres una medición limpia, abre una pestaña privada.
+
 ## Trabajar con Claude Code y Rockbuilt
 
 Desde una sesión de Claude Code en este repositorio:

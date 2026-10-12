@@ -237,5 +237,29 @@
     "estructuras": "Estructuras",
     "grupos": "Grupos",
     "buscar": "Buscar"
+  },
+  "medicion": {
+    "titulo": "Medición de carga",
+    "equipo": "Equipo",
+    "pantalla": "Pantalla",
+    "gpu": "Tarjeta gráfica",
+    "codigo": "Código de la app",
+    "modelo": "Descarga del modelo 3D",
+    "preparar": "Preparar el modelo",
+    "primerCuadro": "Cerebro visible a los",
+    "fluidez": "Fluidez (10 s)",
+    "fps": "{{promedio}} cuadros/s en promedio, mínimo {{minimo}}",
+    "esperando": "midiendo...",
+    "sinDato": "sin dato",
+    "desdeCache": "desde la memoria del navegador",
+    "copiar": "Copiar resultados",
+    "copiado": "Copiado",
+    "copiaManual": "Copia este texto:",
+    "cerrar": "Cerrar",
+    "cuello": {
+      "codigo": "Lo más lento fue descargar el código de la app.",
+      "modelo": "Lo más lento fue descargar el modelo 3D.",
+      "procesamiento": "Lo más lento fue preparar el modelo en este equipo."
+    }
   }
 }

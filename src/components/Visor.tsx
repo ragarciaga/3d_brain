@@ -18,6 +18,7 @@ import {
 import type { Idioma } from '../data/tipos';
 import { acercar, CERO, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
+import { MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombrePieza, nombreVisible } from '../lib/nombres';
@@ -54,6 +55,16 @@ export const camaraActual: {
 } = { leer: null, objetivoEnPantalla: null, piezaEnPantalla: null };
 
 const raycastNulo = () => null;
+
+/** Nombre de la tarjeta gráfica, si el navegador lo informa (Safari suele decir solo "Apple GPU"). */
+function nombreGpu(ctx: WebGLRenderingContext | WebGL2RenderingContext): string {
+  try {
+    const ext = ctx.getExtension('WEBGL_debug_renderer_info');
+    return String(ext ? ctx.getParameter(ext.UNMASKED_RENDERER_WEBGL) : ctx.getParameter(ctx.RENDERER));
+  } catch {
+    return '';
+  }
+}
 
 /** Proyecta un punto del mundo a píxeles del lienzo (misma fórmula que `objetivoEnPantalla`). */
 function aPantalla(p: THREE.Vector3, camara: THREE.Camera, ancho: number, alto: number): Punto2 {
@@ -258,6 +269,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
     }
     useMetricas.getState().setPiezas(porPieza.size);
     setCentros(centros, cajas);
+    if (!performance.getEntriesByName(MARCA_MODELO_LISTO).length) performance.mark(MARCA_MODELO_LISTO);
   }, [porPieza, setCentros]);
 
   return (
@@ -445,7 +457,13 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
 
 function MedidorCuadros() {
   const acumulado = useRef({ cuadros: 0, tiempo: 0 });
+  const marcado = useRef(false);
   useFrame((_, dt) => {
+    // Primer cuadro dibujado con el modelo ya cargado (medición de carga, issue 6).
+    if (!marcado.current && useAtlas.getState().cargado) {
+      marcado.current = true;
+      performance.mark(MARCA_PRIMER_CUADRO);
+    }
     const a = acumulado.current;
     a.cuadros += 1;
     a.tiempo += dt;
@@ -499,6 +517,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          onCreated={({ gl }) => useMetricas.getState().setGpu(nombreGpu(gl.getContext()))}
           onPointerMissed={(e) => {
             const i = inicioPuntero.current;
             if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
