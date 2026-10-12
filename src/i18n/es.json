@@ -211,5 +211,11 @@
   "tema": {
     "aOscuro": "Cambiar a tema oscuro",
     "aClaro": "Cambiar a tema claro"
+  },
+  "paneles": {
+    "ocultarArbol": "Ocultar el panel de estructuras",
+    "mostrarArbol": "Mostrar el panel de estructuras",
+    "ocultarFicha": "Ocultar la ficha",
+    "mostrarFicha": "Mostrar la ficha"
   }
 }

@@ -211,5 +211,11 @@
   "tema": {
     "aOscuro": "Switch to dark theme",
     "aClaro": "Switch to light theme"
+  },
+  "paneles": {
+    "ocultarArbol": "Hide the structures panel",
+    "mostrarArbol": "Show the structures panel",
+    "ocultarFicha": "Hide the structure card",
+    "mostrarFicha": "Show the structure card"
   }
 }

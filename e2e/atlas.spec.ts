@@ -143,6 +143,34 @@ test('con red lenta se ve el aviso de carga, el modelo carga y la página no lan
   expect(errores).toEqual([]);
 });
 
+test('los paneles laterales se pliegan, el visor se agranda y la ficha vuelve al elegir una estructura', async ({ page }) => {
+  await abrir(page, '/es');
+  await modeloCargado(page);
+  const ancho = async () => (await page.getByTestId('visor').locator('canvas').boundingBox())!.width;
+  const inicial = await ancho();
+  const izq = page.getByTestId('plegar-izq');
+  const der = page.getByTestId('plegar-der');
+  await expect(izq).toHaveAttribute('aria-expanded', 'true');
+  await izq.click();
+  await der.click();
+  await expect(izq).toHaveAttribute('aria-expanded', 'false');
+  await expect(der).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#panel-izq')).toBeHidden();
+  await expect(page.locator('#panel-ficha')).toBeHidden();
+  await expect.poll(ancho).toBeGreaterThan(inicial + 500);
+  // La preferencia se conserva al recargar.
+  await page.reload();
+  await modeloCargado(page);
+  await expect(page.locator('#panel-izq')).toBeHidden();
+  // Elegir una estructura con la ficha plegada la vuelve a mostrar.
+  await page.getByRole('combobox', { name: /Buscar/ }).fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('ficha')).toBeVisible();
+  await expect(der).toHaveAttribute('aria-expanded', 'true');
+  await izq.click();
+  await expect(page.locator('#panel-izq')).toBeVisible();
+});
+
 test('el botón de tema pasa de claro a oscuro y la elección se conserva al recargar', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await abrir(page, '/es');
@@ -537,6 +565,12 @@ test.describe('celular (390 x 844)', () => {
     await expect(compartir).toHaveAccessibleName('Compartir');
     await compartir.click();
     await expect(page.locator('.mensaje')).toBeVisible();
+  });
+
+  test('en celular no hay botones para plegar paneles (el árbol es cajón y la ficha, hoja)', async ({ page }) => {
+    await abrir(page, '/es');
+    await expect(page.getByTestId('plegar-izq')).toBeHidden();
+    await expect(page.getByTestId('plegar-der')).toBeHidden();
   });
 
   test('el cajón de estructuras cerrado no se enfoca; abre con foco dentro, se cierra con Escape o al elegir', async ({ page }) => {

@@ -278,9 +278,66 @@ a {
   flex: 1;
   display: grid;
   grid-template-columns: 300px 1fr 360px;
+  grid-template-areas: 'izq centro ficha';
   gap: 0.6rem;
   padding: 0 0.6rem;
   min-height: 0;
+}
+
+.panel-izq {
+  grid-area: izq;
+}
+
+.centro {
+  grid-area: centro;
+}
+
+.ficha {
+  grid-area: ficha;
+}
+
+/* Paneles plegables (solo en pantallas anchas; en celular son cajón y hoja). */
+.plegar {
+  position: absolute;
+  z-index: 5;
+  bottom: 0.6rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--panel);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.plegar-izq {
+  left: 0.6rem;
+}
+
+.plegar-der {
+  right: 0.6rem;
+}
+
+@media (min-width: 901px) {
+  .sin-izq .cuerpo {
+    grid-template-columns: 1fr 360px;
+    grid-template-areas: 'centro ficha';
+  }
+
+  .sin-der .cuerpo {
+    grid-template-columns: 300px 1fr;
+    grid-template-areas: 'izq centro';
+  }
+
+  .sin-izq.sin-der .cuerpo {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'centro';
+  }
+
+  .sin-izq .panel-izq,
+  .sin-der .ficha {
+    display: none;
+  }
 }
 
 .panel-izq {
@@ -782,6 +839,10 @@ body:has(.pagina-texto) {
     display: inline-block;
   }
 
+  .plegar {
+    display: none;
+  }
+
   .encabezado {
     gap: 0.4rem;
     padding: 0.4rem 0.5rem;
@@ -814,6 +875,7 @@ body:has(.pagina-texto) {
 
   .cuerpo {
     grid-template-columns: 1fr;
+    grid-template-areas: 'centro';
     position: relative;
     padding: 0;
     gap: 0;

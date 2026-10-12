@@ -316,7 +316,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
 
   if (!id || !e) {
     return (
-      <aside className="ficha ficha-vacia" aria-label={t('ficha.titulo')}>
+      <aside id="panel-ficha" className="ficha ficha-vacia" aria-label={t('ficha.titulo')}>
         <p>{t('ficha.vacia')}</p>
       </aside>
     );
@@ -340,7 +340,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, ambos, t) : nombreVisible(e, idioma, ambos);
 
   return (
-    <aside ref={ficha} className="ficha" aria-labelledby="ficha-titulo" data-testid="ficha" data-entrada={id}>
+    <aside id="panel-ficha" ref={ficha} className="ficha" aria-labelledby="ficha-titulo" data-testid="ficha" data-entrada={id}>
       <header className="ficha-cabecera">
         <h2 id="ficha-titulo" ref={refTitulo} tabIndex={-1}>
           {titulo}
