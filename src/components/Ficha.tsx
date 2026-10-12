@@ -176,7 +176,13 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
       <button
         type="button"
         {...propsPulsado(separado)}
-        onClick={() => (accionAlPulsar(separado) === 'desactivar' ? s().devolver(piezas) : s().separar(piezas))}
+        onClick={() => {
+          if (accionAlPulsar(separado) === 'desactivar') s().devolver(piezas);
+          else s().separar(piezas);
+          // La cámara suele estar muy cerca de la estructura: sin reencuadrar, las piezas separadas
+          // quedan detrás de ella o fuera del lienzo (#19). Se encuadra sin girar.
+          s().pedirCamara({ encuadrar: piezas });
+        }}
       >
         {t('acciones.separar')}
       </button>

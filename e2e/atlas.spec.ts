@@ -673,6 +673,22 @@ test('los botones Aislar, Aislar con contexto y Separar se activan con un toque 
   expect(await aislarActual(page)).toBeNull();
 });
 
+test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {
+  await abrir(page, '/es/talamo');
+  await modeloCargado(page);
+  await camaraQuieta(page);
+  await page.getByTestId('ficha').getByRole('button', { name: 'Separar', exact: true }).click();
+  await camaraQuieta(page);
+  const lienzo = (await page.getByTestId('visor').locator('canvas').boundingBox())!;
+  for (const pieza of ['thalamus-l', 'thalamus-r']) {
+    const { actual } = await enPantalla(page, pieza);
+    expect(actual.x, pieza).toBeGreaterThan(lienzo.x);
+    expect(actual.x, pieza).toBeLessThan(lienzo.x + lienzo.width);
+    expect(actual.y, pieza).toBeGreaterThan(lienzo.y);
+    expect(actual.y, pieza).toBeLessThan(lienzo.y + lienzo.height);
+  }
+});
+
 test('el doble clic sobre una pieza separada la devuelve y el toque la selecciona', async ({ page }) => {
   await prepararTalamos(page);
   await page.getByTestId('reensamblar').click();
