@@ -26,12 +26,15 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
   la descarga del modelo empieza cuando termina el código.
 - Content: 235 de 236 fichas en borrador con fuentes verificadas (#7, PR #22). Los nombres, las
   fichas, las posiciones de marcadores y los trazos del vago los validan docentes, no el editor.
-- Revisión docente lista: formularios de revisión y de registro conectados (#5), padrón de
-  revisores con 10 códigos creados (#15, privados en `pipeline/revisores.local.json`), guía en
-  docs/guia-docentes.md, dudas en docs/fichas-dudas.md, 18 propuestas de nombre visibles (#8).
+- Revisión docente lista: formularios de revisión y de registro conectados (#5); 10 códigos de
+  revisor (D01 a D10) con padrón y enlaces en la carpeta privada "Maysa Brain (privado)" del Drive
+  de Maysa Digital, nunca en el repositorio (#15); guía en docs/guia-docentes.md, guía del editor
+  en docs/revision-docente.md, dudas en docs/fichas-dudas.md, 18 propuestas de nombre visibles (#8).
+  Todo lo anatómico (nombres, fichas, posiciones, trazos) lo validan docentes, no el editor.
 - Pending (editor):
   - medir en iPad, celular y PC con `?medir=1` y pegar los resultados en #6;
-  - enviar a cada docente su enlace, el formulario de registro y docs/guia-docentes.md;
+  - enviar a cada docente su enlace, el formulario de registro y docs/guia-docentes.md, y anotar su
+    nombre junto al alias en el documento de enlaces del Drive;
   - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
     del formulario de revisión).
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
@@ -50,8 +53,12 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 - 2026-10-12: el producto se llama Maysa Brain; se quita "Armar pieza por pieza" (lo importante son
   las fichas); explosión radial hasta 70 % y luego inventario; modo estudio para no parecerse a
   otros atlas. Ver SPEC.md F6, F7, F9 y §15.
-- 2026-10-12: un código privado por docente (10 creados); los códigos nunca van al repositorio.
+- 2026-10-12: un código privado por docente (10 creados); los códigos nunca van al repositorio: el
+  padrón vive en el Drive privado de Maysa Digital (#15), see docs/adr/0008-revision-docente.md
 - 2026-10-12: medir antes de optimizar la carga; `?medir=1` da los datos.
+- 2026-10-12: el contenido anatómico (nombres, fichas, posiciones, trazos) lo validan docentes, no
+  el editor; las propuestas sin término en TA2 se muestran en la ficha y siguen PENDIENTE hasta esa
+  revisión (#8)
 
 ## Next steps
 1. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que

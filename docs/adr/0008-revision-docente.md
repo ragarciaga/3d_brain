@@ -29,8 +29,9 @@ El repositorio es público y los issues de importación mostraban el código de 
 bastaba para enviar revisiones a su nombre. Ahora:
 
 - Cada docente tiene un código aleatorio (8 caracteres sin letras ni dígitos confundibles) y un
-  alias público (D01, D02...). El padrón código -> alias vive solo en el portátil del editor
-  (`pipeline/revisores.local.json`, ignorado por git); `scripts/crear-revisores.ts` lo crea.
+  alias público (D01, D02...). El padrón código -> alias vive fuera del repositorio: en una carpeta
+  privada del Drive del editor y, al importar, en `pipeline/revisores.local.json` (ignorado por
+  git); `scripts/crear-revisores.ts` lo crea.
 - `scripts/importar-revisiones.ts` exige el padrón, cambia cada código por su alias y descarta los
   envíos con códigos que no están en él. Los issues solo muestran alias.
 - Antes de marcar una ficha como verificada con el nombre de un docente, el editor se lo confirma
@@ -38,4 +39,11 @@ bastaba para enviar revisiones a su nombre. Ahora:
 
 Se descartó el formulario con inicio de sesión de Google: obliga a tener cuenta y guarda correos
 (más datos personales). Costo de la solución elegida: cero.
+
+## Puesta en marcha 2026-10-12
+
+Los dos formularios ("Registro de revisores del atlas Maysa Brain" y "Revisión del atlas Maysa
+Brain") están en el Drive de Maysa Digital, sin recopilar correos; el de revisión está conectado en
+`src/config/revision.ts`. Hay 10 códigos (D01 a D10) cuyo padrón y enlaces están en la carpeta
+privada "Maysa Brain (privado)" de ese Drive. Guía para los docentes: `docs/guia-docentes.md`.
 
