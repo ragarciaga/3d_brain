@@ -8,6 +8,9 @@ import { camaraActual } from './components/Visor';
 import i18n, { idiomaDelNavegador } from './i18n';
 import { useAtlas } from './store/useAtlas';
 import './estilos.css';
+import { MARCA_INICIO_APP } from './lib/medicion';
+
+performance.mark(MARCA_INICIO_APP);
 
 /** Una sola ruta por idioma para que el visor no se vuelva a montar al cambiar de estructura. */
 function Ruta() {

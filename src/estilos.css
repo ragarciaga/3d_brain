@@ -186,6 +186,59 @@ a {
   place-items: center;
 }
 
+/* Panel de medición de carga (issue 6): solo con ?medir=1. */
+.panel-medicion {
+  position: fixed;
+  z-index: 85;
+  left: 5.2rem;
+  bottom: 2.4rem;
+  width: min(360px, calc(100vw - 1.2rem));
+  max-height: 70vh;
+  overflow: auto;
+  padding: 0.8rem 0.9rem;
+  background: var(--panel);
+  border: 1px solid var(--acento);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+  font-size: 0.8rem;
+}
+
+.panel-medicion h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--menta);
+}
+
+.panel-medicion dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.7rem;
+  margin: 0;
+}
+
+.panel-medicion dt {
+  color: var(--texto-suave);
+}
+
+.panel-medicion dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.medicion-cuello {
+  margin: 0.6rem 0 0;
+  font-weight: 600;
+}
+
+.medicion-botones {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
 /* Paleta de búsqueda (F3): flota sobre todo, arriba al centro. */
 .paleta-fondo {
   position: fixed;
@@ -1250,6 +1303,11 @@ body:has(.pagina-texto) {
 
   .boton-buscar {
     display: grid;
+  }
+
+  .panel-medicion {
+    left: 0.6rem;
+    bottom: 0.6rem;
   }
 
   /* En celular el riel lo reemplaza el botón "Estructuras" del encabezado. */

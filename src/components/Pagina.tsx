@@ -16,6 +16,7 @@ import Buscador from './Buscador';
 import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
 import { IconoMarca, PalabraMarca } from './Marca';
+import PanelMedicion from './PanelMedicion';
 import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
@@ -362,6 +363,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           </div>
         </div>
       )}
+      <PanelMedicion />
       <AvisoPrimeraVisita />
     </div>
   );
