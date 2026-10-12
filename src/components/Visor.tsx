@@ -83,7 +83,13 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const { t } = useTranslation();
   const nodo = nodos[id]!;
   const referencia = nodo.clase === 'referencia';
-  const visible = useAtlas((s) => !s.ocultas.has(id) && (!s.aislar || s.aislar.piezas.has(id) || s.aislar.modo === 'contexto'));
+  // En el inventario (F6) los órganos de referencia no se mueven y quedarían encima de las repisas: se ocultan.
+  const visible = useAtlas(
+    (s) =>
+      !s.ocultas.has(id) &&
+      (!s.aislar || s.aislar.piezas.has(id) || s.aislar.modo === 'contexto') &&
+      !(referencia && s.inventario),
+  );
   const fantasma = useAtlas((s) => !!s.aislar && s.aislar.modo === 'contexto' && !s.aislar.piezas.has(id));
   const seleccionada = useAtlas((s) => piezasSeleccionadas(s.seleccion).includes(id));
   const mallaSel = useAtlas((s) => s.seleccion.malla);
@@ -290,7 +296,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
                 transparent={referencia || fantasma}
                 opacity={referencia ? 0.18 : fantasma ? 0.08 : 1}
                 depthWrite={!(referencia || fantasma)}
-                emissive={seleccionada ? '#3a6df0' : encima ? '#444444' : '#000000'}
+                emissive={seleccionada ? '#3c83f6' : encima ? '#444444' : '#000000'}
                 emissiveIntensity={seleccionada ? 0.55 : 0.35}
               />
             )}
@@ -346,6 +352,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
 
   useEffect(() => {
     const centros: Record<string, Vec3> = {};
+    const cajas: Record<string, [Vec3, Vec3]> = {};
     cajasPiezas.clear();
     for (const [pieza, mallas] of porPieza) {
       const caja = new THREE.Box3();
@@ -357,9 +364,10 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       cajasPiezas.set(pieza, caja);
       const c = caja.getCenter(new THREE.Vector3());
       centros[pieza] = [c.x, c.y, c.z];
+      cajas[pieza] = [caja.min.toArray(), caja.max.toArray()];
     }
     useMetricas.getState().setPiezas(porPieza.size);
-    setCentros(centros);
+    setCentros(centros, cajas);
   }, [porPieza, setCentros]);
 
   return (
@@ -529,6 +537,8 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     if (pedido.camara && pedido.camara.length === 6) {
       const [a, b, c, d, e, f] = pedido.camara as [number, number, number, number, number, number];
       void controles.current?.setLookAt(a, b, c, d, e, f, !reducirMovimiento());
+    } else if (pedido.encuadrar?.length && pedido.vista) {
+      mirar(DIRECCIONES[pedido.vista], cajaDe(pedido.encuadrar), true);
     } else if (pedido.encuadrar?.length) {
       const caja = cajaDe(pedido.encuadrar);
       const pos = controles.current?.getPosition(new THREE.Vector3());
@@ -595,7 +605,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
         <Canvas
           camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
           dpr={[1, 2]}
-          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           onPointerMissed={(e) => {
             const i = inicioPuntero.current;
             if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
@@ -605,7 +615,6 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
             window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
           }}
         >
-          <color attach="background" args={['#e8ecf0']} />
           <hemisphereLight args={['#ffffff', '#8a94a6', 1.1]} />
           <directionalLight position={[1, 3, 2]} intensity={1.6} />
           <directionalLight position={[-2, 1, -1]} intensity={0.6} />

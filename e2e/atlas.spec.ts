@@ -103,12 +103,15 @@ const piezaSeleccionada = (page: Page) => page.evaluate(() => (window as unknown
 const clavesSeparadas = (page: Page) =>
   page.evaluate(() => Object.keys((window as unknown as VentanaAtlas).__atlas.getState().separadas).sort());
 
-/** Tálamo aislado, explosión al 100 % y vista anterior con la cámara quieta: sus dos mitades quedan separadas y a la vista. */
+/**
+ * Tálamo aislado, explosión al 70 % (el máximo de la radial; después empieza el inventario, que pone
+ * las dos mitades juntas en el centro) y vista anterior con la cámara quieta: quedan separadas y a la vista.
+ */
 async function prepararTalamos(page: Page) {
   await abrir(page, '/es/talamo');
   await modeloCargado(page);
   await page.getByTestId('ficha').getByRole('button', { name: 'Aislar', exact: true }).click();
-  await page.getByTestId('explosion').fill('100');
+  await page.getByTestId('explosion').fill('70');
   await page.waitForTimeout(2500);
   await page.locator('[data-vista="anterior"]').click();
   await camaraQuieta(page);
@@ -226,12 +229,12 @@ test('fragmentar y reensamblar: todas las piezas vuelven exactamente a su sitio'
   await expect.poll(desplazadas).toBe(0);
 });
 
-test('a 100 % la cámara se aleja para mostrar el conjunto desarmado y al reensamblar vuelve', async ({ page }) => {
+test('a 70 % la cámara se aleja sin girar, a 100 % mira el inventario de frente y al reensamblar vuelve', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
   await expect.poll(async () => (await vistaDeCamara(page)).distancia).toBeGreaterThan(0);
   const inicial = await vistaDeCamara(page);
-  await page.getByTestId('explosion').fill('100');
+  await page.getByTestId('explosion').fill('70');
   await expect
     .poll(
       async () => {
@@ -251,6 +254,17 @@ test('a 100 % la cámara se aleja para mostrar el conjunto desarmado y al reensa
       }),
     )
     .toBeGreaterThanOrEqual(0.05);
+  // Inventario: la cámara pasa a la vista anterior (+Z) y se aleja para que entren todas las piezas.
+  await page.getByTestId('explosion').fill('100');
+  await expect
+    .poll(
+      async () => {
+        const v = await vistaDeCamara(page);
+        return v.direccion[2]! > 0.99 && v.distancia > 2 * inicial.distancia;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
   await page.getByTestId('reensamblar').click();
   await expect
     .poll(async () => Math.abs((await vistaDeCamara(page)).distancia - inicial.distancia) / inicial.distancia, { timeout: 20_000 })

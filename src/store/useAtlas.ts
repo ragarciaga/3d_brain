@@ -5,7 +5,6 @@ import { nodos, piezasBajo, piezasDeEntrada, todasLasPiezas } from '../data/atla
 import {
   CERO,
   desplazamientoSeparar,
-  desplazamientosExplosion,
   promedio,
   sumar,
   type Lado,
@@ -13,6 +12,7 @@ import {
   type Vec3,
 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
+import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
@@ -41,6 +41,11 @@ function ancestroBloque(pieza: string): string {
     p = nodos[p]?.padre ?? null;
   }
   return ultimo;
+}
+
+/** Grupo que comparte fila en el inventario (F6): el lóbulo, sin importar el lado. */
+export function grupoInventario(pieza: string): string {
+  return ancestroBloque(pieza);
 }
 
 /** Lado anatómico de una pieza; sin lado (o vacío) cuenta como medio. */
@@ -87,11 +92,13 @@ interface Estado {
   explosion: number; // 0 a 1
   nivel: Nivel;
   base: Record<string, Vec3>; // desplazamiento por explosión
+  inventario: boolean; // el deslizador está en el tramo del inventario (más del 70 % y bloques suficientes)
   separadas: Record<string, Vec3>;
   devueltas: Set<string>;
   armando: { modo: ModoArmado; total: string[] } | null;
   grupoActivo: string | null;
   centros: Record<string, Vec3>;
+  cajas: Record<string, Caja>; // caja original de cada pieza, para el inventario
   cargado: boolean;
   camara: PedidoCamara | null;
   // Modo revisión (F24)
@@ -103,7 +110,7 @@ interface Estado {
   enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
 
   setAmbos(v: boolean): void;
-  setCentros(c: Record<string, Vec3>): void;
+  setCentros(c: Record<string, Vec3>, cajas?: Record<string, Caja>): void;
   seleccionar(s: Partial<Seleccion> | null): void;
   deseleccionar(): void;
   alternarVisibles(piezas: string[], visibles: boolean): void;
@@ -147,9 +154,14 @@ export function piezasDeEncuadre(s: Pick<Estado, 'ocultas' | 'aislar'>): string[
   return foco.length ? foco : visibles;
 }
 
-function recalcularBase(s: Estado): Record<string, Vec3> {
+/** Desplazamientos de explosión y si el deslizador está en el tramo del inventario (F6). */
+function recalcularBase(s: Estado): Pick<Estado, 'base' | 'inventario'> {
   const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
-  return desplazamientosExplosion(s.centros, visibles, (p) => bloqueDe(p, s.nivel), s.explosion, ladoDe);
+  const bloque = (p: string) => bloqueDe(p, s.nivel);
+  return {
+    base: desplazamientosDeslizador(s.centros, s.cajas, visibles, bloque, grupoInventario, s.explosion, ladoDe),
+    inventario: s.explosion > INICIO_INVENTARIO && usaInventario(s.centros, visibles, bloque),
+  };
 }
 
 /** Desplazamiento objetivo de una pieza (la animación se acerca a este valor). */
@@ -179,11 +191,13 @@ export const useAtlas = create<Estado>((set, get) => ({
   explosion: 0,
   nivel: 'piezas',
   base: {},
+  inventario: false,
   separadas: {},
   devueltas: new Set(),
   armando: null,
   grupoActivo: null,
   centros: {},
+  cajas: {},
   cargado: false,
   camara: null,
   revisor: null,
@@ -194,9 +208,9 @@ export const useAtlas = create<Estado>((set, get) => ({
   enfocarFicha: null,
 
   setAmbos: (v) => set({ ambos: v }),
-  setCentros: (c) => {
-    set({ centros: c, cargado: true });
-    set({ base: recalcularBase(get()) });
+  setCentros: (c, cajas = {}) => {
+    set({ centros: c, cajas, cargado: true });
+    set(recalcularBase(get()));
   },
   seleccionar: (s) =>
     set({ seleccion: s ? { entrada: null, pieza: null, malla: null, ...s } : { entrada: null, pieza: null, malla: null } }),
@@ -212,11 +226,11 @@ export const useAtlas = create<Estado>((set, get) => ({
       else ocultas.add(p);
     }
     set({ ocultas, grupoActivo: null });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   mostrarTodo: () => {
     set({ ocultas: new Set(), aislar: null, grupoActivo: null });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   activarGrupo: (id, piezas) => {
     if (!id || !piezas) {
@@ -225,29 +239,29 @@ export const useAtlas = create<Estado>((set, get) => ({
       const dentro = new Set(piezas);
       set({ ocultas: new Set(todasLasPiezas.filter((p) => !dentro.has(p))), grupoActivo: id, aislar: null });
     }
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   aislarPiezas: (piezas, modo, sumarAlActual = false) => {
     const actual = get().aislar;
     const conjunto = new Set(sumarAlActual && actual ? actual.piezas : []);
     for (const p of piezas) conjunto.add(p);
     set({ aislar: { modo, piezas: conjunto } });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   salirAislar: () => {
     set({ aislar: null });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   setExplosion: (f) => {
     set({ explosion: Math.min(1, Math.max(0, f)), devueltas: new Set() });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
     // Mover el deslizador durante el armado cambia qué hay que armar; el modo se conserva.
     const armando = get().armando;
     if (armando) set({ armando: { modo: armando.modo, total: totalArmado(get()) } });
   },
   setNivel: (n) => {
     set({ nivel: n });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   separar: (piezas) => {
     const s = get();
@@ -282,7 +296,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   reensamblarTodo: () => {
     set({ explosion: 0, separadas: {}, devueltas: new Set(), armando: null });
-    set({ base: recalcularBase(get()) });
+    set(recalcularBase(get()));
   },
   // Entra siempre al modo, aunque no haya nada desarmado (total vacío): la barra explica cómo desarmar.
   armarPiezaPorPieza: (modo = 'tocar') => set({ armando: { modo, total: totalArmado(get()) } }),
