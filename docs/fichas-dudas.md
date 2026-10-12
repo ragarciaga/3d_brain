@@ -18,9 +18,10 @@ Eso no reemplaza la revisión docente (F24): esta lista dice dónde mirar primer
 - **Lóbulo grácil (`gracile-lobule`):** ninguna fuente abierta lo ubica ni da su equivalente de
   Larsell; Jung 2012 y Diano 2016 no coinciden sobre el lóbulo VIIB.
 
-## Jerarquía del modelo (tier C, no se cambió)
-- **Valva posterior de la mitral** (`posterior-leaflet-of-left-atrioventricular-valve`): cuelga de
-  `g-right-atrioventricular-valve` (tricúspide) en `src/data/arbol.json` y `pipeline/mapeo.csv`.
+## Jerarquía del modelo
+- **Valva posterior de la mitral** (`posterior-leaflet-of-left-atrioventricular-valve`): Z-Anatomy
+  la cuelga de la tricúspide. Desde el 2026-10-12 va en el complejo valvular del corazón
+  (`REUBICAR` en `pipeline/comun.py`), porque el modelo no trae grupo de la mitral.
 - **Giro subcentral** (`insula-subcentral-gyrus-and-ant-and-post-sulci`): Z-Anatomy lo pone bajo
   la ínsula; Destrieux 2010 lo describe en la cara lateral (opérculo central), rodeando el extremo
   inferior del surco central. La ficha sigue a Destrieux.

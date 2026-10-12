@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # para correr también con blender -b --python
 
-from comun import (EXTRAS_ESTUDIO, RAICES_REFERENCIA, RAIZ, RAIZ_ENCEFALO, VAGO, abrir_blend, ancestros,
+from comun import (EXTRAS_ESTUDIO, RAICES_REFERENCIA, RAIZ, RAIZ_ENCEFALO, REUBICAR, VAGO, abrir_blend, ancestros,
                    es_geometria, leer_ta2, nombre_base, nombre_grupo, slug)
 
 PENDIENTE = "PENDIENTE"
@@ -141,6 +141,7 @@ def main():
                 gid = id_grupo(g)
                 agregar_grupo(gid, nombre_grupo(g.name), padre)
                 padre = gid
+        padre = REUBICAR.get(base, padre)
         n = nombres(ta2, base)
         nodos[pieza] = {"id": pieza, "tipo": "pieza", **n, "padre": padre, "hijos": [],
                         "lado": lado, "malla": o.name, "estructura": estructura,
