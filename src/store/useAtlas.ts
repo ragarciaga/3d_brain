@@ -111,7 +111,7 @@ interface Estado {
   revisor: string | null;
   respuestas: Record<string, Respuesta>;
   piezaPropuesta: Record<string, string>; // estructura -> id de la pieza tocada al proponer su posición; solo en esta sesión, no se envía
-  dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra primero
+  dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra (después de la confirmación de salida)
   cargaRespuestas: number; // sube cada vez que se cargan las respuestas guardadas; la ficha remonta sus controles
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
   shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)

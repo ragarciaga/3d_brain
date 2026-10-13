@@ -459,6 +459,41 @@ test('modo revisión: el docente marca campos y el contador sube', async ({ page
   await expect(page.getByRole('dialog', { name: 'Enviar revisión' })).toContainText('Hipocampo');
 });
 
+test('en escritorio la barra de revisión no cambia y salir pide confirmación, encima del diálogo abierto (#63)', async ({ page }) => {
+  await entrarRevision(page, 'ESCRITORIO01');
+  const barra = page.getByTestId('panel-revision');
+  await expect(barra).toContainText('ESCRITORIO01');
+  for (const nombre of [/Qué revisar/, 'Cómo revisar', 'Enviar revisión']) await expect(barra.getByRole('button', { name: nombre })).toBeVisible();
+  await expect(barra.getByRole('button', { name: 'Acciones', exact: true })).toHaveCount(0);
+
+  await barra.getByRole('button', { name: /Qué revisar/ }).click();
+  await expect(page.getByTestId('que-revisar')).toBeVisible();
+  const salir = page.locator('.encabezado').getByRole('button', { name: 'Salir del modo revisión' });
+  const dialogo = page.getByRole('alertdialog', { name: '¿Salir del modo revisión?' });
+  await salir.click();
+  await expect(dialogo).toBeVisible();
+  await expect(dialogo).toContainText('quedan guardadas en este navegador');
+
+  // Escape cierra primero la confirmación (la capa de arriba); el siguiente cierra el diálogo de abajo.
+  await page.keyboard.press('Escape');
+  await expect(dialogo).toHaveCount(0);
+  await expect(page.getByTestId('que-revisar')).toBeVisible();
+  await expect(salir).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('que-revisar')).toHaveCount(0);
+
+  await salir.click();
+  await dialogo.getByRole('button', { name: 'Seguir revisando' }).click();
+  await expect(dialogo).toHaveCount(0);
+  await expect(salir).toBeFocused();
+  await expect(barra).toBeVisible();
+
+  await salir.click();
+  await dialogo.getByRole('button', { name: 'Salir', exact: true }).click();
+  await expect(barra).toHaveCount(0);
+  await expect(salir).toHaveCount(0);
+});
+
 test('tras salir del modo fantasma las piezas se pueden volver a tocar', async ({ page }) => {
   await abrir(page, '/es/hipocampo');
   await modeloCargado(page);
@@ -717,6 +752,88 @@ test.describe('celular (390 x 844)', () => {
     await page.keyboard.press('Enter');
     await expect(panel).toHaveAttribute('inert', '');
     await expect(page).toHaveURL(/\/es\/hipocampo$/);
+  });
+
+  test('en celular la barra de revisión ocupa una línea, sus acciones van en un menú y no tapa la brújula ni la ficha (#63)', async ({ page }) => {
+    await entrarRevision(page, 'BARRA01');
+    const barra = page.getByTestId('panel-revision');
+    const toggle = barra.getByRole('button', { name: 'Acciones', exact: true });
+    await expect(toggle).toBeFocused(); // al cerrar la guía el foco vuelve a "Acciones"
+    expect((await barra.boundingBox())!.height).toBeLessThan(64);
+
+    // El encabezado cabe en una línea y el botón de salir ya no está en él.
+    const arriba = async (l: Locator) => (await l.boundingBox())!.y;
+    expect(Math.abs((await arriba(page.locator('.compartir-encabezado'))) - (await arriba(page.locator('.boton-menu'))))).toBeLessThan(8);
+    await expect(page.locator('.encabezado').getByRole('button', { name: 'Salir del modo revisión' })).toHaveCount(0);
+
+    // Las acciones no están en la barra hasta abrir "Acciones".
+    const nombres: Array<string | RegExp> = [/Qué revisar/, 'Cómo revisar', 'Enviar revisión', 'Salir del modo revisión'];
+    for (const nombre of nombres) await expect(barra.getByRole('button', { name: nombre })).toHaveCount(0);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const menu = page.getByTestId('acciones-revision');
+    for (const nombre of nombres) await expect(menu.getByRole('button', { name: nombre })).toBeVisible();
+
+    // Elegir una acción cierra el menú y abre su diálogo; Escape lo cierra y devuelve el foco a "Acciones".
+    await menu.getByRole('button', { name: 'Enviar revisión' }).click();
+    await expect(page.getByRole('dialog', { name: 'Enviar revisión' })).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(menu).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Enviar revisión' })).toHaveCount(0);
+    await expect(toggle).toBeFocused();
+
+    // Con la ficha abierta la barra sigue en una línea y queda por encima de la brújula y de la ficha.
+    await (await campoBusqueda(page)).fill('hipocampo');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/es\/hipocampo$/);
+    const ficha = page.getByTestId('ficha');
+    await expect(ficha).toBeVisible();
+    const caja = (await barra.boundingBox())!;
+    expect(caja.height).toBeLessThan(64);
+    const brujula = (await page.getByRole('toolbar', { name: 'Vistas anatómicas' }).boundingBox())!;
+    expect(caja.y + caja.height).toBeLessThanOrEqual(brujula.y);
+    expect(caja.y + caja.height).toBeLessThanOrEqual((await ficha.boundingBox())!.y);
+  });
+
+  test('en celular salir del modo revisión pide confirmación y las respuestas quedan guardadas (#63)', async ({ page }) => {
+    await entrarRevision(page, 'SALIR01');
+    await (await campoBusqueda(page)).fill('hipocampo');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/es\/hipocampo$/);
+    await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Correcto' }).click();
+    await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+
+    const barra = page.getByTestId('panel-revision');
+    const toggle = barra.getByRole('button', { name: 'Acciones', exact: true });
+    const dialogo = page.getByRole('alertdialog', { name: '¿Salir del modo revisión?' });
+    const pedirSalida = async () => {
+      await toggle.click();
+      await page.getByTestId('acciones-revision').getByRole('button', { name: 'Salir del modo revisión' }).click();
+      await expect(dialogo).toBeVisible();
+      await expect(dialogo).toContainText('quedan guardadas en este navegador');
+    };
+
+    await pedirSalida();
+    await dialogo.getByRole('button', { name: 'Seguir revisando' }).click();
+    await expect(dialogo).toHaveCount(0);
+    await expect(barra).toBeVisible();
+    await expect(toggle).toBeFocused();
+
+    await pedirSalida();
+    await page.keyboard.press('Escape');
+    await expect(dialogo).toHaveCount(0);
+    await expect(barra).toBeVisible();
+    await expect(toggle).toBeFocused();
+
+    await pedirSalida();
+    await dialogo.getByRole('button', { name: 'Salir', exact: true }).click();
+    await expect(barra).toHaveCount(0);
+
+    // Al abrir otra vez el enlace con el mismo código, las respuestas siguen ahí.
+    await abrir(page, '/es/revision?r=SALIR01');
+    await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   });
 });
 
