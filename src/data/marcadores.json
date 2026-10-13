@@ -211,35 +211,37 @@
  {
   "id": "m-caerulean-nucleus",
   "padre": "g-brainstem",
-  "ancla": null,
+  "ancla": "pons",
   "posicion": null,
-  "estado": "sin_ubicar",
+  "estado": "aproximada",
   "fuente_ubicacion": {
-   "es": "",
-   "en": ""
+   "es": "Punto provisional en el centro de el puente, que es donde la ubica su ficha (ver las fuentes de la ficha). La posición exacta la propone un docente con \"Proponer posición\".",
+   "en": "Provisional point at the centre of the pons, which is where its entry places it (see the entry's sources). A teacher proposes the exact position with \"Propose position\"."
   }
  },
  {
   "id": "m-raphe-nuclei-of-medulla-oblongata",
   "padre": "g-brainstem",
-  "ancla": null,
+  "ancla": "medulla-oblongata",
   "posicion": null,
-  "estado": "sin_ubicar",
+  "estado": "aproximada",
   "fuente_ubicacion": {
-   "es": "",
-   "en": ""
-  }
+   "es": "Punto provisional en el centro de el bulbo raquídeo (en la línea media), que es donde la ubica su ficha (ver las fuentes de la ficha). La posición exacta la propone un docente con \"Proponer posición\".",
+   "en": "Provisional point at the centre of the medulla oblongata (midline), which is where its entry places it (see the entry's sources). A teacher proposes the exact position with \"Propose position\"."
+  },
+  "unir": true
  },
  {
   "id": "m-area-postrema",
   "padre": "g-brainstem",
-  "ancla": null,
+  "ancla": "medulla-oblongata",
   "posicion": null,
-  "estado": "sin_ubicar",
+  "estado": "aproximada",
   "fuente_ubicacion": {
-   "es": "",
-   "en": ""
-  }
+   "es": "Punto provisional en el centro de el bulbo raquídeo (en la línea media), que es donde la ubica su ficha (ver las fuentes de la ficha). La posición exacta la propone un docente con \"Proponer posición\".",
+   "en": "Provisional point at the centre of the medulla oblongata (midline), which is where its entry places it (see the entry's sources). A teacher proposes the exact position with \"Propose position\"."
+  },
+  "unir": true
  },
  {
   "id": "m-nucleus-accumbens",
@@ -266,23 +268,23 @@
  {
   "id": "m-anterior-nuclei-of-thalamus",
   "padre": "g-diencephalon",
-  "ancla": null,
+  "ancla": "thalamus",
   "posicion": null,
-  "estado": "sin_ubicar",
+  "estado": "aproximada",
   "fuente_ubicacion": {
-   "es": "",
-   "en": ""
+   "es": "Punto provisional en el centro de cada tálamo, que es donde la ubica su ficha (ver las fuentes de la ficha). La posición exacta la propone un docente con \"Proponer posición\".",
+   "en": "Provisional point at the centre of the each thalamus, which is where its entry places it (see the entry's sources). A teacher proposes the exact position with \"Propose position\"."
   }
  },
  {
   "id": "m-wernicke-area",
   "padre": "g-temporal-lobe",
-  "ancla": null,
+  "ancla": "superior-temporal-gyrus-lateral-part-l",
   "posicion": null,
-  "estado": "sin_ubicar",
+  "estado": "aproximada",
   "fuente_ubicacion": {
-   "es": "",
-   "en": ""
+   "es": "Punto provisional en el centro de la parte lateral del giro temporal superior izquierdo, que es donde la ubica su ficha (ver las fuentes de la ficha). La posición exacta la propone un docente con \"Proponer posición\".",
+   "en": "Provisional point at the centre of the left superior temporal gyrus, lateral part, which is where its entry places it (see the entry's sources). A teacher proposes the exact position with \"Propose position\"."
   }
  }
 ]

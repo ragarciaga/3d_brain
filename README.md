@@ -57,8 +57,8 @@ npm run test:e2e
 - docs/research/fase-0/REPORT.md: qué trae y qué no trae el modelo.
 - docs/operacion.md: guía del editor (publicar, revisar, regenerar, trabajar con el harness).
 - docs/revision-docente.md: revisión docente, guía del editor (formularios, códigos, importación).
-- docs/guia-docentes.md: guía para los docentes revisores.
-- docs/fichas-dudas.md: dudas abiertas en las fichas, para los revisores.
+- docs/guia-docentes.md: mensaje para cada docente revisor (la guía está dentro de la web).
+- docs/fichas-dudas.md: registro de las dudas abiertas; los docentes las ven en cada ficha.
 - docs/progress.md: estado actual y siguiente paso.
 
 ## Créditos y licencias

@@ -3,8 +3,9 @@ midió pipeline/auditar-vago.py, y calcula los puntos de cada ruta. No hay coord
 todo sale de los anclajes. No usa Blender, así que se prueba sin él (pipeline/tests/).
 
 Salida:
-- pipeline/rutas-vago-puntos.json, solo si la revisión docente del YAML dice "aprobada".
-- pipeline/salida/rutas-vago-borrador.json con --borrador, para ver la ruta antes de aprobarla.
+- public/modelos/rutas-vago.json: lo que dibuja la app. Cada ruta lleva su estado de revisión
+  ("en_revision" o "aprobada"), que la ficha muestra; los docentes la juzgan con F24.
+- pipeline/salida/rutas-vago-borrador.json con --borrador, para mirarla sin publicarla.
 
 La prueba de las cuatro asimetrías (tests/asimetrias.test.ts) corre en CI sobre esos puntos y falla
 si alguna no se cumple o si falta un anclaje.
@@ -17,6 +18,8 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent
+PUBLICADO = RAIZ.parent / "public" / "modelos" / "rutas-vago.json"
+ESTADOS = ("en_revision", "aprobada")
 PASO_MUESTREO = 0.002  # un punto cada 2 mm a lo largo de la ruta
 HOLGURA = 1.5  # el nervio pasa a 1,5 de su radio de la superficie del anclaje
 FINAL_GROSOR = 0.6  # el grosor baja del tronco hacia lo distal hasta el 60 %
@@ -227,10 +230,14 @@ def generar(datos_anclajes, rutas_yaml):
     salida = {"unidad": "metro", "ejes": "glTF (Y arriba, +X izquierda del cuerpo)", "anterior_z": modelo.anterior,
               "fuentes": rutas_yaml["fuentes"], "rutas": {}}
     for id_ruta, ruta in rutas_yaml["rutas"].items():
+        if ruta["revision"]["estado"] not in ESTADOS:
+            raise ValueError(f"{id_ruta}: estado de revisión desconocido {ruta['revision']['estado']!r}")
         control = resolver(modelo, ruta)
         salida["rutas"][id_ruta] = {
             "nombre": ruta["nombre"],
             "lado": ruta["lado"],
+            "entrada": ruta["entrada"],
+            "revision": ruta["revision"],
             "radio": [modelo.radio_nervio, round(modelo.radio_nervio * FINAL_GROSOR, 6)],
             "control": [[round(v, 6) for v in p] for p in control],
             "puntos": catmull_rom(control),
@@ -244,9 +251,6 @@ def main():
     borrador = "--borrador" in sys.argv
     with open(RAIZ / "rutas-vago.yaml", encoding="utf-8") as f:
         rutas = yaml.safe_load(f)
-    estado = rutas["revision_docente"]["estado"]
-    if estado != "aprobada" and not borrador:
-        raise SystemExit("rutas-vago.yaml no tiene revisión docente aprobada. Para verla antes: --borrador")
     ruta_anclajes = RAIZ / "anclajes-vago.json"
     if not ruta_anclajes.exists():
         raise SystemExit("Falta pipeline/anclajes-vago.json: corre primero pipeline/auditar-vago.py")
@@ -256,7 +260,7 @@ def main():
         salida = generar(anclajes, rutas)
     except FaltaAnclaje as e:
         raise SystemExit(str(e)) from e
-    destino = (RAIZ / "salida" / "rutas-vago-borrador.json") if borrador else (RAIZ / "rutas-vago-puntos.json")
+    destino = (RAIZ / "salida" / "rutas-vago-borrador.json") if borrador else PUBLICADO
     destino.parent.mkdir(exist_ok=True)
     with open(destino, "w", encoding="utf-8") as f:
         json.dump(salida, f, ensure_ascii=False, indent=0)

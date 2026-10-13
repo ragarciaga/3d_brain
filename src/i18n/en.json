@@ -91,7 +91,10 @@
     "descripcion": "Description",
     "referencias": "Resources and reference articles",
     "enPreparacionTexto": "The description of this structure is being written with sources and will be reviewed by teachers. Meanwhile you can find it on the model and search articles below.",
-    "verFichaDe": "See the card for {{nombre}}"
+    "verFichaDe": "See the card for {{nombre}}",
+    "tambien": "Also: {{nombres}}",
+    "sinonimos_es": "Other names in Spanish (also searchable)",
+    "sinonimos_en": "Other names in English (also searchable)"
   },
   "recurso": {
     "video": "video",
@@ -188,12 +191,37 @@
     "enviadaEl": "(sent on {{fecha}})",
     "salir": "Leave review mode",
     "comentario": "Comment (optional)",
-    "pendientes": "Cards to review",
     "desactualizadas_one": "{{count}} answer is about an older version of the content",
     "desactualizadas_other": "{{count}} answers are about an older version of the content",
     "parte": "Part {{n}} of {{total}}",
     "largaExplica": "The review is long: it is sent in several parts. Open each part and confirm it in the form.",
-    "sinPendientes": "No cards left to review."
+    "sinPendientes": "No cards left to review.",
+    "trazadoTitulo": "Traced course: {{nombre}}",
+    "trazadoAyuda": "This nerve is not in the scanned model: it was traced over model structures (arteries, bronchi, oesophagus) following the sources of this entry. Look at it in 3D, dotted, and say whether the course is correct or what you would change.",
+    "trazadoEstado_en_revision": "Pending teacher review: the course may change.",
+    "trazadoEstado_aprobada": "Approved by teacher review.",
+    "dudasTitulo": "Open question for you",
+    "queRevisar_one": "What to review ({{count}})",
+    "queRevisar_other": "What to review ({{count}})",
+    "queRevisarTitulo": "What to review",
+    "comoRevisar": "How to review",
+    "queAyuda": "Start at the top: what most needs your judgement comes first. When you answer something in an entry, it leaves the list.",
+    "seccion_dudas": "Open questions for you",
+    "seccion_vago": "Vagus nerve: strands, traced courses and branches",
+    "seccion_grupos": "Limbic system, basal ganglia, diencephalon and brainstem",
+    "seccion_resto": "Everything else",
+    "guia": {
+      "intro": "Thank you for reviewing Maysa Brain. Everything you see is as students would see it; your part is to say what is right and what you would change. Nothing is published as verified without a teacher's approval.",
+      "responder": "In each entry, under each field, there are three buttons: Correct, Correct it (write the change, with its source if you have one) and Not my area. You can leave a comment. To remove an answer, press the same button again. Everything is saved only in this browser.",
+      "dudas": "Some entries carry an \"Open question for you\": a specific question left by the writing. Answering it helps the most.",
+      "nombres": "If a name has no official term in Spanish or Latin, the entry shows the proposal and its source: confirm or correct it.",
+      "marcadores": "Markers are structures without a 3D mesh. If the position is approximate or missing, use \"Propose position\" and tap the point on the model.",
+      "trazos": "The vagus branches come as unnamed strands. In this mode, tapping a strand asks you which branch it is.",
+      "recorridos": "The recurrent laryngeal nerves and the left vagus below the thorax are not in the scanned model: they were traced and appear dotted. In their entry, \"Traced course\" asks for your judgement.",
+      "enviar": "Whenever you want, press \"Send review\": a prefilled form opens for each entry; just press Submit at the end. You can send as many times as you like.",
+      "privacidad": "Before your first review, register once: the name you want shown, your role and your consent (Colombian Law 1581 of 2012). Your name only appears on the entries you validate.",
+      "registrarme": "Register (once)"
+    }
   },
   "comun": {
     "cerrar": "Close"

@@ -35,7 +35,8 @@ Si el workflow falla en "configure-pages" con "Not Found", Pages no está activa
 Todo el flujo (formularios, códigos, enlaces, importación y verificación de fichas) está en
 `docs/revision-docente.md`. Lo privado (padrón de códigos y enlaces de cada docente) está en la
 carpeta "Maysa Brain (privado)" del Drive de Maysa Digital, nunca en el repositorio. A los docentes
-se les envía `docs/guia-docentes.md`.
+se les envía el mensaje de `docs/guia-docentes.md`; la guía, las dudas y la lista de qué revisar
+están dentro de la web, en el modo revisión.
 
 ## Regenerar el modelo
 
