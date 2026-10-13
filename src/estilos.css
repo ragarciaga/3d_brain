@@ -93,8 +93,11 @@ button {
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-button:hover {
-  border-color: var(--acento);
+/* Solo con mouse: en pantallas táctiles el hover queda pegado tras tocar y el botón parece encendido. */
+@media (hover: hover) {
+  button:hover {
+    border-color: var(--acento);
+  }
 }
 
 input[type='checkbox'],
@@ -328,27 +331,45 @@ a {
   color: var(--texto-suave);
 }
 
-.interruptor {
+/* Selector de idioma: dos segmentos; el activo va relleno con el acento, el otro es un enlace. */
+.selector-idioma {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  white-space: nowrap;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--elevado);
 }
 
-.selector-idioma {
-  display: flex;
-  gap: 0.4rem;
+.selector-idioma > * {
+  display: inline-flex;
   align-items: center;
-  font-weight: 600;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.selector-idioma .idioma-actual {
+  background: var(--acento);
+  color: var(--acento-texto);
 }
 
 .selector-idioma a {
   color: var(--texto-suave);
-  text-decoration: none;
 }
 
-.selector-idioma a:hover {
-  color: var(--acento);
+@media (hover: hover) {
+  .selector-idioma a:hover {
+    color: var(--texto);
+    background: var(--acento-suave);
+  }
 }
 
 .boton-tema {
@@ -869,7 +890,6 @@ a {
   margin-top: 0.15rem;
 }
 
-.ficha-otro,
 .ficha-version {
   font-size: 0.82em;
   color: var(--texto-suave);
@@ -1298,11 +1318,26 @@ body:has(.pagina-texto) {
   }
 
   .compartir-corto {
-    display: inline;
+    display: grid;
+    place-items: center;
+  }
+
+  .compartir-encabezado {
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
   }
 
   .boton-buscar {
     display: grid;
+  }
+
+  .selector-idioma > * {
+    min-width: 2.1rem;
+    padding: 0 0.4rem;
   }
 
   .panel-medicion {

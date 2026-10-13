@@ -24,6 +24,18 @@ export function IconoGrupos() {
   );
 }
 
+/** Compartir: tres nodos unidos. */
+export function IconoCompartir() {
+  return (
+    <svg {...base}>
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" />
+    </svg>
+  );
+}
+
 /** Lupa. */
 export function IconoBuscar() {
   return (

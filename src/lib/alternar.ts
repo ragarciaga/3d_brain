@@ -35,6 +35,15 @@ export function estadoSeparar(separadas: Record<string, Vec3>, devueltas: Set<st
   return n === unicas.length ? true : 'mixed';
 }
 
+/** Si las piezas están ocultas. true: todas. 'mixed': algunas. false: ninguna, o sin piezas. */
+export function estadoOcultar(ocultas: Set<string>, piezas: string[]): Pulsado {
+  const unicas = [...new Set(piezas)];
+  if (unicas.length === 0) return false;
+  const n = unicas.filter((p) => ocultas.has(p)).length;
+  if (n === 0) return false;
+  return n === unicas.length ? true : 'mixed';
+}
+
 /** Qué hace el botón al pulsarlo: solo un estado totalmente activo se apaga; el parcial se completa. */
 export function accionAlPulsar(estado: Pulsado): 'activar' | 'desactivar' {
   return estado === true ? 'desactivar' : 'activar';

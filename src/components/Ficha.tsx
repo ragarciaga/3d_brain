@@ -3,9 +3,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
-import { nombre, nombreNodo, nombrePendiente, nombrePieza, nombreVisible } from '../lib/nombres';
+import { nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
 import { enlacesArticulos } from '../lib/articulos';
-import { accionAlPulsar, estadoAislar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
+import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
 import { colorDePieza } from './colores';
@@ -161,6 +161,7 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
   const aislado = useAtlas((st) => estadoAislar(st.aislar, 'solo', piezas));
   const conContexto = useAtlas((st) => estadoAislar(st.aislar, 'contexto', piezas));
   const separado = useAtlas((st) => estadoSeparar(st.separadas, st.devueltas, piezas));
+  const oculto = useAtlas((st) => estadoOcultar(st.ocultas, piezas));
   if (!piezas.length) {
     return (
       <div className="acciones">
@@ -193,7 +194,8 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
       >
         {t('acciones.separar')}
       </button>
-      <button type="button" onClick={() => s().alternarVisibles(piezas, false)}>
+      {/* Segundo toque: las vuelve a mostrar. */}
+      <button type="button" {...propsPulsado(oculto)} onClick={() => s().alternarVisibles(piezas, accionAlPulsar(oculto) === 'desactivar')}>
         {t('acciones.ocultar')}
       </button>
       <button type="button" onClick={() => s().pedirCamara({ encuadrar: piezas })}>
@@ -295,7 +297,6 @@ function GruposDeLaEntrada({ id, idioma }: { id: string; idioma: Idioma }) {
 export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idioma; alCompartir: () => void; alCerrar: () => void }) {
   const { t } = useTranslation();
   const seleccion = useAtlas((s) => s.seleccion);
-  const ambos = useAtlas((s) => s.ambos);
   const revisor = useAtlas((s) => s.revisor);
   const ubicando = useAtlas((s) => s.ubicando);
   const enfocar = useAtlas((s) => s.enfocarFicha);
@@ -350,7 +351,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const marcador = marcadorPorId(id);
   const estadoIdioma = f?.revision[idioma]?.estado ?? 'borrador';
   const estadoOtro = f?.revision[otro(idioma)]?.estado ?? 'borrador';
-  const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, ambos, t) : nombreVisible(e, idioma, ambos);
+  const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, t) : nombre(e, idioma);
 
   const piezas = piezasDeEntrada(id);
   const color = piezas.length ? colorDePieza(piezas[0]!) : null;
@@ -364,7 +365,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
             <p className="ficha-padre">
               {color && <span className="ficha-punto" style={{ background: color }} aria-hidden="true" />}
               <span className="solo-lector">{t('buscar.en', { lugar: '' })}</span>
-              {nombreNodo(padre, idioma, false, t)}
+              {nombreNodo(padre, idioma, t)}
             </p>
           )}
           <h2 id="ficha-titulo" ref={refTitulo} tabIndex={-1}>
@@ -378,7 +379,6 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
           ×
         </button>
       </header>
-      {ambos && <p className="ficha-otro">{t(`idioma.nombre_${otro(idioma)}`)}: {nombre(e, otro(idioma))}</p>}
       {nombrePendiente(e, idioma) && <p className="etiqueta-aviso">{t('ficha.nombrePendiente')}</p>}
       <div className="ficha-meta">
         {f && (
@@ -439,7 +439,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
               className="enlace"
               onClick={() => window.dispatchEvent(new CustomEvent('atlas:elegir', { detail: { entrada: fichaPadre } }))}
             >
-              {t('ficha.verFichaDe', { nombre: nombreVisible(estructuras[fichaPadre]!, idioma, ambos) })}
+              {t('ficha.verFichaDe', { nombre: nombre(estructuras[fichaPadre]!, idioma) })}
             </button>
           )}
         </section>
@@ -472,7 +472,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
                           window.dispatchEvent(new CustomEvent('atlas:elegir', { detail: { entrada: r } }));
                         }}
                       >
-                        {nombreVisible(estructuras[r], idioma, ambos)}
+                        {nombre(estructuras[r], idioma)}
                       </a>
                     </li>
                   ) : null,

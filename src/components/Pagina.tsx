@@ -21,7 +21,7 @@ import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
 import Vistas, { Metricas } from './Vistas';
-import { IconoArbol, IconoBuscar, IconoGrupos } from './Iconos';
+import { IconoArbol, IconoBuscar, IconoCompartir, IconoGrupos } from './Iconos';
 
 const CLAVE_REVISOR = 'atlas:revisor';
 
@@ -43,7 +43,6 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const inicial = useMemo(() => leer(location.search), []); // solo la primera carga
   const codigoUrl = useMemo(() => new URLSearchParams(location.search).get('r'), [location.search]);
   const cargado = useAtlas((s) => s.cargado);
-  const ambos = useAtlas((s) => s.ambos);
   const revisor = useAtlas((s) => s.revisor);
   const [menu, setMenu] = useState(false);
   const [seccion, setSeccion] = useState<'grupos' | 'arbol'>('arbol'); // qué muestra el cajón del riel
@@ -100,7 +99,6 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   // Estado inicial desde la URL compartida.
   useEffect(() => {
     const s = useAtlas.getState();
-    if (inicial.ambos) s.setAmbos(true);
     if (inicial.nivel) s.setNivel(inicial.nivel);
     if (inicial.explosion) s.setExplosion(inicial.explosion / 100);
   }, [inicial]);
@@ -221,7 +219,6 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       aislar: s.aislar?.modo,
       explosion: s.explosion * 100,
       nivel: s.nivel,
-      ambos: s.ambos,
     });
     const url = `${window.location.origin}${ruta}${consulta}`;
     try {
@@ -255,20 +252,28 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           <IconoBuscar />
         </button>
         <span className="espacio" />
-        <label className="interruptor">
-          <input type="checkbox" checked={ambos} onChange={(e) => useAtlas.getState().setAmbos(e.target.checked)} />{' '}
-          {t('idioma.ambos')}
-        </label>
+        {/* Siempre ES y luego EN, con el activo relleno: se distingue por color, forma y orden fijo. */}
         <nav aria-label={t('idioma.selector')} className="selector-idioma">
-          <span aria-current="true">{idioma.toUpperCase()}</span>
-          <Link to={rutaOtro} hrefLang={otro} lang={otro} data-testid="cambiar-idioma">
-            {otro.toUpperCase()}
-          </Link>
+          {(['es', 'en'] as const).map((i) =>
+            i === idioma ? (
+              <span key={i} className="idioma-actual" aria-current="true" lang={i} title={t('idioma.actual', { idioma: t(`idioma.${i}`) })} data-testid="idioma-actual">
+                {i.toUpperCase()}
+              </span>
+            ) : (
+              <Link key={i} to={rutaOtro} hrefLang={i} lang={i} title={t(`idioma.${i}`)} data-testid="cambiar-idioma">
+                {i.toUpperCase()}
+              </Link>
+            ),
+          )}
         </nav>
         <BotonTema />
         <button type="button" className="compartir-encabezado" onClick={() => void compartir()}>
           <span className="compartir-largo">{t('compartir.vista')}</span>
-          <span className="compartir-corto">{t('compartir.corto')}</span>
+          {/* En celular solo el ícono, para que el encabezado quepa en una línea. */}
+          <span className="compartir-corto">
+            <IconoCompartir />
+            <span className="solo-lector">{t('compartir.corto')}</span>
+          </span>
         </button>
         {revisor && (
           <button

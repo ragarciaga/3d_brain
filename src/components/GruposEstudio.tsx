@@ -7,8 +7,6 @@ import { useAtlas } from '../store/useAtlas';
 export default function GruposEstudio({ idioma, alElegir }: { idioma: Idioma; alElegir?: () => void }) {
   const { t } = useTranslation();
   const activo = useAtlas((s) => s.grupoActivo);
-  const ambos = useAtlas((s) => s.ambos);
-  const otro: Idioma = idioma === 'es' ? 'en' : 'es';
   return (
     <section aria-labelledby="titulo-grupos" className="grupos">
       <h2 id="titulo-grupos">{t('grupos.titulo')}</h2>
@@ -33,7 +31,6 @@ export default function GruposEstudio({ idioma, alElegir }: { idioma: Idioma; al
             }}
           >
             {g.nombre[idioma]}
-            {ambos ? ` / ${g.nombre[otro]}` : ''}
           </button>
         ))}
       </div>

@@ -99,11 +99,13 @@
   },
   "idioma": {
     "selector": "Idioma",
-    "ambos": "Ambos idiomas",
     "en_es": "(en español)",
     "en_en": "(en inglés)",
     "nombre_es": "En español",
-    "nombre_en": "En inglés"
+    "nombre_en": "En inglés",
+    "actual": "Idioma actual: {{idioma}}",
+    "es": "Español",
+    "en": "English"
   },
   "estado": {
     "borrador": "Borrador: aún no revisado por docentes",

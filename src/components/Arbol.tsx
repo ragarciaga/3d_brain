@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { arbol, estructuras, marcadoresPorPadre, nodos, piezasBajo } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { accionAlPulsar, estadoAislar, propsPulsado } from '../lib/alternar';
-import { nombreNodo, nombreVisible } from '../lib/nombres';
+import { nombre, nombreNodo } from '../lib/nombres';
 import { useAtlas } from '../store/useAtlas';
 
 interface Props {
@@ -19,7 +19,6 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
   const [verMarcadores, setVerMarcadores] = useState(false);
   const piezas = piezasBajo(id);
   const ocultas = useAtlas((s) => s.ocultas);
-  const ambos = useAtlas((s) => s.ambos);
   const aislado = useAtlas((s) => estadoAislar(s.aislar, 'solo', piezas));
   const seleccion = useAtlas((s) => s.seleccion);
   const visiblesN = piezas.filter((p) => !ocultas.has(p)).length;
@@ -27,7 +26,7 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
   const parcial = visiblesN > 0 && !marcados;
   const entrada = n.tipo === 'pieza' ? n.estructura! : n.id;
   const activo = n.tipo === 'pieza' ? seleccion.pieza === id : seleccion.entrada === id;
-  const etiqueta = nombreNodo(id, idioma, ambos, t);
+  const etiqueta = nombreNodo(id, idioma, t);
   const extras = marcadoresPorPadre.get(id) ?? [];
   const tieneHijos = n.hijos.length > 0 || extras.length > 0;
 
@@ -125,7 +124,7 @@ const Nodo = memo(function Nodo({ id, nivel, idioma, alElegir }: { id: string; n
                   {m.estado === 'sin_ubicar' ? '○' : '●'}
                 </span>
                 <button type="button" className="arbol-nombre" data-nodo={m.id} onClick={() => alElegir(m.id)}>
-                  {nombreVisible(estructuras[m.id], idioma, ambos)}
+                  {nombre(estructuras[m.id], idioma)}
                 </button>
                 <span className="arbol-contador">{t(`marcador.${m.estado}`)}</span>
               </div>

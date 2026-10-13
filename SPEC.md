@@ -48,7 +48,7 @@ Ya existen atlas 3D abiertos y gratuitos, como Z-Anatomy y los atlas de Open Ana
 2. **Estudio con cortes.** Activa el corte coronal, mueve el plano y ve qué estructuras aparecen en esa altura, como en una lámina de atlas.
 3. **Circuito de Papez.** Elige el circuito y la app resalta sus estructuras en orden, con la explicación de cada paso.
 4. **Clase con proyector.** Una profesora comparte un enlace que abre la ínsula aislada en vista lateral.
-5. **Lectura de un paper en inglés.** Una estudiante hispanohablante busca "insular cortex", la encuentra y activa el modo ambos idiomas para aprender el término en los dos.
+5. **Lectura de un paper en inglés.** Una estudiante hispanohablante busca "insular cortex" con la interfaz en español, llega a la ínsula y cambia a inglés con el selector para leer la ficha en ese idioma.
 6. **Repaso diario.** La app propone las piezas que a esa persona más le cuestan, según sus errores anteriores.
 7. **Seguir el vago desde el bulbo hasta el estómago** con el recorrido guiado (por el vago derecho; ver sección 8).
 8. **Revisión docente.** Un profesor abre su enlace de revisión, recorre la ficha del hipocampo campo por campo, marca lo correcto, propone cambios en lo demás y envía todo de una vez.
@@ -110,7 +110,7 @@ Clic sobre una pieza (en el visor o en el árbol) la resalta y abre su ficha. Pa
 
 Contenido de la ficha:
 
-- Nombre en el idioma activo, nombre latino y, en modo ambos idiomas, el nombre en el otro idioma.
+- Nombre en el idioma activo y nombre latino.
 - Ubicación: dónde está y con qué limita.
 - Qué es.
 - Para qué sirve.
@@ -177,7 +177,8 @@ Cada pieza tiene su propia lista de recursos: título, enlace, tipo (video, art�
 
 - Interfaz completa en español e inglés. Al entrar se elige según el idioma del navegador y se puede cambiar en cualquier momento.
 - Fichas, grupos, circuitos, casos y recorridos en ambos idiomas.
-- **Modo ambos idiomas:** nombres y términos clave aparecen en los dos idiomas ("Amígdala / Amygdala") en árbol, ficha, etiquetas y quiz.
+- **Selector de idioma visible:** ES y EN siempre en el mismo orden, con el idioma activo relleno, en escritorio, tableta y celular. Cambiar de idioma conserva la estructura abierta.
+- La búsqueda es cruzada: encuentra una estructura por su nombre en cualquiera de los dos idiomas o en latín.
 - El nombre latino (Terminologia Anatomica) queda siempre visible como referencia común.
 - Si una ficha no está verificada en el idioma activo, la app lo avisa y ofrece la versión verificada del otro idioma.
 
@@ -269,7 +270,7 @@ Tipos de pregunta:
 Repaso espaciado: cada pieza tiene un intervalo de repaso que crece con los aciertos y se reinicia con los errores (algoritmo tipo SM-2 o cajas de Leitner). La pantalla "Repaso de hoy" muestra las piezas vencidas.
 
 - Se puede hacer quiz por grupo, por circuito o por colección docente.
-- En modo ambos idiomas acepta la respuesta en cualquiera de los dos.
+- Acepta la respuesta en el idioma activo o en latín.
 - El progreso se guarda en el navegador y se puede exportar.
 - Solo usa fichas verificadas.
 
@@ -290,7 +291,7 @@ Sección de la ficha con casos que ayudaron a entender la función de una estruc
 
 #### F18. Etiquetas 3D
 
-Nombres flotantes sobre las piezas visibles, sin superponerse, en el idioma activo o en ambos. Se activan y desactivan con un botón.
+Nombres flotantes sobre las piezas visibles, sin superponerse, en el idioma activo. Se activan y desactivan con un botón.
 
 #### F19. Modo liviano
 
@@ -699,6 +700,7 @@ para que la hoja no las tape. No hay riel.
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
 9. Canal de revisión docente: formulario de Google del editor (F24).
+10. Sin "modo ambos idiomas" (13 de octubre de 2026): el editor lo quitó porque recargaba la interfaz. Lo bilingüe queda en la búsqueda cruzada, el nombre latino siempre visible y un selector de idioma claro.
 3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
 
 **Abiertas**

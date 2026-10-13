@@ -18,7 +18,7 @@ de psicología y ciencias de la salud. Se desarma en piezas, cada pieza tiene fi
 nivel de evidencia y revisor visible, y se vuelve a armar sin perder la posición exacta.
 
 Diferenciales que toda decisión debe proteger: circuitos funcionales para psicología; cerebro y
-vago integrados en el mismo espacio; bilingüe real (búsqueda cruzada y modo ambos idiomas);
+vago integrados en el mismo espacio; bilingüe real (búsqueda cruzada en los dos idiomas y en latín);
 contenido con fuente y revisión docente. Si una función no refuerza alguno, no va.
 
 Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y docs/adr/.

@@ -1,6 +1,6 @@
 // Botones que se alternan de la ficha y del árbol: cuándo están activos, parciales o apagados.
 import { describe, expect, it } from 'vitest';
-import { accionAlPulsar, estadoAislar, estadoSeparar, propsPulsado } from '../src/lib/alternar';
+import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado } from '../src/lib/alternar';
 
 const P = ['a', 'b'];
 const aislado = (modo: 'solo' | 'contexto', piezas: string[]) => ({ modo, piezas: new Set(piezas) });
@@ -27,6 +27,16 @@ describe('estadoSeparar', () => {
     expect(estadoSeparar({ a: v }, new Set(['a']), P)).toBe(false);
   });
   it('sin piezas da false', () => expect(estadoSeparar({ a: v }, new Set(), [])).toBe(false));
+});
+
+describe('estadoOcultar', () => {
+  it('ninguna oculta da false', () => expect(estadoOcultar(new Set(['z']), P)).toBe(false));
+  it('una oculta da mixed', () => expect(estadoOcultar(new Set(['a']), P)).toBe('mixed'));
+  it('las dos ocultas dan true y el segundo toque las muestra', () => {
+    expect(estadoOcultar(new Set(['a', 'b', 'z']), P)).toBe(true);
+    expect(accionAlPulsar(estadoOcultar(new Set(['a', 'b']), P))).toBe('desactivar');
+  });
+  it('sin piezas da false', () => expect(estadoOcultar(new Set(['a']), [])).toBe(false));
 });
 
 describe('accionAlPulsar', () => {

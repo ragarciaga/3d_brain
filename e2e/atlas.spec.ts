@@ -19,6 +19,7 @@ interface VentanaAtlas {
       base: Record<string, number[]>;
       separadas: Record<string, number[]>;
       devueltas: Set<string>;
+      ocultas: Set<string>;
       armando: { modo: string; total: string[] } | null;
       devolver(piezas: string[]): void;
     };
@@ -294,9 +295,20 @@ test('URL por estructura e idioma: cambiar de idioma conserva la estructura', as
   await abrir(page, '/es/hipocampo');
   await modeloCargado(page);
   await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
+  // El idioma activo se ve relleno, siempre en el mismo orden (ES, EN); ya no hay "Ambos idiomas".
+  const segmentos = page.locator('.selector-idioma > *');
+  await expect(page.getByRole('navigation', { name: 'Idioma' })).toBeVisible();
+  await expect(segmentos).toHaveText(['ES', 'EN']);
+  await expect(page.getByTestId('idioma-actual')).toHaveText('ES');
+  await expect(page.getByTestId('idioma-actual')).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByText('Ambos idiomas')).toHaveCount(0);
+  const fondo = (l: Locator) => l.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(await fondo(page.getByTestId('idioma-actual'))).not.toBe(await fondo(page.getByTestId('cambiar-idioma')));
   await page.getByTestId('cambiar-idioma').click();
   await expect(page).toHaveURL(/\/en\/hippocampus$/);
   await expect(page.locator('#ficha-titulo')).toHaveText('Hippocampus');
+  await expect(page.getByTestId('idioma-actual')).toHaveText('EN');
+  await expect(segmentos).toHaveText(['ES', 'EN']);
 });
 
 test('árbol y grupos: ocultar un grupo y filtrar el sistema límbico', async ({ page }) => {
@@ -630,6 +642,9 @@ test.describe('celular (390 x 844)', () => {
     const compartir = page.locator('.compartir-encabezado');
     await expect(compartir).toBeVisible();
     await expect(compartir).toHaveAccessibleName('Compartir');
+    // El encabezado cabe en una sola línea: el último botón queda a la altura del primero.
+    const arriba = async (l: Locator) => (await l.boundingBox())!.y;
+    expect(Math.abs((await arriba(compartir)) - (await arriba(page.locator('.boton-menu'))))).toBeLessThan(8);
     await compartir.click();
     await expect(page.locator('.mensaje')).toBeVisible();
   });
@@ -776,6 +791,21 @@ test('los botones Aislar, Aislar con contexto y Separar se activan con un toque 
   await arbolAislar.click();
   await esperarPulsado(arbolAislar, 'false');
   expect(await aislarActual(page)).toBeNull();
+});
+
+test('Ocultar desde la ficha esconde la estructura y un segundo toque la vuelve a mostrar', async ({ page }) => {
+  await abrir(page, '/es/talamo');
+  await modeloCargado(page);
+  const ocultar = page.getByTestId('ficha').getByRole('button', { name: 'Ocultar', exact: true });
+  const ocultas = () =>
+    page.evaluate(() => [...(window as unknown as VentanaAtlas).__atlas.getState().ocultas].filter((p) => p.startsWith('thalamus')).sort());
+  await esperarPulsado(ocultar, 'false');
+  await ocultar.click();
+  await esperarPulsado(ocultar, 'true');
+  expect(await ocultas()).toEqual(['thalamus-l', 'thalamus-r']);
+  await ocultar.click();
+  await esperarPulsado(ocultar, 'false');
+  expect(await ocultas()).toEqual([]);
 });
 
 test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {

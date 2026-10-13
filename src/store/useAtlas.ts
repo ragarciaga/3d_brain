@@ -82,7 +82,6 @@ export interface PedidoCamara {
 }
 
 interface Estado {
-  ambos: boolean;
   ocultas: Set<string>;
   seleccion: Seleccion;
   aislar: { modo: 'solo' | 'contexto'; piezas: Set<string> } | null;
@@ -105,7 +104,6 @@ interface Estado {
   hoja: number; // alto (px) de la hoja inferior de la ficha en celular; 0 si no hay o es escritorio
   enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
 
-  setAmbos(v: boolean): void;
   setCentros(c: Record<string, Vec3>, cajas?: Record<string, Caja>): void;
   seleccionar(s: Partial<Seleccion> | null): void;
   deseleccionar(): void;
@@ -172,7 +170,6 @@ export function fueraDeSitio(s: Estado, pieza: string): boolean {
 }
 
 export const useAtlas = create<Estado>((set, get) => ({
-  ambos: false,
   ocultas: new Set(),
   seleccion: { entrada: null, pieza: null, malla: null },
   aislar: null,
@@ -194,7 +191,6 @@ export const useAtlas = create<Estado>((set, get) => ({
   hoja: 0,
   enfocarFicha: null,
 
-  setAmbos: (v) => set({ ambos: v }),
   setCentros: (c, cajas = {}) => {
     set({ centros: c, cajas, cargado: true });
     set(recalcularBase(get()));
