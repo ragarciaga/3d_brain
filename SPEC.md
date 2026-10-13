@@ -586,9 +586,9 @@ TypeScript se fija en 6.0.3 porque typescript-eslint aún no soporta la 7. Decis
 
 ### Planos de corte
 
-- Recorte con los planos de corte nativos de three.js (`clippingPlanes`).
-- Relleno de la superficie cortada con la técnica de stencil buffer, porque las mallas son cáscaras huecas y sin relleno el corte se ve vacío por dentro.
-- Es la parte técnicamente más difícil. Empieza con un prototipo de una sola malla con relleno; si no funciona bien en 30 minutos de trabajo, se publica primero el corte sin relleno con bordes resaltados, y el relleno llega en una actualización.
+- Recorte con los planos de corte nativos de three.js (`clippingPlanes`), solo en las piezas del encéfalo. Siempre van 3 planos en los materiales y los inactivos quedan lejos, para no recompilar shaders.
+- Relleno de la superficie cortada con las caras traseras de cada malla cerrada en el color plano de la pieza (191 mallas cerradas medidas en el GLB); en las 62 abiertas, contorno con los segmentos plano-malla calculados con el BVH (ADR 0011). Antes se proponía stencil buffer: cuesta unas 3,6 veces más dibujos y exige cambiar el contexto WebGL.
+- Detalle: `docs/specs/01-cutting-planes/`. Empieza con el prototipo de #9 (capturas y cuadros por segundo); si el relleno no da 30 cuadros por segundo en un equipo, se apaga ahí y queda el contorno.
 
 ### Selección de piezas delgadas
 
