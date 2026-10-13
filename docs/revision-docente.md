@@ -1,16 +1,20 @@
 # Revisión docente (F24): guía del editor
 
 La app no tiene servidor. Las revisiones de los docentes llegan a formularios de Google del editor.
-Para los docentes hay una guía aparte, para enviarla tal cual: `docs/guia-docentes.md`.
+Los docentes no leen documentos: la guía ("Cómo revisar", con el botón de registro), la lista
+priorizada ("Qué revisar") y las dudas abiertas están dentro de la web, en el modo revisión. A cada
+docente solo se le manda el mensaje corto de `docs/guia-docentes.md` con su enlace.
 
-## Estado (2026-10-12)
+## Estado (2026-10-13)
 
 | Pieza | Dónde está |
 |---|---|
 | Formulario de registro | "Registro de revisores del atlas Maysa Brain", Drive de Maysa Digital. Enlace para docentes: https://docs.google.com/forms/d/e/1FAIpQLSdy6h0gI-nrX6s_ZMGq9PSsSTYxhSd0e7ZVDx4p0_QvgHrJ2A/viewform |
 | Formulario de revisión | "Revisión del atlas Maysa Brain", Drive de Maysa Digital, conectado en `src/config/revision.ts` |
 | Códigos de revisor | 10 creados (alias D01 a D10). Padrón y enlaces en la carpeta privada "Maysa Brain (privado)" del Drive de Maysa Digital; nunca en el repositorio |
-| Guía para docentes | `docs/guia-docentes.md` (en GitHub: https://github.com/ragarciaga/3d_brain/blob/main/docs/guia-docentes.md) |
+| Guía para docentes | Dentro de la web: botón "Cómo revisar" del modo revisión (se abre sola la primera vez) |
+| Mensaje para cada docente | `docs/guia-docentes.md` |
+| Dudas abiertas | `src/data/dudas.json` (registro en `docs/fichas-dudas.md`); salen en cada ficha con su campo `duda.N` |
 
 Las secciones 1 y 2 describen cómo están hechos los formularios, por si hay que rehacerlos. Si solo
 vas a invitar docentes, salta a la sección 3.

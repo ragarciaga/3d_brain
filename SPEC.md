@@ -8,7 +8,8 @@ Nombre: Maysa Brain (decidido por el editor el 12 de octubre de 2026). Versión 
 - F6: el vago no se fragmenta (`fragmentable: false`). Se recorre.
 - F14: el recorrido del vago, con revelado progresivo, sube al hito 2 de la fase 1. Los demás circuitos siguen en la fase 2.
 - F25 nueva, origen de la geometría: escaneada, aproximada o marcador, con criterio de bloqueo.
-- Sección 8: se trazan solo tres piezas (laríngeos recurrentes y vago izquierdo hasta el estómago), con rutas por anclaje revisadas por un docente. Los plexos siguen como marcadores.
+- Sección 8: se trazan solo tres piezas (laríngeos recurrentes y vago izquierdo hasta el estómago), con rutas por anclaje. Se ven con la etiqueta "Pendiente de revisión docente" y un docente las juzga en la app; antes del lanzamiento, lo que siga en revisión se aprueba o se retira. Los plexos siguen como marcadores.
+- F24: todo lo que el docente necesita está en la web (guía, "Qué revisar" con prioridad, dudas abiertas en cada ficha, sinónimos revisables). El docente no lee documentos aparte.
 
 **Cambios frente a la versión 0.2**
 
