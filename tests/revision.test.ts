@@ -3,8 +3,10 @@ import {
   cambiosDeTexto,
   claveRespuesta,
   desactualizadas,
+  desdeClave,
   ESPERA_GUARDADO_MS,
   MAX_URL,
+  pendientesComoCorrectas,
   respuestaCompleta,
   separarIncompletas,
   urlFormulario,
@@ -120,5 +122,79 @@ describe('envío en partes', () => {
     expect(urls.every((u) => u.length <= MAX_URL)).toBe(true);
     const total = urls.reduce((n, u) => n + JSON.parse(new URL(u).searchParams.get('entry.3')!).respuestas.length, 0);
     expect(total).toBe(120);
+  });
+});
+
+describe('marcar todo como correcto (#66)', () => {
+  const resp = (campo: string, extra: Partial<Respuesta> = {}): Respuesta => ({
+    estructura: 'a',
+    campo,
+    idioma: 'es',
+    veredicto: 'correcto',
+    version: 'v0',
+    fecha: 'antes',
+    ...extra,
+  });
+  const clave = (campo: string) => claveRespuesta({ estructura: 'a', campo, idioma: 'es' });
+  const mapa = (...l: Respuesta[]) => Object.fromEntries(l.map((x) => [claveRespuesta(x), x]));
+
+  it('desdeClave separa estructura, campo e idioma, y un idioma vacío queda sin definir', () => {
+    expect(desdeClave('a|ubicacion|es')).toEqual({ estructura: 'a', campo: 'ubicacion', idioma: 'es' });
+    expect(desdeClave('a|nombre|en').idioma).toBe('en');
+    expect(desdeClave('a|latin|').idioma).toBeUndefined();
+  });
+
+  it('desdeClave lanza con una clave sin tres partes o con otro idioma', () => {
+    expect(() => desdeClave('a|latin')).toThrow();
+    expect(() => desdeClave('a|latin|es|x')).toThrow();
+    expect(() => desdeClave('a|x|fr')).toThrow();
+  });
+
+  it('desdeClave es la inversa de claveRespuesta para todos los campos de todas las fichas, en es y en', async () => {
+    const { camposDeFicha } = await import('../src/lib/prioridad');
+    const { estructuras } = await import('../src/data/atlas');
+    let vistas = 0;
+    for (const id of Object.keys(estructuras).filter((k) => estructuras[k]!.ficha)) {
+      for (const idioma of ['es', 'en'] as const) {
+        for (const k of camposDeFicha(id, idioma)) {
+          expect(claveRespuesta(desdeClave(k))).toBe(k);
+          vistas++;
+        }
+      }
+    }
+    expect(vistas).toBeGreaterThan(0);
+  });
+
+  it('sin claves pendientes no devuelve nada', () => {
+    const claves = ['x', 'y'].map(clave);
+    expect(pendientesComoCorrectas(claves, mapa(resp('x'), resp('y', { veredicto: 'no_es_mi_area' })), 'v1', 'ahora')).toEqual([]);
+    expect(pendientesComoCorrectas([], {}, 'v1', 'ahora')).toEqual([]);
+  });
+
+  it('con una pendiente solo responde esa y respeta Corregir (con y sin texto) y No es mi área', () => {
+    const respuestas = mapa(
+      resp('a1', { veredicto: 'corregir', propuesta: 'cambio' }),
+      resp('a2', { veredicto: 'corregir' }),
+      resp('a3', { veredicto: 'no_es_mi_area' }),
+    );
+    const salida = pendientesComoCorrectas(['a1', 'a2', 'a3', 'libre'].map(clave), respuestas, 'v1', 'ahora');
+    expect(salida).toEqual([{ estructura: 'a', campo: 'libre', idioma: 'es', veredicto: 'correcto', version: 'v1', fecha: 'ahora' }]);
+    expect(salida[0]).not.toHaveProperty('propuesta');
+    expect(salida[0]).not.toHaveProperty('comentario');
+  });
+
+  it('con varias pendientes conserva el orden de entrada y no repite claves', () => {
+    const claves = ['c', 'a', 'c', 'b', 'a'].map(clave);
+    const salida = pendientesComoCorrectas(claves, mapa(resp('b')), 'v1', 'ahora');
+    expect(salida.map((x) => x.campo)).toEqual(['c', 'a']);
+    expect(salida.every((x) => x.veredicto === 'correcto' && x.version === 'v1' && x.fecha === 'ahora')).toBe(true);
+  });
+
+  it('un correcto previo con comentario no se toca y las respuestas no se mutan', () => {
+    const respuestas = mapa(resp('a', { comentario: 'ojo' }));
+    const antes = structuredClone(respuestas);
+    const salida = pendientesComoCorrectas([clave('a'), clave('b')], respuestas, 'v1', 'ahora');
+    expect(salida.map((x) => x.campo)).toEqual(['b']);
+    expect(respuestas).toEqual(antes);
   });
 });
