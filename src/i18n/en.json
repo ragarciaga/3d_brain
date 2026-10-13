@@ -193,7 +193,11 @@
     "desactualizadas_other": "{{count}} answers are about an older version of the content",
     "parte": "Part {{n}} of {{total}}",
     "largaExplica": "The review is long: it is sent in several parts. Open each part and confirm it in the form.",
-    "sinPendientes": "No cards left to review."
+    "sinPendientes": "No cards left to review.",
+    "trazadoTitulo": "Traced course: {{nombre}}",
+    "trazadoAyuda": "This nerve is not in the scanned model: it was traced over model structures (arteries, bronchi, oesophagus) following the sources of this entry. Look at it in 3D, dotted, and say whether the course is correct or what you would change.",
+    "trazadoEstado_en_revision": "Under review: only reviewers see it until a teacher approves it.",
+    "trazadoEstado_aprobada": "Approved by teacher review: visible to everyone."
   },
   "comun": {
     "cerrar": "Close"

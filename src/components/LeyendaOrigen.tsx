@@ -2,12 +2,14 @@
 // tres acabados y permite verla toda o solo lo medido.
 import { useTranslation } from 'react-i18next';
 import { piezasAproximadas } from '../data/atlas';
+import { rutaVisible } from '../lib/rutas';
 import { useAtlas } from '../store/useAtlas';
 
 export default function LeyendaOrigen({ aproximadas = piezasAproximadas }: { aproximadas?: string[] }) {
   const { t } = useTranslation();
   const solo = useAtlas((s) => s.soloEscaneada);
-  if (!aproximadas.length) return null;
+  const rutasVisibles = useAtlas((s) => s.rutas.filter((r) => rutaVisible(r, !!s.revisor)).length);
+  if (!aproximadas.length && !rutasVisibles) return null;
   return (
     <aside className="leyenda-origen" aria-label={t('origen.leyenda')} data-testid="leyenda-origen">
       <ul>

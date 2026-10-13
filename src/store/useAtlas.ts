@@ -14,6 +14,7 @@ import {
 import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
+import type { RutaTrazada } from '../lib/rutas';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
@@ -105,6 +106,7 @@ interface Estado {
   enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
   recorrido: number | null; // parada actual del recorrido del vago (F14); null fuera del recorrido
   soloEscaneada: boolean; // F25: esconder la geometría trazada
+  rutas: RutaTrazada[]; // rutas trazadas del vago (ADR 0009), cargadas de public/modelos/rutas-vago.json
   panelRecorrido: number; // alto (px) del panel del recorrido cuando tapa la parte de abajo del visor (celular)
 
   setCentros(c: Record<string, Vec3>, cajas?: Record<string, Caja>): void;
@@ -134,6 +136,7 @@ interface Estado {
   salirRecorrido(): void;
   setPanelRecorrido(px: number): void;
   setSoloEscaneada(v: boolean): void;
+  setRutas(r: RutaTrazada[]): void;
 }
 
 /** Si hay algo que "Mostrar todo" deshacer: piezas ocultas, aislamiento o un grupo de estudio activo. */
@@ -202,6 +205,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   recorrido: null,
   panelRecorrido: 0,
   soloEscaneada: false,
+  rutas: [],
 
   setCentros: (c, cajas = {}) => {
     set({ centros: c, cajas, cargado: true });
@@ -329,6 +333,7 @@ export const useAtlas = create<Estado>((set, get) => ({
     set(recalcularBase(get()));
   },
   setSoloEscaneada: (v) => set({ soloEscaneada: v }),
+  setRutas: (r) => set({ rutas: r }),
   setPanelRecorrido: (px) => {
     if (get().panelRecorrido !== px) set({ panelRecorrido: px });
   },

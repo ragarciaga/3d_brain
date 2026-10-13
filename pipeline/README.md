@@ -62,24 +62,25 @@ Los cambios a `mapeo.csv`, `cajas.json` y `public/modelos/` son de nivel C: los 
 
 El modelo trae el vago como 28 trazos sin nombre y no trae el laríngeo recurrente ni el vago izquierdo
 por debajo del tórax. Se nombra primero lo que existe y solo se trazan tres piezas, con estas reglas:
-la ruta se escribe en texto por anclajes, la revisa un docente antes de generar nada y una prueba
-comprueba las cuatro asimetrías del vago en cada CI.
+la ruta se escribe en texto por anclajes, la app la dibuja solo para revisores hasta que un docente
+la aprueba en la ficha (F24) y una prueba comprueba las cuatro asimetrías del vago en cada CI.
 
 ```bash
 python pipeline/auditar-vago.py                 # Blender: mide anclajes y trazos -> pipeline/anclajes-vago.json
                                                 #          y pipeline/salida/auditoria-vago.md (nombre propuesto por trazo)
 python pipeline/generar-ramas-vago.py --borrador  # sin Blender: rutas de rutas-vago.yaml -> pipeline/salida/rutas-vago-borrador.json
-python pipeline/generar-ramas-vago.py           # solo con revision_docente.estado: aprobada -> pipeline/rutas-vago-puntos.json
+python pipeline/generar-ramas-vago.py           # -> public/modelos/rutas-vago.json (cada ruta con su estado de revisión)
 npm test                                        # tests/asimetrias.test.ts: las cuatro asimetrías sobre lo medido y lo trazado
 ```
 
-- `rutas-vago.yaml` es lo que revisa el docente: nombres anatómicos, comentarios y ninguna coordenada.
+- `rutas-vago.yaml` es el registro de cada ruta: anclajes, comentarios, ficha y estado de revisión.
+  El docente no lo lee: revisa la ruta dibujada en modo revisión. Al aplicar una aprobación, el editor
+  cambia `revision.estado` a `aprobada` y se vuelve a generar.
 - `generar-ramas-vago.py` no usa Blender; se prueba con un modelo sintético:
   `python pipeline/pruebas/probar_generar.py` y `python pipeline/pruebas/vago_sintetico.py` (este
   último regenera `tests/fixtures/vago-sintetico/`, que usan las pruebas de asimetrías).
-- Falta un paso, que necesita Blender y se hace al aprobar las rutas: que `mapear.py` y `extraer.py`
-  conviertan `rutas-vago-puntos.json` en tubos con nombre propio, marcados `"origen": "aproximada"`
-  en `src/data/arbol.json`. La app ya los dibuja punteados, con aviso, leyenda y filtro (SPEC F25).
+- La app dibuja las rutas como tubos punteados en tiempo de ejecución (no van al GLB), con aviso,
+  leyenda y filtro (SPEC F25).
 
 En Windows (PowerShell), desde la carpeta del repositorio:
 

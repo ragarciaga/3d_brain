@@ -12,7 +12,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 - Vago (ADR 0009): no se fragmenta; su ficha ofrece "Recorrer el vago" (4 paradas, revelado progresivo,
   textos tomados de fichas con fuente). F25 lista en la app (punteado, aviso, leyenda, filtro), sin
   geometría trazada todavía. Pipeline listo: `auditar-vago.py` (necesita Blender y GitHub en el
-  entorno), `rutas-vago.yaml` (pendiente de revisión docente), `generar-ramas-vago.py` y la prueba de
+  entorno), `rutas-vago.yaml`, `generar-ramas-vago.py` y la prueba de
   las cuatro asimetrías.
 - Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
   a `main` se publica solo con el workflow `pages`.
@@ -71,8 +71,9 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 
 ## Next steps
 1. Vago: correr `pipeline/auditar-vago.py` en un entorno con GitHub habilitado, revisar
-   `pipeline/salida/auditoria-vago.md` y pasar los nombres propuestos a los docentes (F24); que un
-   docente revise `pipeline/rutas-vago.yaml`; con la ruta aprobada, generar y conectar los tubos.
+   `pipeline/salida/auditoria-vago.md` y pasar los nombres propuestos a los docentes (F24); luego
+   generar las rutas: la app las muestra solo en modo revisión y los docentes las aprueban con el
+   campo "Recorrido trazado" de la ficha.
 2. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 async function abrir(page: Page, ruta: string, conAviso = false) {
@@ -21,6 +22,8 @@ interface VentanaAtlas {
       devueltas: Set<string>;
       ocultas: Set<string>;
       recorrido: number | null;
+      rutas: unknown[];
+      soloEscaneada: boolean;
       setExplosion(f: number): void;
       armando: { modo: string; total: string[] } | null;
       devolver(piezas: string[]): void;
@@ -860,6 +863,33 @@ test('el vago no se separa: su ficha ofrece el recorrido, que baja parada por pa
   await page.getByTestId('recorrido-siguiente').click(); // Terminar
   await expect(panel).toHaveCount(0);
   await expect.poll(altura).toBeNull();
+});
+
+test('rutas trazadas del vago: en revisión solo las ve el revisor, con aviso, leyenda y su campo en la ficha (ADR 0009)', async ({ page }) => {
+  const rutas = readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8');
+  await page.route('**/modelos/rutas-vago.json', (r) => r.fulfill({ contentType: 'application/json', body: rutas }));
+  // Público: no se ven, ni la leyenda ni el aviso.
+  await abrir(page, '/es/nervio-laringeo-recurrente');
+  await modeloCargado(page);
+  await expect.poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().rutas.length)).toBe(3);
+  await expect(page.getByTestId('leyenda-origen')).toHaveCount(0);
+  await expect(page.getByTestId('aviso-aproximada')).toHaveCount(0);
+  // Revisor: se ven, con leyenda, aviso y un campo de revisión por lado.
+  await abrir(page, '/es/revision?r=PRUEBA01');
+  await modeloCargado(page);
+  await expect(page.getByTestId('leyenda-origen')).toBeVisible();
+  await abrir(page, '/es/nervio-laringeo-recurrente');
+  await expect(page.getByTestId('aviso-aproximada')).toBeVisible();
+  for (const lado of ['derecho', 'izquierdo']) {
+    const campo = page.getByTestId(`revision-trazado_${lado}`);
+    await expect(campo).toContainText('En revisión');
+    await expect(campo.locator(`[data-campo="trazado_${lado}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
+  }
+  await page.getByTestId('revision-trazado_izquierdo').getByRole('button', { name: 'Corregir' }).click();
+  await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+  // El filtro "Solo geometría escaneada" las esconde.
+  await page.getByTestId('leyenda-origen').getByRole('checkbox').check();
+  expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().soloEscaneada)).toBe(true);
 });
 
 test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {

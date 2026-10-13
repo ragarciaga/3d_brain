@@ -247,6 +247,7 @@ Cada pieza lleva `origen_geometria`:
 - La ficha de una pieza aproximada muestra: "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas."
 - Una leyenda en el visor explica los acabados cuando hay piezas aproximadas a la vista.
 - El filtro "Solo geometría escaneada" esconde lo trazado.
+- Las rutas trazadas del vago se dibujan desde `public/modelos/rutas-vago.json`. Mientras están en revisión solo las ven los revisores (F24), que las juzgan en la ficha con el campo "Recorrido trazado"; aprobadas, las ve todo el mundo.
 
 **Criterio de bloqueo:** si la distinción visual no está implementada y probada, la geometría aproximada no se publica. Sin excepción.
 
@@ -505,7 +506,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Núcleo motor dorsal (posterior), núcleo ambiguo, núcleo del tracto solitario | Mallas, por lado |
 | Ganglios superior e inferior | Marcadores |
 | Raicillas, ramo faríngeo y laríngeo superior (candidatos), ramos abdominales del derecho | Trazos sin nombre dentro de la curva del vago (21 en el derecho, 7 en el izquierdo). `pipeline/auditar-vago.py` propone el nombre de cada uno con su relación a los anclajes; un revisor lo confirma con F24 y el pipeline lo separa como pieza, sin moverlo |
-| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`, revisada por un docente |
+| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`; un docente las revisa en la app (F24) antes de que las vea el público |
 | Vago izquierdo de la bifurcación de la tráquea al estómago, con el tronco vagal anterior | No existe. Se traza igual que los recurrentes |
 | Ramos cardíacos | No existen. Marcadores |
 | Plexos pulmonar, esofágico y cardíaco | Marcadores o regiones; nunca tubos |
@@ -726,7 +727,7 @@ para que la hoja no las tape. No hay riel.
 10. **Terceros que copian el proyecto sin dar crédito.** La licencia CC BY-SA exige crédito y misma licencia; la pantalla de licencia y el crédito en las imágenes exportadas lo hacen visible.
 11. **Pocos revisores o poca respuesta.** F24 reduce la revisión a botones por campo; el piloto mide cuánto tarda una ficha.
 12. **Geometría de otra fuente mal alineada.** Toda pieza alineada desde otro atlas entra marcada como aproximada hasta que un revisor la valide.
-13. **Un ramo trazado que parece dato medido.** Es el riesgo más serio del vago. Mitigación en tres capas: ruta en texto revisada por un docente antes de generar la malla, prueba automática de las cuatro asimetrías y la distinción visual obligatoria de F25.
+13. **Un ramo trazado que parece dato medido.** Es el riesgo más serio del vago. Mitigación en tres capas: la ruta solo la ven los revisores hasta que un docente la aprueba viéndola en 3D, prueba automática de las cuatro asimetrías y la distinción visual obligatoria de F25.
 
 ## 15. Decisiones
 

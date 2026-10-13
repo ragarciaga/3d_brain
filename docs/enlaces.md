@@ -28,7 +28,7 @@ Atajos dentro del sitio: Ctrl+K abre la búsqueda; Escape cierra paneles y sale 
 | Guía para mandarle a cada docente | [docs/guia-docentes.md](guia-docentes.md) |
 | Cómo funciona la revisión, crear códigos e importar respuestas | [docs/revision-docente.md](revision-docente.md) |
 | Dudas conocidas sobre las fichas | [docs/fichas-dudas.md](fichas-dudas.md) |
-| Rutas del vago que revisa un docente antes de trazarlas | [pipeline/rutas-vago.yaml](../pipeline/rutas-vago.yaml) |
+| Cómo se trazó cada ruta del vago (registro; el docente revisa en la app) | [pipeline/rutas-vago.yaml](../pipeline/rutas-vago.yaml) |
 
 Las hojas de respuestas de los dos formularios están en el Drive de Maysa Digital (pestaña
 "Respuestas" de cada formulario).

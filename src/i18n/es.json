@@ -193,7 +193,11 @@
     "desactualizadas_other": "{{count}} respuestas son sobre una versión anterior del contenido",
     "parte": "Parte {{n}} de {{total}}",
     "largaExplica": "La revisión es larga: se envía en varias partes. Abre cada parte y confírmala en el formulario.",
-    "sinPendientes": "No te quedan fichas por revisar."
+    "sinPendientes": "No te quedan fichas por revisar.",
+    "trazadoTitulo": "Recorrido trazado: {{nombre}}",
+    "trazadoAyuda": "Este nervio no está en el modelo escaneado: se trazó sobre estructuras del modelo (arterias, bronquios, esófago) siguiendo las fuentes de la ficha. Míralo en 3D, punteado, y di si el recorrido es correcto o qué cambiarías.",
+    "trazadoEstado_en_revision": "En revisión: solo lo ven los revisores hasta que un docente lo apruebe.",
+    "trazadoEstado_aprobada": "Aprobado por revisión docente: visible para todos."
   },
   "comun": {
     "cerrar": "Cerrar"

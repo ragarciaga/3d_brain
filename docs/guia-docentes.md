@@ -58,6 +58,11 @@ Casos especiales:
 - **Trazos del vago:** el modelo trae los ramos del vago como 28 trazos sin nombre (21 en el vago
   derecho y 7 en el izquierdo). En modo revisión, al tocar un trazo aparece la pregunta "¿Qué ramo
   es?": eliges el ramo, "No es un ramo (tronco del vago)" o "No sé".
+- **Recorridos trazados:** el modelo no trae los laríngeos recurrentes ni el vago izquierdo por debajo
+  del tórax. Los trazamos sobre estructuras del modelo (arterias, bronquios, esófago) y se ven
+  punteados, solo en modo revisión. En la ficha del nervio laríngeo recurrente y del tronco vagal
+  anterior está el campo "Recorrido trazado": míralo en 3D y responde Correcto, Corregir (con lo que
+  cambiarías) o No es mi área. El público solo los ve cuando un docente los aprueba.
 
 ## Cómo enviar
 

@@ -31,6 +31,7 @@ import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
 import { punteado } from './acabados';
 import { planoRecorrido, SIN_RECORTE } from './recorte';
+import RutasTrazadas from './RutasTrazadas';
 
 export const URL_MODELO = `${import.meta.env.BASE_URL}modelos/atlas.glb`;
 
@@ -577,6 +578,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           <Suspense fallback={null}>
             <Modelo idioma={idioma} />
             <Marcadores idioma={idioma} />
+            <RutasTrazadas idioma={idioma} />
           </Suspense>
           <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />
           <MedidorCuadros />
