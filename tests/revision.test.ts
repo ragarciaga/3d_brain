@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { claveRespuesta, desactualizadas, MAX_URL, urlFormulario, type Respuesta } from '../src/lib/revision';
+import {
+  cambiosDeTexto,
+  claveRespuesta,
+  desactualizadas,
+  ESPERA_GUARDADO_MS,
+  MAX_URL,
+  respuestaCompleta,
+  separarIncompletas,
+  urlFormulario,
+  type Respuesta,
+} from '../src/lib/revision';
 
 const config = {
   urlFormulario: 'https://docs.google.com/forms/d/e/abc/viewform',
@@ -41,6 +51,63 @@ describe('revisión docente (F24)', () => {
 
   it('marca respuestas sobre una versión vieja del contenido', () => {
     expect(desactualizadas([r('a', '0.1.0'), r('b', '0.2.0')], () => '0.2.0').map((x) => x.campo)).toEqual(['a']);
+  });
+});
+
+describe('respuestas incompletas', () => {
+  const corregir = (extra: Partial<Respuesta> = {}): Respuesta => ({ ...r('que_es'), veredicto: 'corregir', ...extra });
+
+  it('correcto y "no es mi área" siempre están completos', () => {
+    expect(respuestaCompleta(r('a'))).toBe(true);
+    expect(respuestaCompleta({ ...r('a'), veredicto: 'no_es_mi_area' })).toBe(true);
+  });
+
+  it('"Corregir" con texto propuesto está completo', () => expect(respuestaCompleta(corregir({ propuesta: 'x' }))).toBe(true));
+
+  it('"Corregir" sin propuesta o con solo espacios está incompleto', () => {
+    expect(respuestaCompleta(corregir())).toBe(false);
+    expect(respuestaCompleta(corregir({ propuesta: '   ' }))).toBe(false);
+  });
+
+  it('un comentario solo no completa un "Corregir"', () => expect(respuestaCompleta(corregir({ comentario: 'nota' }))).toBe(false));
+
+  it('la posición de un marcador y el ramo de un trazo son la propuesta de esas respuestas', () => {
+    expect(respuestaCompleta(corregir({ posicion: [0, 0, 0] }))).toBe(true);
+    expect(respuestaCompleta(corregir({ ramo: 'no_se' }))).toBe(true);
+  });
+
+  it('separarIncompletas conserva el orden de las completas y cuenta las otras', () => {
+    expect(separarIncompletas([])).toEqual({ completas: [], incompletas: 0 });
+    expect(separarIncompletas([corregir()])).toEqual({ completas: [], incompletas: 1 });
+    const a = r('a');
+    const b = corregir({ campo: 'b', propuesta: 'x' });
+    const { completas, incompletas } = separarIncompletas([a, corregir({ campo: 'c' }), b, corregir({ campo: 'd', propuesta: ' ' })]);
+    expect(completas).toEqual([a, b]);
+    expect(incompletas).toBe(2);
+  });
+});
+
+describe('guardado mientras se escribe', () => {
+  const corregir: Respuesta = { ...r('que_es'), veredicto: 'corregir', propuesta: 'viejo', comentario: 'nota' };
+
+  it('espera 500 ms desde la última tecla', () => expect(ESPERA_GUARDADO_MS).toBe(500));
+
+  it('si los campos coinciden con lo guardado no hay nada que guardar', () => {
+    expect(cambiosDeTexto(corregir, 'viejo', 'nota')).toBeNull();
+  });
+
+  it('un campo vacío es lo mismo que ninguno', () => {
+    expect(cambiosDeTexto(r('a'), '', '')).toBeNull();
+    expect(cambiosDeTexto({ ...corregir, propuesta: undefined, comentario: undefined }, '', '')).toBeNull();
+  });
+
+  it('una propuesta nueva con "Corregir" se guarda con el comentario actual', () => {
+    expect(cambiosDeTexto(corregir, 'nuevo', 'nota')).toEqual({ propuesta: 'nuevo', comentario: 'nota' });
+  });
+
+  it('con otro veredicto la propuesta se ignora', () => {
+    expect(cambiosDeTexto(r('a'), 'texto suelto', '')).toBeNull();
+    expect(cambiosDeTexto(r('a'), 'texto suelto', 'c')).toEqual({ propuesta: undefined, comentario: 'c' });
   });
 });
 
