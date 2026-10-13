@@ -2,6 +2,11 @@
 
 Nombre: Maysa Brain (decidido por el editor el 12 de octubre de 2026). Versión 0.3, 11 de octubre de 2026.
 
+**Cambios del 13 de octubre de 2026 (vago torácico, ADR 0010)**
+
+- La auditoría midió que el vago del tórax de Z-Anatomy es un espejo izquierda-derecha: el izquierdo atraviesa el arco aórtico y el derecho pasa por delante del bronquio principal derecho. Ese tramo se traza (`aproximada`) en los dos lados y el escaneado que reemplaza no se publica.
+- El ligamento arterioso no existe en el modelo; su ganglio (`Node of ligamentum arteriosum`) sirve de anclaje, pendiente de revisión docente.
+
 **Cambios del 13 de octubre de 2026 (vago, ADR 0009)**
 
 - Medido sobre el modelo: los 28 trazos del vago son ramos reales sin nombre (raicillas, dos ramos cervicales por lado y ramos abdominales del derecho). Faltan el laríngeo recurrente, los ramos cardíacos, pulmonares y esofágicos, y el vago izquierdo por debajo del tórax.
@@ -512,6 +517,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Raicillas, ramo faríngeo y laríngeo superior (candidatos), ramos abdominales del derecho | Trazos sin nombre dentro de la curva del vago (21 en el derecho, 7 en el izquierdo). `pipeline/auditar-vago.py` propone el nombre de cada uno con su relación a los anclajes; un revisor lo confirma con F24 y el pipeline lo separa como pieza, sin moverlo |
 | Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`; se ven con la etiqueta "Pendiente de revisión docente" y un docente las juzga en la app (F24) |
 | Vago izquierdo de la bifurcación de la tráquea al estómago, con el tronco vagal anterior | No existe. Se traza igual que los recurrentes |
+| Tramo torácico de los dos troncos (de la subclavia a debajo del bronquio principal) | Existe, pero es un espejo izquierda-derecha que contradice las asimetrías (ADR 0010). Se traza igual que los recurrentes y el escaneado de ese tramo no se publica |
 | Ramos cardíacos | No existen. Marcadores |
 | Plexos pulmonar, esofágico y cardíaco | Marcadores o regiones; nunca tubos |
 | Troncos vagales anterior y posterior, ramos gástricos, hepáticos y celíacos | Marcadores |
@@ -741,7 +747,7 @@ para que la hoja no las tape. No hay riel.
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
 9. Canal de revisión docente: formulario de Google del editor (F24).
-11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25.
+11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25. Ampliado el mismo día (ADR 0010): también se traza el tramo torácico de los dos troncos, porque el escaneado es un espejo.
 10. Sin "modo ambos idiomas" (13 de octubre de 2026): el editor lo quitó porque recargaba la interfaz. Lo bilingüe queda en la búsqueda cruzada, el nombre latino siempre visible y un selector de idioma claro.
 3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
 

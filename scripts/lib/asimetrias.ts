@@ -109,14 +109,15 @@ export function asimetria2(d: Anclajes, r: Rutas): Resultado {
   if (!ruta) throw new Error('Falta la ruta laringeo_recurrente_izquierdo');
   const arco = ancla(d, 'Aortic arch');
   const res = rodeaPorDebajo(ruta.puntos, lineaCentral(d, 'Aortic arch'), arco.radio ?? 0, 'el arco aórtico');
-  const ligamento = centro(ancla(d, 'Ligamentum arteriosum').caja);
+  // Z-Anatomy no trae el ligamento: su ganglio marca el mismo sitio (ver pipeline/auditar-vago.py).
+  const ligamento = centro(ancla(d, 'Node of ligamentum arteriosum').caja);
   const junto = dist(res.bajo, ligamento) < (arco.radio ?? 0) + 0.025;
   const izquierda = res.bajo[0] > 0;
   const ok = res.ok && junto && izquierda;
   return {
     asimetria: 2,
     ok,
-    detalle: ok ? `${res.detalle}, a ${mm(dist(res.bajo, ligamento))} del ligamento arterioso` : !res.ok ? res.detalle : !junto ? `el asa queda a ${mm(dist(res.bajo, ligamento))} del ligamento arterioso` : 'el asa queda en el lado derecho',
+    detalle: ok ? `${res.detalle}, a ${mm(dist(res.bajo, ligamento))} del ganglio del ligamento arterioso` : !res.ok ? res.detalle : !junto ? `el asa queda a ${mm(dist(res.bajo, ligamento))} del ganglio del ligamento arterioso` : 'el asa queda en el lado derecho',
   };
 }
 

@@ -64,9 +64,12 @@ rutas:
       - desde_vago: izquierdo
         a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
       # Rodea el arco aórtico por debajo, junto al ligamento arterioso (asimetría 2).
+      # Z-Anatomy no trae el ligamento: se usa su ganglio ("Node of ligamentum arteriosum"), que en el
+      # modelo está 8 mm bajo la superficie del arco y 8 mm sobre la bifurcación del tronco pulmonar.
+      # Sustituto pendiente de revisión docente.
       - anclaje: "Aortic arch"
         punto: cerca_de
-        cerca_de: "Ligamentum arteriosum"
+        cerca_de: "Node of ligamentum arteriosum"
         rodear: debajo
       # Sube por el surco traqueoesofágico izquierdo; por eso es más largo que el derecho.
       - surco: izquierdo

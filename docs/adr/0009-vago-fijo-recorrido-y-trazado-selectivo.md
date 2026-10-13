@@ -2,7 +2,7 @@
 
 Status: accepted
 Date: 2026-10-13
-Related: 0006 (la reemplaza en lo que dice de dibujar ramos), SPEC.md F6, F14, F25 y sección 8
+Related: 0006 (la reemplaza en lo que dice de dibujar ramos), 0010 (la amplía: tramo torácico trazado y ligamento arterioso ausente), SPEC.md F6, F14, F25 y sección 8
 Approved by: el editor (13 de octubre de 2026), sujeto a la revisión del PR
 
 ## Context

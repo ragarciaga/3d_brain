@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'tools', '.claude', '.rockbuilt', 'playwright-report', 'test-results', 'docs'] },
+  { ignores: ['dist', 'node_modules', 'tools', '.claude', '.rockbuilt', 'playwright-report', 'test-results', 'docs', '.venv-pipeline'] },
   {
     files: ['**/*.{ts,tsx,js}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
