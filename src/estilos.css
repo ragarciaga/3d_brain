@@ -1364,6 +1364,27 @@ a {
   border-color: var(--texto-suave);
 }
 
+.marcar-todo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.marcar-todo p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* 44 px es el área táctil recomendada en celular (#66). En px porque el criterio habla en px. */
+@media (max-width: 900px) {
+  .revision-botones .chip,
+  .marcar-todo button {
+    min-height: 44px;
+  }
+}
+
 .boton-primario {
   background: var(--acento);
   color: var(--acento-texto);

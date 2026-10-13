@@ -32,6 +32,30 @@ export function propuestaDePosicion(
   return { respuesta, pieza: piezas[estructura] ?? null };
 }
 
+/** Inversa de `claveRespuesta`. Lanza si la clave no tiene tres partes o el idioma no es '', 'es' ni 'en'. */
+export function desdeClave(clave: string): Pick<Respuesta, 'estructura' | 'campo' | 'idioma'> {
+  const partes = clave.split('|');
+  if (partes.length !== 3) throw new Error(`Clave de respuesta inválida: ${clave}`);
+  const [estructura, campo, idioma] = partes as [string, string, string];
+  if (idioma !== '' && idioma !== 'es' && idioma !== 'en') throw new Error(`Idioma inválido en la clave: ${clave}`);
+  return { estructura, campo, idioma: idioma === '' ? undefined : idioma };
+}
+
+/**
+ * Respuestas `correcto` para las claves que aún no tienen ninguna. Lo que ya tiene respuesta, de cualquier
+ * tipo, incluido un "Corregir" sin texto, no se toca (#66). No muta `respuestas`; omite claves repetidas.
+ */
+export function pendientesComoCorrectas(
+  claves: string[],
+  respuestas: Record<string, Respuesta>,
+  version: string,
+  fecha: string,
+): Respuesta[] {
+  return [...new Set(claves)]
+    .filter((k) => respuestas[k] === undefined)
+    .map((k) => ({ ...desdeClave(k), veredicto: 'correcto' as const, version, fecha }));
+}
+
 export interface ConfigFormulario {
   urlFormulario: string;
   campos: { codigo: string; estructura: string; revision: string };

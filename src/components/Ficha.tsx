@@ -7,7 +7,16 @@ import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '
 import { campoTrazado } from '../lib/rutas';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
-import { cambiosDeTexto, claveRespuesta, ESPERA_GUARDADO_MS, propuestaDePosicion, type Veredicto } from '../lib/revision';
+import {
+  cambiosDeTexto,
+  claveRespuesta,
+  ESPERA_GUARDADO_MS,
+  pendientesComoCorrectas,
+  propuestaDePosicion,
+  respuestaCompleta,
+  type Veredicto,
+} from '../lib/revision';
+import { camposDeFicha } from '../lib/prioridad';
 import { useAtlas } from '../store/useAtlas';
 import { colorDePieza } from './colores';
 import { CONSULTA_MOVIL } from './useMovil';
@@ -151,6 +160,88 @@ function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idiom
         value={p.respuesta.comentario ?? ''}
         onChange={(ev) => useAtlas.getState().responder({ ...p.respuesta, comentario: ev.target.value || undefined })}
       />
+    </div>
+  );
+}
+
+/**
+ * "Marcar todo como correcto" (#66): responde `correcto` los campos de la ficha que aún no tienen respuesta
+ * de ningún tipo. Pide confirmación y no toca lo ya respondido, ni un "Corregir" que aún no tiene texto.
+ */
+function MarcarTodo({ id, idioma, version }: { id: string; idioma: Idioma; version: string }) {
+  const { t } = useTranslation();
+  const rutas = useAtlas((s) => s.rutas);
+  const respuestas = useAtlas((s) => s.respuestas);
+  const [confirmando, setConfirmando] = useState(false);
+  const [hechos, setHechos] = useState<number | null>(null);
+  const refBoton = useRef<HTMLButtonElement>(null);
+  const refCancelar = useRef<HTMLButtonElement>(null);
+  const refEstado = useRef<HTMLParagraphElement>(null);
+  const siguienteFoco = useRef<'cancelar' | 'boton' | 'estado' | null>(null);
+
+  useEffect(() => {
+    const destino = siguienteFoco.current;
+    siguienteFoco.current = null;
+    if (destino === 'cancelar') refCancelar.current?.focus();
+    else if (destino === 'boton') refBoton.current?.focus();
+    else if (destino === 'estado') refEstado.current?.focus();
+  }, [confirmando, hechos]);
+
+  const campos = camposDeFicha(id, idioma, rutas);
+  // La fecha real se pone al confirmar; aquí solo importa cuántas faltan.
+  const pendientes = pendientesComoCorrectas(campos, respuestas, version, '');
+  const incompletas = campos.filter((k) => respuestas[k] && !respuestaCompleta(respuestas[k])).length;
+
+  const confirmar = () => {
+    const vigente = useAtlas.getState();
+    const nuevas = pendientesComoCorrectas(camposDeFicha(id, idioma, vigente.rutas), vigente.respuestas, version, new Date().toISOString());
+    for (const r of nuevas) vigente.responder(r);
+    siguienteFoco.current = 'estado';
+    setHechos(nuevas.length);
+    setConfirmando(false);
+  };
+
+  return (
+    <div className="marcar-todo" data-testid="marcar-todo">
+      {confirmando ? (
+        <>
+          <p>{t('revision.marcarTodoConfirmar', { count: pendientes.length })}</p>
+          {incompletas > 0 && <p>{t('revision.marcarTodoIncompletas', { count: incompletas })}</p>}
+          <button type="button" className="boton-primario" onClick={confirmar}>
+            {t('revision.marcarTodoSi', { count: pendientes.length })}
+          </button>
+          <button
+            type="button"
+            ref={refCancelar}
+            onClick={() => {
+              siguienteFoco.current = 'boton';
+              setConfirmando(false);
+            }}
+          >
+            {t('revision.marcarTodoCancelar')}
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            ref={refBoton}
+            disabled={pendientes.length === 0}
+            onClick={() => {
+              siguienteFoco.current = 'cancelar';
+              setHechos(null);
+              setConfirmando(true);
+            }}
+          >
+            {t('revision.marcarTodo')}
+          </button>
+          {hechos !== null && (
+            <p role="status" tabIndex={-1} ref={refEstado}>
+              {t('revision.marcarTodoHecho', { count: hechos })}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -443,6 +534,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   }
   const f = e.ficha;
   const version = f?.version ?? 'sin-ficha';
+  // Un `rev(...)` nuevo también va en `camposDeFicha` (src/lib/prioridad.ts): esa lista alimenta el avance y "Marcar todo como correcto".
   const rev = (campo: string, idiomaCampo?: Idioma, etiqueta?: string) =>
     revisor ? (
       <ControlRevision
@@ -514,6 +606,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </span>
       </div>
       <GruposDeLaEntrada id={id} idioma={idioma} />
+      {revisor && f && <MarcarTodo key={`${id}|${idioma}`} id={id} idioma={idioma} version={version} />}
       {revisor && dudas[id] && (
         <section className="ficha-campo ficha-dudas" data-testid="dudas">
           <h3>{t('revision.dudasTitulo')}</h3>
