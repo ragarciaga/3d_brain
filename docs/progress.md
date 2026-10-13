@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-13 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt)
+Updated: 2026-10-13 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #59 a #66, PR #72 a #81)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -65,6 +65,13 @@ carga en los equipos de referencia (#6).
     de la web) y anotar su nombre junto al alias en el documento de enlaces del Drive;
   - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
     del formulario de revisión).
+- Mejoras de la revisión docente (auditoría UX, `docs/research/revision-docente/auditoria-ux.md`), en
+  main: textos claros (#65), diálogos accesibles y propuestas guardadas mientras se escribe (#64),
+  avance por ficha y "x de y fichas completas" (#59), botones de 44 px y "Marcar todo como
+  correcto" (#66), Deshacer al proponer posición (#61), barra compacta en celular con menú
+  "Acciones" y salir con confirmación (#63), respaldo descargable y código recordado (#60), trazos
+  del vago en "Qué revisar" con "Siguiente trazo" y propuesta de la auditoría (#62). En PR para el
+  editor: "Enviar todo" en un solo formulario con "Sí, lo envié" (#58, PR #78).
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
@@ -98,13 +105,16 @@ carga en los equipos de referencia (#6).
   revisión (#8)
 
 ## Next steps
-1. Revisión docente: mandar el mensaje a los 10 docentes e importar las primeras respuestas con
+1. Fusionar el PR #78 (envío único, tier C) después de confirmar que la pregunta "Estructura" del
+   formulario de Google no tiene validación. Decidir el canal definitivo (#67, Apps Script) y revisar
+   el formulario para docentes externos (#68).
+2. Revisión docente: mandar el mensaje a los 10 docentes e importar las primeras respuestas con
    `scripts/importar-revisiones.ts`.
-2. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
-3. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
+3. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
+4. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
-4. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
+5. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
