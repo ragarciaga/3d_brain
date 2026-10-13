@@ -8,12 +8,16 @@ import type { Idioma } from '../data/tipos';
 import { nombre, nombrePendiente } from '../lib/nombres';
 import { avanceDeFicha, avanceGlobal, ordenDeRevision } from '../lib/prioridad';
 import {
-  cargaRevision,
+  claveRespuesta,
+  confirmarParte,
   desactualizadas,
   formularioConfigurado,
+  partesEnvio,
+  pendientesDeEnvio,
   respuestaCompleta,
   separarIncompletas,
-  urlsFormulario,
+  type EstadoParte,
+  type ParteEnvio,
   type Respuesta,
 } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
@@ -46,19 +50,20 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
   const respuestas = useAtlas((s) => s.respuestas);
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
   const rutas = useAtlas((s) => s.rutas);
-  const [enviadas, setEnviadas] = useState<Record<string, string>>({});
+  const [confirmadas, setConfirmadas] = useState<Record<string, string>>({});
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   const [aviso, setAviso] = useState('');
-  const [partes, setPartes] = useState<{ id: string; urls: string[] } | null>(null);
+  const [envio, setEnvio] = useState<{ partes: ParteEnvio[]; estados: EstadoParte[] } | null>(null);
 
   useEffect(() => {
     if (!revisor) return;
     let vigente = true;
     get(claveIdb(revisor))
-      .then((guardado: { respuestas?: Record<string, Respuesta>; enviadas?: Record<string, string> } | undefined) => {
+      .then((guardado: { respuestas?: Record<string, Respuesta>; confirmadas?: Record<string, string> } | undefined) => {
         if (!vigente) return;
         useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
-        setEnviadas(guardado?.enviadas ?? {});
+        setConfirmadas(guardado?.confirmadas ?? {}); // el `enviadas` de versiones anteriores se ignora
+        setEnvio(null);
       })
       .catch(() => undefined)
       .finally(() => vigente && setCargadoDe(revisor));
@@ -69,8 +74,8 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
 
   useEffect(() => {
     if (!revisor || cargadoDe !== revisor) return;
-    set(claveIdb(revisor), { respuestas, enviadas }).catch(() => undefined);
-  }, [revisor, respuestas, enviadas, cargadoDe]);
+    set(claveIdb(revisor), { respuestas, confirmadas }).catch(() => undefined);
+  }, [revisor, respuestas, confirmadas, cargadoDe]);
 
   const porEstructura = useMemo(() => {
     const m = new Map<string, Respuesta[]>();
@@ -129,9 +134,11 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
   const totalPendientes = secciones.reduce((n, x) => n + x.ids.length, 0);
   const alternar = (v: Vista) => abrir(vista === v ? null : v);
   const configurado = formularioConfigurado(configRevision);
+  const pendientes = pendientesDeEnvio(lista, confirmadas);
+  const clavesPendientes = new Set(pendientes.map(claveRespuesta));
+  const hayCompletas = lista.some(respuestaCompleta);
 
-  const copiarODescargar = async (id: string, l: Respuesta[]) => {
-    const carga = cargaRevision(revisor, id, l);
+  const copiarODescargar = async (carga: string, archivo: string) => {
     try {
       await navigator.clipboard.writeText(carga);
       setAviso(t('revision.copiada'));
@@ -139,19 +146,29 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
       const url = URL.createObjectURL(new Blob([carga], { type: 'application/json' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `revision-${revisor}-${id}.json`;
+      a.download = archivo;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setAviso(t('revision.descargada'));
     }
   };
 
-  const enviar = async (id: string, l: Respuesta[]) => {
-    const urls = urlsFormulario(configRevision, revisor, id, l);
-    if (urls.length === 1) window.open(urls[0], '_blank', 'noopener');
-    else if (urls.length > 1) setPartes({ id, urls });
-    else await copiarODescargar(id, l);
-    setEnviadas({ ...enviadas, [id]: new Date().toISOString() });
+  // No abre nada solo: cada parte se abre con su propio enlace y solo se confirma a mano.
+  const enviarTodo = () => {
+    const partes = partesEnvio(configRevision, revisor, pendientes);
+    setEnvio({ partes, estados: partes.map((): EstadoParte => 'sin_abrir') });
+  };
+
+  const marcar = (i: number, estado: EstadoParte) =>
+    setEnvio((e) =>
+      e && { ...e, estados: e.estados.map((x, k) => (k === i && x !== 'confirmada' ? estado : x)) },
+    );
+
+  const confirmar = (i: number) => {
+    const parte = envio?.partes[i];
+    if (!parte) return;
+    marcar(i, 'confirmada');
+    setConfirmadas((c) => confirmarParte(c, parte));
   };
 
   return (
@@ -254,9 +271,17 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
             </a>
           </p>
           {!configurado && <p className="etiqueta-aviso">{t('revision.sinFormulario')}</p>}
+          <p data-testid="pendientes-envio">
+            {pendientes.length > 0
+              ? t('revision.pendientesEnvio', { count: pendientes.length })
+              : hayCompletas
+                ? t('revision.todoEnviado')
+                : t('revision.nadaPorEnviar')}
+          </p>
           <ul>
             {[...porEstructura.entries()].map(([id, l]) => {
               const { completas, incompletas } = separarIncompletas(l);
+              const sinEnviar = completas.filter((r) => clavesPendientes.has(claveRespuesta(r))).length;
               return (
                 <li key={id}>
                   {nombre(estructuras[id], idioma) || id} · {t('revision.respuestas', { count: completas.length })}
@@ -266,22 +291,57 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
                       {t('revision.incompletasNoSeEnvian', { count: incompletas })}
                     </span>
                   )}
-                  {enviadas[id] && <span className="etiqueta-aviso"> {t('revision.enviadaEl', { fecha: enviadas[id]!.slice(0, 10) })}</span>}{' '}
-                  <button type="button" disabled={completas.length === 0} onClick={() => void enviar(id, completas)}>
-                    {configurado ? t('revision.abrirFormulario') : t('revision.copiar')}
-                  </button>
+                  {sinEnviar > 0 && <span data-testid="sin-enviar"> · {t('revision.sinEnviar', { count: sinEnviar })}</span>}
                 </li>
               );
             })}
           </ul>
-          {partes && (
-            <div role="group" aria-label={t('revision.largaExplica')}>
-              <p>{t('revision.largaExplica')}</p>
-              {partes.urls.map((u, i) => (
-                <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="enlace-parte">
-                  {t('revision.parte', { n: i + 1, total: partes.urls.length })}
-                </a>
-              ))}
+          <button type="button" className="boton-primario" disabled={pendientes.length === 0} onClick={enviarTodo}>
+            {t('revision.enviarTodo')}
+          </button>
+          {envio && envio.partes.length > 0 && (
+            <div>
+              <p>{t('revision.confirmaAyuda')}</p>
+              {envio.partes.length > 1 && <p>{t('revision.largaExplica')}</p>}
+              <ul data-testid="partes-envio">
+                {envio.partes.map((parte, i) => {
+                  const estado = envio.estados[i] ?? 'sin_abrir';
+                  return (
+                    <li key={i} data-testid="parte-envio" data-estado={estado}>
+                      {t('revision.parte', { n: i + 1, total: envio.partes.length })} ·{' '}
+                      {t('revision.respuestas', { count: parte.respuestas.length })} ·{' '}
+                      <span className="etiqueta-aviso">
+                        {estado === 'confirmada'
+                          ? t('revision.parteConfirmada')
+                          : estado === 'abierta'
+                            ? t('revision.parteAbierta')
+                            : t('revision.parteSinAbrir')}
+                      </span>{' '}
+                      {estado !== 'confirmada' && parte.url && (
+                        <a href={parte.url} target="_blank" rel="noopener noreferrer" className="enlace-parte" onClick={() => marcar(i, 'abierta')}>
+                          {t('revision.abrirFormulario')}
+                        </a>
+                      )}
+                      {estado !== 'confirmada' && !parte.url && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await copiarODescargar(parte.carga, `revision-${revisor}-parte-${i + 1}.json`);
+                            marcar(i, 'abierta');
+                          }}
+                        >
+                          {t('revision.copiar')}
+                        </button>
+                      )}{' '}
+                      {estado === 'abierta' && (
+                        <button type="button" onClick={() => confirmar(i)}>
+                          {t('revision.loEnvie')}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
           {aviso && <p role="status">{aviso}</p>}

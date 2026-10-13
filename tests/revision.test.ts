@@ -2,16 +2,22 @@ import { describe, expect, it } from 'vitest';
 import {
   cambiosDeTexto,
   cargaRevision,
+  cargaRevisionV2,
+  CLAVES_V2,
   claveRespuesta,
+  confirmarParte,
   desactualizadas,
   desdeClave,
   ESPERA_GUARDADO_MS,
   MAX_URL,
+  partesEnvio,
   pendientesComoCorrectas,
+  pendientesDeEnvio,
   propuestaDePosicion,
   respuestaCompleta,
   separarIncompletas,
   urlFormulario,
+  urlFormularioV2,
   type Respuesta,
 } from '../src/lib/revision';
 
@@ -163,15 +169,168 @@ describe('guardado mientras se escribe', () => {
   });
 });
 
-describe('envío en partes', () => {
-  it('una revisión larga se parte en varias URL que caben en el límite y no pierden respuestas', async () => {
-    const { urlsFormulario } = await import('../src/lib/revision');
-    const muchas = Array.from({ length: 120 }, (_, i) => ({ ...r(`campo.${i}`), propuesta: 'ñ'.repeat(40) }));
-    const urls = urlsFormulario(config, 'P', 'h', muchas);
-    expect(urls.length).toBeGreaterThan(1);
-    expect(urls.every((u) => u.length <= MAX_URL)).toBe(true);
-    const total = urls.reduce((n, u) => n + JSON.parse(new URL(u).searchParams.get('entry.3')!).respuestas.length, 0);
+describe('envío en un solo formulario (#58)', () => {
+  const de = (estructura: string, campo: string, extra: Partial<Respuesta> = {}): Respuesta => ({
+    ...r(campo),
+    estructura,
+    ...extra,
+  });
+  const cargaDe = (url: string | null) => JSON.parse(new URL(url!).searchParams.get('entry.3')!);
+
+  it('v 2, revisor en r, agrupada por estructura en orden de aparición y con claves cortas', () => {
+    const entrada = [
+      de('hippocampus', 'ubicacion'),
+      de('thalamus', 'que_es'),
+      de('hippocampus', 'que_es'),
+      de('amygdala', 'nombre'),
+    ];
+    const cruda = cargaRevisionV2('P', entrada);
+    const carga = JSON.parse(cruda);
+    expect(carga.v).toBe(2);
+    expect(carga.r).toBe('P');
+    expect(Object.keys(carga.e)).toEqual(['hippocampus', 'thalamus', 'amygdala']);
+    expect(carga.e.hippocampus).toHaveLength(2);
+    const permitidas: string[] = Object.values(CLAVES_V2);
+    for (const el of Object.values<Record<string, unknown>[]>(carga.e).flat()) {
+      expect(Object.keys(el).every((k) => permitidas.includes(k))).toBe(true);
+    }
+    for (const largo of ['"fecha"', '"estructura"', '"campo"', '"veredicto"']) expect(cruda).not.toContain(largo);
+  });
+
+  it('las claves cortas llevan cada campo opcional y omiten los que no están', () => {
+    const completa = de('x', 'trazo:Vagus_nerve.R 01', {
+      veredicto: 'corregir',
+      propuesta: 'p',
+      comentario: 'k',
+      posicion: [1, 2, 3],
+      malla: 'm1',
+      ramo: 'a1',
+      version: 'sin-ficha',
+    });
+    const sinIdioma: Respuesta = { estructura: 'x', campo: 'nombre', veredicto: 'correcto', version: '0.1.0', fecha: 'f' };
+    const { e } = JSON.parse(cargaRevisionV2('P', [completa, sinIdioma]));
+    expect(e.x[0]).toEqual({ c: 'trazo:Vagus_nerve.R 01', i: 'es', d: 'corregir', p: 'p', k: 'k', x: [1, 2, 3], m: 'm1', a: 'a1', s: 'sin-ficha' });
+    expect(e.x[1]).toEqual({ c: 'nombre', d: 'correcto', s: '0.1.0' });
+  });
+
+  it('tres fichas cortas salen en una sola parte con los tres ids en el campo Estructura (D2)', () => {
+    const ids = ['hippocampus', 'thalamus', 'amygdala'];
+    const respuestas = ids.flatMap((id) => ['a', 'b', 'c', 'd'].map((c) => de(id, c)));
+    const partes = partesEnvio(config, 'P', respuestas);
+    expect(partes).toHaveLength(1);
+    expect(partes[0]!.url).not.toBeNull();
+    expect(partes[0]!.url!.length).toBeLessThanOrEqual(MAX_URL);
+    const p = new URL(partes[0]!.url!).searchParams;
+    expect(p.get('entry.1')).toBe('P');
+    expect(p.get('entry.2')).toBe('hippocampus,thalamus,amygdala');
+    const carga = cargaDe(partes[0]!.url);
+    expect(Object.keys(carga.e)).toHaveLength(3);
+    expect(Object.values<unknown[]>(carga.e).flat()).toHaveLength(12);
+    expect(partes[0]!.carga).toBe(p.get('entry.3'));
+  });
+
+  it('solo se parte si la URL pasaría de MAX_URL, y cada parte no podía recibir la siguiente respuesta (D1)', () => {
+    const muchas = Array.from({ length: 120 }, (_, i) => de(i % 2 ? 'thalamus' : 'hippocampus', `campo.${i}`, { propuesta: 'ñ'.repeat(40) }));
+    const partes = partesEnvio(config, 'P', muchas);
+    expect(partes.length).toBeGreaterThan(1);
+    expect(partes.every((x) => x.url !== null && x.url.length <= MAX_URL)).toBe(true);
+    const enPartes = partes.flatMap((x) => x.respuestas);
+    expect(enPartes).toHaveLength(120);
+    expect(new Set(enPartes.map(claveRespuesta))).toEqual(new Set(muchas.map(claveRespuesta)));
+    const total = partes.reduce((n, x) => n + Object.values<unknown[]>(cargaDe(x.url).e).flat().length, 0);
     expect(total).toBe(120);
+    for (let i = 0; i < partes.length - 1; i++) {
+      const conLaSiguiente = [...partes[i]!.respuestas, partes[i + 1]!.respuestas[0]!];
+      expect(urlFormularioV2(config, 'P', conLaSiguiente).length).toBeGreaterThan(MAX_URL);
+    }
+  });
+
+  it('una respuesta que no cabe sola va en su propia parte sin URL y no se pierde (D3)', () => {
+    const grande = de('hippocampus', 'grande', { propuesta: 'ñ'.repeat(3000) });
+    const partes = partesEnvio(config, 'P', [de('hippocampus', 'a'), grande, de('hippocampus', 'b')]);
+    const sinUrl = partes.filter((x) => x.url === null);
+    expect(sinUrl).toHaveLength(1);
+    expect(sinUrl[0]!.respuestas).toEqual([grande]);
+    expect(JSON.parse(sinUrl[0]!.carga).e.hippocampus[0].c).toBe('grande');
+    expect(partes.flatMap((x) => x.respuestas)).toHaveLength(3);
+    expect(partes.filter((x) => x.url !== null).every((x) => x.url!.length <= MAX_URL)).toBe(true);
+  });
+
+  it('sin formulario configurado sale una sola parte sin URL con todo (D3)', () => {
+    const respuestas = [de('hippocampus', 'a'), de('thalamus', 'b')];
+    const partes = partesEnvio({ ...config, urlFormulario: '' }, 'P', respuestas);
+    expect(partes).toHaveLength(1);
+    expect(partes[0]!.url).toBeNull();
+    const carga = JSON.parse(partes[0]!.carga);
+    expect(carga.v).toBe(2);
+    expect(Object.keys(carga.e)).toEqual(['hippocampus', 'thalamus']);
+    expect(partes[0]!.respuestas).toHaveLength(2);
+  });
+
+  it('sin respuestas no hay partes (D3)', () => {
+    expect(partesEnvio(config, 'P', [])).toEqual([]);
+    expect(partesEnvio({ ...config, urlFormulario: '' }, 'P', [])).toEqual([]);
+  });
+
+  it('las respuestas se agrupan por estructura sin cambiar el orden dentro de cada una', () => {
+    const partes = partesEnvio(config, 'P', [de('a', '1'), de('b', '2'), de('a', '3')]);
+    expect(partes[0]!.respuestas.map((x) => `${x.estructura}:${x.campo}`)).toEqual(['a:1', 'a:3', 'b:2']);
+  });
+
+  describe('pendientesDeEnvio (D4)', () => {
+    const corregir = (extra: Partial<Respuesta> = {}): Respuesta => ({ ...r('que_es'), veredicto: 'corregir', ...extra });
+
+    it('sin confirmadas, todas las completas son pendientes', () => {
+      const lista = [r('a'), r('b'), corregir({ propuesta: 'x' })];
+      expect(pendientesDeEnvio(lista, {})).toEqual(lista);
+    });
+
+    it('una confirmada con la misma fecha no es pendiente', () => {
+      const a = r('a');
+      expect(pendientesDeEnvio([a, r('b')], { [claveRespuesta(a)]: a.fecha }).map((x) => x.campo)).toEqual(['b']);
+    });
+
+    it('una confirmada y luego editada (otra fecha) vuelve a ser pendiente', () => {
+      const a = r('a');
+      const editada = { ...a, veredicto: 'no_es_mi_area' as const, fecha: '2026-10-12T00:00:00Z' };
+      expect(pendientesDeEnvio([editada], { [claveRespuesta(a)]: a.fecha })).toEqual([editada]);
+    });
+
+    it('un "Corregir" sin propuesta, posición ni ramo nunca es pendiente, esté o no confirmado', () => {
+      const vacio = corregir();
+      expect(pendientesDeEnvio([vacio], {})).toEqual([]);
+      expect(pendientesDeEnvio([corregir({ propuesta: '  ' })], {})).toEqual([]);
+      expect(pendientesDeEnvio([vacio], { [claveRespuesta(vacio)]: 'otra' })).toEqual([]);
+    });
+
+    it('un "Corregir" con posición es pendiente', () => {
+      const conPosicion = corregir({ campo: 'posicion', posicion: [0, 0, 0] });
+      expect(pendientesDeEnvio([conPosicion], {})).toEqual([conPosicion]);
+    });
+
+    it('una confirmada de una respuesta borrada no afecta', () => {
+      const a = r('a');
+      expect(pendientesDeEnvio([a], { 'hippocampus|borrada|es': 'x' })).toEqual([a]);
+    });
+  });
+
+  describe('confirmarParte (D4)', () => {
+    it('agrega la clave y la fecha de cada respuesta de la parte, conserva las previas y no muta', () => {
+      const previas = { 'otra|campo|': 'antes' };
+      const antes = structuredClone(previas);
+      const a = r('a');
+      const b = { ...r('b'), estructura: 'thalamus', fecha: 'f2' };
+      const nuevas = confirmarParte(previas, { url: null, carga: '', respuestas: [a, b] });
+      expect(nuevas).toEqual({ 'otra|campo|': 'antes', [claveRespuesta(a)]: a.fecha, [claveRespuesta(b)]: 'f2' });
+      expect(previas).toEqual(antes);
+      expect(nuevas).not.toBe(previas);
+    });
+
+    it('lo confirmado deja de ser pendiente', () => {
+      const lista = [r('a'), r('b')];
+      const parte = partesEnvio(config, 'P', lista)[0]!;
+      expect(pendientesDeEnvio(lista, confirmarParte({}, parte))).toEqual([]);
+    });
   });
 });
 

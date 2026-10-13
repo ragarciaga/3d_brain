@@ -4,7 +4,7 @@
 // (pipeline/revisores.local.json, ignorado por git) y un envío con un código fuera del padrón se
 // descarta. El nombre solo vive en la hoja de registro y aparece en la ficha cuando el editor
 // aprueba la revisión.
-import type { Respuesta } from '../../src/lib/revision.ts';
+import { CLAVES_V2, type Respuesta } from '../../src/lib/revision.ts';
 
 export function parsearCsv(texto: string): string[][] {
   const filas: string[][] = [];
@@ -88,7 +88,39 @@ function respuestaValida(r: unknown, idOk: (id: unknown) => boolean): r is Respu
 }
 
 /**
- * Busca en cada fila la celda con la carga JSON de la app ({"v":1,...}). Un envío solo vale si su
+ * Expande una carga `v:2` ({"v":2,"r":<código>,"e":{<id>:[{<claves cortas>}]}}) en un envío por
+ * estructura. Cada clave de `e` termina como nombre de archivo (`<id>.md`), así que debe pasar `idOk`.
+ * Los elementos se copian solo por las claves conocidas de `CLAVES_V2` (el resto se descarta), llevan
+ * la estructura de su clave y pasan `respuestaValida`. Devuelve null si algo está mal: una respuesta
+ * mala invalida la fila entera, igual que en `v:1`.
+ */
+function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, marcaTemporal: string): Envio[] | null {
+  const revisor = d['r'];
+  const e = d['e'];
+  if (typeof revisor !== 'string' || !REVISOR_VALIDO.test(revisor)) return null;
+  if (!esObjeto(e)) return null;
+  const entradas = Object.entries(e);
+  if (entradas.length === 0) return null;
+  const envios: Envio[] = [];
+  for (const [id, valor] of entradas) {
+    if (!idOk(id) || !Array.isArray(valor) || valor.length === 0) return null;
+    const respuestas: Respuesta[] = [];
+    for (const el of valor as unknown[]) {
+      if (!esObjeto(el)) return null;
+      const r: Record<string, unknown> = { estructura: id, fecha: '' };
+      for (const [largo, corto] of Object.entries(CLAVES_V2)) {
+        if (Object.hasOwn(el, corto)) r[largo] = el[corto];
+      }
+      if (!respuestaValida(r, idOk)) return null;
+      respuestas.push(r);
+    }
+    envios.push({ revisor, estructura: id, respuestas, marcaTemporal });
+  }
+  return envios;
+}
+
+/**
+ * Busca en cada fila la celda con la carga JSON de la app ({"v":1,...} o {"v":2,...}). Un envío solo vale si su
  * estructura (y la de cada respuesta) es un id conocido y con forma de slug, así nadie puede
  * escribir fuera de la carpeta de salida, si el código del revisor son solo letras, dígitos, guion
  * y guion bajo (hasta 40, sin truncar) y si cada respuesta pasa `respuestaValida`. Una fila mal
@@ -106,8 +138,15 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
         continue;
       }
       const d: unknown = JSON.parse(celda);
+      if (esObjeto(d) && d['v'] === 2) {
+        const expandidos = expandirV2(d, idOk, fila[0] ?? '');
+        if (expandidos) envios.push(...expandidos);
+        else invalidas++;
+        continue;
+      }
       if (
         !esObjeto(d) ||
+        d['v'] !== 1 ||
         typeof d['revisor'] !== 'string' ||
         !REVISOR_VALIDO.test(d['revisor']) ||
         !idOk(d['estructura']) ||
@@ -236,6 +275,10 @@ export function resumenConsolidado(envios: Envio[], versionDe: (id: string) => s
 export interface Importacion {
   /** Nombre de archivo -> contenido: un `<id>.md` por estructura y `resumen.md` con todo. */
   archivos: Map<string, string>;
+  /**
+   * Envíos válidos por estructura: una fila `v:2` cuenta una vez por cada estructura que trae, igual que
+   * `desconocidos`.
+   */
   validos: number;
   invalidas: number;
   /** Envíos bien formados pero con un código fuera del padrón (descartados). */

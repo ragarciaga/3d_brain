@@ -68,12 +68,18 @@ export function formularioConfigurado(c: ConfigFormulario): boolean {
   return Boolean(c.urlFormulario && c.campos.codigo && c.campos.estructura && c.campos.revision);
 }
 
-/** Datos compactos de una revisión, listos para pegar o enviar. */
+/**
+ * Carga `v:1` (una estructura por envío). La app ya no la genera: se conserva para las pruebas y
+ * para documentar el formato de los envíos viejos, que el importador sigue leyendo.
+ */
 export function cargaRevision(codigo: string, estructura: string, respuestas: Respuesta[]): string {
   return JSON.stringify({ v: 1, revisor: codigo, estructura, respuestas });
 }
 
-/** URL prellenada del formulario, o null si no está configurado o la revisión es muy larga. */
+/**
+ * URL prellenada del formulario con una carga `v:1`, o null si no está configurado o la revisión es muy larga.
+ * La app ya no la usa (ver `urlFormularioV2`); se conserva para las pruebas y los envíos viejos.
+ */
 export function urlFormulario(c: ConfigFormulario, codigo: string, estructura: string, respuestas: Respuesta[]): string | null {
   if (!formularioConfigurado(c)) return null;
   const p = new URLSearchParams({ usp: 'pp_url' });
@@ -82,6 +88,112 @@ export function urlFormulario(c: ConfigFormulario, codigo: string, estructura: s
   p.set(c.campos.revision, cargaRevision(codigo, estructura, respuestas));
   const url = `${c.urlFormulario}?${p.toString()}`;
   return url.length > MAX_URL ? null : url;
+}
+
+/**
+ * Claves cortas de la carga `v:2`: nombre largo del campo de `Respuesta` a clave corta. `estructura` y
+ * `fecha` no van: la estructura es la clave de `e` y el importador nunca usa la fecha.
+ */
+export const CLAVES_V2 = {
+  campo: 'c',
+  idioma: 'i',
+  veredicto: 'd',
+  propuesta: 'p',
+  comentario: 'k',
+  posicion: 'x',
+  malla: 'm',
+  ramo: 'a',
+  version: 's',
+} as const;
+
+/**
+ * Carga `v:2`: todas las respuestas en un solo envío, agrupadas por estructura (en orden de primera
+ * aparición) y con claves cortas. `{"v":2,"r":<código>,"e":{<id>:[{<claves cortas>}]}}`.
+ */
+export function cargaRevisionV2(codigo: string, respuestas: Respuesta[]): string {
+  const e: Record<string, Record<string, unknown>[]> = {};
+  for (const r of respuestas) {
+    const fila: Record<string, unknown> = {};
+    for (const [largo, corto] of Object.entries(CLAVES_V2)) {
+      const valor = r[largo as keyof typeof CLAVES_V2];
+      if (valor !== undefined) fila[corto] = valor;
+    }
+    (e[r.estructura] ??= []).push(fila);
+  }
+  return JSON.stringify({ v: 2, r: codigo, e });
+}
+
+/**
+ * URL prellenada con una carga `v:2`. El campo Estructura lleva los ids únicos separados por coma.
+ * No revisa el largo y supone el formulario configurado.
+ */
+export function urlFormularioV2(c: ConfigFormulario, codigo: string, respuestas: Respuesta[]): string {
+  const p = new URLSearchParams({ usp: 'pp_url' });
+  p.set(c.campos.codigo, codigo);
+  p.set(c.campos.estructura, [...new Set(respuestas.map((r) => r.estructura))].join(','));
+  p.set(c.campos.revision, cargaRevisionV2(codigo, respuestas));
+  return `${c.urlFormulario}?${p.toString()}`;
+}
+
+/** Una parte del envío: su URL prellenada (null si no cabe o no hay formulario), su carga y sus respuestas. */
+export interface ParteEnvio {
+  url: string | null;
+  carga: string;
+  respuestas: Respuesta[];
+}
+
+export type EstadoParte = 'sin_abrir' | 'abierta' | 'confirmada';
+
+/**
+ * Parte las respuestas en envíos que quepan en `MAX_URL`, agrupadas por estructura (estable, por primera
+ * aparición). Sin respuestas da []. Sin formulario configurado da una sola parte sin URL con todo. Una
+ * respuesta que no cabe sola en una URL sale como parte propia sin URL (para copiar o descargar).
+ */
+export function partesEnvio(c: ConfigFormulario, codigo: string, respuestas: Respuesta[]): ParteEnvio[] {
+  if (!respuestas.length) return [];
+  const grupos = new Map<string, Respuesta[]>();
+  for (const r of respuestas) {
+    const g = grupos.get(r.estructura);
+    if (g) g.push(r);
+    else grupos.set(r.estructura, [r]);
+  }
+  const todas = [...grupos.values()].flat();
+  const sinUrl = (rs: Respuesta[]): ParteEnvio => ({ url: null, carga: cargaRevisionV2(codigo, rs), respuestas: rs });
+  if (!formularioConfigurado(c)) return [sinUrl(todas)];
+
+  const partes: ParteEnvio[] = [];
+  let actual: Respuesta[] = [];
+  const cerrar = () => {
+    if (!actual.length) return;
+    partes.push({ url: urlFormularioV2(c, codigo, actual), carga: cargaRevisionV2(codigo, actual), respuestas: actual });
+    actual = [];
+  };
+  for (const r of todas) {
+    if (urlFormularioV2(c, codigo, [...actual, r]).length <= MAX_URL) {
+      actual.push(r);
+      continue;
+    }
+    cerrar();
+    if (urlFormularioV2(c, codigo, [r]).length <= MAX_URL) actual = [r];
+    else partes.push(sinUrl([r]));
+  }
+  cerrar();
+  return partes;
+}
+
+/**
+ * Respuestas por enviar: completas (un "Corregir" sin texto no se envía) y no confirmadas con la misma
+ * fecha. Si el docente cambia una respuesta ya confirmada, su fecha cambia y vuelve a quedar pendiente.
+ */
+export function pendientesDeEnvio(respuestas: Respuesta[], confirmadas: Record<string, string>): Respuesta[] {
+  return respuestas.filter((r) => respuestaCompleta(r) && confirmadas[claveRespuesta(r)] !== r.fecha);
+}
+
+/** Copia de `confirmadas` con cada respuesta de la parte confirmada con su fecha. No muta la entrada. */
+export function confirmarParte(confirmadas: Record<string, string>, parte: ParteEnvio): Record<string, string> {
+  const nuevas = { ...confirmadas };
+  for (const r of parte.respuestas) nuevas[claveRespuesta(r)] = r.fecha;
+  return nuevas;
 }
 
 /** Pausa (ms) entre la última tecla y el guardado de lo que el docente escribe en la ficha. */
@@ -120,26 +232,4 @@ export function cambiosDeTexto(
 /** Respuestas cuya versión ya no coincide con la del contenido actual. */
 export function desactualizadas(respuestas: Respuesta[], versionActual: (estructura: string) => string): Respuesta[] {
   return respuestas.filter((r) => r.version !== versionActual(r.estructura));
-}
-
-/**
- * URL prellenadas para enviar una revisión larga en partes que quepan en el límite de URL.
- * Devuelve [] si el formulario no está configurado o si una sola respuesta no cabe.
- */
-export function urlsFormulario(c: ConfigFormulario, codigo: string, estructura: string, respuestas: Respuesta[]): string[] {
-  if (!formularioConfigurado(c) || !respuestas.length) return [];
-  const partes: Respuesta[][] = [];
-  let actual: Respuesta[] = [];
-  for (const r of respuestas) {
-    const prueba = [...actual, r];
-    if (urlFormulario(c, codigo, estructura, prueba)) actual = prueba;
-    else {
-      if (!actual.length) return []; // una sola respuesta excede el límite
-      partes.push(actual);
-      actual = [r];
-      if (!urlFormulario(c, codigo, estructura, actual)) return [];
-    }
-  }
-  if (actual.length) partes.push(actual);
-  return partes.map((p) => urlFormulario(c, codigo, estructura, p)!);
 }
