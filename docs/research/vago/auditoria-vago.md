@@ -65,6 +65,8 @@ Altura en mm sobre el origen del modelo (Y arriba). Cercanos: distancia del extr
 
 ## Cómo se generó
 
+`pipeline/anclajes-vago.json` no está en el repo todavía: con el tórax escaneado en espejo hace fallar `npm test`, así que entra con la implementación del ADR 0010. Se regenera con `python pipeline/auditar-vago.py`.
+
 - Modelo: Z-Anatomy, commit `9de5d6912a1b0df9cab739d57f00e036b0496ddc`. `Z-Anatomy.zip` y `TA2.csv` se sacaron de ese commit con git (la descarga directa de GitHub respondía 403) y `pipeline/descargar.py` verificó el SHA-256 de los dos contra `pipeline/comun.py`: coinciden.
 - Blender como módulo: bpy 5.2.2 en Python 3.13.
 - Fecha: 13 de octubre de 2026.

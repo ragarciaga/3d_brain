@@ -35,5 +35,5 @@ La prueba de asimetrías (`tests/asimetrias.test.ts`) falla con el modelo real, 
 
 ## Consequences
 - Positive: el vago del tórax respeta las cuatro asimetrías; lo que se ve falso hoy deja de verse; cada tramo nuevo es texto que un docente corrige.
-- Negative: crece la geometría trazada (de tres piezas a cinco: los dos recurrentes, el vago izquierdo distal y los dos tramos torácicos). El pipeline tiene que recortar el tronco escaneado, lo que regenera el GLB (tier C). Hasta que esto esté implementado, `npm test` falla con `pipeline/anclajes-vago.json` en el repo.
+- Negative: crece la geometría trazada (de tres piezas a cinco: los dos recurrentes, el vago izquierdo distal y los dos tramos torácicos). El pipeline tiene que recortar el tronco escaneado, lo que regenera el GLB (tier C). Con el modelo actual, `npm test` falla si `pipeline/anclajes-vago.json` está en el repo; por eso ese archivo entra junto con la implementación de esta decisión, no antes (se regenera con `pipeline/auditar-vago.py`).
 - Revisit when: un docente rechace una ruta torácica, aparezca una fuente abierta con el vago torácico medido, o el recorte del tronco escaneado no se pueda hacer sin mover lo que queda.
