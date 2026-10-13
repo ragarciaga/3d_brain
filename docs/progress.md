@@ -78,7 +78,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
 3. Repartir enlaces a los docentes e importar las primeras revisiones.
-4. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011): primero el prototipo de #9 (relleno por caras traseras, capturas y cuadros por segundo), luego las tareas del spec. Después F12 y fichas verificadas. Issue de control: #1.
+4. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). Al fusionar el PR del spec, el ciclo las construye; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->

@@ -1,5 +1,5 @@
 # Tasks: Planos de corte (F8)
-Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13, 2 rounds
+Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-13, 3 rounds
 
 ## T1: Crear la lógica pura de los cortes
 - Purpose: tener en un solo módulo probado el rango del cerebro, la geometría de cada plano, el lado oculto, las etiquetas en mm y el vigilante de cuadros, para que el visor y el panel solo los usen.
@@ -8,7 +8,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: none
 - Files: src/lib/cortes.ts, tests/cortes.test.ts, src/i18n/es.json, src/i18n/en.json
 - Verify: `npm test -- tests/cortes.test.ts`; `npm run check:i18n`
-- Issue:
+- Issue: #33
 - Status: todo
 
 ### Decision log
@@ -21,7 +21,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T1
 - Files: src/store/useAtlas.ts, tests/store.test.ts
 - Verify: `npm test -- tests/store.test.ts` con casos nuevos que fallan antes del cambio: estado inicial con tres planos inactivos y `fantasmaCorte` y `rellenoApagado` en false (R5.1); `setCorte` activa un plano en 0 mm (R1.3) y respeta `invertido` (R1.6); `mm` fuera del rango de `rangoCerebro` se ajusta al borde; activar el primer plano con explosión y piezas separadas deja `explosion=0`, `separadas={}` e `inventario=false` en una sola actualización (R2.2); con un corte activo `setExplosion` y `separar` no cambian nada, y tras `quitarCortes()` o desactivar el último plano vuelven a funcionar (R1.8, R2.4); el objetivo de cada pieza es igual antes de activar y después de quitar los cortes (R2.5); `ocultas` y `aislar` no cambian al activar ni al quitar cortes (R2.6); `setFantasmaCorte` y `apagarRelleno` cambian sus campos y `apagarRelleno` es idempotente
-- Issue:
+- Issue: #34
 - Status: todo
 
 ### Decision log
@@ -35,7 +35,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: none
 - Files: scripts/lib/mallas.ts, scripts/mallas-cerradas.ts, scripts/check-modelo.ts, src/config/mallas-cerradas.json, tests/mallas-cerradas.test.ts
 - Verify: `npm test -- tests/mallas-cerradas.test.ts` (malla sintética cerrada da cerrada; una con un hueco o un triángulo suelto da abierta; vértices con la misma posición a 6 decimales se sueldan; la comparación reporta una malla que falta, una que sobra y una listada que no existe en el GLB); `node scripts/mallas-cerradas.ts` escribe `src/config/mallas-cerradas.json` ordenado, con 191 nombres sobre 253 mallas medidas (piezas de estudio bajo `g-brain` en `src/data/arbol.json`, leído con readFileSync, sin `#toque` ni vago); `npm run check:modelo` pasa con la lista generada y sale con código 1, nombrando la malla, si recibe por argumento una lista a la que se le quitó o se le agregó una malla
-- Issue:
+- Issue: #35
 - Status: todo
 
 ### Decision log
@@ -49,7 +49,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T1, T2
 - Files: src/components/recorte.ts, src/components/Visor.tsx, src/main.tsx, tests/cortes-visor.test.ts, e2e/cortes-visor.spec.ts
 - Verify: `npm test -- tests/cortes-visor.test.ts` con casos que fallan antes de la tarea: (a) los planos por pieza son `PLANOS_CORTE` solo para piezas del encéfalo con cortes activos, nunca para el vago ni los órganos (R2.1); (b) sin planos activos son `null` y no se monta ninguna malla extra (R8.3); (c) la opacidad del fantasma es 0,25 o menos y, con un solo plano activo, el fantasma muestra solo el lado oculto de ese plano (R5.2); (d) el fantasma usa `raycast` nulo (R5.3); (e) `raycastCorte` descarta un impacto del lado oculto de cualquier plano activo y conserva uno del lado visible, con uno, dos y tres planos (R4.3). `npm run test:e2e -- e2e/cortes-visor.spec.ts`: (1) con un plano activo, `__cortes.planosDe` da 3 para una pieza visible del encéfalo, 1 para el vago (el plano del recorrido) y 0 para un órgano de referencia; sin cortes, 0 para la pieza del encéfalo (R1.4, R2.1, R8.3); (2) con el fantasma activo, `__cortes.fantasmas()` incluye una pieza cruzada visible y no incluye una oculta ni una fuera del aislamiento (R2.6); (3) con cortes activos se inicia el recorrido del vago y los cortes siguen mientras el nervio se revela parada por parada (R9.1); (4) al quitar los cortes cada pieza queda en la posición de antes (R2.5); `npm run test:e2e -- e2e/atlas.spec.ts` sigue en verde
-- Issue:
+- Issue: #36
 - Status: todo
 
 ### Decision log
@@ -63,7 +63,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T4
 - Files: src/lib/enlaces.ts, tests/enlaces.test.ts, src/components/Pagina.tsx, e2e/cortes-enlace.spec.ts
 - Verify: `npm test -- tests/enlaces.test.ts`: `serializar` emite `corte=coronal:12,axial:-8:inv` en orden sagital, coronal, axial y no emite `corte` sin planos activos (R7.1); `entradasDeCortes(cortes)` convierte el estado del store en entradas solo de planos activos (R7.1); `leer` y `validarCortes(entradas, rango)` ignoran solo la entrada mal escrita, la repetida (gana la primera) y la de fuera de rango (R7.3); un enlace sin `corte` se lee y se genera igual que hoy; con el store real, `aplicarCortesEnlace(entradas)` con `explosion=40` previa deja `explosion=0`, `separadas={}` y los planos en sus posiciones, y aplicarla dos veces deja el mismo estado (R7.4). `npm run test:e2e -- e2e/cortes-enlace.spec.ts`: abrir `?corte=coronal:12,axial:-8:inv` deja coronal y axial activos en 12 y -8 (axial invertido) según `window.__atlas.getState().cortes` una vez cargado el modelo (R7.2); un enlace con una entrada inválida y otra válida aplica solo la válida; con `corte=` y `explosion=40` la explosión queda en 0; con cortes activos, "Compartir" produce una URL con `corte=` y los mismos planos (R7.1)
-- Issue:
+- Issue: #37
 - Status: todo
 
 ### Decision log
@@ -77,7 +77,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T3, T4
 - Files: src/components/recorte.ts, src/components/Visor.tsx, src/main.tsx, tests/cortes-visor.test.ts, e2e/cortes-relleno.spec.ts
 - Verify: `npm test -- tests/cortes-visor.test.ts` con casos que fallan antes de la tarea: la función pura de `recorte.ts` que decide qué mallas se rellenan devuelve vacío sin planos activos (R8.3) y excluye piezas ocultas, fuera del aislamiento, mallas abiertas (fuera de `src/config/mallas-cerradas.json`), `#toque`, vago y órganos (R2.6). `npm run test:e2e -- e2e/cortes-relleno.spec.ts`: con un corte coronal en el tálamo, `__cortes.rellenos()` es mayor que 0; el tálamo, los ventrículos laterales y el núcleo caudado muestran su nombre al pasar el cursor en `__puntoCorte(pieza)` (R3.5, R4.1); tocar la cara abre la ficha de esa pieza (R4.2); tocar `__puntoCorte(pieza, 'oculto')` no selecciona nada; al quitar los cortes `__cortes.rellenos()` es 0 (R8.3); `npm run test:e2e -- e2e/atlas.spec.ts` sigue en verde; R3.1 `[manual]` (reason: el relleno se ve en la GPU; se revisa en los equipos de referencia y con capturas del prototipo) con capturas en #9
-- Issue:
+- Issue: #38
 - Status: todo
 
 ### Decision log
@@ -91,7 +91,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T6
 - Files: src/components/recorte.ts, src/components/ContornoCorte.tsx, src/components/Visor.tsx, tests/cortes-visor.test.ts
 - Verify: `npm test -- tests/cortes-visor.test.ts` con casos nuevos que fallan antes de la tarea: (a) `segmentosDeCorte` da los segmentos plano-malla correctos sobre una geometría abierta mínima con el BVH; (b) con relleno encendido, `piezasConContorno` cubre solo las piezas abiertas cruzadas; (c) con `rellenoApagado`, cubre todas las piezas cruzadas y la función de T6 que decide qué se rellena devuelve vacío; (d) `alErrorShaderRelleno` llama `apagarRelleno` y deja el resultado de (c), sin llamadas a `console.error`; (e) `alMuestraFps` con 10 muestras seguidas bajo 30 y cortes activos llama `apagarRelleno` una sola vez, y sin cortes no lo llama; (f) sin cortes no se monta `ContornoCorte` y al quitarlos se llama `dispose` en sus geometrías. `Visor.tsx` conecta `renderer.debug.onShaderError` y `MedidorCuadros` con esas funciones. R3.3 `[manual]` (reason: resultado visual en la GPU, sin oráculo automático fiable) con capturas en #9
-- Issue:
+- Issue: #39
 - Status: todo
 
 ### Decision log
@@ -105,7 +105,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T4, T5
 - Files: src/components/PanelCortes.tsx, src/components/Pagina.tsx, src/components/Iconos.tsx, src/estilos.css, src/lib/teclado.ts, tests/teclado.test.ts, src/i18n/es.json, src/i18n/en.json, e2e/cortes-panel.spec.ts
 - Verify: `npm test -- tests/teclado.test.ts` (con el panel de cortes abierto, Escape cierra el panel antes de salir del aislamiento, también con el foco en un deslizador); `npm run test:e2e -- e2e/cortes-panel.spec.ts`: (1) el botón "Cortes" del riel abre y cierra el panel, con tres filas (interruptor y deslizador en cada una), "Invertir", "Fantasma" y "Quitar cortes" (R1.1, R6.1); (2) la etiqueta en mm con dirección cambia al mover el deslizador (R1.5); (3) las flechas mueven 1 mm y `aria-valuetext` anuncia el valor (R1.9); (4) "Quitar cortes" apaga los tres interruptores y deja el cerebro entero (R1.8); (5) el aviso del cuerpo único se ve con el panel abierto (R6.4); (6) Escape cierra el panel, los cortes siguen y una pieza aislada sigue aislada (R6.5); (7) con el modelo sin cargar o WebGL fallido, el botón "Cortes" queda deshabilitado (R6.6); (8) con `rellenoApagado` en true (vía `window.__atlas`), el panel muestra una vez el aviso de relleno apagado (R8.2); (9) siguen en verde los E2E existentes de Escape en la paleta y "si el modelo no carga..."; `npm run check:i18n` (R6.7)
-- Issue:
+- Issue: #40
 - Status: todo
 
 ### Decision log
@@ -119,7 +119,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T8
 - Files: src/components/PanelCortes.tsx, src/components/Pagina.tsx, src/components/BarraFragmentar.tsx, src/components/Ficha.tsx, src/estilos.css, src/i18n/es.json, src/i18n/en.json, e2e/cortes-movil.spec.ts
 - Verify: `npm run test:e2e -- e2e/cortes-movil.spec.ts`; `npm run check:i18n`. Casos: (1) en celular (390 x 844), sin riel, el botón de cortes del encabezado, junto a la lupa, abre un cajón inferior; cerrado está `inert`; abierto recibe el foco; Escape lo cierra conservando los cortes; con el cajón y la ficha abiertos, las cajas del cajón, `.dock`, la brújula y la ficha no se intersecan y el cajón cabe en la pantalla (R6.2, R6.3); (2) en celular, con el modelo sin cargar, el botón de cortes está deshabilitado (R6.6); (3) en escritorio, con el panel abierto, su caja no se interseca con `.dock`, la brújula ni la ficha (R6.3); (4) en escritorio y en celular, con un plano activo, el deslizador de explosión, "Reensamblar" y "Separar" están `disabled` y se ve "Se desactivan mientras haya cortes"; con "Quitar cortes" se habilitan de nuevo y el texto desaparece (R2.3)
-- Issue:
+- Issue: #41
 - Status: todo
 
 ### Decision log
@@ -133,7 +133,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: draft  |  Converged: 2026-10-13,
 - Depends on: T5, T7, T9
 - Files: docs/operacion.md, docs/progress.md
 - Verify: R8.1 `[manual]` (reason: requiere los equipos físicos de referencia; los resultados se pegan en #6). Procedimiento en docs/operacion.md: en cada equipo (HP Iris Xe, iPhone 12 Pro Max, Android de gama baja), abrir `https://ragarciaga.github.io/3d_brain/es?medir=1&corte=sagital:0,coronal:0,axial:0`, copiar los resultados con "Copiar resultados" y pegarlos en #6 con una captura del panel de cortes. Se cumple si los tres equipos dan 30 cuadros por segundo o más de promedio y el panel no muestra el aviso de relleno apagado; si no, se anota en docs/progress.md y se abre el issue de F19
-- Issue:
+- Issue: #42
 - Status: todo
 
 ### Decision log
