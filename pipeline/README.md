@@ -58,10 +58,13 @@ Alternativa con Blender instalado (sin pip), desde la carpeta del repositorio:
 
 Los cambios a `mapeo.csv`, `cajas.json` y `public/modelos/` son de nivel C: los aprueba el editor.
 
-## Vago: auditoría, rutas trazadas y asimetrías (ADR 0009)
+## Vago: auditoría, rutas trazadas y asimetrías (ADR 0009 y 0010)
 
 El modelo trae el vago como 28 trazos sin nombre y no trae el laríngeo recurrente ni el vago izquierdo
-por debajo del tórax. Se nombra primero lo que existe y solo se trazan tres piezas, con estas reglas:
+por debajo del tórax. Además, la auditoría (`docs/research/vago/auditoria-vago.md`) encontró que el
+tramo torácico es un espejo izquierda-derecha que atraviesa la aorta y el bronquio derecho (ADR 0010).
+Se nombra primero lo que existe y se trazan solo los recurrentes, el vago izquierdo distal y el tramo
+torácico de los dos lados (el escaneado de ese tramo no se publica), con estas reglas:
 la ruta se escribe en texto por anclajes, la app la dibuja con su estado de revisión, un docente la
 juzga en la ficha (F24) y una prueba comprueba las cuatro asimetrías del vago en cada CI. Antes del
 lanzamiento público, toda ruta que siga en revisión se aprueba o se retira.
@@ -81,7 +84,10 @@ npm test                                        # tests/asimetrias.test.ts: las 
   `python pipeline/pruebas/probar_generar.py` y `python pipeline/pruebas/vago_sintetico.py` (este
   último regenera `tests/fixtures/vago-sintetico/`, que usan las pruebas de asimetrías).
 - La app dibuja las rutas como tubos punteados en tiempo de ejecución (no van al GLB), con aviso,
-  leyenda y filtro (SPEC F25).
+  leyenda y filtro (SPEC F25). Lo que sí toca el GLB es el recorte del tramo torácico escaneado
+  (ADR 0010), con el pipeline y `check:modelo`.
+- `pipeline/anclajes-vago.json` entra al repositorio junto con la implementación del ADR 0010: con
+  el modelo actual, la prueba de asimetrías falla (el espejo), como debe.
 
 En Windows (PowerShell), desde la carpeta del repositorio:
 

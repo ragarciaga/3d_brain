@@ -1,13 +1,13 @@
 # Progress
 
-Updated: 2026-10-13 (revisión docente dentro de la web, PR #31; vago, PR #30; spec de F8, PR #43)
+Updated: 2026-10-13 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
 ## Current objective
 Arrancar la revisión docente: mandar el mensaje de `docs/guia-docentes.md` a cada docente. En
-paralelo: construir F8 (#33 a #42), auditar el vago (necesita GitHub en el entorno) y medir la carga
-en los equipos de referencia (#6).
+paralelo: construir F8 (#33 a #42), implementar el ADR 0010 (trazar el vago torácico) y medir la
+carga en los equipos de referencia (#6).
 
 ## Current state
 - Revisión docente dentro de la web (PR #31): todo se ve como lo verá el público y el docente suma
@@ -21,8 +21,14 @@ en los equipos de referencia (#6).
   revelado progresivo, textos tomados de fichas con fuente). F25 lista en la app (punteado, aviso,
   leyenda, filtro). Las rutas trazadas se publican en `public/modelos/rutas-vago.json` (hoy vacío) y
   se ven para todos con "Pendiente de revisión docente"; antes del lanzamiento, lo que siga en
-  revisión se aprueba o se retira. Pipeline listo: `auditar-vago.py` (necesita Blender y GitHub en el
-  entorno), `rutas-vago.yaml`, `generar-ramas-vago.py` y la prueba de las cuatro asimetrías.
+  revisión se aprueba o se retira. Pipeline listo: `auditar-vago.py`, `rutas-vago.yaml`,
+  `generar-ramas-vago.py` y la prueba de las cuatro asimetrías.
+- Auditoría del vago hecha (PR #32, `docs/research/vago/auditoria-vago.md`): los 21 anclajes medidos
+  (el ligamento arterioso no existe; se usa su ganglio como sustituto) y un nombre propuesto por
+  trazo. Hallazgo: el vago del tórax de Z-Anatomy es un espejo izquierda-derecha que atraviesa el
+  arco aórtico y el bronquio derecho, así que el ADR 0010 decide trazar también el tramo torácico de
+  los dos lados y no publicar el escaneado de ese tramo. `pipeline/anclajes-vago.json` entra con esa
+  implementación (con el modelo actual, la prueba de asimetrías falla, como debe).
 - Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
   a `main` se publica solo con el workflow `pages`.
 - Nombre y marca: **Maysa Brain**, con logo propio (`public/marca/`) y paleta de Maysa; modo claro y
@@ -54,8 +60,6 @@ en los equipos de referencia (#6).
   - medir en iPad, celular y PC con `?medir=1` y pegar los resultados en #6;
   - mandar a cada docente el mensaje de docs/guia-docentes.md con su enlace (el registro está dentro
     de la web) y anotar su nombre junto al alias en el documento de enlaces del Drive;
-  - agregar `github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` y
-    `media.githubusercontent.com` al entorno para la auditoría del vago;
   - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
     del formulario de revisión).
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
@@ -92,10 +96,11 @@ en los equipos de referencia (#6).
 ## Next steps
 1. Revisión docente: mandar el mensaje a los 10 docentes e importar las primeras respuestas con
    `scripts/importar-revisiones.ts`.
-2. Vago: correr `pipeline/auditar-vago.py` en un entorno con GitHub habilitado, revisar
-   `pipeline/salida/auditoria-vago.md` y pasar los nombres propuestos a los docentes (F24); luego
-   generar las rutas: la app las muestra con su estado de revisión y los docentes las aprueban con el
-   campo "Recorrido trazado" de la ficha.
+2. Vago (ADR 0010): agregar a `rutas-vago.yaml` los tramos torácicos de los dos lados, recortar del
+   GLB el tramo escaneado que reemplazan (pipeline con Blender, sin mover lo demás), subir
+   `anclajes-vago.json` y generar las rutas; la prueba de asimetrías tiene que pasar con el modelo
+   real. Los docentes las juzgan en la app con "Recorrido trazado" y los nombres propuestos de los
+   trazos con F24.
 3. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
