@@ -13,11 +13,21 @@ describe('esCampoDeTexto', () => {
 });
 
 describe('accionEscape', () => {
-  const base = { dialogoRevision: false, menuAbierto: false, ubicando: false, aislado: false, enCampo: false };
+  const base = { confirmandoSalida: false, dialogoRevision: false, menuAbierto: false, ubicando: false, aislado: false, enCampo: false };
   it('con un diálogo de revisión abierto, Escape lo cierra', () =>
     expect(accionEscape({ ...base, dialogoRevision: true })).toBe('cerrar-revision'));
-  it('el diálogo de revisión va antes que cualquier otra acción', () =>
-    expect(accionEscape({ dialogoRevision: true, menuAbierto: true, ubicando: true, aislado: true, enCampo: true })).toBe('cerrar-revision'));
+  it('sin confirmación de salida, el diálogo de revisión va antes que cualquier otra acción', () =>
+    expect(
+      accionEscape({ confirmandoSalida: false, dialogoRevision: true, menuAbierto: true, ubicando: true, aislado: true, enCampo: true }),
+    ).toBe('cerrar-revision'));
+  it('con la confirmación de salida abierta, Escape la cancela antes que todo', () =>
+    expect(
+      accionEscape({ confirmandoSalida: true, dialogoRevision: true, menuAbierto: true, ubicando: true, aislado: true, enCampo: false }),
+    ).toBe('cancelar-salida'));
+  it('la confirmación va antes que un diálogo de revisión abierto', () =>
+    expect(accionEscape({ ...base, confirmandoSalida: true, dialogoRevision: true })).toBe('cancelar-salida'));
+  it('la confirmación se cancela aunque el foco esté en un campo', () =>
+    expect(accionEscape({ ...base, confirmandoSalida: true, enCampo: true })).toBe('cancelar-salida'));
   it('con el foco en un campo dentro del diálogo también lo cierra', () =>
     expect(accionEscape({ ...base, dialogoRevision: true, enCampo: true })).toBe('cerrar-revision'));
   it('sin diálogo, el cajón sigue primero', () =>

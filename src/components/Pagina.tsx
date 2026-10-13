@@ -13,6 +13,7 @@ import AvisoPrimeraVisita from './Aviso';
 import BarraFragmentar from './BarraFragmentar';
 import BotonTema from './BotonTema';
 import Buscador from './Buscador';
+import ConfirmarSalida from './ConfirmarSalida';
 import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
 import { IconoMarca, PalabraMarca } from './Marca';
@@ -62,6 +63,29 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   }, []);
   const [mensaje, setMensaje] = useState('');
   const movil = useMovil();
+  // Salir del modo revisión pide confirmación; al cancelar el foco vuelve al botón que la abrió.
+  const [confirmarSalida, setConfirmarSalida] = useState(false);
+  const origenSalida = useRef<HTMLElement | null>(null);
+  const pedirSalida = useCallback((origen: HTMLElement | null) => {
+    origenSalida.current = origen;
+    setConfirmarSalida(true);
+  }, []);
+  const cancelarSalida = useCallback(() => {
+    setConfirmarSalida(false);
+    const o = origenSalida.current;
+    if (o?.isConnected) o.focus();
+  }, []);
+  const salirDeRevision = () => {
+    setConfirmarSalida(false);
+    useAtlas.getState().setRevisor(null);
+    useAtlas.getState().cargarRespuestas({});
+    useAtlas.getState().setUbicando(null);
+    try {
+      sessionStorage.removeItem(CLAVE_REVISOR);
+    } catch {
+      /* nada que borrar */
+    }
+  };
   const panel = useRef<HTMLElement>(null);
   const botonMenu = useRef<HTMLButtonElement>(null);
   const entrada = slug ? entradaPorSlug(slug, idioma) : undefined; // react-router ya decodificó el slug
@@ -194,13 +218,15 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       if (e.key !== 'Escape') return;
       const s = useAtlas.getState();
       const accion = accionEscape({
+        confirmandoSalida: confirmarSalida,
         dialogoRevision: s.dialogoRevision,
         menuAbierto: menu,
         ubicando: !!s.ubicando,
         aislado: !!s.aislar,
         enCampo: esCampoDeTexto(e.target as HTMLElement | null),
       });
-      if (accion === 'cerrar-revision') window.dispatchEvent(new CustomEvent('atlas:cerrar-revision'));
+      if (accion === 'cancelar-salida') cancelarSalida();
+      else if (accion === 'cerrar-revision') window.dispatchEvent(new CustomEvent('atlas:cerrar-revision'));
       else if (accion === 'cerrar-menu') {
         setMenu(false);
         botonMenu.current?.focus();
@@ -215,7 +241,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       window.removeEventListener('atlas:elegir', alElegir);
       window.removeEventListener('keydown', alTeclear);
     };
-  }, [irA, menu]);
+  }, [irA, menu, confirmarSalida, cancelarSalida]);
 
   const compartir = useCallback(async () => {
     const s = useAtlas.getState();
@@ -282,20 +308,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
             <span className="solo-lector">{t('compartir.corto')}</span>
           </span>
         </button>
-        {revisor && (
-          <button
-            type="button"
-            onClick={() => {
-              useAtlas.getState().setRevisor(null);
-              useAtlas.getState().cargarRespuestas({});
-              useAtlas.getState().setUbicando(null);
-              try {
-                sessionStorage.removeItem(CLAVE_REVISOR);
-              } catch {
-                /* nada que borrar */
-              }
-            }}
-          >
+        {revisor && !movil && (
+          <button type="button" onClick={(e) => pedirSalida(e.currentTarget)}>
             {t('revision.salir')}
           </button>
         )}
@@ -310,7 +324,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           {mensaje}
         </p>
       )}
-      <PanelRevision idioma={idioma} alElegir={irA} />
+      <PanelRevision idioma={idioma} alElegir={irA} alSalir={pedirSalida} />
       <div className="cuerpo">
         <nav className="riel" aria-label={t('riel.titulo')}>
           <button
@@ -377,6 +391,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           </div>
         </div>
       )}
+      {revisor && confirmarSalida && <ConfirmarSalida alConfirmar={salirDeRevision} alCancelar={cancelarSalida} />}
       <RecorridoVago idioma={idioma} />
       <PanelMedicion />
       <AvisoPrimeraVisita />

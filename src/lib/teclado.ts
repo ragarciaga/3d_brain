@@ -6,20 +6,23 @@ export function esCampoDeTexto(t: { tagName?: string; isContentEditable?: boolea
   return etiqueta === 'INPUT' || etiqueta === 'SELECT' || etiqueta === 'TEXTAREA' || !!t?.isContentEditable;
 }
 
-export type AccionEscape = 'cerrar-revision' | 'cerrar-menu' | 'cancelar-ubicar' | 'salir-aislar' | null;
+export type AccionEscape = 'cancelar-salida' | 'cerrar-revision' | 'cerrar-menu' | 'cancelar-ubicar' | 'salir-aislar' | null;
 
 /**
- * Qué hace Escape, en orden: cerrar el diálogo de revisión, cerrar el cajón del celular, cancelar
- * "proponer posición", salir del aislamiento. El diálogo de revisión se cierra aunque el foco esté
- * en un campo de texto; el aislamiento no se sale desde un campo.
+ * Qué hace Escape, en orden: cancelar la confirmación de salida del modo revisión (es modal y puede
+ * estar sobre un diálogo de revisión), cerrar el diálogo de revisión, cerrar el cajón del celular,
+ * cancelar "proponer posición", salir del aislamiento. La confirmación y el diálogo de revisión se
+ * cierran aunque el foco esté en un campo de texto; el aislamiento no se sale desde un campo.
  */
 export function accionEscape(p: {
+  confirmandoSalida: boolean;
   dialogoRevision: boolean;
   menuAbierto: boolean;
   ubicando: boolean;
   aislado: boolean;
   enCampo: boolean;
 }): AccionEscape {
+  if (p.confirmandoSalida) return 'cancelar-salida';
   if (p.dialogoRevision) return 'cerrar-revision';
   if (p.menuAbierto) return 'cerrar-menu';
   if (p.ubicando) return 'cancelar-ubicar';
