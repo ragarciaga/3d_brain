@@ -48,6 +48,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-13: el vago del tórax se traza en los dos lados porque el escaneado es un espejo, see docs/adr/0010-vago-toracico-trazado.md
 - 2026-10-13: vago fijo, recorrido guiado y trazado solo de tres piezas con F25, see docs/adr/0009-vago-fijo-recorrido-y-trazado-selectivo.md
 - 2026-10-11: stack SPA con Vite, React y R3F, see docs/adr/0001-stack.md
 - 2026-10-11: sin IA en el producto, see docs/adr/0002-sin-ia-flujo-fijo.md

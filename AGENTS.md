@@ -129,6 +129,7 @@ Deferred scope with reasons: docs/v2.md.
 - Resto del cuerpo (fuera de vago y órganos de referencia), histología.
 - Contenido clínico o diagnóstico.
 - Geometría inventada: una estructura que no viene de una fuente abierta con licencia
-  compatible se muestra como marcador, no como malla. Única excepción (ADR 0009): los laríngeos
-  recurrentes y el vago izquierdo distal, trazados por anclajes del modelo con ruta revisada por
-  un docente, prueba de asimetrías y acabado `aproximada` visible (SPEC F25).
+  compatible se muestra como marcador, no como malla. Única excepción (ADR 0009 y 0010): los
+  laríngeos recurrentes, el vago izquierdo distal y el tramo torácico de los dos vagos, trazados
+  por anclajes del modelo con ruta revisada por un docente, prueba de asimetrías y acabado
+  `aproximada` visible (SPEC F25).
