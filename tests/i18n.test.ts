@@ -30,6 +30,14 @@ describe('textos de los botones de revisión', () => {
       expect(revision.guia.responder).toContain(revision.marcarTodo);
     });
 
+    it(`la guía (${idioma}) nombra "Enviar todo" y "Sí, lo envié" tal como aparecen`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.enviarTodo).toBeTruthy();
+      expect(revision.loEnvie).toBeTruthy();
+      expect(revision.guia.enviar).toContain(revision.enviarTodo);
+      expect(revision.guia.enviar).toContain(revision.loEnvie);
+    });
+
     it(`el aviso del respaldo (${idioma}) dice que las respuestas se guardan solo en este navegador`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       expect(revision.soloEsteNavegador).toContain(idioma === 'es' ? 'solo en este navegador' : 'only in this browser');
@@ -57,7 +65,7 @@ describe('textos de los botones de revisión', () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       const { consentimiento } = revision;
       expect(consentimiento).toContain(idioma === 'es' ? 'solo si lo autorizaste en el registro' : 'only if you authorised it in the registration form');
-      for (const vieja of ['Al enviar, aceptas', 'Se envía una revisión por estructura', 'By sending, you agree', 'One review is sent per structure']) {
+      for (const vieja of ['Al enviar, aceptas', 'Se envía una revisión por estructura', 'By sending, you agree', 'One review is sent per structure', 'Cada ficha de la lista se envía por separado', 'Each entry in the list is sent separately']) {
         expect(consentimiento).not.toContain(vieja);
       }
     });

@@ -23,7 +23,7 @@ Son dos formularios:
 
 - **Registro del revisor** (una vez por docente): nombre, rol, código y consentimiento. Es el único
   lugar donde queda el nombre.
-- **Revisión** (uno por estructura revisada, lo abre la app ya lleno): código, estructura y revisión.
+- **Revisión** (uno por envío, lo abre la app ya lleno con todo lo pendiente): código, estructura y revisión.
 
 ## 1. Formulario de registro (una vez por docente)
 
@@ -66,8 +66,14 @@ Si hubiera que rehacerlo, para sacar los identificadores:
    - `campos.codigo`: `entry.111`, `campos.estructura`: `entry.222`, `campos.revision`: `entry.333`.
 
 Si `urlFormulario` quedara vacío, el botón de enviar copia la revisión al portapapeles o la
-descarga como archivo, para que el docente te la mande por correo. Si una revisión no cabe en un
-enlace, la app la parte y muestra un enlace por parte.
+descarga como archivo, para que el docente te la mande por correo.
+
+Desde #58 la app manda todo en un solo envío: el campo **Estructura** recibe los ids de las fichas
+revisadas separados por coma (por ejemplo `hippocampus,thalamus`) y el campo **Revisión** recibe
+una carga con todas las respuestas pendientes. La pregunta Estructura no debe tener validación: si
+le pones una (por ejemplo, de formato o de largo), Google rechazará el envío con varios ids. Si la
+carga no cabe en un enlace (más de 7000 caracteres), la app la parte y el docente confirma cada
+parte en la app con "Sí, lo envié". Una respuesta cuenta como enviada solo con esa confirmación.
 
 ## 3. Invitar a cada docente
 
@@ -118,7 +124,9 @@ verificada con el nombre de un docente, se le confirma por su canal propio.
 node scripts/importar-revisiones.ts respuestas.csv
 ```
 
-El importador lee el padrón de `pipeline/revisores.local.json` (o de la ruta que le pases como
+El importador lee las cargas de antes (`v:1`, una estructura por envío) y las nuevas (`v:2`, todas
+las estructuras en un envío), y con las mismas respuestas da el mismo resumen. El importador lee el
+padrón de `pipeline/revisores.local.json` (o de la ruta que le pases como
 segundo argumento) y no corre sin él.
 
 En Windows (PowerShell), con la ruta donde quedó el archivo:

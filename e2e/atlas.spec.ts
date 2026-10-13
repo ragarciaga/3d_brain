@@ -1168,7 +1168,7 @@ test('textos de la revisión docente: botones en la guía inglesa, registro en e
   const envio = page.getByRole('dialog', { name: 'Enviar revisión' });
   await expect(envio.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', configRevision.urlRegistro);
   await expect(envio).toContainText('solo si lo autorizaste en el registro');
-  await expect(envio).toContainText('se envía por separado');
+  await expect(envio).toContainText('en un solo formulario');
   await expect(envio).not.toContainText('Al enviar, aceptas');
   await expect(envio).not.toContainText('Se envía una revisión por estructura');
   await envio.getByRole('button', { name: 'Cerrar' }).click();
@@ -1185,6 +1185,7 @@ test('textos de la revisión docente: botones en la guía inglesa, registro en e
   await page.getByRole('button', { name: 'Send review' }).click();
   const envioEn = page.getByRole('dialog', { name: 'Send review' });
   await expect(envioEn).toContainText('only if you authorised it in the registration form');
+  await expect(envioEn).toContainText('in a single form');
   await expect(envioEn).not.toContainText('By sending, you agree');
   await expect(envioEn).not.toContainText('One review is sent per structure');
 });

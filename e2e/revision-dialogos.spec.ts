@@ -30,6 +30,14 @@ async function irAlHipocampo(page: Page) {
   await expect(page).toHaveURL(/\/es\/hipocampo$/);
 }
 
+/** Como `irAlHipocampo`, pero con cualquier búsqueda y ruta. */
+async function irA(page: Page, busqueda: string, ruta: RegExp) {
+  await page.keyboard.press('Control+k');
+  await page.getByRole('combobox', { name: /Buscar|Search/ }).fill(busqueda);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(ruta);
+}
+
 async function cerrarGuia(page: Page) {
   await guia(page).getByRole('button', { name: 'Cerrar' }).click();
   await expect(guia(page)).toHaveCount(0);
@@ -176,6 +184,24 @@ const guardadas = (page: Page, codigo: string) =>
     codigo,
   );
 
+/** Lo confirmado como enviado, guardado en IndexedDB para un código de revisor (claveRespuesta a fecha). */
+const confirmadasGuardadas = (page: Page, codigo: string) =>
+  page.evaluate(
+    (c) =>
+      new Promise<Record<string, string> | null>((resolver) => {
+        const abrirDb = indexedDB.open('keyval-store');
+        abrirDb.onerror = () => resolver(null);
+        abrirDb.onsuccess = () => {
+          const db = abrirDb.result;
+          if (!db.objectStoreNames.contains('keyval')) return resolver(null);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          pedido.onsuccess = () => resolver(pedido.result?.confirmadas ?? null);
+          pedido.onerror = () => resolver(null);
+        };
+      }),
+    codigo,
+  );
+
 test('la propuesta se guarda mientras se escribe y sobrevive a recargar', async ({ page }) => {
   await entrar(page, 'GUARDA01');
   await cerrarGuia(page);
@@ -224,10 +250,12 @@ test('"Corregir" sin texto queda incompleto y no se envía', async ({ page }) =>
   };
   expect(await avanceHipocampo()).toMatch(/\b0 de \d+ campos/);
 
+  // Solo hay un "Corregir" sin texto: no hay nada por enviar y "Enviar todo" está deshabilitado.
   await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
   const fila = enviarDialogo(page).getByRole('listitem').filter({ hasText: 'Hipocampo' });
   await expect(fila.getByTestId('incompletas')).toHaveText('1 "Corregir" sin texto no se envía');
-  await expect(fila.getByRole('button', { name: 'Abrir formulario' })).toBeDisabled();
+  await expect(enviarDialogo(page).getByTestId('pendientes-envio')).toHaveText('No hay respuestas por enviar.');
+  await expect(enviarDialogo(page).getByRole('button', { name: 'Enviar todo' })).toBeDisabled();
   await enviarDialogo(page).getByRole('button', { name: 'Cerrar' }).click();
 
   await control.getByLabel('Cambio propuesto').fill('x');
@@ -237,19 +265,11 @@ test('"Corregir" sin texto queda incompleto y no se envía', async ({ page }) =>
   expect(await avanceHipocampo()).toMatch(/\b1 de \d+ campos/);
   await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
   await expect(enviarDialogo(page).getByTestId('incompletas')).toHaveCount(0);
-  await expect(enviarDialogo(page).getByRole('listitem').filter({ hasText: 'Hipocampo' }).getByRole('button', { name: 'Abrir formulario' })).toBeEnabled();
+  await expect(enviarDialogo(page).getByTestId('pendientes-envio')).toHaveText('1 respuesta sin enviar');
+  await expect(enviarDialogo(page).getByRole('button', { name: 'Enviar todo' })).toBeEnabled();
 });
 
 test('lo que se envía lleva solo las respuestas completas de la ficha', async ({ page }) => {
-  // El envío abre el formulario con window.open: se anota la URL en vez de salir de la página.
-  await page.addInitScript(() => {
-    const abiertas: string[] = [];
-    (window as unknown as { __abiertas: string[] }).__abiertas = abiertas;
-    window.open = (url) => {
-      abiertas.push(String(url));
-      return null;
-    };
-  });
   await entrar(page, 'ENVIO01');
   await cerrarGuia(page);
   await irAlHipocampo(page);
@@ -260,13 +280,95 @@ test('lo que se envía lleva solo las respuestas completas de la ficha', async (
   const fila = enviarDialogo(page).getByRole('listitem').filter({ hasText: 'Hipocampo' });
   await expect(fila).toContainText(/· 1 respuesta(?!s)/);
   await expect(fila.getByTestId('incompletas')).toHaveText('1 "Corregir" sin texto no se envía');
-  await fila.getByRole('button', { name: 'Abrir formulario' }).click();
+  await enviarDialogo(page).getByRole('button', { name: 'Enviar todo' }).click();
 
-  const abiertas = await page.evaluate(() => (window as unknown as { __abiertas: string[] }).__abiertas);
-  expect(abiertas).toHaveLength(1);
-  const p = new URL(abiertas[0]!).searchParams;
+  const partes = enviarDialogo(page).getByTestId('parte-envio');
+  await expect(partes).toHaveCount(1);
+  // Se lee el enlace de la parte: no hace falta abrirlo para saber qué se enviaría.
+  const href = await partes.getByRole('link', { name: 'Abrir formulario' }).getAttribute('href');
+  const p = new URL(href!).searchParams;
   expect(p.get(configRevision.campos.codigo)).toBe('ENVIO01');
   expect(p.get(configRevision.campos.estructura)).toBe('hippocampus');
-  const carga = JSON.parse(p.get(configRevision.campos.revision)!) as { respuestas: { campo: string; veredicto: string }[] };
-  expect(carga.respuestas.map((r) => `${r.campo}:${r.veredicto}`)).toEqual(['que_es:correcto']);
+  const carga = JSON.parse(p.get(configRevision.campos.revision)!) as { v: number; r: string; e: Record<string, { c: string; d: string }[]> };
+  expect(carga.v).toBe(2);
+  expect(carga.r).toBe('ENVIO01');
+  expect(Object.keys(carga.e)).toEqual(['hippocampus']);
+  expect(carga.e['hippocampus']!.map((x) => `${x.c}:${x.d}`)).toEqual(['que_es:correcto']);
+});
+
+test('envío: abrir una parte no la marca enviada hasta confirmar (#58)', async ({ page }) => {
+  // El formulario se abre en otra pestaña: se responde con una página vacía para no salir a internet.
+  await page.context().route('https://docs.google.com/**', (ruta) =>
+    ruta.fulfill({ status: 200, contentType: 'text/html', body: '<p>formulario</p>' }),
+  );
+  const cerrarExtras = async () => {
+    for (const otra of page.context().pages()) if (otra !== page) await otra.close();
+  };
+  const dialogo = () => enviarDialogo(page);
+  const abrirEnvio = async () => {
+    await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
+    await expect(dialogo()).toBeVisible();
+  };
+  const parte = () => dialogo().getByTestId('parte-envio');
+
+  await entrar(page, 'ENVIO02');
+  await cerrarGuia(page);
+  await irAlHipocampo(page);
+  await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Correcto' }).click();
+  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Correcto' }).click();
+  await irA(page, 'tálamo', /\/es\/talamo$/);
+  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Correcto' }).click();
+
+  await abrirEnvio();
+  await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('3 respuestas sin enviar');
+  await dialogo().getByRole('button', { name: 'Enviar todo' }).click();
+  await expect(parte()).toHaveCount(1);
+  await expect(parte()).toHaveAttribute('data-estado', 'sin_abrir');
+  await expect(parte()).toContainText('sin abrir');
+
+  const href = await parte().getByRole('link', { name: 'Abrir formulario' }).getAttribute('href');
+  const p = new URL(href!).searchParams;
+  expect(p.get(configRevision.campos.estructura)).toBe('hippocampus,thalamus');
+  const carga = JSON.parse(p.get(configRevision.campos.revision)!) as { e: Record<string, unknown[]> };
+  expect(Object.keys(carga.e).sort()).toEqual(['hippocampus', 'thalamus']);
+
+  // Abrir la parte no la marca enviada.
+  await parte().getByRole('link', { name: 'Abrir formulario' }).click();
+  await expect(parte()).toHaveAttribute('data-estado', 'abierta');
+  await expect(parte()).toContainText('abierta');
+  await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('3 respuestas sin enviar');
+  await expect(parte().getByRole('button', { name: 'Sí, lo envié' })).toBeVisible();
+  await cerrarExtras();
+
+  // Ni siquiera después de recargar: lo abierto no se guarda.
+  await page.reload();
+  await expect(barra(page)).toContainText('ENVIO02');
+  await abrirEnvio();
+  await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('3 respuestas sin enviar');
+  await expect(parte()).toHaveCount(0);
+
+  // Solo "Sí, lo envié" confirma.
+  await dialogo().getByRole('button', { name: 'Enviar todo' }).click();
+  await parte().getByRole('link', { name: 'Abrir formulario' }).click();
+  await cerrarExtras();
+  await parte().getByRole('button', { name: 'Sí, lo envié' }).click();
+  await expect(parte()).toHaveAttribute('data-estado', 'confirmada');
+  await expect(parte()).toContainText('confirmada');
+  await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('Todo lo que respondiste ya está enviado.');
+  await expect(dialogo().getByRole('button', { name: 'Enviar todo' })).toBeDisabled();
+
+  // Lo confirmado sobrevive a recargar.
+  await expect.poll(async () => Object.keys((await confirmadasGuardadas(page, 'ENVIO02')) ?? {}).length).toBe(3);
+  await page.reload();
+  await expect(barra(page)).toContainText('ENVIO02');
+  await abrirEnvio();
+  await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('Todo lo que respondiste ya está enviado.');
+  await dialogo().getByRole('button', { name: 'Cerrar' }).click();
+  await expect(dialogo()).toHaveCount(0);
+
+  // Editar una respuesta confirmada la devuelve a pendiente.
+  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'No es mi área' }).click();
+  await abrirEnvio();
+  await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('1 respuesta sin enviar');
+  await expect(dialogo().getByRole('listitem').filter({ hasText: 'Tálamo' }).getByTestId('sin-enviar')).toContainText('1 sin enviar');
 });

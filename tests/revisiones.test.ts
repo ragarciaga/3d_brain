@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { agregarRevisores, aplicarPadron, errorDePadron, importar, leerEnvios, parsearCsv, resumenConsolidado, resumenMarkdown, ultimasRespuestas, type Envio } from '../scripts/lib/revisiones.ts';
-import { urlFormulario, type Respuesta } from '../src/lib/revision';
+import { CLAVES_V2, partesEnvio, urlFormulario, type Respuesta } from '../src/lib/revision';
 
 const fila = (carga: object, nombre = 'Ana') => `2026-10-11 10:00,X,Y,"${JSON.stringify(carga).replace(/"/g, '""')}",${nombre}`;
 const cabecera = 'Marca temporal,Código,Estructura,Revisión,Nombre';
@@ -12,20 +12,28 @@ const estructuras = {
   'm-periaqueductal-grey': { ficha: null },
 };
 
-/** El escenario del criterio F24, tal como la app lo manda al formulario y queda en la hoja. */
+const configForm = { urlFormulario: 'https://docs.google.com/forms/d/e/abc/viewform', campos: { codigo: 'entry.1', estructura: 'entry.2', revision: 'entry.3' } };
+const fichaCriterio: Respuesta[] = [
+  { ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto' },
+  { ...base, estructura: 'hippocampus', campo: 'que_es', veredicto: 'correcto' },
+  { ...base, estructura: 'hippocampus', campo: 'para_que_sirve', veredicto: 'correcto' },
+  { ...base, estructura: 'hippocampus', campo: 'relaciones', idioma: undefined, veredicto: 'corregir', propuesta: 'Agregar el subículo' },
+];
+const marcadorCriterio: Respuesta[] = [
+  { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [0.00123, 1.61234, -0.01987], version: 'sin-ficha', fecha: 'x' },
+];
+
+/** El escenario del criterio F24, tal como la app lo manda al formulario y queda en la hoja (envío v:1, uno por estructura). */
 function csvDelCriterio(): string {
-  const config = { urlFormulario: 'https://docs.google.com/forms/d/e/abc/viewform', campos: { codigo: 'entry.1', estructura: 'entry.2', revision: 'entry.3' } };
-  const ficha: Respuesta[] = [
-    { ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto' },
-    { ...base, estructura: 'hippocampus', campo: 'que_es', veredicto: 'correcto' },
-    { ...base, estructura: 'hippocampus', campo: 'para_que_sirve', veredicto: 'correcto' },
-    { ...base, estructura: 'hippocampus', campo: 'relaciones', idioma: undefined, veredicto: 'corregir', propuesta: 'Agregar el subículo' },
-  ];
-  const marcador: Respuesta[] = [
-    { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [0.00123, 1.61234, -0.01987], version: 'sin-ficha', fecha: 'x' },
-  ];
-  const celda = (rs: Respuesta[], est: string) => new URL(urlFormulario(config, 'ANAT01', est, rs)!).searchParams.get('entry.3')!;
-  return `${cabecera}\n${fila(JSON.parse(celda(ficha, 'hippocampus')))}\n${fila(JSON.parse(celda(marcador, 'm-periaqueductal-grey')))}\n`;
+  const celda = (rs: Respuesta[], est: string) => new URL(urlFormulario(configForm, 'ANAT01', est, rs)!).searchParams.get('entry.3')!;
+  return `${cabecera}\n${fila(JSON.parse(celda(fichaCriterio, 'hippocampus')))}\n${fila(JSON.parse(celda(marcadorCriterio, 'm-periaqueductal-grey')))}\n`;
+}
+
+/** El mismo escenario como lo manda la app hoy: todo en un solo envío v:2 (campo Revisión = entry.3). */
+function csvDelCriterioV2(): string {
+  const partes = partesEnvio(configForm, 'ANAT01', [...fichaCriterio, ...marcadorCriterio]);
+  expect(partes).toHaveLength(1);
+  return `${cabecera}\n${fila(JSON.parse(new URL(partes[0]!.url!).searchParams.get('entry.3')!))}\n`;
 }
 
 /** `revisor`: el código si el resumen sale directo de leerEnvios, el alias si sale de importar(). */
@@ -396,5 +404,119 @@ describe('padrón privado de revisores (#15)', () => {
     expect(Object.keys(nuevo)).toHaveLength(11);
     for (const [codigo] of nuevos) expect(codigo).toMatch(/^[A-HJKMNP-Z2-9]{8}$/);
     expect(errorDePadron(nuevo)).toBeNull();
+  });
+});
+
+describe('carga v:2 (#58)', () => {
+  const ids = new Set(['hippocampus', 'm-periaqueductal-grey']);
+  const buena = { c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0' };
+  const v2 = (e: unknown, r: unknown = 'P1') => ({ v: 2, r, e });
+  const leer = (...cargas: object[]) => leerEnvios(parsearCsv(`${cabecera}\n${cargas.map((c) => fila(c)).join('\n')}\n`), ids);
+
+  it('v:1 y v:2 con las mismas respuestas dan el mismo resumen (D5)', () => {
+    const v1 = importar(csvDelCriterio(), estructuras, padron);
+    const v2r = importar(csvDelCriterioV2(), estructuras, padron);
+    expect([...v1.archivos]).toEqual([...v2r.archivos]);
+    expect(v2r.validos).toBe(2);
+    expect(v1.validos).toBe(2);
+    expect(v1.invalidas).toBe(0);
+    expect(v2r.invalidas).toBe(0);
+    verificarCinco(v2r.archivos.get('resumen.md')!, 'D01');
+  });
+
+  it('v:1 y v:2 mezclados: queda la más reciente (D5)', () => {
+    const v1 = { v: 1, revisor: 'P1', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'corregir', propuesta: 'x' }] };
+    const nueva = v2({ hippocampus: [{ ...buena, d: 'correcto' }] });
+    const { archivos } = importar(`${cabecera}\n${fila(v1)}\n${fila(nueva)}\n`, estructuras, padron);
+    const filas = archivos.get('resumen.md')!.split('\n').filter((l) => l.startsWith('| `D03` |'));
+    expect(filas).toHaveLength(1);
+    expect(filas[0]).toContain('| `ubicacion` | es | correcto |');
+  });
+
+  it('ida y vuelta de todos los campos (D6)', () => {
+    const entrada: Respuesta[] = [
+      { estructura: 'hippocampus', campo: 'relaciones', veredicto: 'corregir', propuesta: 'p', comentario: 'k', version: '0.1.0', fecha: '' },
+      { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [1, 2.5, -3], malla: 'Vagus_nerve.R', ramo: 'no_se', version: 'sin-ficha', fecha: '' },
+      { estructura: 'm-periaqueductal-grey', campo: 'trazo:Vagus_nerve.R (rama) 01', idioma: 'en', veredicto: 'no_es_mi_area', version: 'sin-ficha', fecha: '' },
+    ];
+    const partes = partesEnvio(configForm, 'P1', entrada);
+    const { envios, invalidas } = leer(JSON.parse(new URL(partes[0]!.url!).searchParams.get('entry.3')!));
+    expect(invalidas).toBe(0);
+    expect(envios.map((e) => e.estructura)).toEqual(['hippocampus', 'm-periaqueductal-grey']);
+    expect(envios.every((e) => e.revisor === 'P1' && e.marcaTemporal === '2026-10-11 10:00')).toBe(true);
+    expect(envios.flatMap((e) => e.respuestas)).toEqual(entrada);
+  });
+
+  it('descarta las claves desconocidas de cada elemento y no deja que traigan estructura ni fecha', () => {
+    const { envios } = leer(v2({ hippocampus: [{ ...buena, estructura: 'm-periaqueductal-grey', fecha: 'hoy', zzz: 1 }] }));
+    expect(envios[0]!.respuestas[0]).toEqual({ estructura: 'hippocampus', fecha: '', campo: 'ubicacion', idioma: 'es', veredicto: 'correcto', version: '0.1.0' });
+  });
+
+  it('CLAVES_V2 cubre todos los campos que valida el importador', () => {
+    expect(Object.keys(CLAVES_V2).sort()).toEqual(['campo', 'comentario', 'idioma', 'malla', 'posicion', 'propuesta', 'ramo', 'veredicto', 'version']);
+  });
+
+  it.each([
+    ['e es un arreglo', v2([buena])],
+    ['e está vacío', v2({})],
+    ['e es un texto', v2('hippocampus')],
+    ['e ausente', { v: 2, r: 'P1' }],
+    ['clave con forma de ruta', v2({ '../../../AGENTS': [buena] })],
+    ['clave de estructura desconocida', v2({ 'no-existe': [buena] })],
+    ['una clave buena y otra de ruta', v2({ hippocampus: [buena], '../x': [buena] })],
+    ['valor que no es arreglo', v2({ hippocampus: buena })],
+    ['arreglo vacío', v2({ hippocampus: [] })],
+    ['elemento null', v2({ hippocampus: [buena, null] })],
+    ['elemento que es un texto', v2({ hippocampus: ['hola'] })],
+    ['veredicto fuera del conjunto', v2({ hippocampus: [{ ...buena, d: 'aprobado' }] })],
+    ['campo con almohadilla', v2({ hippocampus: [{ ...buena, c: '#123' }] })],
+    ['versión que no es semántica', v2({ hippocampus: [{ ...buena, s: '0.1' }] })],
+    ['versión ausente', v2({ hippocampus: [{ c: 'a', d: 'correcto' }] })],
+    ['propuesta de 4001 caracteres', v2({ hippocampus: [{ ...buena, p: 'x'.repeat(4001) }] })],
+    ['comentario de 4001 caracteres', v2({ hippocampus: [{ ...buena, k: 'x'.repeat(4001) }] })],
+    ['posición con dos números', v2({ hippocampus: [{ ...buena, x: [1, 2] }] })],
+    ['idioma fr', v2({ hippocampus: [{ ...buena, i: 'fr' }] })],
+    ['malla que no es texto', v2({ hippocampus: [{ ...buena, m: 3 }] })],
+    ['ramo de 201 caracteres', v2({ hippocampus: [{ ...buena, a: 'x'.repeat(201) }] })],
+    ['una respuesta mala entre buenas', v2({ hippocampus: [buena, { ...buena, c: 'otro' }], 'm-periaqueductal-grey': [{ ...buena, d: 'x' }] })],
+    ['revisor ausente', { v: 2, e: { hippocampus: [buena] } }],
+    ['revisor con punto', v2({ hippocampus: [buena] }, 'ANA.PEREZ')],
+    ['revisor que no es texto', v2({ hippocampus: [buena] }, 7)],
+    ['v distinto de 1 y 2 con forma v:1', { v: 3, revisor: 'P1', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'a', veredicto: 'correcto' }] }],
+    ['v distinto de 1 y 2 con forma v:2', { ...v2({ hippocampus: [buena] }), v: 3 }],
+    ['v texto "2"', { ...v2({ hippocampus: [buena] }), v: '2' }],
+  ])('cuenta como inválida una fila con %s', (_nombre, carga) => {
+    const { envios, invalidas } = leer(carga);
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it('sin lista de ids conocidos, e como arreglo se rechaza aunque su índice "0" tenga forma de slug', () => {
+    const { envios, invalidas } = leerEnvios(parsearCsv(`${cabecera}\n${fila(v2([[buena]]))}\n`));
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it('una clave __proto__ en e (JSON crudo) se rechaza', () => {
+    const crudo = '{"v":2,"r":"P1","e":{"__proto__":[{"c":"a","d":"correcto","s":"0.1.0"}]}}';
+    expect(Object.keys(JSON.parse(crudo).e)).toEqual(['__proto__']);
+    const { envios, invalidas } = leerEnvios(parsearCsv(`${cabecera}\n2026-10-11 10:00,X,Y,"${crudo.replace(/"/g, '""')}",Ana\n`));
+    expect(envios).toEqual([]);
+    expect(invalidas).toBe(1);
+  });
+
+  it('una fila v:2 mala no aborta: una v:1 buena se importa y la mala se cuenta (D5)', () => {
+    const malo = v2({ hippocampus: [{ ...buena, d: 'aprobado' }] });
+    const bueno = { v: 1, revisor: 'P1', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto' }] };
+    const { validos, invalidas, archivos } = importar(`${cabecera}\n${fila(malo)}\n${fila(bueno)}\n`, estructuras, padron);
+    expect(validos).toBe(1);
+    expect(invalidas).toBe(1);
+    expect(archivos.get('resumen.md')).toContain('1 respuestas, 1 estructuras');
+  });
+
+  it('una fila v:2 buena con dos estructuras cuenta un envío por estructura', () => {
+    const { validos, invalidas } = importar(`${cabecera}\n${fila(v2({ hippocampus: [buena], 'm-periaqueductal-grey': [{ ...buena, s: 'sin-ficha' }] }))}\n`, estructuras, padron);
+    expect(validos).toBe(2);
+    expect(invalidas).toBe(0);
   });
 });

@@ -20,7 +20,7 @@ F24 agrega un modo revisión con enlace personal por revisor. Las respuestas se 
 
 ## Consequences
 - Positive: cero cuentas para los docentes, costo cero, trazabilidad por campo y versión.
-- Negative: depende de Google; las URL prellenadas tienen límite de largo (se envía una revisión por ficha); el código del enlace atribuye pero no autentica, así que el editor valida cada respuesta.
+- Negative: depende de Google; las URL prellenadas tienen límite de largo (desde 2026-10-13 todo va en una carga y solo se parte si pasa de 7000 caracteres; ver la actualización); el código del enlace atribuye pero no autentica, así que el editor valida cada respuesta.
 - Revisit when: haya más de unos 20 revisores activos o aparezcan respuestas falsas.
 
 ## Actualización 2026-10-12: alias públicos y padrón privado (#15)
@@ -47,3 +47,22 @@ Brain") están en el Drive de Maysa Digital, sin recopilar correos; el de revisi
 `src/config/revision.ts`. Hay 10 códigos (D01 a D10) cuyo padrón y enlaces están en la carpeta
 privada "Maysa Brain (privado)" de ese Drive. Guía para los docentes: `docs/guia-docentes.md`.
 
+## Actualización 2026-10-13: un solo envío (#58)
+
+Abrir un formulario por ficha era lento para quien revisa varias, y la ficha quedaba "enviada" apenas
+se abría el formulario, aunque el docente nunca lo enviara. Ahora:
+
+- "Enviar todo" arma una sola carga `v:2` con todas las respuestas pendientes: `{"v":2,"r":<código>,
+  "e":{<id>:[{...}]}}`, agrupada por estructura (en orden de primera aparición) y con claves cortas
+  (`CLAVES_V2` en `src/lib/revision.ts`). No lleva `fecha` por respuesta: el importador nunca la usa.
+  El campo Estructura del formulario recibe los ids separados por coma.
+- Solo se envían respuestas completas: un "Corregir" sin texto, posición ni ramo no viaja.
+- La carga se parte solo si la URL pasaría de 7000 caracteres. Cada parte muestra si está sin abrir,
+  abierta o confirmada. Una respuesta cuenta como enviada solo cuando el docente pulsa "Sí, lo envié"
+  en su parte (se guarda en IndexedDB por clave de respuesta y fecha), y si la edita después vuelve a
+  quedar pendiente. Abrir el formulario no la marca.
+- `scripts/lib/revisiones.ts` lee `v:1` y `v:2` con las mismas validaciones. En `v:2`, cada clave de
+  `e` se trata como un id que se convierte en nombre de archivo, así que pasa por la misma lista de
+  ids conocidos y la misma forma de slug que en `v:1`.
+- Se mantiene el mismo formulario de Google y no hay host nuevo. Un Apps Script que reciba el envío
+  y evite la confirmación manual queda como decisión aparte (#67).
