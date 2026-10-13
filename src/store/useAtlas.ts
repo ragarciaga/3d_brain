@@ -110,6 +110,8 @@ interface Estado {
   // Modo revisión (F24)
   revisor: string | null;
   respuestas: Record<string, Respuesta>;
+  dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra primero
+  cargaRespuestas: number; // sube cada vez que se cargan las respuestas guardadas; la ficha remonta sus controles
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
   shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)
   hoja: number; // alto (px) de la hoja inferior de la ficha en celular; 0 si no hay o es escritorio
@@ -144,6 +146,7 @@ interface Estado {
   responder(r: Respuesta): void;
   borrarRespuesta(clave: string): void;
   cargarRespuestas(r: Record<string, Respuesta>): void;
+  setDialogoRevision(v: boolean): void;
   setUbicando(id: string | null): void;
   setShift(v: boolean): void;
   setHoja(px: number): void;
@@ -215,6 +218,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   camara: null,
   revisor: null,
   respuestas: {},
+  dialogoRevision: false,
+  cargaRespuestas: 0,
   ubicando: null,
   shift: false,
   hoja: 0,
@@ -355,7 +360,10 @@ export const useAtlas = create<Estado>((set, get) => ({
     delete respuestas[clave];
     set({ respuestas });
   },
-  cargarRespuestas: (r) => set({ respuestas: r }),
+  cargarRespuestas: (r) => set({ respuestas: r, cargaRespuestas: get().cargaRespuestas + 1 }),
+  setDialogoRevision: (v) => {
+    if (get().dialogoRevision !== v) set({ dialogoRevision: v });
+  },
   setUbicando: (id) => set({ ubicando: id }),
   setShift: (v) => {
     if (get().shift !== v) set({ shift: v });
