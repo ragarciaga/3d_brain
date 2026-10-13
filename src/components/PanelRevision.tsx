@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import { nombre } from '../lib/nombres';
+import { nombre, nombrePendiente } from '../lib/nombres';
 import { ordenDeRevision } from '../lib/prioridad';
 import { cargaRevision, desactualizadas, formularioConfigurado, urlsFormulario, type Respuesta } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
@@ -145,6 +145,7 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
                       >
                         {nombre(estructuras[id], idioma) || id}
                       </button>
+                      {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
                     </li>
                   ))}
                 </ul>
@@ -160,7 +161,7 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
       )}
       {vista === 'como' && (
         <div className="dialogo-revision guia-revision" role="dialog" aria-label={t('revision.comoRevisar')} data-testid="como-revisar">
-          {(['intro', 'responder', 'dudas', 'nombres', 'marcadores', 'trazos', 'recorridos', 'enviar', 'privacidad'] as const).map((k) => (
+          {(['intro', 'responder', 'idiomas', 'dudas', 'nombres', 'marcadores', 'trazos', 'recorridos', 'enviar', 'privacidad'] as const).map((k) => (
             <p key={k}>{t(`revision.guia.${k}`)}</p>
           ))}
           <p>
@@ -176,6 +177,11 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
       {vista === 'enviar' && (
         <div className="dialogo-revision" role="dialog" aria-label={t('revision.enviar')}>
           <p>{t('revision.consentimiento')}</p>
+          <p>
+            <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
+              {t('revision.guia.registrarme')}
+            </a>
+          </p>
           {!configurado && <p className="etiqueta-aviso">{t('revision.sinFormulario')}</p>}
           <ul>
             {[...porEstructura.entries()].map(([id, l]) => (
