@@ -156,7 +156,7 @@ function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idiom
       <textarea
         id={idComentario}
         rows={2}
-        maxLength={4000} // el mismo tope que valida el importador (scripts/lib/revisiones.ts); si no, el envío se descarta
+        maxLength={4000} // el mismo tope (MAX_TEXTO_LARGO en src/lib/revision.ts) que valida el importador; si no, el envío se descarta
         value={p.respuesta.comentario ?? ''}
         onChange={(ev) => useAtlas.getState().responder({ ...p.respuesta, comentario: ev.target.value || undefined })}
       />
