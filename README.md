@@ -7,7 +7,7 @@ fuente, nivel de evidencia y revisor visible, y se vuelve a armar sin perder la 
 **Uso educativo. No es una herramienta clínica ni de diagnóstico.**
 
 Estado: hito 1, piloto con docentes. Las 236 fichas están escritas con fuentes verificadas y
-siguen en borrador hasta que las revisen docentes.
+siguen en borrador hasta que las revisen docentes. Hito 2 en construcción: planos de corte (F8).
 
 **Sitio:** https://ragarciaga.github.io/3d_brain/ · **Todos los enlaces del proyecto:**
 [docs/enlaces.md](docs/enlaces.md)
@@ -30,9 +30,15 @@ Abre http://localhost:3000. Requiere Node.js 22.18 o superior (recomendado 24 LT
   psicología con nivel de evidencia, recursos, búsquedas de artículos científicos y fuentes.
 - Fragmentar por hemisferios, lóbulos o piezas con el deslizador vertical (separado e inventario),
   separar y devolver piezas, y vistas con una brújula anatómica.
+- Nervio vago: no se fragmenta; se recorre de arriba abajo en 4 paradas que lo van dibujando
+  ("Recorrer el vago" en su ficha).
+- Origen de la geometría a la vista: lo trazado (las rutas del vago que no trae el modelo) se ve mate
+  y punteado, con aviso, leyenda y filtro "Solo geometría escaneada".
 - Tema claro u oscuro y logo propio (`public/marca/`).
 - Enlaces por estructura e idioma (`/es/hipocampo`, `/en/hippocampus`) y "Compartir esta vista".
-- Modo revisión docente por campo (`/es/revision?r=CODIGO`): ver docs/revision-docente.md.
+- Modo revisión docente por campo (`/es/revision?r=CODIGO`): todo se ve como lo verá el público y el
+  docente suma los botones; trae dentro la guía ("Cómo revisar"), "Qué revisar" en orden de
+  prioridad y las dudas abiertas en cada ficha. Ver docs/revision-docente.md.
 - Medición de carga para los equipos de referencia (`?medir=1`): ver docs/operacion.md.
 
 ## Verificación
