@@ -62,6 +62,7 @@ en los equipos de referencia (#6).
   vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-13: vago torácico: corte del tronco en el pipeline entre subclavia y bronquio, filtro de solo escaneada con hueco, revisión por ruta, see docs/specs/02-thoracic-vagus-tracing/design.md y docs/adr/0010-vago-toracico-trazado.md
 - 2026-10-13: el vago del tórax se traza en los dos lados porque el escaneado es un espejo, see docs/adr/0010-vago-toracico-trazado.md
 - 2026-10-13: F8 cortes: cortar arma el cerebro, solo se corta el encéfalo, relleno por caras traseras en mallas cerradas y contorno en las abiertas, see docs/adr/0011-relleno-corte-caras-traseras.md
 - 2026-10-13: vago fijo, recorrido guiado y trazado solo de tres piezas con F25, see docs/adr/0009-vago-fijo-recorrido-y-trazado-selectivo.md
@@ -92,10 +93,7 @@ en los equipos de referencia (#6).
 ## Next steps
 1. Revisión docente: mandar el mensaje a los 10 docentes e importar las primeras respuestas con
    `scripts/importar-revisiones.ts`.
-2. Vago: correr `pipeline/auditar-vago.py` en un entorno con GitHub habilitado, revisar
-   `pipeline/salida/auditoria-vago.md` y pasar los nombres propuestos a los docentes (F24); luego
-   generar las rutas: la app las muestra con su estado de revisión y los docentes las aprueban con el
-   campo "Recorrido trazado" de la ficha.
+2. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
 3. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
