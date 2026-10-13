@@ -1,19 +1,20 @@
 // Modo revisión docente (F24): avance, fichas pendientes y envío por formulario de Google.
 import { get, set } from 'idb-keyval';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import { nombre } from '../lib/nombres';
+import { nombre, nombrePendiente } from '../lib/nombres';
 import { ordenDeRevision } from '../lib/prioridad';
-import { cargaRevision, desactualizadas, formularioConfigurado, urlsFormulario, type Respuesta } from '../lib/revision';
+import { cargaRevision, desactualizadas, formularioConfigurado, separarIncompletas, urlsFormulario, type Respuesta } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
 
 const claveIdb = (codigo: string) => `revision:${codigo}`;
 const versionActual = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
 const claveGuia = (codigo: string) => `atlas:guia-vista:${codigo}`;
 type Vista = 'que' | 'como' | 'enviar' | null;
+const ID_TITULO = 'dialogo-revision-titulo'; // solo hay un diálogo abierto a la vez
 
 function guiaVista(codigo: string): boolean {
   try {
@@ -69,10 +70,41 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
     return m;
   }, [respuestas]);
 
-  if (!revisor) return null;
   // La primera vez que un docente entra con su código, la guía se abre sola.
-  const vista: Vista = elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
-  const setVista = (v: Vista) => {
+  const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
+  const titulo = useRef<HTMLHeadingElement>(null);
+  const botones = useRef<Partial<Record<'que' | 'como' | 'enviar', HTMLButtonElement | null>>>({});
+
+  // Al abrir un diálogo, el foco va a su título: así se anuncia y Escape queda a un toque.
+  useEffect(() => {
+    if (vista) titulo.current?.focus({ preventScroll: true });
+  }, [vista]);
+
+  // Escape (Pagina) cierra el diálogo antes que cualquier otra cosa.
+  useEffect(() => {
+    useAtlas.getState().setDialogoRevision(vista !== null);
+    return () => useAtlas.getState().setDialogoRevision(false);
+  }, [vista]);
+
+  const cerrar = useCallback(
+    (devolverFoco: boolean) => {
+      if (!revisor) return;
+      if (vista === 'como') marcarGuiaVista(revisor);
+      setElegida('ninguna');
+      // El botón de la barra ya está en pantalla: se enfoca antes de que el diálogo se desmonte.
+      if (devolverFoco && vista) botones.current[vista]?.focus();
+    },
+    [revisor, vista],
+  );
+
+  useEffect(() => {
+    const alCerrar = () => cerrar(true);
+    window.addEventListener('atlas:cerrar-revision', alCerrar);
+    return () => window.removeEventListener('atlas:cerrar-revision', alCerrar);
+  }, [cerrar]);
+
+  if (!revisor) return null;
+  const abrir = (v: Vista) => {
     if (vista === 'como' || v === 'como') marcarGuiaVista(revisor);
     setElegida(v ?? 'ninguna');
   };
@@ -80,7 +112,7 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
   const viejas = desactualizadas(lista, versionActual);
   const secciones = ordenDeRevision(new Set(porEstructura.keys()), rutas.map((r) => r.entrada));
   const totalPendientes = secciones.reduce((n, x) => n + x.ids.length, 0);
-  const alternar = (v: Vista) => setVista(vista === v ? null : v);
+  const alternar = (v: Vista) => abrir(vista === v ? null : v);
   const configurado = formularioConfigurado(configRevision);
 
   const copiarODescargar = async (id: string, l: Respuesta[]) => {
@@ -113,18 +145,27 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
         <strong>{t('revision.titulo')}</strong> · {t('revision.codigo', { codigo: revisor })} ·{' '}
         <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span>
       </span>
-      <button type="button" aria-expanded={vista === 'que'} onClick={() => alternar('que')}>
+      <button type="button" ref={(el) => { botones.current.que = el; }} aria-expanded={vista === 'que'} onClick={() => alternar('que')}>
         {t('revision.queRevisar', { count: totalPendientes })}
       </button>
-      <button type="button" aria-expanded={vista === 'como'} onClick={() => alternar('como')}>
+      <button type="button" ref={(el) => { botones.current.como = el; }} aria-expanded={vista === 'como'} onClick={() => alternar('como')}>
         {t('revision.comoRevisar')}
       </button>
-      <button type="button" className="boton-primario" aria-expanded={vista === 'enviar'} onClick={() => alternar('enviar')}>
+      <button
+        type="button"
+        ref={(el) => { botones.current.enviar = el; }}
+        className="boton-primario"
+        aria-expanded={vista === 'enviar'}
+        onClick={() => alternar('enviar')}
+      >
         {t('revision.enviar')}
       </button>
       {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
       {vista === 'que' && (
-        <div className="dialogo-revision" role="dialog" aria-label={t('revision.queRevisarTitulo')} data-testid="que-revisar">
+        <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO} data-testid="que-revisar">
+          <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
+            {t('revision.queRevisarTitulo')}
+          </h2>
           <p>{t('revision.queAyuda')}</p>
           {secciones.length ? (
             secciones.map((sec, i) => (
@@ -140,11 +181,12 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
                         className="enlace"
                         onClick={() => {
                           alElegir(id);
-                          setVista(null);
+                          abrir(null); // el foco ya va al título de la ficha: no se devuelve a la barra
                         }}
                       >
                         {nombre(estructuras[id], idioma) || id}
                       </button>
+                      {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
                     </li>
                   ))}
                 </ul>
@@ -153,14 +195,19 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
           ) : (
             <p>{t('revision.sinPendientes')}</p>
           )}
-          <button type="button" onClick={() => setVista(null)}>
-            {t('comun.cerrar')}
-          </button>
+          <div className="dialogo-pie">
+            <button type="button" onClick={() => cerrar(true)}>
+              {t('comun.cerrar')}
+            </button>
+          </div>
         </div>
       )}
       {vista === 'como' && (
-        <div className="dialogo-revision guia-revision" role="dialog" aria-label={t('revision.comoRevisar')} data-testid="como-revisar">
-          {(['intro', 'responder', 'dudas', 'nombres', 'marcadores', 'trazos', 'recorridos', 'enviar', 'privacidad'] as const).map((k) => (
+        <div className="dialogo-revision guia-revision" role="dialog" aria-labelledby={ID_TITULO} data-testid="como-revisar">
+          <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
+            {t('revision.comoRevisar')}
+          </h2>
+          {(['intro', 'responder', 'idiomas', 'dudas', 'nombres', 'marcadores', 'trazos', 'recorridos', 'enviar', 'privacidad'] as const).map((k) => (
             <p key={k}>{t(`revision.guia.${k}`)}</p>
           ))}
           <p>
@@ -168,25 +215,44 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
               {t('revision.guia.registrarme')}
             </a>
           </p>
-          <button type="button" onClick={() => setVista(null)}>
-            {t('comun.cerrar')}
-          </button>
+          <div className="dialogo-pie">
+            <button type="button" onClick={() => cerrar(true)}>
+              {t('comun.cerrar')}
+            </button>
+          </div>
         </div>
       )}
       {vista === 'enviar' && (
-        <div className="dialogo-revision" role="dialog" aria-label={t('revision.enviar')}>
+        <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO}>
+          <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
+            {t('revision.enviar')}
+          </h2>
           <p>{t('revision.consentimiento')}</p>
+          <p>
+            <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
+              {t('revision.guia.registrarme')}
+            </a>
+          </p>
           {!configurado && <p className="etiqueta-aviso">{t('revision.sinFormulario')}</p>}
           <ul>
-            {[...porEstructura.entries()].map(([id, l]) => (
-              <li key={id}>
-                {nombre(estructuras[id], idioma) || id} · {t('revision.respuestas', { count: l.length })}
-                {enviadas[id] && <span className="etiqueta-aviso"> {t('revision.enviadaEl', { fecha: enviadas[id]!.slice(0, 10) })}</span>}{' '}
-                <button type="button" onClick={() => void enviar(id, l)}>
-                  {configurado ? t('revision.abrirFormulario') : t('revision.copiar')}
-                </button>
-              </li>
-            ))}
+            {[...porEstructura.entries()].map(([id, l]) => {
+              const { completas, incompletas } = separarIncompletas(l);
+              return (
+                <li key={id}>
+                  {nombre(estructuras[id], idioma) || id} · {t('revision.respuestas', { count: completas.length })}
+                  {incompletas > 0 && (
+                    <span className="etiqueta-aviso" data-testid="incompletas">
+                      {' '}
+                      {t('revision.incompletasNoSeEnvian', { count: incompletas })}
+                    </span>
+                  )}
+                  {enviadas[id] && <span className="etiqueta-aviso"> {t('revision.enviadaEl', { fecha: enviadas[id]!.slice(0, 10) })}</span>}{' '}
+                  <button type="button" disabled={completas.length === 0} onClick={() => void enviar(id, completas)}>
+                    {configurado ? t('revision.abrirFormulario') : t('revision.copiar')}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           {partes && (
             <div role="group" aria-label={t('revision.largaExplica')}>
@@ -199,9 +265,11 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
             </div>
           )}
           {aviso && <p role="status">{aviso}</p>}
-          <button type="button" onClick={() => setVista(null)}>
-            {t('comun.cerrar')}
-          </button>
+          <div className="dialogo-pie">
+            <button type="button" onClick={() => cerrar(true)}>
+              {t('comun.cerrar')}
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -46,6 +46,39 @@ export function urlFormulario(c: ConfigFormulario, codigo: string, estructura: s
   return url.length > MAX_URL ? null : url;
 }
 
+/** Pausa (ms) entre la última tecla y el guardado de lo que el docente escribe en la ficha. */
+export const ESPERA_GUARDADO_MS = 500;
+
+/**
+ * Un "Corregir" sin texto propuesto, sin posición y sin ramo no dice qué corregir: está incompleto
+ * y no se envía. La posición de un marcador y el ramo de un trazo son la propuesta de esas respuestas.
+ */
+export function respuestaCompleta(r: Respuesta): boolean {
+  if (r.veredicto !== 'corregir') return true;
+  return Boolean(r.propuesta?.trim()) || Boolean(r.posicion) || Boolean(r.ramo);
+}
+
+/** Separa las respuestas que se pueden enviar de las incompletas, que solo se cuentan. */
+export function separarIncompletas(l: Respuesta[]): { completas: Respuesta[]; incompletas: number } {
+  const completas = l.filter(respuestaCompleta);
+  return { completas, incompletas: l.length - completas.length };
+}
+
+/**
+ * Lo que falta guardar de los campos de texto de una ficha, o null si no hay nada nuevo.
+ * La propuesta solo existe con el veredicto `corregir`; un texto vacío es lo mismo que ninguno.
+ */
+export function cambiosDeTexto(
+  r: Respuesta,
+  texto: string,
+  comentario: string,
+): { propuesta?: string; comentario?: string } | null {
+  const propuesta = r.veredicto === 'corregir' ? texto || undefined : undefined;
+  const nota = comentario || undefined;
+  if (propuesta === r.propuesta && nota === r.comentario) return null;
+  return { propuesta, comentario: nota };
+}
+
 /** Respuestas cuya versión ya no coincide con la del contenido actual. */
 export function desactualizadas(respuestas: Respuesta[], versionActual: (estructura: string) => string): Respuesta[] {
   return respuestas.filter((r) => r.version !== versionActual(r.estructura));

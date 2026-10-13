@@ -9,6 +9,30 @@ describe('textos de los botones de revisión', () => {
     expect(corregir!.startsWith(correcto!)).toBe(false);
     expect(corregir).toBe('Suggest a fix');
   });
+
+  type Revision = Record<string, string> & { guia: Record<string, string> };
+  for (const idioma of ['es', 'en'] as const) {
+    it(`la guía (${idioma}) nombra los botones tal como aparecen`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      const { responder } = revision.guia;
+      expect(responder).toContain(revision.correcto);
+      expect(responder).toContain(revision.corregir);
+      expect(responder).toContain(revision.no_es_mi_area);
+      if (idioma === 'en') {
+        expect(responder).not.toContain('Correct it');
+        expect(responder).not.toContain('Not my area');
+      }
+    });
+
+    it(`el consentimiento del envío (${idioma}) remite al registro y no usa los textos viejos`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      const { consentimiento } = revision;
+      expect(consentimiento).toContain(idioma === 'es' ? 'solo si lo autorizaste en el registro' : 'only if you authorised it in the registration form');
+      for (const vieja of ['Al enviar, aceptas', 'Se envía una revisión por estructura', 'By sending, you agree', 'One review is sent per structure']) {
+        expect(consentimiento).not.toContain(vieja);
+      }
+    });
+  }
 });
 
 describe('check:i18n', () => {

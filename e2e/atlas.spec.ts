@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { configRevision } from '../src/config/revision';
 
 async function abrir(page: Page, ruta: string, conAviso = false) {
   if (!conAviso) await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
@@ -923,6 +924,51 @@ test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y 
   await abrir(page, '/es/revision?r=GUIA01');
   await modeloCargado(page);
   await expect(page.getByTestId('como-revisar')).toHaveCount(0);
+});
+
+test('textos de la revisión docente: botones en la guía inglesa, registro en el envío, idioma y nombres pendientes (#65)', async ({ page }) => {
+  // Guía en inglés: los botones se nombran como aparecen y se explica cómo revisar en inglés.
+  await abrir(page, '/en/revision?r=TEXTOS01');
+  await modeloCargado(page);
+  const guiaEn = page.getByTestId('como-revisar');
+  await expect(guiaEn).toContainText('Suggest a fix');
+  await expect(guiaEn).toContainText('Not my field');
+  await expect(guiaEn).toContainText('press EN in the header');
+  await expect(guiaEn).not.toContainText('Correct it');
+  await expect(guiaEn).not.toContainText('Not my area');
+  await guiaEn.getByRole('button', { name: 'Close' }).click();
+
+  // Guía en español, con la línea del idioma.
+  await abrir(page, '/es/revision?r=TEXTOS01');
+  await modeloCargado(page);
+  await page.getByRole('button', { name: 'Cómo revisar' }).click();
+  await expect(page.getByTestId('como-revisar')).toContainText('pulsa EN en el encabezado');
+  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
+
+  // Envío: el nombre solo aparece si se autorizó en el registro, con enlace al registro y sin jerga.
+  await page.getByRole('button', { name: 'Enviar revisión' }).click();
+  const envio = page.getByRole('dialog', { name: 'Enviar revisión' });
+  await expect(envio.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', configRevision.urlRegistro);
+  await expect(envio).toContainText('solo si lo autorizaste en el registro');
+  await expect(envio).toContainText('se envía por separado');
+  await expect(envio).not.toContainText('Al enviar, aceptas');
+  await expect(envio).not.toContainText('Se envía una revisión por estructura');
+  await envio.getByRole('button', { name: 'Cerrar' }).click();
+
+  // "Qué revisar": solo la ficha sin nombre en el idioma activo lleva la marca.
+  await page.getByRole('button', { name: /Qué revisar/ }).click();
+  const lista = page.getByTestId('que-revisar');
+  await expect(lista.locator('li', { hasText: 'Anterior occipital sulcus' })).toContainText('nombre pendiente');
+  await expect(lista.locator('li', { hasText: 'Lóbulo grácil' })).not.toContainText('nombre pendiente');
+
+  // Envío en inglés: autorización en el registro, sin las frases viejas.
+  await abrir(page, '/en/revision?r=TEXTOS01');
+  await modeloCargado(page);
+  await page.getByRole('button', { name: 'Send review' }).click();
+  const envioEn = page.getByRole('dialog', { name: 'Send review' });
+  await expect(envioEn).toContainText('only if you authorised it in the registration form');
+  await expect(envioEn).not.toContainText('By sending, you agree');
+  await expect(envioEn).not.toContainText('One review is sent per structure');
 });
 
 test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {

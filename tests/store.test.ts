@@ -294,6 +294,26 @@ describe('salir de la selección y "Mostrar todo"', () => {
   });
 });
 
+describe('modo revisión: diálogo y carga de respuestas', () => {
+  it('setDialogoRevision publica si hay un diálogo abierto', () => {
+    useAtlas.getState().setDialogoRevision(true);
+    expect(useAtlas.getState().dialogoRevision).toBe(true);
+    useAtlas.getState().setDialogoRevision(false);
+    expect(useAtlas.getState().dialogoRevision).toBe(false);
+  });
+
+  it('cargarRespuestas reemplaza las respuestas y sube el contador en cada carga', () => {
+    const antes = useAtlas.getState().cargaRespuestas;
+    const resp = { estructura: 'hippocampus', campo: 'que_es', idioma: 'es', veredicto: 'correcto', version: '0.1.0', fecha: '2026-10-11T00:00:00Z' } as const;
+    useAtlas.getState().cargarRespuestas({ 'hippocampus|que_es|es': resp });
+    expect(useAtlas.getState().respuestas).toEqual({ 'hippocampus|que_es|es': resp });
+    expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
+    useAtlas.getState().cargarRespuestas({});
+    expect(useAtlas.getState().respuestas).toEqual({});
+    expect(useAtlas.getState().cargaRespuestas).toBe(antes + 2);
+  });
+});
+
 describe('grupos de estudio (F2)', () => {
   it('elegir "Sistema límbico" deja visibles exactamente sus piezas', async () => {
     const { piezasDeGrupo } = await import('../src/data/atlas');
