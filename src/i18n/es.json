@@ -313,6 +313,17 @@
     "terminar": "Terminar",
     "salir": "Salir del recorrido"
   },
+  "cortes": {
+    "etiqueta": {
+      "izquierda": "{{mm}} mm a la izquierda",
+      "derecha": "{{mm}} mm a la derecha",
+      "anterior": "{{mm}} mm anterior",
+      "posterior": "{{mm}} mm posterior",
+      "superior": "{{mm}} mm superior",
+      "inferior": "{{mm}} mm inferior",
+      "centro": "en el centro"
+    }
+  },
   "origen": {
     "leyenda": "Origen de la geometría",
     "escaneada": "Medida del cuerpo escaneado",

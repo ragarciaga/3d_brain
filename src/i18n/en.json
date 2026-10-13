@@ -313,6 +313,17 @@
     "terminar": "Finish",
     "salir": "Leave the tour"
   },
+  "cortes": {
+    "etiqueta": {
+      "izquierda": "{{mm}} mm to the left",
+      "derecha": "{{mm}} mm to the right",
+      "anterior": "{{mm}} mm anterior",
+      "posterior": "{{mm}} mm posterior",
+      "superior": "{{mm}} mm superior",
+      "inferior": "{{mm}} mm inferior",
+      "centro": "at the center"
+    }
+  },
   "origen": {
     "leyenda": "Geometry origin",
     "escaneada": "Measured from the scanned body",
