@@ -395,6 +395,59 @@ describe('proponer posición (F24)', () => {
   });
 });
 
+describe('trazos del vago (#62)', () => {
+  const MALLA = 'Vagus nerve (X).r#t03';
+  beforeEach(() => {
+    useAtlas.setState({
+      seleccion: { entrada: null, pieza: null, malla: null },
+      aislar: null,
+      recorrido: null,
+      camara: null,
+      trazos: [],
+    });
+  });
+
+  it('abrirTrazo selecciona la malla, deja el vago en contexto y pide encuadrarla', () => {
+    useAtlas.getState().abrirTrazo(MALLA);
+    const s = useAtlas.getState();
+    expect(s.seleccion).toEqual({ entrada: 'vagus-nerve-x', pieza: 'vagus-nerve-x-r', malla: MALLA });
+    expect(s.aislar?.modo).toBe('contexto');
+    expect([...s.aislar!.piezas].sort()).toEqual([...piezasDeEntrada('vagus-nerve-x')].sort());
+    expect(s.camara?.malla).toBe(MALLA);
+  });
+
+  it('en el recorrido no toca el aislamiento, que es del recorrido', () => {
+    const previo = { modo: 'contexto' as const, piezas: new Set(['vagus-nerve-x-l']) };
+    useAtlas.setState({ recorrido: 2, aislar: previo });
+    useAtlas.getState().abrirTrazo(MALLA);
+    expect(useAtlas.getState().aislar).toBe(previo);
+    expect(useAtlas.getState().seleccion.malla).toBe(MALLA);
+  });
+
+  it('una malla desconocida no cambia la selección ni la cámara', () => {
+    useAtlas.getState().abrirTrazo('Malla que no existe#t00');
+    const s = useAtlas.getState();
+    expect(s.seleccion).toEqual({ entrada: null, pieza: null, malla: null });
+    expect(s.camara).toBeNull();
+    expect(s.aislar).toBeNull();
+  });
+
+  it('setTrazos guarda la lista y una lista igual no notifica', () => {
+    const lista = ['Vagus nerve (X).l#t00', 'Vagus nerve (X).l#t01'];
+    useAtlas.getState().setTrazos(lista);
+    expect(useAtlas.getState().trazos).toEqual(lista);
+    let avisos = 0;
+    const baja = useAtlas.subscribe(() => {
+      avisos += 1;
+    });
+    useAtlas.getState().setTrazos([...lista]);
+    expect(avisos).toBe(0);
+    useAtlas.getState().setTrazos([lista[0]!]);
+    expect(avisos).toBe(1);
+    baja();
+  });
+});
+
 describe('cortes (F8)', () => {
   const vago = piezasBajo(GRUPO_VAGO)[0]!;
   const muchos = Object.fromEntries(

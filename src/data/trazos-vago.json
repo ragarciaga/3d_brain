@@ -1,0 +1,172 @@
+{
+  "trazos": [
+    {
+      "malla": "Vagus nerve (X).l#t00",
+      "auditoria": "sin candidato",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).l#t01",
+      "auditoria": "candidato: ramo faríngeo",
+      "propuesta": "m-pharyngeal-branch-of-vagus-nerve",
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).l#t02",
+      "auditoria": "tronco del vago",
+      "propuesta": "no_es_ramo",
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).l#t03",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).l#t04",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).l#t05",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).l#t06",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t00",
+      "auditoria": "sin candidato",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t01",
+      "auditoria": "candidato: ramo faríngeo",
+      "propuesta": "m-pharyngeal-branch-of-vagus-nerve",
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t02",
+      "auditoria": "tronco del vago",
+      "propuesta": "no_es_ramo",
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t03",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t04",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t05",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t06",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t07",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t08",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t09",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t10",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t11",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t12",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t13",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t14",
+      "auditoria": "sin candidato",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t15",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t16",
+      "auditoria": "candidato: ramo abdominal (gástrico, hepático o celíaco)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t17",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t18",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t19",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    },
+    {
+      "malla": "Vagus nerve (X).r#t20",
+      "auditoria": "raicilla (sale del bulbo)",
+      "propuesta": null,
+      "fuente": "docs/research/vago/auditoria-vago.md, tabla Trazos (pipeline/auditar-vago.py sobre Z-Anatomy 9de5d6912a1b0df9cab739d57f00e036b0496ddc, 13 de octubre de 2026). Propuesta, no definitiva."
+    }
+  ]
+}

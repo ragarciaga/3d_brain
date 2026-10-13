@@ -25,6 +25,7 @@ import { MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombre, nombrePieza } from '../lib/nombres';
+import { ordenarTrazos } from '../lib/trazos';
 import { nivelDeParada, paradasVago } from '../lib/recorrido';
 import { fueraDeSitio, objetivo, piezasDeEncuadre, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
 import BarreraVisor from './BarreraVisor';
@@ -46,6 +47,9 @@ interface MallaCargada {
 
 /** Cajas de cada pieza en el mundo, para encuadrar. Se llenan al cargar el modelo. */
 export const cajasPiezas = new Map<string, THREE.Box3>();
+
+/** Caja de cada malla de trazo del vago en el mundo (sin desplazamiento), para encuadrar un trazo. Se llena al cargar el modelo. */
+export const cajasMallas = new Map<string, THREE.Box3>();
 
 interface Punto2 {
   x: number;
@@ -271,12 +275,17 @@ function Modelo({ idioma }: { idioma: Idioma }) {
     const centros: Record<string, Vec3> = {};
     const cajas: Record<string, [Vec3, Vec3]> = {};
     cajasPiezas.clear();
+    cajasMallas.clear();
+    const nombresMallas: string[] = [];
     for (const [pieza, mallas] of porPieza) {
       const caja = new THREE.Box3();
       for (const m of mallas) {
+        nombresMallas.push(m.nombre);
         if (m.toque) continue;
         if (!m.geometria.boundingBox) m.geometria.computeBoundingBox();
-        caja.union(m.geometria.boundingBox!.clone().applyMatrix4(m.matriz));
+        const cajaMalla = m.geometria.boundingBox!.clone().applyMatrix4(m.matriz);
+        if (m.trazo !== null) cajasMallas.set(m.nombre, cajaMalla);
+        caja.union(cajaMalla);
       }
       cajasPiezas.set(pieza, caja);
       const c = caja.getCenter(new THREE.Vector3());
@@ -285,6 +294,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
     }
     useMetricas.getState().setPiezas(porPieza.size);
     setCentros(centros, cajas);
+    useAtlas.getState().setTrazos(ordenarTrazos(nombresMallas));
     if (!performance.getEntriesByName(MARCA_MODELO_LISTO).length) performance.mark(MARCA_MODELO_LISTO);
   }, [porPieza, setCentros]);
 
@@ -462,6 +472,17 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     if (pedido.camara && pedido.camara.length === 6) {
       const [a, b, c, d, e, f] = pedido.camara as [number, number, number, number, number, number];
       void controles.current?.setLookAt(a, b, c, d, e, f, !reducirMovimiento());
+    } else if (pedido.malla) {
+      // Un trazo mide unos milímetros: la caja se agranda 1 cm para que la cámara no llegue a minDistance.
+      const base = cajasMallas.get(pedido.malla);
+      const pieza = piezaDeMalla(pedido.malla);
+      const pos = controles.current?.getPosition(new THREE.Vector3());
+      const obj = controles.current?.getTarget(new THREE.Vector3());
+      if (base && pieza) {
+        const caja = base.clone().translate(new THREE.Vector3(...objetivo(useAtlas.getState(), pieza))).expandByScalar(0.01);
+        const dir: [number, number, number] = pos && obj ? (pos.sub(obj).normalize().toArray() as [number, number, number]) : DIRECCIONES.inicio;
+        mirar(dir, caja, true);
+      }
     } else if (pedido.encuadrar?.length && pedido.vista) {
       mirar(DIRECCIONES[pedido.vista], cajaDe(pedido.encuadrar), true);
     } else if (pedido.encuadrar?.length) {

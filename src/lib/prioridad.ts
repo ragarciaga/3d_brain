@@ -1,6 +1,7 @@
 // Orden de revisión docente (F24): el tiempo de un docente es poco, así que primero va lo que más
-// necesita su criterio. 1) fichas con una duda abierta para él, 2) el nervio vago (trazos, recorridos
-// trazados y ramos sin ubicar), 3) los grupos que pide el lanzamiento, en su orden, 4) todo lo demás.
+// necesita su criterio. 1) fichas con una duda abierta para él, 2) el nervio vago (recorridos trazados
+// y ramos sin ubicar; los trazos tienen su propia sección, ver src/lib/trazos.ts), 3) los grupos que pide
+// el lanzamiento, en su orden, 4) todo lo demás.
 import { dudas, estructuras, grupos, marcadores, nodos, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { claveRespuesta } from './revision';
