@@ -48,6 +48,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-13: F8 cortes: cortar arma el cerebro, solo se corta el encéfalo, relleno por caras traseras en mallas cerradas y contorno en las abiertas, see docs/adr/0011-relleno-corte-caras-traseras.md
 - 2026-10-13: vago fijo, recorrido guiado y trazado solo de tres piezas con F25, see docs/adr/0009-vago-fijo-recorrido-y-trazado-selectivo.md
 - 2026-10-11: stack SPA con Vite, React y R3F, see docs/adr/0001-stack.md
 - 2026-10-11: sin IA en el producto, see docs/adr/0002-sin-ia-flujo-fijo.md
@@ -77,7 +78,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
 3. Repartir enlaces a los docentes e importar las primeras revisiones.
-4. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
+4. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). Al fusionar el PR del spec, el ciclo las construye; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
