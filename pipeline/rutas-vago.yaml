@@ -1,5 +1,8 @@
-# Rutas del vago que se trazan (ADR 0009). Este archivo lo revisa un docente ANTES de generar
-# geometría: corregir texto cuesta minutos, rehacer mallas cuesta horas.
+# Rutas del vago que se trazan (ADR 0009). Es el registro de cómo se trazó cada una. El docente no
+# revisa este archivo: revisa la ruta dibujada en la app, en modo revisión, con el campo "Recorrido
+# trazado" de la ficha (F24). La app la muestra con su estado ("Pendiente de revisión docente" mientras
+# diga en_revision); cuando el editor aplica una aprobación, pasa a "aprobada". Antes del lanzamiento
+# público, toda ruta que siga en revisión se aprueba o se retira.
 #
 # Cómo se lee: cada ruta es una lista de pasos, de arriba hacia abajo o en el orden del nervio. Cada
 # paso nombra una estructura del modelo (el "anclaje", con su nombre exacto en Z-Anatomy) y dice por
@@ -28,15 +31,12 @@ fuentes:
   - "Baquiran M, Bordoni B. Anatomy, Head and Neck: Anterior Vagus Nerve. StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK547696/"
   - "Kenny BJ, Bordoni B. Neuroanatomy, Cranial Nerve 10 (Vagus Nerve). StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK537171/"
 
-revision_docente:
-  estado: pendiente   # pendiente | aprobada. generar-ramas-vago.py no genera nada mientras diga pendiente.
-  revisado_por: null
-  fecha: null
-
 rutas:
   laringeo_recurrente_derecho:
     nombre: { es: "Nervio laríngeo recurrente derecho", en: "Right recurrent laryngeal nerve" }
     lado: derecho
+    entrada: m-recurrent-laryngeal-nerve   # ficha que abre al tocar la ruta y donde se revisa
+    revision: { estado: en_revision, revisado_por: null, fecha: null }   # en_revision | aprobada
     pasos:
       # Se separa del vago en la base del cuello, a la altura de la subclavia derecha.
       - desde_vago: derecho
@@ -57,6 +57,8 @@ rutas:
   laringeo_recurrente_izquierdo:
     nombre: { es: "Nervio laríngeo recurrente izquierdo", en: "Left recurrent laryngeal nerve" }
     lado: izquierdo
+    entrada: m-recurrent-laryngeal-nerve
+    revision: { estado: en_revision, revisado_por: null, fecha: null }
     pasos:
       # Se separa del vago izquierdo en el tórax, cuando este cruza el arco aórtico.
       - desde_vago: izquierdo
@@ -79,6 +81,8 @@ rutas:
   vago_izquierdo_distal:
     nombre: { es: "Nervio vago izquierdo y tronco vagal anterior (tramo trazado)", en: "Left vagus nerve and anterior vagal trunk (traced segment)" }
     lado: izquierdo
+    entrada: m-anterior-vagal-trunk
+    revision: { estado: en_revision, revisado_por: null, fecha: null }
     pasos:
       # Empieza donde termina el vago izquierdo escaneado, debajo de la bifurcación de la tráquea.
       - desde_vago: izquierdo

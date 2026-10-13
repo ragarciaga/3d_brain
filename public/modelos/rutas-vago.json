@@ -1,0 +1,6 @@
+{
+"unidad": "metro",
+"ejes": "glTF (Y arriba, +X izquierda del cuerpo)",
+"nota": "Rutas trazadas del vago (ADR 0009). Vacío hasta que pipeline/generar-ramas-vago.py las calcule sobre el modelo medido.",
+"rutas": {}
+}

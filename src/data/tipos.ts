@@ -79,6 +79,7 @@ export interface Marcador {
   id: string; // llave en estructuras.json
   padre: string; // nodo del árbol donde se lista
   ancla: string | null; // pieza o estructura cuyo centro da la posición aproximada
+  unir?: boolean; // un solo punto en el centro de todas las piezas del ancla (estructuras de la línea media)
   posicion: [number, number, number] | null; // glTF, Y arriba; null = sin ubicar
   estado: 'sin_ubicar' | 'aproximada' | 'validada';
   fuente_ubicacion: Bilingue; // vacío ("") si no hay fuente escrita

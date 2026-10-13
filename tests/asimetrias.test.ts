@@ -61,18 +61,18 @@ describe('asimetrías del vago con el modelo sintético', () => {
 
 describe('asimetrías del vago con el modelo real', () => {
   const rutaAnclajes = 'pipeline/anclajes-vago.json';
-  const rutaPuntos = 'pipeline/rutas-vago-puntos.json';
+  // Lo que dibuja la app (pipeline/generar-ramas-vago.py lo escribe).
+  const publicadas = leer<Rutas>('public/modelos/rutas-vago.json');
+  const hayRutas = Object.keys(publicadas.rutas).length > 0;
 
-  it('no hay geometría trazada sin anclajes medidos ni rutas calculadas (criterio de bloqueo de F25)', () => {
-    if (piezasAproximadas.length) {
+  it('no hay geometría trazada sin anclajes medidos (criterio de bloqueo de F25)', () => {
+    if (piezasAproximadas.length || hayRutas) {
       expect(existsSync(rutaAnclajes), `${rutaAnclajes}: corre pipeline/auditar-vago.py`).toBe(true);
-      expect(existsSync(rutaPuntos), `${rutaPuntos}: corre pipeline/generar-ramas-vago.py`).toBe(true);
     }
   });
 
-  it.runIf(existsSync(rutaAnclajes))('el modelo medido cumple las asimetrías que se pueden comprobar', () => {
+  it.runIf(existsSync(rutaAnclajes))('el modelo medido y las rutas publicadas cumplen las asimetrías', () => {
     const d = leer<Anclajes>(rutaAnclajes);
-    const r = existsSync(rutaPuntos) ? leer<Rutas>(rutaPuntos) : null;
-    for (const res of comprobar(d, r)) expect(res.ok, `asimetría ${res.asimetria}: ${res.detalle}`).toBe(true);
+    for (const res of comprobar(d, hayRutas ? publicadas : null)) expect(res.ok, `asimetría ${res.asimetria}: ${res.detalle}`).toBe(true);
   });
 });

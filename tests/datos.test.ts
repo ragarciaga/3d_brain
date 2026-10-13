@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { TFunction } from 'i18next';
-import { arbol, entradaPorSlug, estructuras, grupos, marcadores, nodos, piezasDeEntrada, SIN_TERMINO } from '../src/data/atlas';
+import { arbol, entradaPorSlug, estructuras, grupos, marcadores, nodos, piezasDeAncla, piezasDeEntrada, SIN_TERMINO } from '../src/data/atlas';
 import { crearBuscador } from '../src/lib/busqueda';
 import { latinVisible, nombre } from '../src/lib/nombres';
 
@@ -40,11 +40,13 @@ describe('datos del atlas', () => {
     expect(piezas.filter((n) => n.estructura === 'choroid-plexus').map((n) => n.id).sort()).toEqual(['choroid-plexus-l', 'choroid-plexus-r']);
   });
 
-  it('el marcador del área de Wernicke existe sin ubicar, bajo el lóbulo temporal', () => {
+  it('el marcador del área de Wernicke está bajo el lóbulo temporal, aproximado sobre el giro temporal superior izquierdo', () => {
     const m = marcadores.find((x) => x.id === 'm-wernicke-area');
     expect(m?.padre).toBe('g-temporal-lobe');
-    expect(m?.estado).toBe('sin_ubicar');
+    expect(m?.estado).toBe('aproximada');
     expect(m?.posicion).toBeNull();
+    expect(m?.ancla).toBe('superior-temporal-gyrus-lateral-part-l');
+    expect(nodos[m!.ancla!]?.lado).toBe('l');
     expect(estructuras['m-wernicke-area']?.tipo).toBe('marcador');
   });
 
@@ -138,8 +140,10 @@ describe('datos del atlas', () => {
     for (const m of marcadores) {
       expect(estructuras[m.id], m.id).toBeTruthy();
       expect(nodos[m.padre], m.padre).toBeTruthy();
-      if (m.ancla) expect(piezasDeEntrada(m.ancla).length, m.ancla).toBeGreaterThan(0);
+      if (m.ancla) expect(piezasDeAncla(m.ancla).length, m.ancla).toBeGreaterThan(0);
       if (m.estado !== 'sin_ubicar') expect(m.posicion || m.ancla, m.id).toBeTruthy();
+      // Una posición aproximada siempre dice de dónde sale.
+      if (m.estado === 'aproximada') expect(m.fuente_ubicacion.es && m.fuente_ubicacion.en, m.id).toBeTruthy();
     }
     for (const g of grupos) {
       for (const miembro of g.miembros) expect(piezasDeEntrada(miembro).length, `${g.id}: ${miembro}`).toBeGreaterThan(0);

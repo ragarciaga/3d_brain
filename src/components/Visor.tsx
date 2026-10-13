@@ -14,6 +14,7 @@ import {
   marcadores,
   nodos,
   piezaDeMalla,
+  piezasDeAncla,
   piezasDeEntrada,
   trazoDeMalla,
 } from '../data/atlas';
@@ -31,6 +32,7 @@ import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
 import { punteado } from './acabados';
 import { planoRecorrido, SIN_RECORTE } from './recorte';
+import RutasTrazadas from './RutasTrazadas';
 
 export const URL_MODELO = `${import.meta.env.BASE_URL}modelos/atlas.glb`;
 
@@ -314,12 +316,20 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
     if (m.posicion) {
       puntos.push({ id: m.id, pos: new THREE.Vector3(...m.posicion), aproximada: m.estado !== 'validada', propuesta: false });
     } else if (m.ancla) {
-      const piezas = piezasDeEntrada(m.ancla);
+      // El ancla puede ser una estructura (sus lados) o una pieza de un solo lado (Wernicke, izquierda).
+      const piezas = piezasDeAncla(m.ancla);
       if (!piezas.some((p) => visibles.has(p))) continue;
       const s = useAtlas.getState();
-      for (const p of piezas) {
+      const centros = piezas.flatMap((p) => {
         const c = cajasPiezas.get(p)?.getCenter(new THREE.Vector3());
-        if (c) puntos.push({ id: m.id, pos: c.add(new THREE.Vector3(...objetivo(s, p))), aproximada: true, propuesta: false });
+        return c ? [c.add(new THREE.Vector3(...objetivo(s, p)))] : [];
+      });
+      if (m.unir && centros.length) {
+        // Línea media (rafe, área postrema): un punto entre los dos lados, no uno por lado.
+        const medio = centros.reduce((a, c) => a.add(c), new THREE.Vector3()).multiplyScalar(1 / centros.length);
+        puntos.push({ id: m.id, pos: medio, aproximada: true, propuesta: false });
+      } else {
+        for (const c of centros) puntos.push({ id: m.id, pos: c, aproximada: true, propuesta: false });
       }
     }
   }
@@ -577,6 +587,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           <Suspense fallback={null}>
             <Modelo idioma={idioma} />
             <Marcadores idioma={idioma} />
+            <RutasTrazadas idioma={idioma} />
           </Suspense>
           <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />
           <MedidorCuadros />

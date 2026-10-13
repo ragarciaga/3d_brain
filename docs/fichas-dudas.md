@@ -1,5 +1,9 @@
 # Dudas abiertas en las fichas (para revisores docentes)
 
+Los docentes no leen este archivo: cada duda está en `src/data/dudas.json` y aparece dentro de su
+ficha, en modo revisión, como "Duda abierta para ti", con su campo para responder (F24). Si agregas o
+resuelves una duda aquí, haz lo mismo en `src/data/dudas.json`.
+
 Actualizado: 2026-10-12. Todas las fichas están en `borrador`. Cada afirmación cita una fuente que
 se abrió en PubMed o PMC (resumen o texto completo) y cada PMID o NBK se contrastó con su registro.
 Eso no reemplaza la revisión docente (F24): esta lista dice dónde mirar primero.

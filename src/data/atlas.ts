@@ -1,14 +1,17 @@
 // Índices de solo lectura sobre los datos del atlas. Se construyen una vez al cargar.
 import arbolJson from './arbol.json';
+import dudasJson from './dudas.json';
 import estructurasJson from './estructuras.json';
 import gruposJson from './grupos.json';
 import marcadoresJson from './marcadores.json';
-import type { Arbol, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria } from './tipos';
+import type { Arbol, Bilingue, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria } from './tipos';
 
 export const arbol = arbolJson as unknown as Arbol;
 export const datos = estructurasJson as unknown as Estructuras;
 export const grupos = gruposJson as unknown as GrupoEstudio[];
 export const marcadores = marcadoresJson as unknown as Marcador[];
+/** Dudas abiertas por estructura (de docs/fichas-dudas.md): preguntas directas para el docente (F24). */
+export const dudas = (dudasJson as unknown as { dudas: Record<string, { id: string; texto: Bilingue }[]> }).dudas;
 
 export const nodos = arbol.nodos;
 export const estructuras = datos.estructuras;
@@ -83,6 +86,11 @@ for (const n of Object.values(nodos)) {
 export function piezasDeEntrada(id: string): string[] {
   if (nodos[id]?.tipo === 'grupo') return piezasBajo(id);
   return piezasPorEstructura.get(id) ?? [];
+}
+
+/** Piezas del ancla de un marcador: una estructura (sus lados) o una pieza de un solo lado. */
+export function piezasDeAncla(ancla: string): string[] {
+  return nodos[ancla]?.tipo === 'pieza' ? [ancla] : piezasDeEntrada(ancla);
 }
 
 /** Entrada de estructuras.json que describe un nodo del árbol. */

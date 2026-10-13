@@ -1389,6 +1389,57 @@ a {
   padding-inline-start: 1rem;
 }
 
+.dialogo-revision {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.seccion-revision summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin: 0.4rem 0;
+}
+
+.guia-revision p {
+  margin: 0 0 0.6rem;
+  line-height: 1.45;
+}
+
+.enlace-boton {
+  display: inline-block;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radio);
+  text-decoration: none;
+}
+
+/* Dudas abiertas para el docente (F24): lo primero que conviene responder en la ficha. */
+.ficha-dudas {
+  border-left: 3px solid var(--aviso);
+  padding-left: 0.8rem;
+}
+
+.revision-etiqueta {
+  margin: 0.2rem 0;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.grupo-descripcion {
+  margin: 0.5rem 0 0;
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.ficha-sinonimos {
+  margin: 0.1rem 0 0;
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.ficha-duda p {
+  margin: 0.3rem 0;
+}
+
 .pie {
   font-size: 0.78em;
   padding: 0.4rem 0.9rem;

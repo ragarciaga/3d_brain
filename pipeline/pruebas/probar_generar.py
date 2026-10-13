@@ -45,7 +45,16 @@ auditar = open(RAIZ / "pipeline" / "auditar-vago.py", encoding="utf-8").read()
 faltan = [u for u in usados if f'"{u}"' not in auditar]
 assert not faltan, f"anclajes que auditar-vago.py no mide: {faltan}"
 
-# 4. Sin revisión docente aprobada, el YAML del repositorio no se puede publicar.
-assert rutas["revision_docente"]["estado"] in ("pendiente", "aprobada")
+# 4. Cada ruta dice qué ficha abre y en qué estado de revisión está; un estado raro se rechaza.
+for id_ruta, r in salida["rutas"].items():
+    assert r["entrada"].startswith("m-"), f"{id_ruta}: la entrada debe ser el marcador de su ficha"
+    assert r["revision"]["estado"] in g.ESTADOS, id_ruta
+raro = copy.deepcopy(rutas)
+raro["rutas"]["laringeo_recurrente_derecho"]["revision"]["estado"] = "listo"
+try:
+    g.generar(datos, raro)
+    raise AssertionError("debió rechazar un estado de revisión desconocido")
+except ValueError as e:
+    assert "estado de revisión" in str(e), e
 
 print("generar-ramas-vago.py: 4 pruebas en verde")
