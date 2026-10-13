@@ -17,6 +17,8 @@ import Ficha from './Ficha';
 import GruposEstudio from './GruposEstudio';
 import { IconoMarca, PalabraMarca } from './Marca';
 import PanelMedicion from './PanelMedicion';
+import LeyendaOrigen from './LeyendaOrigen';
+import RecorridoVago from './RecorridoVago';
 import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
@@ -137,6 +139,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     (id: string) => {
       const s = useAtlas.getState();
       s.seleccionar({ entrada: id });
+      // En el recorrido del vago la cámara y el fantasma los manda la parada: solo se abre la ficha.
+      if (s.recorrido !== null) return;
       const piezas = piezasDeEntrada(id);
       if (piezas.length) {
         s.aislarPiezas(piezas, aislarInicial.current ?? 'contexto');
@@ -181,7 +185,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   useEffect(() => {
     const alSeleccionar = (e: Event) => {
       const id = (e as CustomEvent<{ entrada: string | null }>).detail.entrada;
-      if (!id && useAtlas.getState().aislar?.modo === 'contexto') useAtlas.getState().salirAislar();
+      const st = useAtlas.getState();
+      if (!id && st.aislar?.modo === 'contexto' && st.recorrido === null) st.salirAislar();
       irA(id, true);
     };
     const alElegir = (e: Event) => irA((e as CustomEvent<{ entrada: string }>).detail.entrada);
@@ -346,12 +351,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           <Visor idioma={idioma} vistaInicial={inicial.vista} camaraInicial={inicial.camara} />
           <BarraFragmentar />
           <Vistas />
+          <LeyendaOrigen />
         </main>
         <Ficha
           idioma={idioma}
           alCompartir={() => void compartir()}
           alCerrar={() => {
-            if (useAtlas.getState().aislar?.modo === 'contexto') useAtlas.getState().salirAislar();
+            const s = useAtlas.getState();
+            if (s.aislar?.modo === 'contexto' && s.recorrido === null) s.salirAislar();
             irA(null);
           }}
         />
@@ -368,6 +375,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           </div>
         </div>
       )}
+      <RecorridoVago idioma={idioma} />
       <PanelMedicion />
       <AvisoPrimeraVisita />
     </div>

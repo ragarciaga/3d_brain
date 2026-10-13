@@ -1,7 +1,7 @@
 // Estado de la app. La posición original de las piezas no vive aquí ni se modifica nunca:
 // aquí solo hay desplazamientos, visibilidad, selección y modos.
 import { create } from 'zustand';
-import { nodos, piezasBajo, piezasDeEntrada, todasLasPiezas } from '../data/atlas';
+import { esFragmentable, nodos, piezasBajo, piezasDeEntrada, todasLasPiezas } from '../data/atlas';
 import {
   CERO,
   desplazamientoSeparar,
@@ -13,6 +13,7 @@ import {
 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
+import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
@@ -29,7 +30,6 @@ const BLOQUES_LOBULO = new Set([
   'g-cerebellum',
   'g-corpus-striatum',
   'g-basal-forebrain',
-  'g-vagus-nerve-x',
 ]);
 
 function ancestroBloque(pieza: string): string {
@@ -103,6 +103,9 @@ interface Estado {
   shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)
   hoja: number; // alto (px) de la hoja inferior de la ficha en celular; 0 si no hay o es escritorio
   enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
+  recorrido: number | null; // parada actual del recorrido del vago (F14); null fuera del recorrido
+  soloEscaneada: boolean; // F25: esconder la geometría trazada
+  panelRecorrido: number; // alto (px) del panel del recorrido cuando tapa la parte de abajo del visor (celular)
 
   setCentros(c: Record<string, Vec3>, cajas?: Record<string, Caja>): void;
   seleccionar(s: Partial<Seleccion> | null): void;
@@ -126,6 +129,11 @@ interface Estado {
   setShift(v: boolean): void;
   setHoja(px: number): void;
   pedirFocoFicha(entrada: string | null): void;
+  iniciarRecorrido(): void;
+  irAParada(i: number): void;
+  salirRecorrido(): void;
+  setPanelRecorrido(px: number): void;
+  setSoloEscaneada(v: boolean): void;
 }
 
 /** Si hay algo que "Mostrar todo" deshacer: piezas ocultas, aislamiento o un grupo de estudio activo. */
@@ -147,7 +155,8 @@ export function piezasDeEncuadre(s: Pick<Estado, 'ocultas' | 'aislar'>): string[
 
 /** Desplazamientos de explosión y si el deslizador está en el tramo del inventario (F6). */
 function recalcularBase(s: Estado): Pick<Estado, 'base' | 'inventario'> {
-  const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio');
+  // El vago no se fragmenta: ni se mueve ni cuenta para el centro del conjunto (F6).
+  const visibles = piezasVisibles(s).filter((p) => nodos[p]?.clase === 'estudio' && esFragmentable(p));
   const bloque = (p: string) => bloqueDe(p, s.nivel);
   return {
     base: desplazamientosDeslizador(s.centros, s.cajas, visibles, bloque, grupoInventario, s.explosion, ladoDe),
@@ -190,6 +199,9 @@ export const useAtlas = create<Estado>((set, get) => ({
   shift: false,
   hoja: 0,
   enfocarFicha: null,
+  recorrido: null,
+  panelRecorrido: 0,
+  soloEscaneada: false,
 
   setCentros: (c, cajas = {}) => {
     set({ centros: c, cajas, cargado: true });
@@ -200,7 +212,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   // Sin selección no tiene sentido dejar el resto como fantasma ("aislar con contexto" lo puso al resaltar).
   deseleccionar: () => {
     set({ seleccion: { entrada: null, pieza: null, malla: null } });
-    if (get().aislar?.modo === 'contexto') get().salirAislar();
+    // En el recorrido el fantasma es del recorrido, no de la selección: se queda.
+    if (get().aislar?.modo === 'contexto' && get().recorrido === null) get().salirAislar();
   },
   alternarVisibles: (piezas, visibles) => {
     const ocultas = new Set(get().ocultas);
@@ -212,7 +225,7 @@ export const useAtlas = create<Estado>((set, get) => ({
     set(recalcularBase(get()));
   },
   mostrarTodo: () => {
-    set({ ocultas: new Set(), aislar: null, grupoActivo: null });
+    set({ ocultas: new Set(), aislar: null, grupoActivo: null, recorrido: null });
     set(recalcularBase(get()));
   },
   activarGrupo: (id, piezas) => {
@@ -231,8 +244,9 @@ export const useAtlas = create<Estado>((set, get) => ({
     set({ aislar: { modo, piezas: conjunto } });
     set(recalcularBase(get()));
   },
+  // Salir del aislamiento (Escape, "Mostrar todo", el botón de la ficha) también termina el recorrido.
   salirAislar: () => {
-    set({ aislar: null });
+    set({ aislar: null, recorrido: null });
     set(recalcularBase(get()));
   },
   setExplosion: (f) => {
@@ -250,6 +264,7 @@ export const useAtlas = create<Estado>((set, get) => ({
     const dibujadas = todasLasPiezas.filter(
       (p) =>
         nodos[p]?.clase === 'estudio' &&
+        esFragmentable(p) &&
         !s.ocultas.has(p) &&
         (!s.aislar || s.aislar.modo === 'contexto' || s.aislar.piezas.has(p)),
     );
@@ -258,7 +273,7 @@ export const useAtlas = create<Estado>((set, get) => ({
     const devueltas = new Set(s.devueltas);
     for (const p of piezas) {
       const centro = s.centros[p];
-      if (!centro) continue;
+      if (!centro || !esFragmentable(p)) continue;
       separadas[p] = desplazamientoSeparar(centro, conjunto, ladoDe(p));
       devueltas.delete(p);
     }
@@ -295,6 +310,28 @@ export const useAtlas = create<Estado>((set, get) => ({
     if (get().hoja !== px) set({ hoja: px });
   },
   pedirFocoFicha: (entrada) => set({ enfocarFicha: entrada }),
+  // El recorrido arma el conjunto (el vago no se ve en el inventario), deja nítido lo que recorre y
+  // el resto como fantasma, y encuadra la primera parada.
+  iniciarRecorrido: () => {
+    set({ explosion: 0, separadas: {}, devueltas: new Set(), ocultas: new Set(), grupoActivo: null });
+    set({ aislar: { modo: 'contexto', piezas: new Set(piezasDelRecorrido()) } });
+    set(recalcularBase(get()));
+    get().irAParada(0);
+  },
+  irAParada: (i) => {
+    const n = Math.min(paradasVago.length - 1, Math.max(0, i));
+    set({ recorrido: n });
+    get().pedirCamara({ encuadrar: encuadreDeParada(paradasVago[n]!) });
+  },
+  salirRecorrido: () => {
+    if (get().recorrido === null) return;
+    set({ recorrido: null, aislar: null });
+    set(recalcularBase(get()));
+  },
+  setSoloEscaneada: (v) => set({ soloEscaneada: v }),
+  setPanelRecorrido: (px) => {
+    if (get().panelRecorrido !== px) set({ panelRecorrido: px });
+  },
 }));
 
 /** Piezas que resalta la selección actual. */

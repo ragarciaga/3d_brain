@@ -2,6 +2,14 @@
 
 Nombre: Maysa Brain (decidido por el editor el 12 de octubre de 2026). Versión 0.3, 11 de octubre de 2026.
 
+**Cambios del 13 de octubre de 2026 (vago, ADR 0009)**
+
+- Medido sobre el modelo: los 28 trazos del vago son ramos reales sin nombre (raicillas, dos ramos cervicales por lado y ramos abdominales del derecho). Faltan el laríngeo recurrente, los ramos cardíacos, pulmonares y esofágicos, y el vago izquierdo por debajo del tórax.
+- F6: el vago no se fragmenta (`fragmentable: false`). Se recorre.
+- F14: el recorrido del vago, con revelado progresivo, sube al hito 2 de la fase 1. Los demás circuitos siguen en la fase 2.
+- F25 nueva, origen de la geometría: escaneada, aproximada o marcador, con criterio de bloqueo.
+- Sección 8: se trazan solo tres piezas (laríngeos recurrentes y vago izquierdo hasta el estómago), con rutas por anclaje revisadas por un docente. Los plexos siguen como marcadores.
+
 **Cambios frente a la versión 0.2**
 
 - Fase 0 verificada sobre Z-Anatomy (inventario completo en `docs/research/fase-0/REPORT.md`). El vago existe, pero sus ramos vienen sin nombre dentro de una sola curva por lado y los plexos no existen. Se decide: vago como una pieza por lado más marcadores, y los ramos se nombran con revisión docente.
@@ -134,11 +142,13 @@ Shift+clic aísla varias piezas a la vez. Aislar un nodo del árbol aísla todas
 
 #### F6. Fragmentar
 
-- **Explosión global:** un deslizador de 0 a 100 %. Hasta el 70 % aleja cada pieza visible del centro del conjunto (se ve de dónde sale cada una). Del 70 al 100 %, si hay 8 bloques visibles o más (con menos, la radial sigue hasta el 100 %), cada bloque viaja a su lugar en un **inventario**: repisas sobre el plano frontal, con las piezas derechas a un lado, las izquierdas en espejo al otro y las de la línea media al centro; los lóbulos quedan juntos y de arriba abajo según su altura en el encéfalo. Al entrar al inventario la cámara pasa a la vista anterior y los órganos de referencia, que no se desarman, se ocultan hasta volver por debajo del 70 %.
+- **Explosión global:** un deslizador de 0 a 100 %. Hasta el 70 % aleja cada pieza visible del centro del conjunto (se ve de dónde sale cada una). Del 70 al 100 %, si hay 8 bloques visibles o más (con menos, la radial sigue hasta el 100 %), cada bloque viaja a su lugar en un **inventario**: repisas sobre el plano frontal, con las piezas derechas a un lado, las izquierdas en espejo al otro y las de la línea media al centro; los lóbulos quedan juntos y de arriba abajo según su altura en el encéfalo. Al entrar al inventario la cámara pasa a la vista anterior y los órganos de referencia y el vago, que no se desarman, se ocultan hasta volver por debajo del 70 %.
 - **Separar por nivel:** un selector define qué tan fino se desarma: hemisferios, lóbulos o giros. Con "lóbulos", cada lóbulo se aleja como un bloque con sus giros juntos; con "giros", se separan uno por uno.
 - **Separar una pieza:** desde la ficha, la pieza sale de su sitio y queda resaltada, mientras el resto sigue armado; el mismo botón, pulsado otra vez, la devuelve.
 
 Límite real: solo se puede fragmentar hasta el nivel de detalle que trae el modelo.
+
+**Qué se fragmenta y qué no.** Cada pieza es `fragmentable` salvo el nervio vago. Separar el hipocampo del lóbulo temporal enseña algo cierto, porque cada giro y cada núcleo es un objeto que ocupa ese espacio. Partir un nervio destruye lo que hay que aprender de él: su recorrido y lo que atraviesa. El vago queda fijo en la explosión y en el inventario, no entra en el centro del conjunto y su ficha no ofrece "Separar": ofrece "Recorrer el vago" (F14).
 
 **Regla técnica:** la posición original de cada pieza nunca se modifica. Fragmentar aplica un desplazamiento que se guarda aparte (sección 10).
 
@@ -222,6 +232,24 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
 
 **Criterio:** un revisor marca tres campos como correctos, propone un cambio en un cuarto y ubica un marcador; tras enviar, las respuestas del formulario del editor tienen las cinco respuestas con estructura, campo, idioma, versión y coordenadas (en dos envíos, porque el marcador es su propia entrada), y el script genera un resumen de la importación con las cinco, que es el cuerpo de un solo issue.
 
+#### F25. Origen de la geometría (hito 2)
+
+Parte del vago no viene de un cuerpo escaneado sino de un trazado sobre anclajes reales (sección 8 y ADR 0009). La app tiene que dejarlo claro: una rama trazada que parece medida es peor que una rama ausente.
+
+Cada pieza lleva `origen_geometria`:
+
+| Valor | Qué significa | Cómo se dibuja |
+|---|---|---|
+| `escaneada` | Viene de la segmentación del cuerpo original (Z-Anatomy, BodyParts3D) | Acabado normal |
+| `aproximada` | Trazada siguiendo una fuente anatómica, sobre anclajes del modelo | Mate y punteado a lo largo, visiblemente distinto |
+| `marcador` | No tiene volumen: punto o región con etiqueta | Punto con etiqueta, nunca como sólido |
+
+- La ficha de una pieza aproximada muestra: "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas."
+- Una leyenda en el visor explica los acabados cuando hay piezas aproximadas a la vista.
+- El filtro "Solo geometría escaneada" esconde lo trazado.
+
+**Criterio de bloqueo:** si la distinción visual no está implementada y probada, la geometría aproximada no se publica. Sin excepción.
+
 ### Estudio activo (fase 2)
 
 #### F13. Notas y recursos personales
@@ -229,6 +257,8 @@ Mecanismo para que cada docente diga, en cada parte específica, si es correcta 
 Texto libre y enlaces propios por pieza. Se guardan solo en el navegador de cada persona y se pueden exportar e importar como JSON para pasarlos a otro equipo.
 
 #### F14. Circuitos y recorridos
+
+El recorrido del vago es de la fase 1 (hito 2); los demás circuitos, de la fase 2. El motor se construye una vez y después solo se agregan circuitos como datos.
 
 Un solo motor para dos usos. Un circuito es una secuencia de pasos; cada paso resalta una o varias estructuras o marcadores, mueve la cámara y muestra un texto corto. Flechas animadas entre pasos indican la dirección de la vía.
 
@@ -254,7 +284,9 @@ Circuitos iniciales (cada uno necesita fuente antes de publicarse):
 | 10 | Troncos vagales anterior y posterior | Marcadores |
 | 11 | Ramos gástricos, hepáticos y celíacos | Marcadores |
 
-En el recorrido del vago, corazón, pulmones, laringe, esófago y estómago aparecen translúcidos como referencia. Las estructuras sin malla van como marcadores con etiqueta. El recorrido hasta el estómago sigue el vago derecho: el izquierdo del modelo termina a la altura del final de la tráquea.
+En el recorrido del vago, corazón, pulmones, laringe, esófago y estómago aparecen translúcidos como referencia. Las estructuras sin malla van como marcadores con etiqueta. El recorrido hasta el estómago sigue el vago derecho mientras el izquierdo no esté trazado (sección 8).
+
+**Revelado progresivo:** en cada parada el nervio se dibuja solo hasta el nivel de esa parada, como si bajara con quien estudia. Los niveles salen de las cajas reales de las piezas (bulbo, tráquea, corazón, estómago), nunca de coordenadas escritas a mano. Los textos de cada parada se toman de fichas que ya tienen fuente; el recorrido no agrega afirmaciones anatómicas propias.
 
 **Regla:** cada circuito muestra que es un modelo simplificado de la vía y cita su fuente.
 
@@ -472,8 +504,11 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Tronco del vago | Malla por lado (`Vagus nerve (X).l`, `Vagus nerve (X).r`). Es una curva de 1 mm de grosor; el izquierdo termina a la altura del final de la tráquea |
 | Núcleo motor dorsal (posterior), núcleo ambiguo, núcleo del tracto solitario | Mallas, por lado |
 | Ganglios superior e inferior | Marcadores |
-| Ramo auricular, faríngeo, laríngeo superior, cardíacos cervicales, laríngeo recurrente | Trazos sin nombre dentro de la curva del vago (21 en el derecho, 7 en el izquierdo). Marcadores hasta que un revisor identifique cada trazo con F24; luego el pipeline los separa como piezas |
-| Plexos pulmonar y esofágico | Marcadores |
+| Raicillas, ramo faríngeo y laríngeo superior (candidatos), ramos abdominales del derecho | Trazos sin nombre dentro de la curva del vago (21 en el derecho, 7 en el izquierdo). `pipeline/auditar-vago.py` propone el nombre de cada uno con su relación a los anclajes; un revisor lo confirma con F24 y el pipeline lo separa como pieza, sin moverlo |
+| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`, revisada por un docente |
+| Vago izquierdo de la bifurcación de la tráquea al estómago, con el tronco vagal anterior | No existe. Se traza igual que los recurrentes |
+| Ramos cardíacos | No existen. Marcadores |
+| Plexos pulmonar, esofágico y cardíaco | Marcadores o regiones; nunca tubos |
 | Troncos vagales anterior y posterior, ramos gástricos, hepáticos y celíacos | Marcadores |
 | Agujero yugular | Marcador |
 
@@ -691,6 +726,7 @@ para que la hoja no las tape. No hay riel.
 10. **Terceros que copian el proyecto sin dar crédito.** La licencia CC BY-SA exige crédito y misma licencia; la pantalla de licencia y el crédito en las imágenes exportadas lo hacen visible.
 11. **Pocos revisores o poca respuesta.** F24 reduce la revisión a botones por campo; el piloto mide cuánto tarda una ficha.
 12. **Geometría de otra fuente mal alineada.** Toda pieza alineada desde otro atlas entra marcada como aproximada hasta que un revisor la valide.
+13. **Un ramo trazado que parece dato medido.** Es el riesgo más serio del vago. Mitigación en tres capas: ruta en texto revisada por un docente antes de generar la malla, prueba automática de las cuatro asimetrías y la distinción visual obligatoria de F25.
 
 ## 15. Decisiones
 
@@ -700,6 +736,7 @@ para que la hoja no las tape. No hay riel.
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
 9. Canal de revisión docente: formulario de Google del editor (F24).
+11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25.
 10. Sin "modo ambos idiomas" (13 de octubre de 2026): el editor lo quitó porque recargaba la interfaz. Lo bilingüe queda en la búsqueda cruzada, el nombre latino siempre visible y un selector de idioma claro.
 3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
 

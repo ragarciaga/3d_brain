@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-12 (Maysa Brain, modo estudio, medición de carga y enlaces importantes)
+Updated: 2026-10-13 (vago: fijo en la explosión, recorrido guiado, F25 y pipeline de rutas, ADR 0009)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -9,6 +9,11 @@ Medir la carga en los equipos de referencia (#6) con `?medir=1` y decidir con es
 adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la revisión docente.
 
 ## Current state
+- Vago (ADR 0009): no se fragmenta; su ficha ofrece "Recorrer el vago" (4 paradas, revelado progresivo,
+  textos tomados de fichas con fuente). F25 lista en la app (punteado, aviso, leyenda, filtro), sin
+  geometría trazada todavía. Pipeline listo: `auditar-vago.py` (necesita Blender y GitHub en el
+  entorno), `rutas-vago.yaml` (pendiente de revisión docente), `generar-ramas-vago.py` y la prueba de
+  las cuatro asimetrías.
 - Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
   a `main` se publica solo con el workflow `pages`.
 - Nombre y marca: **Maysa Brain**, con logo propio (`public/marca/`) y paleta de Maysa; modo claro y
@@ -43,6 +48,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 - Pending (hito 2): F8 cortes (#9), F12 reportar error (#10), trazos del vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-13: vago fijo, recorrido guiado y trazado solo de tres piezas con F25, see docs/adr/0009-vago-fijo-recorrido-y-trazado-selectivo.md
 - 2026-10-11: stack SPA con Vite, React y R3F, see docs/adr/0001-stack.md
 - 2026-10-11: sin IA en el producto, see docs/adr/0002-sin-ia-flujo-fijo.md
 - 2026-10-11: geometría y contenido separados, sin backend, see docs/adr/0003-datos-sin-backend.md
@@ -64,11 +70,14 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
   revisión (#8)
 
 ## Next steps
-1. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
+1. Vago: correr `pipeline/auditar-vago.py` en un entorno con GitHub habilitado, revisar
+   `pipeline/salida/auditoria-vago.md` y pasar los nombres propuestos a los docentes (F24); que un
+   docente revise `pipeline/rutas-vago.yaml`; con la ruta aprobada, generar y conectar los tubos.
+2. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
-2. Repartir enlaces a los docentes e importar las primeras revisiones.
-3. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
+3. Repartir enlaces a los docentes e importar las primeras revisiones.
+4. Hito 2: prototipo de F8 (stencil), F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->

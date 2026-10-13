@@ -20,10 +20,13 @@ interface VentanaAtlas {
       separadas: Record<string, number[]>;
       devueltas: Set<string>;
       ocultas: Set<string>;
+      recorrido: number | null;
+      setExplosion(f: number): void;
       armando: { modo: string; total: string[] } | null;
       devolver(piezas: string[]): void;
     };
   };
+  __recorte: () => number | null;
   __camara: {
     objetivoEnPantalla: (() => Punto) | null;
     leer: (() => number[]) | null;
@@ -810,6 +813,53 @@ test('Ocultar desde la ficha esconde la estructura y un segundo toque la vuelve 
   await ocultar.click();
   await esperarPulsado(ocultar, 'false');
   expect(await ocultas()).toEqual([]);
+});
+
+test('el vago no se separa: su ficha ofrece el recorrido, que baja parada por parada y se termina (ADR 0009)', async ({ page }) => {
+  await abrir(page, '/es/nervio-vago-x');
+  await modeloCargado(page);
+  const ficha = page.getByTestId('ficha');
+  await expect(ficha.getByRole('button', { name: 'Separar', exact: true })).toHaveCount(0);
+  // La explosión no mueve el vago.
+  await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().setExplosion(0.5));
+  expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().base['vagus-nerve-x-r'] ?? null)).toBeNull();
+  await page.getByTestId('iniciar-recorrido').click();
+  const panel = page.getByTestId('recorrido');
+  await expect(page.getByTestId('ficha')).toHaveCount(0); // la ficha se cierra para ver el nervio
+  await expect(panel).toContainText('Parada 1 de 4');
+  await expect(panel.getByRole('heading', { level: 2 })).toHaveText('Nace en el bulbo raquídeo');
+  const altura = () => page.evaluate(() => (window as unknown as VentanaAtlas).__recorte());
+  // El plano llega al nivel de la parada (animado) y en cada parada siguiente queda más abajo.
+  const esperarEstable = async () => {
+    let anterior = Number.NaN;
+    await expect
+      .poll(async () => {
+        const a = await altura();
+        const quieto = a !== null && Math.abs(a - anterior) < 1e-4;
+        anterior = a ?? Number.NaN;
+        return quieto;
+      }, { timeout: 30_000 })
+      .toBe(true);
+    return anterior;
+  };
+  const niveles = [await esperarEstable()];
+  for (const n of [2, 3, 4]) {
+    await page.getByTestId('recorrido-siguiente').click();
+    await expect(panel).toContainText(`Parada ${n} de 4`);
+    // A 2 cuadros/s dos lecturas seguidas pueden coincidir antes de que el plano empiece a bajar.
+    const previo = niveles.at(-1)!;
+    await expect.poll(async () => (await altura()) ?? Infinity, { timeout: 30_000 }).toBeLessThan(previo - 0.005);
+    niveles.push(await esperarEstable());
+  }
+  for (let i = 1; i < niveles.length; i++) expect(niveles[i]!).toBeLessThan(niveles[i - 1]!);
+  // Un ramo de la parada abre su ficha sin cortar el recorrido.
+  await panel.getByText(/Ramos y estructuras de esta parada/).click();
+  await panel.getByRole('button', { name: 'Tronco vagal anterior', exact: true }).click();
+  await expect(page.locator('#ficha-titulo')).toHaveText('Tronco vagal anterior');
+  await expect(panel).toContainText('Parada 4 de 4');
+  await page.getByTestId('recorrido-siguiente').click(); // Terminar
+  await expect(panel).toHaveCount(0);
+  await expect.poll(altura).toBeNull();
 });
 
 test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {

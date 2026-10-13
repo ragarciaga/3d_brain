@@ -1,0 +1,95 @@
+# Rutas del vago que se trazan (ADR 0009). Este archivo lo revisa un docente ANTES de generar
+# geometría: corregir texto cuesta minutos, rehacer mallas cuesta horas.
+#
+# Cómo se lee: cada ruta es una lista de pasos, de arriba hacia abajo o en el orden del nervio. Cada
+# paso nombra una estructura del modelo (el "anclaje", con su nombre exacto en Z-Anatomy) y dice por
+# dónde pasa el nervio respecto a ella. No hay coordenadas escritas a mano: todas salen de medir los
+# anclajes en el modelo (pipeline/auditar-vago.py). pipeline/generar-ramas-vago.py une los pasos con
+# una curva suave.
+#
+# Palabras de los pasos:
+#   desde_vago        el punto del tronco del vago (escaneado) de ese lado, a la altura indicada
+#   rodear            el nervio pasa por ese lado del anclaje: debajo, encima, anterior, posterior
+#   surco             surco traqueoesofágico de ese lado (entre la tráquea y el esófago)
+#   seguir            el nervio acompaña la cara indicada del anclaje entre el paso anterior y el siguiente
+#   a_la_altura_de    la altura de un punto de otro anclaje (mas_alto, mas_bajo, centro)
+#   cara_lateral      con rodear anterior o posterior: por la esquina de ese lado (posterolateral)
+#
+# Las cuatro asimetrías que no se pueden equivocar se prueban solas (tests/asimetrias.test.ts):
+#   1. El laríngeo recurrente derecho pasa por debajo de la arteria subclavia derecha.
+#   2. El laríngeo recurrente izquierdo rodea el arco aórtico, junto al ligamento arterioso.
+#   3. El vago izquierdo pasa por delante del arco aórtico y por detrás del bronquio principal izquierdo.
+#   4. El vago derecho pasa por detrás del bronquio principal derecho y del esófago.
+
+fuentes:
+  # Las mismas que citan las fichas del laríngeo recurrente y del tronco vagal anterior (src/data).
+  - "Allen E, Minutello K, Jozsa F, Murcek BW. Anatomy, Head and Neck, Larynx Recurrent Laryngeal Nerve. StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK470179/"
+  - "Fakoya AO, Winters R, Gupta V. Anatomy, Head and Neck: Laryngeal Nerves. StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK557742/"
+  - "Baquiran M, Bordoni B. Anatomy, Head and Neck: Anterior Vagus Nerve. StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK547696/"
+  - "Kenny BJ, Bordoni B. Neuroanatomy, Cranial Nerve 10 (Vagus Nerve). StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK537171/"
+
+revision_docente:
+  estado: pendiente   # pendiente | aprobada. generar-ramas-vago.py no genera nada mientras diga pendiente.
+  revisado_por: null
+  fecha: null
+
+rutas:
+  laringeo_recurrente_derecho:
+    nombre: { es: "Nervio laríngeo recurrente derecho", en: "Right recurrent laryngeal nerve" }
+    lado: derecho
+    pasos:
+      # Se separa del vago en la base del cuello, a la altura de la subclavia derecha.
+      - desde_vago: derecho
+        a_la_altura_de: { anclaje: "Right subclavian artery", punto: mas_alto }
+      # Pasa por debajo de la subclavia derecha (asimetría 1).
+      - anclaje: "Right subclavian artery"
+        punto: mas_bajo
+        rodear: debajo
+      # Sube por el surco traqueoesofágico derecho.
+      - surco: derecho
+        a_la_altura_de: { anclaje: "Trachea", punto: mas_alto }
+      # Entra en la laringe por debajo del cartílago cricoides.
+      - anclaje: "Cricoid cartilage"
+        punto: mas_bajo
+        rodear: posterior
+        cara_lateral: true
+
+  laringeo_recurrente_izquierdo:
+    nombre: { es: "Nervio laríngeo recurrente izquierdo", en: "Left recurrent laryngeal nerve" }
+    lado: izquierdo
+    pasos:
+      # Se separa del vago izquierdo en el tórax, cuando este cruza el arco aórtico.
+      - desde_vago: izquierdo
+        a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
+      # Rodea el arco aórtico por debajo, junto al ligamento arterioso (asimetría 2).
+      - anclaje: "Aortic arch"
+        punto: cerca_de
+        cerca_de: "Ligamentum arteriosum"
+        rodear: debajo
+      # Sube por el surco traqueoesofágico izquierdo; por eso es más largo que el derecho.
+      - surco: izquierdo
+        a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
+      - surco: izquierdo
+        a_la_altura_de: { anclaje: "Trachea", punto: mas_alto }
+      - anclaje: "Cricoid cartilage"
+        punto: mas_bajo
+        rodear: posterior
+        cara_lateral: true
+
+  vago_izquierdo_distal:
+    nombre: { es: "Nervio vago izquierdo y tronco vagal anterior (tramo trazado)", en: "Left vagus nerve and anterior vagal trunk (traced segment)" }
+    lado: izquierdo
+    pasos:
+      # Empieza donde termina el vago izquierdo escaneado, debajo de la bifurcación de la tráquea.
+      - desde_vago: izquierdo
+        punto: extremo_inferior
+      # Pasa por detrás del bronquio principal izquierdo (asimetría 3).
+      - anclaje: "Left main bronchus"
+        punto: centro
+        rodear: posterior
+      # Baja sobre la cara anterior del esófago (plexo esofágico, tronco vagal anterior).
+      - seguir: { anclaje: "Oesophagus", cara: anterior }
+      # Atraviesa el hiato con el esófago y llega a la cara anterior del estómago, cerca del cardias.
+      - anclaje: "Oesophagus"
+        punto: extremo_inferior
+        rodear: anterior

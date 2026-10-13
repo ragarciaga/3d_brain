@@ -170,13 +170,14 @@ function centrosReales(): Record<string, Vec3> {
 describe('explosión con el modelo real (D1, D2, D4)', () => {
   const c = centrosReales();
   const encefalo = piezasBajo('g-brain').filter((p) => nodos[p]!.clase === 'estudio');
-  const visibles = [...encefalo, ...piezasBajo('g-vagus-nerve-x')];
+  // Como en la app: el vago no se fragmenta (F6, ADR 0009) y no entra en el cálculo.
+  const visibles = encefalo;
   const explotar = (f: number) => desplazamientosExplosion(c, visibles, (p) => p, f, ladoDe);
 
   it('tiene los centros de las 253 piezas del encéfalo y de los dos vagos', () => {
     expect(encefalo).toHaveLength(253);
     expect(piezasBajo('g-vagus-nerve-x')).toHaveLength(2);
-    for (const p of visibles) expect(c[p], p).toBeDefined();
+    for (const p of [...visibles, ...piezasBajo('g-vagus-nerve-x')]) expect(c[p], p).toBeDefined();
   });
 
   it('precondición: los centros del encéfalo están a RADIO_MAXIMO o menos del origen y cada lado está en el suyo', () => {
@@ -217,8 +218,4 @@ describe('explosión con el modelo real (D1, D2, D4)', () => {
     }
   });
 
-  it('el vago derecho, con centro en x positivo, se aleja hacia -X', () => {
-    expect(c['vagus-nerve-x-r']![0]).toBeGreaterThan(0);
-    expect(explotar(1)['vagus-nerve-x-r']![0]).toBeLessThanOrEqual(0);
-  });
 });

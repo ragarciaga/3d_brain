@@ -39,7 +39,9 @@
     "ocultar": "Ocultar",
     "encuadrar": "Encuadrar",
     "compartir": "Compartir",
-    "mostrarTodo": "Mostrar todo (Esc)"
+    "mostrarTodo": "Mostrar todo (Esc)",
+    "recorrer": "Recorrer el vago",
+    "noSepara": "El vago no se separa: se recorre, de arriba abajo."
   },
   "marcador": {
     "titulo": "Marcador sin malla",
@@ -264,5 +266,31 @@
       "modelo": "Lo más lento fue descargar el modelo 3D.",
       "procesamiento": "Lo más lento fue preparar el modelo en este equipo."
     }
+  },
+  "recorrido": {
+    "titulo": "Recorrido del vago",
+    "parada": "Parada {{n}} de {{total}}",
+    "paradas": {
+      "bulbo": "Nace en el bulbo raquídeo",
+      "cuello": "Sale del cráneo y baja por el cuello",
+      "torax": "Atraviesa el tórax",
+      "abdomen": "Llega al abdomen"
+    },
+    "verFicha": "Ver la ficha y sus fuentes",
+    "enEstaParada": "Ramos y estructuras de esta parada ({{n}})",
+    "nota": "Modelo simplificado de la vía. El nervio se dibuja hasta la parada; cada texto viene de la ficha de la estructura, con sus fuentes.",
+    "notaIzquierdo": "Aquí se sigue el vago derecho: en el modelo, el izquierdo termina en el tórax.",
+    "anterior": "Anterior",
+    "siguiente": "Siguiente",
+    "terminar": "Terminar",
+    "salir": "Salir del recorrido"
+  },
+  "origen": {
+    "leyenda": "Origen de la geometría",
+    "escaneada": "Medida del cuerpo escaneado",
+    "aproximada": "Trazada (aproximada, con fines didácticos)",
+    "marcador": "Marcador: punto con etiqueta, sin volumen",
+    "soloEscaneada": "Solo geometría escaneada",
+    "aviso": "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas."
   }
 }
