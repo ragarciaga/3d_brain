@@ -9,10 +9,11 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/lib/cortes.ts, tests/cortes.test.ts, src/i18n/es.json, src/i18n/en.json
 - Verify: `npm test -- tests/cortes.test.ts`; `npm run check:i18n`
 - Issue: #33
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: keep. Nota del revisor: las cajas del GLB están en metros y el rango del deslizador en mm enteros; las pruebas fijan la conversión.
+- 2026-10-13: etiqueta sagital "12 mm a la izquierda", rango con piso simétrico desde el centro y cruce estricto en piezasCruzadas (RESOLVED), because son los valores por defecto del plan y ningún requisito pide otra cosa. Tier B. Outcome: reviews pass after 0 kickbacks, PR #54.
 
 ## T2: Agregar el estado de cortes al store
 - Purpose: que el store guarde los tres planos, el fantasma y el relleno apagado; que activar el primer corte arme el cerebro y bloquee explosión, inventario y Separar (solo la guarda del store; los controles deshabilitados con texto son de T9); y que quitar los cortes lo rehabilite, sin mover ninguna pieza.
@@ -22,11 +23,12 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/store/useAtlas.ts, tests/store.test.ts
 - Verify: `npm test -- tests/store.test.ts` con casos nuevos que fallan antes del cambio: estado inicial con tres planos inactivos y `fantasmaCorte` y `rellenoApagado` en false (R5.1); `setCorte` activa un plano en 0 mm (R1.3) y respeta `invertido` (R1.6); `mm` fuera del rango de `rangoCerebro` se ajusta al borde; activar el primer plano con explosión y piezas separadas deja `explosion=0`, `separadas={}` e `inventario=false` en una sola actualización (R2.2); con un corte activo `setExplosion` y `separar` no cambian nada, y tras `quitarCortes()` o desactivar el último plano vuelven a funcionar (R1.8, R2.4); el objetivo de cada pieza es igual antes de activar y después de quitar los cortes (R2.5); `ocultas` y `aislar` no cambian al activar ni al quitar cortes (R2.6); `setFantasmaCorte` y `apagarRelleno` cambian sus campos y `apagarRelleno` es idempotente
 - Issue: #34
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Se nombran `fantasmaCorte`, `rellenoApagado` y sus acciones (los usan T4, T7 y T8) y los casos de prueba.
 - Ronda 2: keep.
+- 2026-10-13: al reactivar un plano se conserva invertido, quitarCortes() no apaga el fantasma y Mostrar todo no quita los cortes (RESOLVED), because son los valores por defecto del plan y R2.6 trata los cortes como independientes. Tier B. Outcome: reviews pass after 1 kickback, PR #70.
 
 ## T3: Generar y verificar la lista de mallas cerradas
 - Purpose: saber qué piezas del encéfalo se pueden rellenar, medido en el GLB, y que `check:modelo` falle si la lista deja de coincidir con las mallas sin bordes abiertos.
@@ -36,11 +38,12 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: scripts/lib/mallas.ts, scripts/mallas-cerradas.ts, scripts/check-modelo.ts, src/config/mallas-cerradas.json, tests/mallas-cerradas.test.ts
 - Verify: `npm test -- tests/mallas-cerradas.test.ts` (malla sintética cerrada da cerrada; una con un hueco o un triángulo suelto da abierta; vértices con la misma posición a 6 decimales se sueldan; la comparación reporta una malla que falta, una que sobra y una listada que no existe en el GLB); `node scripts/mallas-cerradas.ts` escribe `src/config/mallas-cerradas.json` ordenado, con 191 nombres sobre 253 mallas medidas (piezas de estudio bajo `g-brain` en `src/data/arbol.json`, leído con readFileSync, sin `#toque` ni vago); `npm run check:modelo` pasa con la lista generada y sale con código 1, nombrando la malla, si recibe por argumento una lista a la que se le quitó o se le agregó una malla
 - Issue: #35
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Pasa a M, con módulo puro y prueba propia. Sin script nuevo en package.json, para no tocar ese archivo; se corre con `node`, como los demás scripts.
 - Ronda 2: keep.
+- 2026-10-13: lista como arreglo plano ordenado, solo las aristas de exactamente un triángulo son borde y una primitiva que no es TRIANGLES deja la malla abierta (RESOLVED), because son los valores conservadores del plan y dan las 191 de 253 del ADR 0011. Tier B. Outcome: reviews pass after 1 kickback, PR #57.
 
 ## T4: Recortar el encéfalo en el visor
 - Purpose: que los planos del store corten solo las piezas del encéfalo (el vago y los órganos de referencia quedan enteros), con fantasma opcional del lado oculto y sin poder tocar lo oculto, junto al recorrido del vago. La lógica que se prueba (planos por pieza, fantasma, descarte de impactos del lado oculto) vive en `src/components/recorte.ts`, para probarla sin montar el Canvas. Helpers DEV en `src/main.tsx`: `window.__cortes.planosDe(pieza)` (cuántos `clippingPlanes` tiene el material visible de la pieza, 0 si ninguno), `window.__cortes.fantasmas()` (ids de piezas con malla de fantasma visible) y `window.__puntoCorte(pieza)` (punto de pantalla sobre la cara del corte de la pieza).

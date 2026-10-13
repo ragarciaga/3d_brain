@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-13 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43)
+Updated: 2026-10-13 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -37,7 +37,10 @@ carga en los equipos de referencia (#6).
   izquierda con descripción y "Recursos y artículos de referencia", explosión vertical a la derecha
   (al 100 % las piezas quedan en inventario, mínimo 8 bloques), brújula de vistas y búsqueda con
   Ctrl+K. Paneles laterales plegables. Se quitó "Armar pieza por pieza".
-- Works: typecheck, lint, 300 pruebas unitarias, check:i18n, check:modelo (341 mallas, 287 piezas,
+- F8 (planos de corte) en construcción: listas la lógica pura (`src/lib/cortes.ts`, PR #54), el
+  estado en el store con las guardas de explosión y Separar (PR #70) y la lista medida de mallas
+  cerradas, 191 de 253, que `check:modelo` verifica (PR #57). Todavía no hay interfaz de cortes.
+- Works: typecheck, lint, 362 pruebas unitarias, check:i18n, check:modelo (341 mallas, 287 piezas,
   6,53 MB) y build; 39 E2E. F1 a F7, F9, F10, F11, F24, el recorrido del vago (F14) y F25 sin
   geometría trazada todavía. Sin "Ambos idiomas" (quitado el 2026-10-13); selector ES | EN claro. Bugs #16 (Reintentar) y #19 (Separar)
   cerrados.
@@ -101,8 +104,15 @@ carga en los equipos de referencia (#6).
 3. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el
    issue de F19.
-4. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43): el ciclo construye las tareas; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
+4. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
+| Task | plan | implement | check | verify | audit | fix | pr | merge | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| T1 | 3.8 | 2.8 | 0.4 | 1.8 | 2.7 |  | 0.4 | 0.8 | 12.8 |
+| T3 | 4.4 | 2.3 | 0.5 | 3.7 | 3.3 | 0.9 | 0.5 | 0.9 | 16.5 |
+| T2 | 3.0 | 2.3 | 0.6 | 3.3 | 12.0 | 1.4 | 0.5 | 0.8 | 24.0 |
+
+Minutes per phase.
 <!-- rb:timing:end -->
