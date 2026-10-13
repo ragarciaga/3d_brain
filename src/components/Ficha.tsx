@@ -1,5 +1,5 @@
 // Ficha de pieza (F4), recursos (F9) y controles de revisión por campo (F24).
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dudas, esFragmentable, estructuras, origenDe, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
@@ -7,7 +7,7 @@ import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '
 import { campoTrazado } from '../lib/rutas';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
-import { claveRespuesta, type Veredicto } from '../lib/revision';
+import { cambiosDeTexto, claveRespuesta, ESPERA_GUARDADO_MS, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
 import { colorDePieza } from './colores';
 import { CONSULTA_MOVIL } from './useMovil';
@@ -30,9 +30,38 @@ function ControlRevision({
   const { t } = useTranslation();
   const clave = claveRespuesta({ estructura: entrada, campo, idioma });
   const r = useAtlas((s) => s.respuestas[clave]);
-  // El componente se monta con key={clave}: el texto nunca pasa de un campo o estructura a otro.
+  // El componente se monta con key={clave}: el texto nunca pasa de un campo o estructura a otro. La key
+  // también cambia cuando llegan las respuestas guardadas, para que el texto inicial salga de IndexedDB.
   const [texto, setTexto] = useState(r?.propuesta ?? '');
   const [comentario, setComentario] = useState(r?.comentario ?? '');
+  const idPropuesta = useId();
+  const idAyuda = useId();
+  const idAviso = useId();
+  const idComentario = useId();
+  const incompleta = r?.veredicto === 'corregir' && !texto.trim();
+
+  // Lo que se escribe se guarda tras una pausa, sin esperar a que el docente salga del campo.
+  useEffect(() => {
+    if (!r) return;
+    const cambios = cambiosDeTexto(r, texto, comentario);
+    if (!cambios) return;
+    const espera = setTimeout(
+      () =>
+        useAtlas.getState().responder({
+          estructura: entrada,
+          campo,
+          idioma,
+          veredicto: r.veredicto,
+          propuesta: cambios.propuesta,
+          comentario: cambios.comentario,
+          version,
+          fecha: new Date().toISOString(),
+        }),
+      ESPERA_GUARDADO_MS,
+    );
+    return () => clearTimeout(espera);
+  }, [r, texto, comentario, entrada, campo, idioma, version]);
+
   const responder = (veredicto: Veredicto, propuesta?: string, nota?: string) =>
     useAtlas.getState().responder({
       estructura: entrada,
@@ -63,24 +92,38 @@ function ControlRevision({
         ))}
       </div>
       {r?.veredicto === 'corregir' && (
-        <textarea
-          aria-label={t('revision.propuesta')}
-          placeholder={t('revision.propuestaAyuda')}
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          onBlur={() => responder('corregir', texto, comentario)}
-          rows={3}
-        />
+        <>
+          <label htmlFor={idPropuesta}>{t('revision.propuesta')}</label>
+          <p id={idAyuda} className="recurso-nota">
+            {t('revision.propuestaAyuda')}
+          </p>
+          {incompleta && (
+            <p id={idAviso} className="etiqueta-aviso" data-testid="revision-incompleta">
+              {t('revision.incompleta')}
+            </p>
+          )}
+          <textarea
+            id={idPropuesta}
+            aria-describedby={incompleta ? `${idAyuda} ${idAviso}` : idAyuda}
+            aria-invalid={incompleta || undefined}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onBlur={() => responder('corregir', texto, comentario)}
+            rows={3}
+          />
+        </>
       )}
       {r && (
-        <textarea
-          aria-label={t('revision.comentario')}
-          placeholder={t('revision.comentario')}
-          value={comentario}
-          onChange={(e) => setComentario(e.target.value)}
-          onBlur={() => responder(r.veredicto, r.veredicto === 'corregir' ? texto : undefined, comentario)}
-          rows={2}
-        />
+        <>
+          <label htmlFor={idComentario}>{t('revision.comentario')}</label>
+          <textarea
+            id={idComentario}
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+            onBlur={() => responder(r.veredicto, r.veredicto === 'corregir' ? texto : undefined, comentario)}
+            rows={2}
+          />
+        </>
       )}
     </div>
   );
@@ -333,6 +376,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const ubicando = useAtlas((s) => s.ubicando);
   const rutas = useAtlas((s) => s.rutas);
   const enfocar = useAtlas((s) => s.enfocarFicha);
+  const cargaRespuestas = useAtlas((s) => s.cargaRespuestas);
   const id = seleccion.entrada;
   const e: Estructura | undefined = id ? estructuras[id] : undefined;
   const ficha = useRef<HTMLElement>(null);
@@ -373,7 +417,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const rev = (campo: string, idiomaCampo?: Idioma, etiqueta?: string) =>
     revisor ? (
       <ControlRevision
-        key={claveRespuesta({ estructura: id, campo, idioma: idiomaCampo })}
+        key={`${claveRespuesta({ estructura: id, campo, idioma: idiomaCampo })}#${cargaRespuestas}`}
         entrada={id}
         campo={campo}
         idioma={idiomaCampo}

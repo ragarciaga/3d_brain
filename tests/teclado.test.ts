@@ -13,7 +13,15 @@ describe('esCampoDeTexto', () => {
 });
 
 describe('accionEscape', () => {
-  const base = { menuAbierto: false, ubicando: false, aislado: false, enCampo: false };
+  const base = { dialogoRevision: false, menuAbierto: false, ubicando: false, aislado: false, enCampo: false };
+  it('con un diálogo de revisión abierto, Escape lo cierra', () =>
+    expect(accionEscape({ ...base, dialogoRevision: true })).toBe('cerrar-revision'));
+  it('el diálogo de revisión va antes que cualquier otra acción', () =>
+    expect(accionEscape({ dialogoRevision: true, menuAbierto: true, ubicando: true, aislado: true, enCampo: true })).toBe('cerrar-revision'));
+  it('con el foco en un campo dentro del diálogo también lo cierra', () =>
+    expect(accionEscape({ ...base, dialogoRevision: true, enCampo: true })).toBe('cerrar-revision'));
+  it('sin diálogo, el cajón sigue primero', () =>
+    expect(accionEscape({ ...base, menuAbierto: true, aislado: true })).toBe('cerrar-menu'));
   it('sale del aislamiento si el foco no está en un campo', () => expect(accionEscape({ ...base, aislado: true })).toBe('salir-aislar'));
   it('dentro de un campo no sale del aislamiento', () => expect(accionEscape({ ...base, aislado: true, enCampo: true })).toBeNull());
   it('cancela la propuesta de posición antes que el aislamiento', () =>
