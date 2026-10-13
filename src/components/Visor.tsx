@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
 import {
+  esFragmentable,
+  origenDe,
   esMallaDeToque,
   estructuras,
   marcadores,
@@ -22,10 +24,13 @@ import { MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombre, nombrePieza } from '../lib/nombres';
+import { nivelDeParada, paradasVago } from '../lib/recorrido';
 import { fueraDeSitio, objetivo, piezasDeEncuadre, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
 import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
+import { punteado } from './acabados';
+import { planoRecorrido, SIN_RECORTE } from './recorte';
 
 export const URL_MODELO = `${import.meta.env.BASE_URL}modelos/atlas.glb`;
 
@@ -84,12 +89,16 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const { t } = useTranslation();
   const nodo = nodos[id]!;
   const referencia = nodo.clase === 'referencia';
-  // En el inventario (F6) los órganos de referencia no se mueven y quedarían encima de las repisas: se ocultan.
+  // En el inventario (F6) lo que no se desarma (órganos de referencia y vago) quedaría encima de las repisas: se oculta.
+  const fija = referencia || !esFragmentable(id);
+  const recortable = !esFragmentable(id); // el vago se revela parada por parada en el recorrido
+  const aproximada = origenDe(id) === 'aproximada'; // F25: trazado, no medido
   const visible = useAtlas(
     (s) =>
       !s.ocultas.has(id) &&
       (!s.aislar || s.aislar.piezas.has(id) || s.aislar.modo === 'contexto') &&
-      !(referencia && s.inventario),
+      !(fija && s.inventario) &&
+      !(aproximada && s.soloEscaneada),
   );
   const fantasma = useAtlas((s) => !!s.aislar && s.aislar.modo === 'contexto' && !s.aislar.piezas.has(id));
   const seleccionada = useAtlas((s) => piezasSeleccionadas(s.seleccion).includes(id));
@@ -192,13 +201,16 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
             ) : (
               <meshStandardMaterial
                 color={esTrazoSel ? '#ff5a1f' : color}
-                roughness={0.65}
+                roughness={aproximada ? 1 : 0.65}
+                onBeforeCompile={aproximada ? punteado : undefined}
+                customProgramCacheKey={aproximada ? () => 'punteado' : undefined}
                 metalness={0}
                 transparent={referencia || fantasma}
                 opacity={referencia ? 0.18 : fantasma ? 0.08 : 1}
                 depthWrite={!(referencia || fantasma)}
                 emissive={seleccionada ? '#3c83f6' : encima ? '#444444' : '#000000'}
                 emissiveIntensity={seleccionada ? 0.55 : 0.35}
+                clippingPlanes={recortable ? PLANOS_RECORRIDO : null}
               />
             )}
           </mesh>
@@ -362,7 +374,8 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
   const controles = useRef<CameraControls>(null);
   const cargado = useAtlas((s) => s.cargado);
   const pedido = useAtlas((s) => s.camara);
-  const hoja = useAtlas((s) => s.hoja);
+  // Lo que tapa la parte de abajo del visor en celular: la hoja de la ficha o el panel del recorrido.
+  const hoja = useAtlas((s) => Math.max(s.hoja, s.recorrido === null ? 0 : s.panelRecorrido));
   const { camera } = useThree();
   const tamano = useThree((s) => s.size);
   const obtener = useThree((s) => s.get);
@@ -454,6 +467,35 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
   return <CameraControls ref={controles} makeDefault minDistance={0.01} maxDistance={3} dollySpeed={0.6} />;
 }
 
+const PLANOS_RECORRIDO = [planoRecorrido];
+
+/** Baja el plano del recorrido hasta el nivel de la parada, con una animación corta. */
+function RecorteRecorrido() {
+  useFrame((_, dt) => {
+    const s = useAtlas.getState();
+    const parada = s.recorrido === null ? null : paradasVago[s.recorrido];
+    if (!parada) {
+      planoRecorrido.constant = SIN_RECORTE;
+      return;
+    }
+    const nivel = nivelDeParada(parada, s.cajas);
+    const destino = nivel === null ? -minimoVago(s.cajas) + 0.01 : -nivel;
+    // Al empezar, el nervio arranca oculto desde su punto más alto y baja hasta la primera parada.
+    if (planoRecorrido.constant >= SIN_RECORTE) planoRecorrido.constant = -maximoVago(s.cajas);
+    const d = destino - planoRecorrido.constant;
+    planoRecorrido.constant = reducirMovimiento() || Math.abs(d) < 1e-4 ? destino : planoRecorrido.constant + d * Math.min(1, dt * 3);
+  });
+  return null;
+}
+
+function alturasVago(cajas: Record<string, [Vec3, Vec3]>): number[][] {
+  return Object.entries(cajas)
+    .filter(([p]) => !esFragmentable(p))
+    .map(([, c]) => [c[0][1], c[1][1]]);
+}
+const minimoVago = (cajas: Record<string, [Vec3, Vec3]>) => Math.min(...alturasVago(cajas).map((a) => a[0]!));
+const maximoVago = (cajas: Record<string, [Vec3, Vec3]>) => Math.max(...alturasVago(cajas).map((a) => a[1]!));
+
 function MedidorCuadros() {
   const acumulado = useRef({ cuadros: 0, tiempo: 0 });
   const marcado = useRef(false);
@@ -516,7 +558,10 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-          onCreated={({ gl }) => useMetricas.getState().setGpu(nombreGpu(gl.getContext()))}
+          onCreated={({ gl }) => {
+            gl.localClippingEnabled = true; // revelado progresivo del recorrido del vago
+            useMetricas.getState().setGpu(nombreGpu(gl.getContext()));
+          }}
           onPointerMissed={(e) => {
             const i = inicioPuntero.current;
             if (i && Math.hypot(e.clientX - i.x, e.clientY - i.y) > ARRASTRE_PX) return; // fue un arrastre
@@ -535,6 +580,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           </Suspense>
           <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />
           <MedidorCuadros />
+          <RecorteRecorrido />
         </Canvas>
       </BarreraVisor>
     </div>

@@ -189,6 +189,142 @@ a {
   place-items: center;
 }
 
+/* Recorrido guiado del vago (F14): abajo a la derecha del visor, junto a la brújula; en celular, abajo a lo ancho. */
+.recorrido {
+  position: fixed;
+  z-index: 80;
+  right: 10.6rem;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  width: min(430px, calc(100vw - 1.2rem));
+  max-height: 42vh;
+  padding: 0.7rem 0.9rem 0.75rem;
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-top: 3px solid var(--acento);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+}
+
+.recorrido-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.recorrido-paso {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--texto-suave);
+}
+
+.recorrido-cuerpo {
+  min-height: 0;
+  overflow: auto;
+}
+
+.recorrido h2 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1.02rem;
+}
+
+.recorrido-texto {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.recorrido-ramos {
+  margin-top: 0.5rem;
+}
+
+.recorrido-ramos summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.recorrido-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recorrido-chips .chip {
+  font-size: 0.78rem;
+}
+
+.recorrido-nota {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  color: var(--texto-suave);
+}
+
+.recorrido-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+/* Leyenda de acabados (F25): abajo a la izquierda, dentro del visor. El punteado imita el acabado del modelo. */
+.leyenda-origen {
+  position: absolute;
+  z-index: 5;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  max-width: 260px;
+  padding: 0.5rem 0.7rem;
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  font-size: 0.74rem;
+}
+
+.leyenda-origen ul {
+  margin: 0 0 0.35rem;
+  padding: 0;
+  list-style: none;
+}
+
+.leyenda-origen li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.15rem 0;
+}
+
+.muestra {
+  flex: none;
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.muestra-escaneada {
+  background: #e5c12e;
+}
+
+.muestra-aproximada {
+  background: repeating-linear-gradient(90deg, #e5c12e 0 5px, transparent 5px 9px);
+}
+
+.muestra-marcador {
+  width: 10px;
+  height: 10px;
+  margin: 0 6px;
+  border-radius: 50%;
+  border: 2px solid var(--acento);
+}
+
 /* Panel de medición de carga (issue 6): solo con ?medir=1. */
 .panel-medicion {
   position: fixed;
@@ -1338,6 +1474,19 @@ body:has(.pagina-texto) {
   .selector-idioma > * {
     min-width: 2.1rem;
     padding: 0 0.4rem;
+  }
+
+  .recorrido {
+    right: 0.6rem;
+    bottom: 0.6rem;
+    max-height: 44vh;
+  }
+
+  /* Con una ficha abierta (la hoja de abajo), el recorrido sube. */
+  .con-ficha .recorrido {
+    top: 3.4rem;
+    bottom: auto;
+    max-height: 32vh;
   }
 
   .panel-medicion {

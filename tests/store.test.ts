@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { piezasDeEntrada } from '../src/data/atlas';
+import { esFragmentable, piezasBajo, piezasDeEntrada } from '../src/data/atlas';
 import { estadoAislar, estadoSeparar } from '../src/lib/alternar';
 import { desplazamientoSeparar, promedio, type Vec3 } from '../src/lib/explosion';
 import { INICIO_INVENTARIO } from '../src/lib/inventario';
@@ -24,6 +24,22 @@ describe('estado del atlas', () => {
       seleccion: { entrada: null, pieza: null, malla: null },
     });
     useAtlas.getState().setCentros(centros);
+  });
+
+  it('el vago no se fragmenta: ni la explosión ni Separar lo mueven, y no corre el centro del conjunto (ADR 0009)', () => {
+    const vagos = piezasBajo('g-vagus-nerve-x');
+    expect(vagos).toEqual(expect.arrayContaining(['vagus-nerve-x-l', 'vagus-nerve-x-r']));
+    for (const v of vagos) expect(esFragmentable(v)).toBe(false);
+    expect(esFragmentable('thalamus-l')).toBe(true);
+    const sinVago = useAtlas.getState();
+    sinVago.setExplosion(0.5);
+    const baseSinVago = useAtlas.getState().base['thalamus-l'];
+    useAtlas.getState().setCentros({ ...centros, 'vagus-nerve-x-l': [0.03, 1.2, 0.02], 'vagus-nerve-x-r': [-0.03, 1.1, 0.02] });
+    const st = useAtlas.getState();
+    expect(st.base['thalamus-l']).toEqual(baseSinVago);
+    for (const v of vagos) expect(objetivo(st, v)).toEqual([0, 0, 0]);
+    st.separar(vagos);
+    for (const v of vagos) expect(fueraDeSitio(useAtlas.getState(), v)).toBe(false);
   });
 
   it('separar y devolver una pieza deja su desplazamiento exactamente en cero (F7)', () => {

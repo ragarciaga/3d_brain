@@ -11,7 +11,7 @@ export type Lado = 'l' | 'r' | 'medio';
 export const DISTANCIA_BASE = 0.05;
 /** Con ×3 la separación entre dos bloques al 100 % es al menos ×4 la armada (antes, ×2,6). */
 export const FACTOR_RADIAL = 3;
-/** Tope del término radial. Los centros del encéfalo están a 0,093 o menos del origen (medido); una prueba exige que ninguno pase de este tope, así que solo frena al vago. */
+/** Tope del término radial. Los centros del encéfalo están a 0,093 o menos del origen (medido); una prueba exige que ninguno pase de este tope. */
 export const RADIO_MAXIMO = 0.12;
 /** Adónde llega una pieza separada: la superficie armada del encéfalo está a 0,069 a 0,094 del origen. */
 export const RADIO_SALIDA = 0.12;

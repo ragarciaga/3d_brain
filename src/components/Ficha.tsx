@@ -1,7 +1,7 @@
 // Ficha de pieza (F4), recursos (F9) y controles de revisión por campo (F24).
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { estructuras, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
+import { esFragmentable, estructuras, origenDe, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
 import { enlacesArticulos } from '../lib/articulos';
@@ -171,6 +171,8 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
       </div>
     );
   }
+  // El vago no se separa (F6, ADR 0009): en su lugar, el recorrido guiado (F14).
+  const nervio = piezas.every((p) => !esFragmentable(p));
   const alternarAislar = (estado: Pulsado, modo: 'solo' | 'contexto') => () =>
     accionAlPulsar(estado) === 'desactivar' ? s().salirAislar() : s().aislarPiezas(piezas, modo);
   return (
@@ -181,19 +183,35 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
       <button type="button" {...propsPulsado(conContexto)} onClick={alternarAislar(conContexto, 'contexto')}>
         {t('acciones.aislarContexto')}
       </button>
-      <button
-        type="button"
-        {...propsPulsado(separado)}
-        onClick={() => {
-          if (accionAlPulsar(separado) === 'desactivar') s().devolver(piezas);
-          else s().separar(piezas);
-          // La cámara suele estar muy cerca de la estructura: sin reencuadrar, las piezas separadas
-          // quedan detrás de ella o fuera del lienzo (#19). Se encuadra sin girar.
-          s().pedirCamara({ encuadrar: piezas });
-        }}
-      >
-        {t('acciones.separar')}
-      </button>
+      {nervio ? (
+        <button
+          type="button"
+          className="boton-primario"
+          data-testid="iniciar-recorrido"
+          title={t('acciones.noSepara')}
+          onClick={() => {
+            s().iniciarRecorrido();
+            // La ficha se cierra para dejar el nervio a la vista; el panel del recorrido enlaza a cada ficha.
+            window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: null } }));
+          }}
+        >
+          {t('acciones.recorrer')}
+        </button>
+      ) : (
+        <button
+          type="button"
+          {...propsPulsado(separado)}
+          onClick={() => {
+            if (accionAlPulsar(separado) === 'desactivar') s().devolver(piezas);
+            else s().separar(piezas);
+            // La cámara suele estar muy cerca de la estructura: sin reencuadrar, las piezas separadas
+            // quedan detrás de ella o fuera del lienzo (#19). Se encuadra sin girar.
+            s().pedirCamara({ encuadrar: piezas });
+          }}
+        >
+          {t('acciones.separar')}
+        </button>
+      )}
       {/* Segundo toque: las vuelve a mostrar. */}
       <button type="button" {...propsPulsado(oculto)} onClick={() => s().alternarVisibles(piezas, accionAlPulsar(oculto) === 'desactivar')}>
         {t('acciones.ocultar')}
@@ -383,6 +401,11 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </button>
       </header>
       {nombrePendiente(e, idioma) && <p className="etiqueta-aviso">{t('ficha.nombrePendiente')}</p>}
+      {piezasDeEntrada(id).some((p) => origenDe(p) === 'aproximada') && (
+        <p className="etiqueta-aviso" data-testid="aviso-aproximada">
+          {t('origen.aviso')}
+        </p>
+      )}
       <div className="ficha-meta">
         {f && (
           <span className={`estado estado-${estadoIdioma}`}>

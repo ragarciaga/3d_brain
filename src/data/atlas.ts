@@ -3,7 +3,7 @@ import arbolJson from './arbol.json';
 import estructurasJson from './estructuras.json';
 import gruposJson from './grupos.json';
 import marcadoresJson from './marcadores.json';
-import type { Arbol, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol } from './tipos';
+import type { Arbol, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria } from './tipos';
 
 export const arbol = arbolJson as unknown as Arbol;
 export const datos = estructurasJson as unknown as Estructuras;
@@ -52,6 +52,23 @@ export function piezasBajo(id: string): string[] {
   }
   cacheDescendientes.set(id, res);
   return res;
+}
+
+/** Origen de la geometría de una pieza (F25). Los marcadores no son piezas: su origen es "marcador". */
+export function origenDe(pieza: string): Exclude<OrigenGeometria, 'marcador'> {
+  return nodos[pieza]?.origen === 'aproximada' ? 'aproximada' : 'escaneada';
+}
+
+/** Piezas trazadas (no medidas). Hoy ninguna: llegan con pipeline/generar-ramas-vago.py. */
+export const piezasAproximadas: string[] = todasLasPiezas.filter((p) => origenDe(p) === 'aproximada');
+
+/** El nervio vago: se recorre (F14), no se fragmenta (F6, ADR 0009). */
+export const GRUPO_VAGO = 'g-vagus-nerve-x';
+const noFragmentables = new Set(piezasBajo(GRUPO_VAGO));
+
+/** Si una pieza entra en la explosión, el inventario y "Separar". El vago no: partir un nervio borra su recorrido. */
+export function esFragmentable(pieza: string): boolean {
+  return !noFragmentables.has(pieza);
 }
 
 /** Piezas de una entrada de estructuras.json: una estructura (sus lados) o un grupo (todo lo de abajo). */

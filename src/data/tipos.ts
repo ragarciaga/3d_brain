@@ -12,7 +12,11 @@ export interface NodoArbol {
   estructura?: string;
   clase?: 'estudio' | 'referencia';
   curva?: boolean;
+  /** F25: sin el campo, la pieza viene del cuerpo escaneado; "aproximada" es un trazado sobre anclajes (ADR 0009). */
+  origen?: 'aproximada';
 }
+
+export type OrigenGeometria = 'escaneada' | 'aproximada' | 'marcador';
 
 export interface Arbol {
   fuente: string;

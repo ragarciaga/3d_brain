@@ -1,0 +1,58 @@
+{
+  "version": "0.1.0",
+  "fuente": "Paradas según SPEC F14 y ADR 0009. Ningún texto es propio del recorrido: cada parada muestra la ubicación de la ficha de su estructura principal, que cita sus fuentes. Los niveles salen de las cajas reales de las piezas, no de coordenadas escritas a mano.",
+  "recorridos": {
+    "vago": {
+      "paradas": [
+        {
+          "id": "bulbo",
+          "principal": "posterior-nucleus-of-vagus-nerve",
+          "relacionadas": ["nucleus-ambiguus", "nucleus-of-solitary-tract", "medulla-oblongata"],
+          "encuadrar": ["medulla-oblongata"],
+          "hasta": { "entrada": "medulla-oblongata", "borde": "min" }
+        },
+        {
+          "id": "cuello",
+          "principal": "vagus-nerve-x",
+          "relacionadas": [
+            "m-jugular-foramen",
+            "m-superior-ganglion-of-vagus-nerve",
+            "m-inferior-ganglion-of-vagus-nerve",
+            "m-auricular-branch-of-vagus-nerve",
+            "m-pharyngeal-branch-of-vagus-nerve",
+            "m-superior-laryngeal-nerve",
+            "m-superior-cervical-cardiac-branches-of-vagus-nerve"
+          ],
+          "encuadrar": ["medulla-oblongata", "trachea"],
+          "hasta": { "entrada": "trachea", "borde": "max" }
+        },
+        {
+          "id": "torax",
+          "principal": "m-recurrent-laryngeal-nerve",
+          "relacionadas": [
+            "m-inferior-cervical-cardiac-branches-of-vagus-nerve",
+            "m-thoracic-cardiac-branches-of-vagus-nerve",
+            "m-bronchial-branches-of-vagus-nerve",
+            "m-pulmonary-plexus",
+            "m-oesophageal-plexus"
+          ],
+          "encuadrar": ["trachea", "g-heart", "g-lungs"],
+          "hasta": { "entrada": "stomach", "borde": "max" }
+        },
+        {
+          "id": "abdomen",
+          "principal": "m-posterior-vagal-trunk",
+          "relacionadas": [
+            "m-anterior-vagal-trunk",
+            "m-anterior-gastric-branches-of-anterior-vagal-trunk",
+            "m-posterior-gastric-branches-of-posterior-vagal-trunk",
+            "m-hepatic-branches-of-anterior-vagal-trunk",
+            "m-coeliac-branches-of-posterior-vagal-trunk"
+          ],
+          "encuadrar": ["stomach", "oesophagus"],
+          "hasta": null
+        }
+      ]
+    }
+  }
+}

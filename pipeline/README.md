@@ -57,3 +57,33 @@ Alternativa con Blender instalado (sin pip), desde la carpeta del repositorio:
   en cada CI. Si alguien mueve una pieza, CI falla.
 
 Los cambios a `mapeo.csv`, `cajas.json` y `public/modelos/` son de nivel C: los aprueba el editor.
+
+## Vago: auditoría, rutas trazadas y asimetrías (ADR 0009)
+
+El modelo trae el vago como 28 trazos sin nombre y no trae el laríngeo recurrente ni el vago izquierdo
+por debajo del tórax. Se nombra primero lo que existe y solo se trazan tres piezas, con estas reglas:
+la ruta se escribe en texto por anclajes, la revisa un docente antes de generar nada y una prueba
+comprueba las cuatro asimetrías del vago en cada CI.
+
+```bash
+python pipeline/auditar-vago.py                 # Blender: mide anclajes y trazos -> pipeline/anclajes-vago.json
+                                                #          y pipeline/salida/auditoria-vago.md (nombre propuesto por trazo)
+python pipeline/generar-ramas-vago.py --borrador  # sin Blender: rutas de rutas-vago.yaml -> pipeline/salida/rutas-vago-borrador.json
+python pipeline/generar-ramas-vago.py           # solo con revision_docente.estado: aprobada -> pipeline/rutas-vago-puntos.json
+npm test                                        # tests/asimetrias.test.ts: las cuatro asimetrías sobre lo medido y lo trazado
+```
+
+- `rutas-vago.yaml` es lo que revisa el docente: nombres anatómicos, comentarios y ninguna coordenada.
+- `generar-ramas-vago.py` no usa Blender; se prueba con un modelo sintético:
+  `python pipeline/pruebas/probar_generar.py` y `python pipeline/pruebas/vago_sintetico.py` (este
+  último regenera `tests/fixtures/vago-sintetico/`, que usan las pruebas de asimetrías).
+- Falta un paso, que necesita Blender y se hace al aprobar las rutas: que `mapear.py` y `extraer.py`
+  conviertan `rutas-vago-puntos.json` en tubos con nombre propio, marcados `"origen": "aproximada"`
+  en `src/data/arbol.json`. La app ya los dibuja punteados, con aviso, leyenda y filtro (SPEC F25).
+
+En Windows (PowerShell), desde la carpeta del repositorio:
+
+```powershell
+.\.venv-pipeline\Scripts\python pipeline\auditar-vago.py
+.\.venv-pipeline\Scripts\python pipeline\generar-ramas-vago.py --borrador
+```
