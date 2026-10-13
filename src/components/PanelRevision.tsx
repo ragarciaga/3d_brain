@@ -21,6 +21,7 @@ import {
   type Respuesta,
 } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
+import { useMovil } from './useMovil';
 
 const claveIdb = (codigo: string) => `revision:${codigo}`;
 const versionActual = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
@@ -44,8 +45,19 @@ function marcarGuiaVista(codigo: string) {
   }
 }
 
-export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; alElegir: (id: string) => void }) {
+export default function PanelRevision({
+  idioma,
+  alElegir,
+  alSalir,
+}: {
+  idioma: Idioma;
+  alElegir: (id: string) => void;
+  alSalir: (origen: HTMLElement | null) => void;
+}) {
   const { t } = useTranslation();
+  const movil = useMovil();
+  const [accionesAbiertas, setAccionesAbiertas] = useState(false);
+  const botonAcciones = useRef<HTMLButtonElement>(null);
   const revisor = useAtlas((s) => s.revisor);
   const respuestas = useAtlas((s) => s.respuestas);
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
@@ -99,7 +111,7 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
     if (vista) titulo.current?.focus({ preventScroll: true });
   }, [vista]);
 
-  // Escape (Pagina) cierra el diálogo antes que cualquier otra cosa.
+  // Escape (Pagina) cierra el diálogo; solo la confirmación de salida va antes.
   useEffect(() => {
     useAtlas.getState().setDialogoRevision(vista !== null);
     return () => useAtlas.getState().setDialogoRevision(false);
@@ -110,10 +122,12 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
       if (!revisor) return;
       if (vista === 'como') marcarGuiaVista(revisor);
       setElegida('ninguna');
-      // El botón de la barra ya está en pantalla: se enfoca antes de que el diálogo se desmonte.
-      if (devolverFoco && vista) botones.current[vista]?.focus();
+      // En escritorio el foco vuelve al botón de la barra; en celular esos botones están en el menú
+      // cerrado, así que vuelve a "Acciones". Se enfoca antes de que el diálogo se desmonte.
+      const destino = movil ? botonAcciones.current : vista ? botones.current[vista] : null;
+      if (devolverFoco) destino?.focus();
     },
-    [revisor, vista],
+    [revisor, vista, movil],
   );
 
   useEffect(() => {
@@ -171,17 +185,19 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
     setConfirmadas((c) => confirmarParte(c, parte));
   };
 
-  return (
-    <div className="panel-revision" role="region" aria-label={t('revision.titulo')} data-testid="panel-revision">
-      <span>
-        <strong>{t('revision.titulo')}</strong> · {t('revision.codigo', { codigo: revisor })} ·{' '}
-        <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span> ·{' '}
-        <span data-testid="avance-global">{t('revision.avanceGlobal', { completas: global.completas, total: global.total })}</span>
-      </span>
-      <button type="button" ref={(el) => { botones.current.que = el; }} aria-expanded={vista === 'que'} onClick={() => alternar('que')}>
+  // Elegir una acción del menú de celular lo cierra y abre (o cierra) el diálogo de esa acción.
+  const elegir = (v: Vista) => {
+    setAccionesAbiertas(false);
+    alternar(v);
+  };
+
+  // Las acciones se escriben una sola vez: en línea en escritorio, dentro del menú "Acciones" en celular.
+  const acciones = (
+    <>
+      <button type="button" ref={(el) => { botones.current.que = el; }} aria-expanded={vista === 'que'} onClick={() => elegir('que')}>
         {t('revision.queRevisar', { count: totalPendientes })}
       </button>
-      <button type="button" ref={(el) => { botones.current.como = el; }} aria-expanded={vista === 'como'} onClick={() => alternar('como')}>
+      <button type="button" ref={(el) => { botones.current.como = el; }} aria-expanded={vista === 'como'} onClick={() => elegir('como')}>
         {t('revision.comoRevisar')}
       </button>
       <button
@@ -189,11 +205,65 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
         ref={(el) => { botones.current.enviar = el; }}
         className="boton-primario"
         aria-expanded={vista === 'enviar'}
-        onClick={() => alternar('enviar')}
+        onClick={() => elegir('enviar')}
       >
         {t('revision.enviar')}
       </button>
-      {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
+    </>
+  );
+  const notas = viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>;
+
+  return (
+    <div className="panel-revision" role="region" aria-label={t('revision.titulo')} data-testid="panel-revision">
+      {movil ? (
+        <>
+          <span className="revision-resumen">
+            <strong>{t('revision.tituloCorto')}</strong> ·{' '}
+            <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span> ·{' '}
+            <span data-testid="avance-global">{t('revision.avanceGlobal', { completas: global.completas, total: global.total })}</span> ·{' '}
+            {t('revision.codigo', { codigo: revisor })}
+          </span>
+          <button
+            type="button"
+            ref={botonAcciones}
+            className="boton-acciones"
+            aria-expanded={accionesAbiertas}
+            aria-controls="acciones-revision"
+            onClick={() => {
+              if (!accionesAbiertas) abrir(null); // el menú y un diálogo no se muestran a la vez
+              setAccionesAbiertas(!accionesAbiertas);
+            }}
+          >
+            {t('revision.acciones')}
+          </button>
+          {accionesAbiertas && (
+            <div id="acciones-revision" className="acciones-revision" data-testid="acciones-revision">
+              <p className="recurso-nota">{t('revision.codigo', { codigo: revisor })}</p>
+              {acciones}
+              {notas}
+              <button
+                type="button"
+                onClick={() => {
+                  setAccionesAbiertas(false);
+                  alSalir(botonAcciones.current);
+                }}
+              >
+                {t('revision.salir')}
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <span>
+            <strong>{t('revision.titulo')}</strong> · {t('revision.codigo', { codigo: revisor })} ·{' '}
+            <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span> ·{' '}
+            <span data-testid="avance-global">{t('revision.avanceGlobal', { completas: global.completas, total: global.total })}</span>
+          </span>
+          {acciones}
+          {notas}
+        </>
+      )}
       {vista === 'que' && (
         <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO} data-testid="que-revisar">
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">

@@ -143,16 +143,24 @@ for (const alto of [844, 568]) {
       expect(encima).toEqual({ texto: 'Cerrar', enDialogo: true });
       await cerrar.click();
       await expect(dialogo).toHaveCount(0);
+      // En celular los botones de la barra están en el menú: el foco vuelve a "Acciones".
+      await expect(barra(page).getByRole('button', { name: 'Acciones', exact: true })).toBeFocused();
+    }
+
+    /** En celular las acciones están en el menú "Acciones" de la barra. */
+    async function accion(page: Page, nombre: string | RegExp) {
+      await barra(page).getByRole('button', { name: 'Acciones', exact: true }).click();
+      await page.getByTestId('acciones-revision').getByRole('button', { name: nombre }).click();
     }
 
     test('el final de cada diálogo se ve y no lo tapa nada', async ({ page }) => {
       await entrar(page, 'MOVIL01');
       await cierreVisible(page, guia(page));
 
-      await barra(page).getByRole('button', { name: /Qué revisar/ }).click();
+      await accion(page, /Qué revisar/);
       await cierreVisible(page, queRevisar(page));
 
-      await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
+      await accion(page, 'Enviar revisión');
       await cierreVisible(page, enviarDialogo(page));
     });
   });

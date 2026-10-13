@@ -38,6 +38,16 @@ describe('textos de los botones de revisión', () => {
       expect(revision.guia.enviar).toContain(revision.loEnvie);
     });
 
+    it(`la confirmación de salida (${idioma}) dice que las respuestas quedan guardadas en el navegador`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.salirTexto).toContain(idioma === 'es' ? 'quedan guardadas en este navegador' : 'stay saved in this browser');
+    });
+
+    it(`el título de la confirmación (${idioma}) nombra la acción del botón`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.salirTitulo!.toLowerCase()).toContain(revision.salir!.toLowerCase());
+    });
+
     it(`el consentimiento del envío (${idioma}) remite al registro y no usa los textos viejos`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       const { consentimiento } = revision;
