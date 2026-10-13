@@ -142,7 +142,7 @@ export interface EntradaCorte { plano: Plano; mm: number; invertido: boolean }
 | unit | `tests/cortes-visor.test.ts`: con relleno apagado o error de shader, el contorno cubre todas las piezas; sin cortes no hay planos en materiales ni mallas extra; el fantasma usa opacidad de 0,25 o menos y `raycast` nulo | R3.4, R5.2, R5.3, R8.3 |
 | unit | `npm run check:i18n` con las claves `cortes.*` | R6.7 |
 | integration | `check:modelo`: `src/config/mallas-cerradas.json` coincide con las mallas sin bordes del GLB | R3.2 |
-| e2e | `e2e/cortes.spec.ts`: panel, tres planos, teclado, quitar, controles deshabilitados, corte coronal en el tálamo con nombres (helpers DEV `__cortes` y `__puntoCorte(pieza)`), tocar la cara abre la ficha, celular, colisiones, aviso, Escape, botón deshabilitado sin modelo, enlace con `corte=`, recorrido con cortes | R1.1, R1.8, R1.9, R2.3, R3.5, R4.1, R4.2, R6.1 a R6.6, R7.2, R9.1 |
+| e2e | `e2e/cortes-*.spec.ts` (un archivo por tarea: visor, enlace, relleno, panel, móvil): panel, tres planos, teclado, quitar, controles deshabilitados, corte coronal en el tálamo con nombres (helpers DEV `__cortes` y `__puntoCorte(pieza)`), tocar la cara abre la ficha, celular, colisiones, aviso, Escape, botón deshabilitado sin modelo, enlace con `corte=`, recorrido con cortes | R1.1, R1.8, R1.9, R2.3, R3.5, R4.1, R4.2, R6.1 a R6.6, R7.2, R9.1 |
 | manual | Capturas del relleno y del contorno en el prototipo (#9) y en los equipos de referencia; cuadros por segundo con 3 planos y `?medir=1`, pegados en #6 | R3.1, R3.3, R8.1 |
 
 ## Risk and cost
