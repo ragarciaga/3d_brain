@@ -72,7 +72,7 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
 ## Next steps
 1. Vago: correr `pipeline/auditar-vago.py` en un entorno con GitHub habilitado, revisar
    `pipeline/salida/auditoria-vago.md` y pasar los nombres propuestos a los docentes (F24); luego
-   generar las rutas: la app las muestra solo en modo revisión y los docentes las aprueban con el
+   generar las rutas: la app las muestra con su estado de revisión y los docentes las aprueban con el
    campo "Recorrido trazado" de la ficha.
 2. Medir en los equipos de referencia (#6). Si la descarga del modelo pesa más, adelantarla para que
    empiece junto con el código (cerca de 1 s menos); si el Android baja de 30 cuadros/s, abrir el

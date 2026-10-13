@@ -3,8 +3,8 @@ midió pipeline/auditar-vago.py, y calcula los puntos de cada ruta. No hay coord
 todo sale de los anclajes. No usa Blender, así que se prueba sin él (pipeline/tests/).
 
 Salida:
-- public/modelos/rutas-vago.json: lo que dibuja la app. Cada ruta lleva su estado de revisión: en
-  "en_revision" solo la ven los revisores (F24); en "aprobada", todo el mundo.
+- public/modelos/rutas-vago.json: lo que dibuja la app. Cada ruta lleva su estado de revisión
+  ("en_revision" o "aprobada"), que la ficha muestra; los docentes la juzgan con F24.
 - pipeline/salida/rutas-vago-borrador.json con --borrador, para mirarla sin publicarla.
 
 La prueba de las cuatro asimetrías (tests/asimetrias.test.ts) corre en CI sobre esos puntos y falla

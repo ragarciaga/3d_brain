@@ -62,8 +62,9 @@ Los cambios a `mapeo.csv`, `cajas.json` y `public/modelos/` son de nivel C: los 
 
 El modelo trae el vago como 28 trazos sin nombre y no trae el laríngeo recurrente ni el vago izquierdo
 por debajo del tórax. Se nombra primero lo que existe y solo se trazan tres piezas, con estas reglas:
-la ruta se escribe en texto por anclajes, la app la dibuja solo para revisores hasta que un docente
-la aprueba en la ficha (F24) y una prueba comprueba las cuatro asimetrías del vago en cada CI.
+la ruta se escribe en texto por anclajes, la app la dibuja con su estado de revisión, un docente la
+juzga en la ficha (F24) y una prueba comprueba las cuatro asimetrías del vago en cada CI. Antes del
+lanzamiento público, toda ruta que siga en revisión se aprueba o se retira.
 
 ```bash
 python pipeline/auditar-vago.py                 # Blender: mide anclajes y trazos -> pipeline/anclajes-vago.json
@@ -74,7 +75,7 @@ npm test                                        # tests/asimetrias.test.ts: las 
 ```
 
 - `rutas-vago.yaml` es el registro de cada ruta: anclajes, comentarios, ficha y estado de revisión.
-  El docente no lo lee: revisa la ruta dibujada en modo revisión. Al aplicar una aprobación, el editor
+  El docente no lo lee: revisa la ruta dibujada en la app. Al aplicar una aprobación, el editor
   cambia `revision.estado` a `aprobada` y se vuelve a generar.
 - `generar-ramas-vago.py` no usa Blender; se prueba con un modelo sintético:
   `python pipeline/pruebas/probar_generar.py` y `python pipeline/pruebas/vago_sintetico.py` (este

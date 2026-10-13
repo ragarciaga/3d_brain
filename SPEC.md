@@ -70,7 +70,7 @@ Ya existen atlas 3D abiertos y gratuitos, como Z-Anatomy y los atlas de Open Ana
 - **Señal de éxito:** en el Android de gama baja, un estudiante fragmenta, abre fichas de 10 piezas (incluido el vago) y reensambla, a 30 cuadros por segundo o más.
 - **Orden de construcción:** esqueleto, pipeline de la fase 0, F1 + F2, F4 + F5 + F9 + marcadores, F24, F6 + F7, F3 + F10 + F11.
 
-**Fase 1, hito 2: lanzamiento público.** F8 (con prototipo de relleno por stencil primero) y F12. Meta de contenido: 40 fichas verificadas en ambos idiomas, empezando por sistema límbico, ganglios basales, diencéfalo, tronco encefálico y nervio vago. El resto de estructuras se ve y se puede buscar, pero su ficha dice "En preparación". Antes de lanzar se deciden nombre, dominio y analítica (sección 15).
+**Fase 1, hito 2: lanzamiento público.** F8 (con prototipo de relleno por stencil primero) y F12. Meta de contenido: 40 fichas verificadas en ambos idiomas, empezando por sistema límbico, ganglios basales, diencéfalo, tronco encefálico y nervio vago. El resto de estructuras se ve y se puede buscar, pero su ficha dice "En preparación". Antes de lanzar se deciden nombre, dominio y analítica (sección 15), y toda ruta trazada del vago que siga en revisión se aprueba o se retira (F25, ADR 0009).
 
 **Fase 2, estudio activo.** F13 a F20: notas personales, circuitos y recorridos, quiz con repaso espaciado, rompecabezas, casos clásicos, etiquetas 3D, modo liviano e indexación en buscadores. Incluye las tareas para completar geometría faltante (sección 8).
 
@@ -247,7 +247,7 @@ Cada pieza lleva `origen_geometria`:
 - La ficha de una pieza aproximada muestra: "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas."
 - Una leyenda en el visor explica los acabados cuando hay piezas aproximadas a la vista.
 - El filtro "Solo geometría escaneada" esconde lo trazado.
-- Las rutas trazadas del vago se dibujan desde `public/modelos/rutas-vago.json`. Mientras están en revisión solo las ven los revisores (F24), que las juzgan en la ficha con el campo "Recorrido trazado"; aprobadas, las ve todo el mundo.
+- Las rutas trazadas del vago se dibujan desde `public/modelos/rutas-vago.json`, para todos, con su estado en la ficha ("Pendiente de revisión docente" o aprobado). Los docentes las juzgan en modo revisión con el campo "Recorrido trazado" (F24).
 
 **Criterio de bloqueo:** si la distinción visual no está implementada y probada, la geometría aproximada no se publica. Sin excepción.
 
@@ -506,7 +506,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Núcleo motor dorsal (posterior), núcleo ambiguo, núcleo del tracto solitario | Mallas, por lado |
 | Ganglios superior e inferior | Marcadores |
 | Raicillas, ramo faríngeo y laríngeo superior (candidatos), ramos abdominales del derecho | Trazos sin nombre dentro de la curva del vago (21 en el derecho, 7 en el izquierdo). `pipeline/auditar-vago.py` propone el nombre de cada uno con su relación a los anclajes; un revisor lo confirma con F24 y el pipeline lo separa como pieza, sin moverlo |
-| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`; un docente las revisa en la app (F24) antes de que las vea el público |
+| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`; se ven con la etiqueta "Pendiente de revisión docente" y un docente las juzga en la app (F24) |
 | Vago izquierdo de la bifurcación de la tráquea al estómago, con el tronco vagal anterior | No existe. Se traza igual que los recurrentes |
 | Ramos cardíacos | No existen. Marcadores |
 | Plexos pulmonar, esofágico y cardíaco | Marcadores o regiones; nunca tubos |
@@ -727,7 +727,7 @@ para que la hoja no las tape. No hay riel.
 10. **Terceros que copian el proyecto sin dar crédito.** La licencia CC BY-SA exige crédito y misma licencia; la pantalla de licencia y el crédito en las imágenes exportadas lo hacen visible.
 11. **Pocos revisores o poca respuesta.** F24 reduce la revisión a botones por campo; el piloto mide cuánto tarda una ficha.
 12. **Geometría de otra fuente mal alineada.** Toda pieza alineada desde otro atlas entra marcada como aproximada hasta que un revisor la valide.
-13. **Un ramo trazado que parece dato medido.** Es el riesgo más serio del vago. Mitigación en tres capas: la ruta solo la ven los revisores hasta que un docente la aprueba viéndola en 3D, prueba automática de las cuatro asimetrías y la distinción visual obligatoria de F25.
+13. **Un ramo trazado que parece dato medido.** Es el riesgo más serio del vago. Mitigación en tres capas: la ruta se ve con su estado de revisión y un docente la aprueba viéndola en 3D (lo que no esté aprobado no llega al lanzamiento público), prueba automática de las cuatro asimetrías y la distinción visual obligatoria de F25.
 
 ## 15. Decisiones
 

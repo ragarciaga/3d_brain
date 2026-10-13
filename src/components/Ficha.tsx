@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { esFragmentable, estructuras, origenDe, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
-import { campoTrazado, rutaVisible } from '../lib/rutas';
+import { campoTrazado } from '../lib/rutas';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
@@ -369,7 +369,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
     ) : null;
   const padre = padreDeEntrada(id);
   const marcador = marcadorPorId(id);
-  const rutasDeLaEntrada = rutas.filter((r) => r.entrada === id && rutaVisible(r, !!revisor));
+  const rutasDeLaEntrada = rutas.filter((r) => r.entrada === id);
   const estadoIdioma = f?.revision[idioma]?.estado ?? 'borrador';
   const estadoOtro = f?.revision[otro(idioma)]?.estado ?? 'borrador';
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, t) : nombre(e, idioma);
@@ -441,15 +441,14 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       <Acciones id={id} alCompartir={alCompartir} />
 
       {revisor && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} />}
-      {revisor &&
-        rutasDeLaEntrada.map((r) => (
-          <section key={r.id} className="ficha-campo revision-ruta" data-testid={`revision-${campoTrazado(r)}`}>
-            <h3>{t('revision.trazadoTitulo', { nombre: r.nombre[idioma] })}</h3>
-            <p>{t('revision.trazadoAyuda')}</p>
-            <p className="recurso-nota">{t(`revision.trazadoEstado_${r.revision.estado}`)}</p>
-            {rev(campoTrazado(r))}
-          </section>
-        ))}
+      {rutasDeLaEntrada.map((r) => (
+        <section key={r.id} className="ficha-campo revision-ruta" data-testid={`ruta-${campoTrazado(r)}`}>
+          <h3>{t('revision.trazadoTitulo', { nombre: r.nombre[idioma] })}</h3>
+          <p className="recurso-nota">{t(`revision.trazadoEstado_${r.revision.estado}`)}</p>
+          {revisor && <p>{t('revision.trazadoAyuda')}</p>}
+          {rev(campoTrazado(r))}
+        </section>
+      ))}
 
       {marcador && (
         <section className="ficha-campo">

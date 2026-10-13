@@ -1,12 +1,12 @@
 // Rutas trazadas del vago en 3D (ADR 0009, SPEC F25): mate y punteadas, para que no se confundan con
-// lo escaneado. En revisión solo las ven los revisores, que las juzgan en la ficha con F24. El plano
-// del recorrido también las corta, como al resto del vago.
+// lo escaneado. Se ven como se verían en el lanzamiento; los docentes las juzgan en la ficha con F24.
+// El plano del recorrido también las corta, como al resto del vago.
 import { Html } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import type { Idioma } from '../data/tipos';
-import { cargarRutas, rutaVisible, type RutaTrazada } from '../lib/rutas';
+import { cargarRutas, type RutaTrazada } from '../lib/rutas';
 import { useAtlas } from '../store/useAtlas';
 import { punteado } from './acabados';
 import { colorDePieza } from './colores';
@@ -79,7 +79,6 @@ function Ruta({ ruta, idioma }: { ruta: RutaTrazada; idioma: Idioma }) {
 
 export default function RutasTrazadas({ idioma }: { idioma: Idioma }) {
   const rutas = useAtlas((s) => s.rutas);
-  const revisor = useAtlas((s) => !!s.revisor);
   // Como el vago: fuera en el inventario (no se desarma) y con el filtro "solo escaneada".
   const ocultas = useAtlas((s) => s.soloEscaneada || s.inventario || (s.aislar?.modo === 'solo' && s.recorrido === null));
 
@@ -96,11 +95,9 @@ export default function RutasTrazadas({ idioma }: { idioma: Idioma }) {
   if (ocultas) return null;
   return (
     <>
-      {rutas
-        .filter((r) => rutaVisible(r, revisor))
-        .map((r) => (
-          <Ruta key={r.id} ruta={r} idioma={idioma} />
-        ))}
+      {rutas.map((r) => (
+        <Ruta key={r.id} ruta={r} idioma={idioma} />
+      ))}
     </>
   );
 }

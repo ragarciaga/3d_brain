@@ -24,7 +24,7 @@ AGENTS.md dejaba fuera de alcance toda geometría que no venga de una fuente abi
 4. **Trazado aproximado, solo en tres piezas:** laríngeo recurrente derecho, laríngeo recurrente izquierdo y vago izquierdo desde la bifurcación de la tráquea hasta el estómago. Son recorridos con consenso en los textos de anatomía y con anclajes en el modelo.
 5. **Los plexos no se dibujan como tubos.** Un plexo es una red; un tubo enseña algo falso. Siguen como marcadores o regiones.
 6. **Condiciones para publicar geometría trazada (F25), sin excepción:**
-   - La ruta se escribe por nombre de anclaje en `pipeline/rutas-vago.yaml` (sin coordenadas) y la app la dibuja solo en modo revisión hasta que un docente la apruebe con F24 (ver la actualización del 13 de octubre).
+   - La ruta se escribe por nombre de anclaje en `pipeline/rutas-vago.yaml` (sin coordenadas); la app la dibuja con su estado de revisión y un docente la aprueba viéndola, con F24 (ver la actualización del 13 de octubre).
    - Una prueba automática verifica las cuatro asimetrías del vago contra los anclajes y falla con mensaje explícito si falta uno.
    - La pieza lleva `origen_geometria: "aproximada"`, se dibuja con un acabado visiblemente distinto, la ficha muestra el aviso y hay una leyenda y un filtro "solo geometría escaneada".
 
@@ -35,8 +35,11 @@ responder como con el resto del atlas. Cambia el punto 6:
 - `generar-ramas-vago.py` publica las rutas en `public/modelos/rutas-vago.json`, cada una con su estado
   (`en_revision` o `aprobada`). La app las dibuja como tubos punteados en tiempo de ejecución; no van
   al GLB.
-- En revisión, solo las ven los revisores (modo revisión, `?r=CODIGO`), igual que los trazos sin nombre.
-  El público las ve cuando el editor aplica una aprobación y la ruta pasa a `aprobada`.
+- Mientras no haya lanzamiento público, todos las ven tal como se verían al lanzar, con la etiqueta
+  "Pendiente de revisión docente" en la ficha (el mismo criterio de las fichas en borrador). Así el
+  docente juzga el atlas completo. Solo el campo para responder es exclusivo del modo revisión.
+- Antes del lanzamiento público (hito 2), toda ruta que siga en `en_revision` se aprueba o se retira
+  del archivo publicado (SPEC sección 4).
 - La ficha de la estructura (laríngeo recurrente, tronco vagal anterior) trae el campo "Recorrido
   trazado" por lado (`trazado_derecho`, `trazado_izquierdo`) con Correcto, Corregir o No es mi área.
   La respuesta llega por el formulario de siempre; una corrección se vuelve un cambio en el YAML y la

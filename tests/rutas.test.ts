@@ -1,11 +1,11 @@
-// Rutas trazadas del vago en la app (ADR 0009): validación del archivo publicado, visibilidad solo para
-// revisores mientras están en revisión, y la respuesta "Recorrido trazado" que pasa por el importador.
+// Rutas trazadas del vago en la app (ADR 0009): validación del archivo publicado y la respuesta
+// "Recorrido trazado" que pasa por el importador.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { leerEnvios, parsearCsv } from '../scripts/lib/revisiones.ts';
 import { estructuras } from '../src/data/atlas';
 import { urlFormulario, type Respuesta } from '../src/lib/revision';
-import { campoTrazado, cargarRutas, leerRutas, rutaVisible } from '../src/lib/rutas';
+import { campoTrazado, cargarRutas, leerRutas } from '../src/lib/rutas';
 
 const sintetico = JSON.parse(readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8')) as unknown;
 
@@ -40,16 +40,6 @@ describe('rutas trazadas: archivo publicado', () => {
     expect(await cargarRutas('/', con({ ok: true, json: () => Promise.reject(new SyntaxError('<html>')) }))).toEqual([]);
     expect(await cargarRutas('/', (() => Promise.reject(new Error('red'))) as unknown as typeof fetch)).toEqual([]);
     expect(await cargarRutas('/', con({ ok: true, json: () => Promise.resolve(sintetico) }))).toHaveLength(3);
-  });
-});
-
-describe('rutas trazadas: quién las ve', () => {
-  const [r] = leerRutas(sintetico);
-  it('en revisión solo las ve un revisor; aprobada, todo el mundo', () => {
-    expect(rutaVisible(r!, false)).toBe(false);
-    expect(rutaVisible(r!, true)).toBe(true);
-    const aprobada = { ...r!, revision: { estado: 'aprobada' as const, revisado_por: 'D01', fecha: '2026-11-01' } };
-    expect(rutaVisible(aprobada, false)).toBe(true);
   });
 });
 

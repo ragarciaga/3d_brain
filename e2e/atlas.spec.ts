@@ -865,27 +865,27 @@ test('el vago no se separa: su ficha ofrece el recorrido, que baja parada por pa
   await expect.poll(altura).toBeNull();
 });
 
-test('rutas trazadas del vago: en revisión solo las ve el revisor, con aviso, leyenda y su campo en la ficha (ADR 0009)', async ({ page }) => {
+test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el revisor además las juzga (ADR 0009)', async ({ page }) => {
   const rutas = readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8');
   await page.route('**/modelos/rutas-vago.json', (r) => r.fulfill({ contentType: 'application/json', body: rutas }));
-  // Público: no se ven, ni la leyenda ni el aviso.
+  // Sin modo revisión: se ven como en el lanzamiento, con su estado, pero sin botones para responder.
   await abrir(page, '/es/nervio-laringeo-recurrente');
   await modeloCargado(page);
   await expect.poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().rutas.length)).toBe(3);
-  await expect(page.getByTestId('leyenda-origen')).toHaveCount(0);
-  await expect(page.getByTestId('aviso-aproximada')).toHaveCount(0);
-  // Revisor: se ven, con leyenda, aviso y un campo de revisión por lado.
-  await abrir(page, '/es/revision?r=PRUEBA01');
-  await modeloCargado(page);
   await expect(page.getByTestId('leyenda-origen')).toBeVisible();
-  await abrir(page, '/es/nervio-laringeo-recurrente');
   await expect(page.getByTestId('aviso-aproximada')).toBeVisible();
   for (const lado of ['derecho', 'izquierdo']) {
-    const campo = page.getByTestId(`revision-trazado_${lado}`);
-    await expect(campo).toContainText('En revisión');
-    await expect(campo.locator(`[data-campo="trazado_${lado}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
+    await expect(page.getByTestId(`ruta-trazado_${lado}`)).toContainText('Pendiente de revisión docente');
+    await expect(page.locator(`[data-campo="trazado_${lado}"]`)).toHaveCount(0);
   }
-  await page.getByTestId('revision-trazado_izquierdo').getByRole('button', { name: 'Corregir' }).click();
+  // En modo revisión: un campo por lado para responder.
+  await abrir(page, '/es/revision?r=PRUEBA01');
+  await modeloCargado(page);
+  await abrir(page, '/es/nervio-laringeo-recurrente');
+  for (const lado of ['derecho', 'izquierdo']) {
+    await expect(page.locator(`[data-campo="trazado_${lado}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
+  }
+  await page.locator('[data-campo="trazado_izquierdo"]').getByRole('button', { name: 'Corregir' }).click();
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   // El filtro "Solo geometría escaneada" las esconde.
   await page.getByTestId('leyenda-origen').getByRole('checkbox').check();
