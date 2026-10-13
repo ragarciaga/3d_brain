@@ -1428,6 +1428,13 @@ a {
   position: relative;
 }
 
+/* El aviso del respaldo y su resultado ocupan su propia línea en la barra de escritorio. */
+.panel-revision > .aviso-local,
+.panel-revision > .aviso-respaldo {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 /* Menú "Acciones" de la barra en celular; z-index 82 como la hoja de diálogo, sobre el recorrido (80). */
 .acciones-revision {
   position: absolute;

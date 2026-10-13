@@ -375,6 +375,24 @@ describe('proponer posición (F24)', () => {
     expect(useAtlas.getState().piezaPropuesta).toEqual({});
     expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
   });
+
+  it('importar un respaldo conserva la pieza de la posición que no cambió y olvida la de la que reemplazó', () => {
+    const N = 'm-otro-marcador';
+    const vieja = { ...posicion, estructura: N };
+    useAtlas.getState().proponerPosicion(posicion, 'stomach');
+    useAtlas.getState().proponerPosicion(vieja, 'liver');
+    const antes = useAtlas.getState().cargaRespuestas;
+    const nueva = { ...vieja, posicion: [9, 9, 9] as [number, number, number], fecha: '2026-10-12T00:00:00Z' };
+    expect(useAtlas.getState().importarRespuestas([nueva, otra])).toEqual({ agregadas: 1, actualizadas: 1, sinCambio: 0 });
+    const s = useAtlas.getState();
+    expect(s.respuestas[`${N}|posicion|`]).toBe(nueva);
+    expect(s.piezaPropuesta).toEqual({ [M]: 'stomach' });
+    expect(s.cargaRespuestas).toBe(antes + 1);
+    // Sin cambios no se recarga: ni el contador ni las piezas se tocan.
+    expect(useAtlas.getState().importarRespuestas([nueva, otra])).toEqual({ agregadas: 0, actualizadas: 0, sinCambio: 2 });
+    expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
+    expect(useAtlas.getState().piezaPropuesta).toEqual({ [M]: 'stomach' });
+  });
 });
 
 describe('trazos del vago (#62)', () => {

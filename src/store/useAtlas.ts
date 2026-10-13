@@ -25,6 +25,7 @@ import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
 import type { RutaTrazada } from '../lib/rutas';
+import { fusionarRespuestas, piezasQueSiguen } from '../lib/respaldo';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 import { ENTRADA_VAGO } from '../lib/trazos';
 
@@ -149,7 +150,8 @@ interface Estado {
   setRevisor(codigo: string | null): void;
   responder(r: Respuesta): void;
   borrarRespuesta(clave: string): void;
-  cargarRespuestas(r: Record<string, Respuesta>): void;
+  cargarRespuestas(r: Record<string, Respuesta>, piezas?: Record<string, string>): void;
+  importarRespuestas(nuevas: Respuesta[]): { agregadas: number; actualizadas: number; sinCambio: number };
   proponerPosicion(r: Respuesta, pieza: string): void;
   deshacerPosicion(estructura: string): void;
   setDialogoRevision(v: boolean): void;
@@ -370,7 +372,15 @@ export const useAtlas = create<Estado>((set, get) => ({
     delete respuestas[clave];
     set({ respuestas });
   },
-  cargarRespuestas: (r) => set({ respuestas: r, piezaPropuesta: {}, cargaRespuestas: get().cargaRespuestas + 1 }),
+  // Sin `piezas` se olvidan las piezas tocadas (#61); importar un respaldo pasa las que siguen valiendo.
+  cargarRespuestas: (r, piezas = {}) => set({ respuestas: r, piezaPropuesta: piezas, cargaRespuestas: get().cargaRespuestas + 1 }),
+  // Respaldo (#60): se fusiona con lo local; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
+  importarRespuestas: (nuevas) => {
+    const { respuestas, piezaPropuesta } = get();
+    const { respuestas: fusion, ...conteo } = fusionarRespuestas(respuestas, nuevas);
+    if (conteo.agregadas + conteo.actualizadas > 0) get().cargarRespuestas(fusion, piezasQueSiguen(piezaPropuesta, respuestas, fusion));
+    return conteo;
+  },
   proponerPosicion: (r, pieza) =>
     set({
       respuestas: { ...get().respuestas, [claveRespuesta(r)]: r },
