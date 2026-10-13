@@ -1,6 +1,6 @@
 // Modo revisión docente (F24): avance, fichas pendientes y envío por formulario de Google.
 import { get, set } from 'idb-keyval';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
@@ -17,6 +17,7 @@ import {
   type Respuesta,
 } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
+import SeccionTrazos from './SeccionTrazos';
 import { useMovil } from './useMovil';
 
 const claveIdb = (codigo: string) => `revision:${codigo}`;
@@ -143,6 +144,8 @@ export default function PanelRevision({
   const totalPendientes = secciones.reduce((n, x) => n + x.ids.length, 0);
   const alternar = (v: Vista) => abrir(vista === v ? null : v);
   const configurado = formularioConfigurado(configRevision);
+  // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra.
+  const trazosUI = <SeccionTrazos alAbrir={() => abrir(null)} />;
 
   const copiarODescargar = async (id: string, l: Respuesta[]) => {
     const carga = cargaRevision(revisor, id, l);
@@ -253,34 +256,38 @@ export default function PanelRevision({
             {t('revision.queRevisarTitulo')}
           </h2>
           <p>{t('revision.queAyuda')}</p>
+          {!secciones.some((sec) => sec.seccion === 'dudas') && trazosUI}
           {secciones.length ? (
             secciones.map((sec, i) => (
-              <details key={sec.seccion} open={i === 0} className="seccion-revision" data-seccion={sec.seccion}>
-                <summary>
-                  {t(`revision.seccion_${sec.seccion}`)} ({sec.ids.length})
-                </summary>
-                <ul>
-                  {sec.ids.map((id) => (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        className="enlace"
-                        onClick={() => {
-                          alElegir(id);
-                          abrir(null); // el foco ya va al título de la ficha: no se devuelve a la barra
-                        }}
-                      >
-                        {nombre(estructuras[id], idioma) || id}
-                      </button>
-                      {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
-                      <span className="recurso-nota" data-testid="avance-ficha">
-                        {' '}
-                        · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
+              <Fragment key={sec.seccion}>
+                <details open={i === 0} className="seccion-revision" data-seccion={sec.seccion}>
+                  <summary>
+                    {t(`revision.seccion_${sec.seccion}`)} ({sec.ids.length})
+                  </summary>
+                  <ul>
+                    {sec.ids.map((id) => (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          className="enlace"
+                          onClick={() => {
+                            alElegir(id);
+                            abrir(null); // el foco ya va al título de la ficha: no se devuelve a la barra
+                          }}
+                        >
+                          {nombre(estructuras[id], idioma) || id}
+                        </button>
+                        {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
+                        <span className="recurso-nota" data-testid="avance-ficha">
+                          {' '}
+                          · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+                {sec.seccion === 'dudas' && trazosUI}
+              </Fragment>
             ))
           ) : (
             <p>{t('revision.sinPendientes')}</p>

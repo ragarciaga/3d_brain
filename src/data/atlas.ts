@@ -4,7 +4,8 @@ import dudasJson from './dudas.json';
 import estructurasJson from './estructuras.json';
 import gruposJson from './grupos.json';
 import marcadoresJson from './marcadores.json';
-import type { Arbol, Bilingue, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria } from './tipos';
+import trazosVagoJson from './trazos-vago.json';
+import type { Arbol, Bilingue, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria, PropuestaTrazo } from './tipos';
 
 export const arbol = arbolJson as unknown as Arbol;
 export const datos = estructurasJson as unknown as Estructuras;
@@ -12,6 +13,8 @@ export const grupos = gruposJson as unknown as GrupoEstudio[];
 export const marcadores = marcadoresJson as unknown as Marcador[];
 /** Dudas abiertas por estructura (de docs/fichas-dudas.md): preguntas directas para el docente (F24). */
 export const dudas = (dudasJson as unknown as { dudas: Record<string, { id: string; texto: Bilingue }[]> }).dudas;
+/** Propuestas de la auditoría del modelo para los trazos del vago, copiadas de docs/research/vago/auditoria-vago.md. */
+export const trazosAuditados = (trazosVagoJson as unknown as { trazos: PropuestaTrazo[] }).trazos;
 
 export const nodos = arbol.nodos;
 export const estructuras = datos.estructuras;

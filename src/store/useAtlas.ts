@@ -1,7 +1,7 @@
 // Estado de la app. La posición original de las piezas no vive aquí ni se modifica nunca:
 // aquí solo hay desplazamientos, visibilidad, selección y modos.
 import { create } from 'zustand';
-import { esFragmentable, nodos, piezasBajo, piezasDeEntrada, todasLasPiezas } from '../data/atlas';
+import { esFragmentable, nodos, piezaDeMalla, piezasBajo, piezasDeEntrada, todasLasPiezas } from '../data/atlas';
 import {
   CERO,
   desplazamientoSeparar,
@@ -26,6 +26,7 @@ import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja 
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
 import type { RutaTrazada } from '../lib/rutas';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
+import { ENTRADA_VAGO } from '../lib/trazos';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
 const BLOQUES_LOBULO = new Set([
@@ -82,13 +83,14 @@ export function bloqueDe(pieza: string, nivel: Nivel): string {
 export interface Seleccion {
   entrada: string | null; // id en estructuras.json (estructura, grupo o marcador)
   pieza: string | null; // pieza tocada, si la hay
-  malla: string | null; // malla tocada (trazos del vago en modo revisión)
+  malla: string | null; // malla tocada o abierta desde 'Qué revisar' (trazos del vago en modo revisión)
 }
 
 export interface PedidoCamara {
   vista?: Vista;
   camara?: number[];
   encuadrar?: string[]; // piezas
+  malla?: string; // una malla (trazo del vago): se encuadra su caja, no la de la pieza
   t: number;
 }
 
@@ -120,6 +122,7 @@ interface Estado {
   recorrido: number | null; // parada actual del recorrido del vago (F14); null fuera del recorrido
   soloEscaneada: boolean; // F25: esconder la geometría trazada
   rutas: RutaTrazada[]; // rutas trazadas del vago (ADR 0009), cargadas de public/modelos/rutas-vago.json
+  trazos: string[]; // mallas de trazo del GLB cargado, en orden (src/lib/trazos.ts); [] hasta que carga el modelo
   panelRecorrido: number; // alto (px) del panel del recorrido cuando tapa la parte de abajo del visor (celular)
   cortes: Cortes; // planos de corte (F8); mm desde el centro de la caja del encéfalo
   fantasmaCorte: boolean; // la parte cortada se ve como fantasma
@@ -160,6 +163,8 @@ interface Estado {
   setPanelRecorrido(px: number): void;
   setSoloEscaneada(v: boolean): void;
   setRutas(r: RutaTrazada[]): void;
+  setTrazos(l: string[]): void;
+  abrirTrazo(malla: string): void;
 }
 
 /** Si hay algo que "Mostrar todo" deshacer: piezas ocultas, aislamiento o un grupo de estudio activo. */
@@ -232,6 +237,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   panelRecorrido: 0,
   soloEscaneada: false,
   rutas: [],
+  trazos: [],
   cortes: cortesApagados(),
   fantasmaCorte: false,
   rellenoApagado: false,
@@ -409,6 +415,18 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   setSoloEscaneada: (v) => set({ soloEscaneada: v }),
   setRutas: (r) => set({ rutas: r }),
+  setTrazos: (l) => {
+    if (get().trazos.join('\n') !== l.join('\n')) set({ trazos: l });
+  },
+  // Abre un trazo como si se hubiera tocado en el visor: lo selecciona (queda resaltado), deja el vago en
+  // contexto (salvo en el recorrido, donde el fantasma es del recorrido) y pide encuadrar su malla.
+  abrirTrazo: (malla) => {
+    const pieza = piezaDeMalla(malla);
+    if (!pieza) return;
+    get().seleccionar({ entrada: nodos[pieza]?.estructura ?? null, pieza, malla });
+    if (get().recorrido === null) get().aislarPiezas(piezasDeEntrada(ENTRADA_VAGO), 'contexto');
+    get().pedirCamara({ malla });
+  },
   setPanelRecorrido: (px) => {
     if (get().panelRecorrido !== px) set({ panelRecorrido: px });
   },

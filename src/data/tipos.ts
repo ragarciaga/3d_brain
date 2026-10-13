@@ -85,6 +85,14 @@ export interface Marcador {
   fuente_ubicacion: Bilingue; // vacío ("") si no hay fuente escrita
 }
 
+/** Propuesta de la auditoría del modelo para un trazo del vago (docs/research/vago/auditoria-vago.md). Copia literal, no definitiva. */
+export interface PropuestaTrazo {
+  malla: string; // nombre de la malla, igual que en el GLB
+  auditoria: string; // columna "Propuesta" de la tabla, tal cual
+  propuesta: string | null; // id de marcador o 'no_es_ramo' cuando la auditoría propone una sola opción de la lista; null si no
+  fuente: string;
+}
+
 export interface GrupoEstudio {
   id: string;
   nombre: Bilingue;
