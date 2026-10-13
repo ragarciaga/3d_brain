@@ -610,8 +610,8 @@
     "es": "PENDIENTE",
     "en": "Anterior occipital sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Surco occipital anterior» (traducción)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA solo nombra la incisura preoccipital). Español: sin término oficial; propuesta para revisión docente: «Surco occipital anterior» (traducción)",
    "slug": {
     "es": "anterior-occipital-sulcus",
     "en": "anterior-occipital-sulcus"
@@ -1981,8 +1981,8 @@
     "es": "PENDIENTE",
     "en": "Middle-anterior part of the cingulate gyrus and sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Parte media anterior del giro y surco del cíngulo» (TA2 5513 más descriptor)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA divide el giro del cíngulo en partes anterior, media y posterior (gyrus cinguli, pars media), sin la subdivisión ni el surco de esta parcela). Español: sin término oficial; propuesta para revisión docente: «Parte media anterior del giro y surco del cíngulo» (TA2 5513 más descriptor)",
    "slug": {
     "es": "cingulate-gyrus-and-sulcus-middle-anterior-part",
     "en": "cingulate-gyrus-and-sulcus-middle-anterior-part"
@@ -2104,8 +2104,8 @@
     "es": "PENDIENTE",
     "en": "Middle-posterior part of the cingulate gyrus and sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Parte media posterior del giro y surco del cíngulo» (TA2 5513 más descriptor)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA divide el giro del cíngulo en partes anterior, media y posterior (gyrus cinguli, pars media), sin la subdivisión ni el surco de esta parcela). Español: sin término oficial; propuesta para revisión docente: «Parte media posterior del giro y surco del cíngulo» (TA2 5513 más descriptor)",
    "slug": {
     "es": "cingulate-gyrus-and-sulcus-middle-posterior-part",
     "en": "cingulate-gyrus-and-sulcus-middle-posterior-part"
@@ -2194,8 +2194,8 @@
     "es": "PENDIENTE",
     "en": "Posterior-dorsal part of the cingulate gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Parte posterior dorsal del giro del cíngulo» (TA2 5513 más descriptor)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA divide el giro del cíngulo en partes anterior, media y posterior (gyrus cinguli, pars posterior), sin la subdivisión de esta parcela). Español: sin término oficial; propuesta para revisión docente: «Parte posterior dorsal del giro del cíngulo» (TA2 5513 más descriptor)",
    "slug": {
     "es": "cingulate-gyrus-and-sulcus-posterior-dorsal-part",
     "en": "cingulate-gyrus-and-sulcus-posterior-dorsal-part"
@@ -8708,7 +8708,105 @@
     "es": [],
     "en": []
    },
-   "ficha": null
+   "ficha": {
+    "version": "0.1.0",
+    "ubicacion": {
+     "es": "En la cara inferior de cada hemisferio cerebeloso, en el lóbulo posterior. La fisura ansoparamediana lo separa por delante de la crus II; con el lóbulo biventral forma la parte baja del hemisferio. Lo irrigan ramas de la arteria cerebelosa posteroinferior.",
+     "en": "On the inferior surface of each cerebellar hemisphere, in the posterior lobe. The ansoparamedian fissure separates it in front from crus II; together with the biventral lobule it forms the lower part of the hemisphere. It is supplied by branches of the posterior inferior cerebellar artery."
+    },
+    "que_es": {
+     "es": "Lóbulo hemisférico que corresponde al lóbulo VIIB de Larsell; antes se le llamaba lóbulo paramediano o grácil. Algunos atlas lo agrupan con el lóbulo semilunar inferior, así que su nombre varía según la fuente.",
+     "en": "A hemispheric lobule that corresponds to Larsell lobule VIIB; it used to be called the paramedian or gracile lobule. Some atlases group it with the inferior semilunar lobule, so its name varies between sources."
+    },
+    "para_que_sirve": {
+     "es": "Forma parte del cerebelo posterior, que contribuye a procesos cognitivos más que al movimiento: la corteza parietal se conecta con el VIIB, y estudios de imagen lo activan en tareas de memoria de trabajo y de funciones ejecutivas.",
+     "en": "It belongs to the posterior cerebellum, which contributes to cognitive processes rather than to movement: the parietal cortex is linked with VIIB, and imaging studies activate it in working memory and executive tasks."
+    },
+    "relaciones": [
+     "g-cerebellum",
+     "inferior-semilunar-lobule",
+     "biventral-lobule",
+     "tuber-of-vermis",
+     "superior-semilunar-lobule"
+    ],
+    "relevancia": [
+     {
+      "texto": {
+       "es": "Con el lóbulo VIIIA, se ha propuesto que participa en el almacenamiento fonológico de la memoria de trabajo verbal, mientras que la región de VI y crus I se relaciona con el ensayo articulatorio.",
+       "en": "Together with lobule VIIIA, it has been proposed to take part in phonological storage in verbal working memory, while the region of VI and crus I is linked to articulatory rehearsal."
+      },
+      "evidencia": "moderada",
+      "fuentes": [
+       {
+        "cita": "Stoodley CJ, Schmahmann JD. Evidence for topographic organization in the cerebellum of motor control versus cognitive and affective processing. Cortex. 2010;46(7):831-44. PMID 20152963. PMC2873095. doi:10.1016/j.cortex.2009.11.008.",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/20152963/",
+        "verificada": true
+       }
+      ]
+     }
+    ],
+    "recursos": [
+     {
+      "titulo": "Neuroanatomy, Cerebellum",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK538167/",
+      "tipo": "articulo",
+      "idioma": "en",
+      "nota": {
+       "es": "Lóbulos, núcleos y conexiones del cerebelo.",
+       "en": "Lobules, nuclei and connections of the cerebellum."
+      }
+     },
+     {
+      "titulo": "Evidence for topographic organization in the cerebellum of motor control versus cognitive and affective processing",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/20152963/",
+      "tipo": "paper",
+      "idioma": "en",
+      "nota": {
+       "es": "Revisión abierta de la topografía funcional del cerebelo por lóbulos.",
+       "en": "Open review of the functional topography of the cerebellum by lobule."
+      }
+     }
+    ],
+    "fuentes": [
+     {
+      "cita": "Fichtl A, Büttner A, Hof PR, Schmitz C, Kiessling MC. Delineation of Subregions in the Early Postnatal Human Cerebellum for Design-Based Stereologic Studies. Front Neuroanat. 2017;11:134. PMID 29358908. PMC5766680. doi:10.3389/fnana.2017.00134.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29358908/",
+      "verificada": true
+     },
+     {
+      "cita": "Stoodley CJ, Schmahmann JD. Evidence for topographic organization in the cerebellum of motor control versus cognitive and affective processing. Cortex. 2010;46(7):831-44. PMID 20152963. PMC2873095. doi:10.1016/j.cortex.2009.11.008.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/20152963/",
+      "verificada": true
+     },
+     {
+      "cita": "Błaszczyk M, Ochwat K, Necka S, Kwiecińska M, Ostrowski P, Bonczar M et al. The Arterial Anatomy of the Cerebellum-A Comprehensive Review. Brain Sci. 2024;14(8). PMID 39199457. PMC11352334. doi:10.3390/brainsci14080763.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/39199457/",
+      "verificada": true
+     },
+     {
+      "cita": "Akeret K, van Niftrik CHB, Sebök M, Muscas G, Visser T, Staartjes VE et al. Topographic volume-standardization atlas of the human brain. Brain Struct Funct. 2021;226(6):1699-1711. PMID 33961092. PMC8203509. doi:10.1007/s00429-021-02280-1.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/33961092/",
+      "verificada": true
+     },
+     {
+      "cita": "Terminologia Anatomica 2 (TA2.csv incluido en Z-Anatomy, CC BY-SA 4.0)",
+      "verificada": true,
+      "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy"
+     }
+    ],
+    "revision": {
+     "es": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     },
+     "en": {
+      "estado": "borrador",
+      "revisado_por": null,
+      "fecha": null
+     }
+    }
+   }
   },
   "habenula": {
    "id": "habenula",
@@ -9683,8 +9781,8 @@
     "es": "PENDIENTE",
     "en": "Inferior occipital gyrus and sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Giro y surco occipitales inferiores» (traducción)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA nombra el giro (gyrus occipitalis inferior), no el conjunto de giro y surco). Español: sin término oficial; propuesta para revisión docente: «Giro y surco occipitales inferiores» (traducción)",
    "slug": {
     "es": "inferior-occipital-gyrus-and-sulcus",
     "en": "inferior-occipital-gyrus-and-sulcus"
@@ -10450,8 +10548,8 @@
     "es": "PENDIENTE",
     "en": "Subcentral gyrus (central operculum) and sulci"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Giro subcentral (opérculo central) y surcos» (traducción)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA nombra por separado el giro subcentral (gyrus subcentralis, u opérculo central) y los surcos subcentrales anterior y posterior). Español: sin término oficial; propuesta para revisión docente: «Giro subcentral (opérculo central) y surcos» (traducción)",
    "slug": {
     "es": "insula-subcentral-gyrus-and-ant-and-post-sulci",
     "en": "insula-subcentral-gyrus-and-ant-and-post-sulci"
@@ -10756,18 +10854,20 @@
    "id": "lat-fis-ant-horizont",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Horizontal ramus of the anterior segment of the lateral sulcus"
+    "es": "Rama anterior del surco lateral",
+    "en": "Anterior ramus of lateral sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Rama anterior del surco lateral» (TA2 5449; la rama anterior de TA es la horizontal)",
+   "latin": "Ramus anterior sulci lateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5449; equivalencia con la parcela de Destrieux 2010 (PMID 20547229): Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la figura 2 iguala la rama anterior con la rama horizontal de Destrieux)",
    "slug": {
-    "es": "lat-fis-ant-horizont",
+    "es": "rama-anterior-del-surco-lateral",
     "en": "lat-fis-ant-horizont"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "Horizontal ramus of the anterior segment of the lateral sulcus"
+    ]
    },
    "ficha": {
     "version": "0.1.0",
@@ -10828,18 +10928,20 @@
    "id": "lat-fis-ant-vertical",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Vertical ramus of the anterior segment of the lateral sulcus"
+    "es": "Rama ascendente del surco lateral",
+    "en": "Ascending ramus of lateral sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Rama ascendente del surco lateral» (TA2 5451; la rama ascendente de TA es la vertical)",
+   "latin": "Ramus ascendens sulci lateralis",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5451; equivalencia con la parcela de Destrieux 2010 (PMID 20547229): Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la figura 2 iguala la rama ascendente con la rama vertical de Destrieux)",
    "slug": {
-    "es": "lat-fis-ant-vertical",
+    "es": "rama-ascendente-del-surco-lateral",
     "en": "lat-fis-ant-vertical"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "Vertical ramus of the anterior segment of the lateral sulcus"
+    ]
    },
    "ficha": {
     "version": "0.1.0",
@@ -11090,8 +11192,8 @@
     "es": "PENDIENTE",
     "en": "Middle occipital gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Giro occipital medio» (TA2 5482 dice Giros occipitales laterales, más amplio)",
+   "latin": "Gyrus occipitalis medius",
+   "fuente_nombre": "Inglés y latín: Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (tabla 1). Parcela de Destrieux 2010 (PMID 20547229). Español: sin término oficial; propuesta para revisión docente: «Giro occipital medio» (TA2 5482 dice Giros occipitales laterales, más amplio)",
    "slug": {
     "es": "lateral-occipital-gyrus-middle-occipital-gyrus",
     "en": "lateral-occipital-gyrus-middle-occipital-gyrus"
@@ -11099,6 +11201,7 @@
    "sinonimos": {
     "es": [],
     "en": [
+     "Middle occipital gyrus",
      "O2",
      "lateral occipital gyrus"
     ]
@@ -15026,15 +15129,19 @@
     "es": "Área de Wernicke",
     "en": "Wernicke's area"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "PENDIENTE",
+   "latin": "Gyrus temporalis superior, pars posterior",
+   "fuente_nombre": "Latín: Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (tabla 1: \"area of Wernicke\" es el epónimo de la parte posterior del giro temporal superior; la extensión del área se discute, ver la ficha)",
    "slug": {
     "es": "area-de-wernicke",
     "en": "wernickes-area"
    },
    "sinonimos": {
-    "es": [],
-    "en": []
+    "es": [
+     "parte posterior del giro temporal superior"
+    ],
+    "en": [
+     "posterior part of superior temporal gyrus"
+    ]
    },
    "ficha": {
     "version": "0.1.0",
@@ -17246,18 +17353,20 @@
    "id": "occipitotemporal-sulcus-lateral-part",
    "tipo": "estructura",
    "nombre": {
-    "es": "PENDIENTE",
-    "en": "Lateral occipitotemporal sulcus"
+    "es": "Surco occipitotemporal",
+    "en": "Occipitotemporal sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Surco occipitotemporal» (TA2 5498)",
+   "latin": "Sulcus occipitotemporalis",
+   "fuente_nombre": "TA2 (Z-Anatomy), término 5498; equivalencia con la parcela de Destrieux 2010 (PMID 20547229): Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la tabla 2 da \"lateral occipitotemporal sulcus\" como sinónimo)",
    "slug": {
-    "es": "occipitotemporal-sulcus-lateral-part",
+    "es": "surco-occipitotemporal",
     "en": "occipitotemporal-sulcus-lateral-part"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "Lateral occipitotemporal sulcus"
+    ]
    },
    "ficha": {
     "version": "0.1.0",
@@ -18117,8 +18226,8 @@
     "es": "PENDIENTE",
     "en": "Fronto-marginal gyrus and sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Giro y surco frontomarginales (de Wernicke)» (traducción)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA nombra por separado el giro y el surco frontomarginales (gyrus frontomarginalis, sulcus frontomarginalis)). Español: sin término oficial; propuesta para revisión docente: «Giro y surco frontomarginales (de Wernicke)» (traducción)",
    "slug": {
     "es": "orbital-gyri-frontomarginal-gyrus-and-sulcus",
     "en": "orbital-gyri-frontomarginal-gyrus-and-sulcus"
@@ -18429,15 +18538,17 @@
     "es": "PENDIENTE",
     "en": "Lateral orbital sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Surco orbitario lateral» (traducción)",
+   "latin": "Sulcus orbitalis lateralis",
+   "fuente_nombre": "Inglés y latín: Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (tabla 2). Parcela de Destrieux 2010 (PMID 20547229). Español: sin término oficial; propuesta para revisión docente: «Surco orbitario lateral» (traducción)",
    "slug": {
     "es": "orbital-sulci-lateral-orbital-sulcus",
     "en": "orbital-sulci-lateral-orbital-sulcus"
    },
    "sinonimos": {
     "es": [],
-    "en": []
+    "en": [
+     "Lateral orbital sulcus"
+    ]
    },
    "ficha": {
     "version": "0.1.0",
@@ -18526,8 +18637,8 @@
     "es": "PENDIENTE",
     "en": "Paracentral lobule and sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Lóbulo y surco paracentrales» (TA2 5466 y 5460)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA nombra por separado el lóbulo y el surco paracentrales (lobulus paracentralis, sulcus paracentralis)). Español: sin término oficial; propuesta para revisión docente: «Lóbulo y surco paracentrales» (TA2 5466 y 5460)",
    "slug": {
     "es": "paracentral-gyrus-and-sulcus",
     "en": "paracentral-gyrus-and-sulcus"
@@ -19900,8 +20011,8 @@
     "es": "PENDIENTE",
     "en": "Posterior transverse collateral sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Surco colateral transverso posterior» (traducción)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (no figura en la TNA). Español: sin término oficial; propuesta para revisión docente: «Surco colateral transverso posterior» (traducción)",
    "slug": {
     "es": "posterior-transverse-collateral-sulcus",
     "en": "posterior-transverse-collateral-sulcus"
@@ -20124,8 +20235,8 @@
     "es": "PENDIENTE",
     "en": "Inferior part of the precentral sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Parte inferior del surco precentral» (TA2 5457 más descriptor)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA solo nombra el surco precentral completo (sulcus precentralis)). Español: sin término oficial; propuesta para revisión docente: «Parte inferior del surco precentral» (TA2 5457 más descriptor)",
    "slug": {
     "es": "precentral-sulcus-inferior-part",
     "en": "precentral-sulcus-inferior-part"
@@ -20211,8 +20322,8 @@
     "es": "PENDIENTE",
     "en": "Superior part of the precentral sulcus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Parte superior del surco precentral» (TA2 5457 más descriptor)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA solo nombra el surco precentral completo (sulcus precentralis)). Español: sin término oficial; propuesta para revisión docente: «Parte superior del surco precentral» (TA2 5457 más descriptor)",
    "slug": {
     "es": "precentral-sulcus-superior-part",
     "en": "precentral-sulcus-superior-part"
@@ -22265,10 +22376,10 @@
    "tipo": "estructura",
    "nombre": {
     "es": "PENDIENTE",
-    "en": "Sulcus intermedius primus (of Jensen)"
+    "en": "First intermediate sulcus (of Jensen)"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Surco intermedio primario (de Jensen)» (traducción)",
+   "latin": "Sulcus intermedius primus",
+   "fuente_nombre": "Inglés y latín: Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (tabla 1; sinónimo: sulcus intermedius anterior). Parcela de Destrieux 2010 (PMID 20547229). Español: sin término oficial; propuesta para revisión docente: «Surco intermedio primario (de Jensen)» (traducción)",
    "slug": {
     "es": "sulcus-interm-prim-jensen",
     "en": "sulcus-interm-prim-jensen"
@@ -22276,6 +22387,7 @@
    "sinonimos": {
     "es": [],
     "en": [
+     "Sulcus intermedius primus (of Jensen)",
      "sulcus of Jensen"
     ]
    },
@@ -23429,8 +23541,8 @@
     "es": "PENDIENTE",
     "en": "Lateral aspect of the superior temporal gyrus"
    },
-   "latin": "PENDIENTE",
-   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Español y latín PENDIENTE (sin término en TA2). Propuesta en español para revisión docente: «Cara lateral del giro temporal superior» (TA2 5489 más descriptor)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA divide el giro temporal superior en partes anterior y posterior, no en caras). Español: sin término oficial; propuesta para revisión docente: «Cara lateral del giro temporal superior» (TA2 5489 más descriptor)",
    "slug": {
     "es": "superior-temporal-gyrus-lateral-part",
     "en": "superior-temporal-gyrus-lateral-part"
@@ -24572,13 +24684,13 @@
    "id": "transverse-frontopolar-gyrus-and-sulcus",
    "tipo": "estructura",
    "nombre": {
-    "es": "Giro y surco frontopolar transverso",
+    "es": "PENDIENTE",
     "en": "Transverse frontopolar gyrus and sulcus"
    },
-   "latin": "Gyrus et sulcus transversus frontopolar",
-   "fuente_nombre": "TA2 (Z-Anatomy), fila 7210, agregada por Z-Anatomy y no verificada contra TA2 oficial; equivalencia con la parcela de Destrieux 2010 (PMID 20547229)",
+   "latin": "SIN_TERMINO_OFICIAL",
+   "fuente_nombre": "Inglés: Destrieux C, Fischl B, Dale A, Halgren E. NeuroImage 2010;53(1):1-15, PMID 20547229, tabla 1. Latín: sin término oficial en TA2 ni en la Terminologia Neuroanatomica (FIPAT 2017), según ten Donkelaar HJ, Tzourio-Mazoyer N, Mai JK. Front Neuroanat 2018;12:93, PMID 30510504, tablas 1 a 3 (la TNA nombra los giros frontopolares superior, medio e inferior). Español: sin término oficial; propuesta para revisión docente: «Giro y surco frontopolar transverso» (fila 7210 que Z-Anatomy agregó a TA2.csv)",
    "slug": {
-    "es": "giro-y-surco-frontopolar-transverso",
+    "es": "transverse-frontopolar-gyrus-and-sulcus",
     "en": "transverse-frontopolar-gyrus-and-sulcus"
    },
    "sinonimos": {

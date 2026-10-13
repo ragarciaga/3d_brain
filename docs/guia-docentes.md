@@ -46,10 +46,13 @@ otro día desde el mismo equipo.
 
 Casos especiales:
 
-- **Nombres pendientes:** algunas estructuras no tienen nombre oficial en español o latín en
-  Terminologia Anatomica. La línea "Fuente del nombre" muestra una propuesta. Si estás de acuerdo,
-  marca **Corregir** en el nombre y escribe el nombre propuesto (o el que tú consideres correcto,
-  con su fuente).
+- **Nombres pendientes:** algunas zonas de la corteza (del atlas de Destrieux) no tienen nombre
+  oficial en español en Terminologia Anatomica ni en la Terminologia Neuroanatomica. La línea
+  "Fuente del nombre" muestra una propuesta. Si estás de acuerdo, marca **Corregir** en el nombre y
+  escribe el nombre propuesto (o el que tú consideres correcto, con su fuente).
+- **"Sin término oficial en latín":** quiere decir que ni TA2 ni la Terminologia Neuroanatomica
+  tienen un término para esa zona (por ejemplo, porque junta un giro con su surco). Si conoces un
+  término oficial con fuente, márcalo con **Corregir**.
 - **Marcadores** (estructuras que no tienen malla 3D, como el área de Wernicke o los ramos del
   vago): con **Proponer posición** tocas en el modelo el punto donde va la estructura.
 - **Trazos del vago:** el modelo trae los ramos del vago como 28 trazos sin nombre (21 en el vago

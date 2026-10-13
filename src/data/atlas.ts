@@ -123,6 +123,8 @@ export function piezasDeGrupo(id: string): string[] {
 }
 
 export const PENDIENTE = 'PENDIENTE';
+/** Latín de una parcela que no tiene término en TA2 ni en la Terminologia Neuroanatomica. */
+export const SIN_TERMINO = 'SIN_TERMINO_OFICIAL';
 
 export function marcadorPorId(id: string): Marcador | undefined {
   return marcadores.find((m) => m.id === id);

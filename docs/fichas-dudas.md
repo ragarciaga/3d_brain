@@ -14,9 +14,17 @@ Eso no reemplaza la revisión docente (F24): esta lista dice dónde mirar primer
   al de `pipeline/comun.py`).
 - El enlace de Kenhub de la ficha del vago no se pudo abrir desde el entorno de trabajo.
 
-## Sin ficha
-- **Lóbulo grácil (`gracile-lobule`):** ninguna fuente abierta lo ubica ni da su equivalente de
-  Larsell; Jung 2012 y Diano 2016 no coinciden sobre el lóbulo VIIB.
+## Nombres sin término oficial
+- **Latín:** 13 parcelas del atlas de Destrieux no tienen término en TA2 ni en la Terminologia
+  Neuroanatomica (FIPAT 2017, según ten Donkelaar et al. 2018, PMID 30510504). La ficha dice "Sin
+  término oficial en latín" y `fuente_nombre` explica por qué (casi siempre, porque la parcela
+  junta un giro con su surco o parte una estructura que la TNA no parte). No se inventa un latín.
+- **Español:** 16 parcelas no tienen nombre oficial en español. La ficha muestra una propuesta para
+  que un docente la confirme o la corrija.
+- **Lóbulo grácil (`gracile-lobule`):** desde el 2026-10-13 tiene ficha. Se toma como el lóbulo
+  VIIB (Fichtl 2017: "previously termed the paramedian or gracile lobule"); algunos atlas lo
+  agrupan con el lóbulo semilunar inferior (Akeret 2021) y Jung 2012 y Diano 2016 no coinciden
+  sobre el VIIB. Conviene que un docente confirme la equivalencia.
 
 ## Jerarquía del modelo
 - **Valva posterior de la mitral** (`posterior-leaflet-of-left-atrioventricular-valve`): Z-Anatomy

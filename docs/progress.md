@@ -24,12 +24,15 @@ adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la
   primer cuadro, cuadros por segundo y GPU, con botón para copiar (docs/operacion.md). Medido en el
   entorno de Claude: código 1,1 s, descarga del modelo 2,4 s, preparación 1 s, cerebro a los 4,5 s;
   la descarga del modelo empieza cuando termina el código.
-- Content: 235 de 236 fichas en borrador con fuentes verificadas (#7, PR #22). Los nombres, las
-  fichas, las posiciones de marcadores y los trazos del vago los validan docentes, no el editor.
+- Content: 236 de 236 fichas en borrador con fuentes verificadas (#7, PR #22; el lóbulo grácil se
+  agregó el 2026-10-13). Ningún latín queda PENDIENTE: 13 parcelas de Destrieux muestran "sin
+  término oficial" (TA2 y Terminologia Neuroanatomica, vía ten Donkelaar 2018) y 16 nombres en
+  español quedan como propuesta para los docentes (#8). Los nombres, las fichas, las posiciones de
+  marcadores y los trazos del vago los validan docentes, no el editor.
 - Revisión docente lista: formularios de revisión y de registro conectados (#5); 10 códigos de
   revisor (D01 a D10) con padrón y enlaces en la carpeta privada "Maysa Brain (privado)" del Drive
   de Maysa Digital, nunca en el repositorio (#15); guía en docs/guia-docentes.md, guía del editor
-  en docs/revision-docente.md, dudas en docs/fichas-dudas.md, 18 propuestas de nombre visibles (#8).
+  en docs/revision-docente.md, dudas en docs/fichas-dudas.md, 16 propuestas de nombre visibles (#8).
   Todo lo anatómico (nombres, fichas, posiciones, trazos) lo validan docentes, no el editor.
 - Pending (editor):
   - medir en iPad, celular y PC con `?medir=1` y pegar los resultados en #6;

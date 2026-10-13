@@ -6,7 +6,7 @@ fuente, nivel de evidencia y revisor visible, y se vuelve a armar sin perder la 
 
 **Uso educativo. No es una herramienta clínica ni de diagnóstico.**
 
-Estado: hito 1, piloto con docentes. 235 de 236 fichas están escritas con fuentes verificadas y
+Estado: hito 1, piloto con docentes. Las 236 fichas están escritas con fuentes verificadas y
 siguen en borrador hasta que las revisen docentes.
 
 **Sitio:** https://ragarciaga.github.io/3d_brain/ · **Todos los enlaces del proyecto:**

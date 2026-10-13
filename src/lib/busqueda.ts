@@ -17,7 +17,7 @@ export function crearBuscador(entradas: Estructura[]): Buscador {
   const docs: Doc[] = entradas.map((e) => ({
     id: e.id,
     terminos: [e.nombre.es, e.nombre.en, e.latin, ...e.sinonimos.es, ...e.sinonimos.en]
-      .filter((t) => t && t !== 'PENDIENTE')
+      .filter((t) => t && t !== 'PENDIENTE' && t !== 'SIN_TERMINO_OFICIAL')
       .map(normalizar),
   }));
   const fuse = new Fuse(docs, {
