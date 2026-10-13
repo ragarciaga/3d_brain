@@ -276,7 +276,7 @@ test('búsqueda bilingüe: con la interfaz en español, "amygdala" abre la amíg
   await expect(page.getByRole('option').first()).toContainText('Nervio vago');
 });
 
-test('la ficha trae búsquedas de artículos científicos, también si está en preparación', async ({ page }) => {
+test('la ficha trae búsquedas de artículos científicos', async ({ page }) => {
   await abrir(page, '/es/hipocampo');
   const articulos = page.getByTestId('articulos');
   await expect(articulos.getByRole('heading', { name: 'Artículos científicos' })).toBeVisible();
@@ -285,10 +285,13 @@ test('la ficha trae búsquedas de artículos científicos, también si está en 
   await expect(pubmed).toHaveAttribute('target', '_blank');
   await expect(articulos.locator('a[data-base="scielo"]')).toHaveAttribute('href', /search\.scielo\.org\/\?q=%22hipocampo%22/);
   await expect(articulos.getByRole('link')).toHaveCount(4);
-  // Una estructura sin ficha escrita también trae las búsquedas.
+  // El lóbulo grácil, la última ficha escrita, también trae las búsquedas.
   await abrir(page, '/es/lobulo-gracil');
-  await expect(page.getByTestId('ficha')).toContainText('Ficha en preparación.');
+  await expect(page.getByTestId('ficha')).not.toContainText('Ficha en preparación.');
   await expect(page.getByTestId('articulos').locator('a[data-base="pubmed"]')).toHaveAttribute('href', /gracile%20lobule/);
+  // Una parcela sin término oficial lo dice en lugar de "pendiente".
+  await abrir(page, '/es/paracentral-gyrus-and-sulcus');
+  await expect(page.getByTestId('ficha')).toContainText('Sin término oficial en latín');
 });
 
 test('URL por estructura e idioma: cambiar de idioma conserva la estructura', async ({ page }) => {
@@ -549,7 +552,8 @@ test('marcadores: la fuente de ubicación sale en el idioma de la interfaz y cad
   await abrir(page, '/es/area-de-wernicke');
   await expect(page.locator('#ficha-titulo')).toHaveText('Área de Wernicke');
   await abrir(page, '/en/wernickes-area');
-  await expect(page.getByTestId('ficha')).toContainText('Name source: pending confirmation');
+  await expect(page.getByTestId('ficha')).toContainText('Gyrus temporalis superior, pars posterior');
+  await expect(page.getByTestId('ficha')).toContainText('Name source: Latín: Terminologia Neuroanatomica');
 });
 
 test('el grupo del vago y la estructura del vago se distinguen en la búsqueda y en la URL', async ({ page }) => {

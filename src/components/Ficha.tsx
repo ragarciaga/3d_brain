@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
-import { nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
+import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import { claveRespuesta, type Veredicto } from '../lib/revision';
@@ -352,6 +352,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const estadoIdioma = f?.revision[idioma]?.estado ?? 'borrador';
   const estadoOtro = f?.revision[otro(idioma)]?.estado ?? 'borrador';
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, t) : nombre(e, idioma);
+  const latin = latinVisible(e, t);
 
   const piezas = piezasDeEntrada(id);
   const color = piezas.length ? colorDePieza(piezas[0]!) : null;
@@ -371,9 +372,11 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
           <h2 id="ficha-titulo" ref={refTitulo} tabIndex={-1}>
             {titulo}
           </h2>
-          <p className="ficha-latin">
-            <span lang="la">{e.latin && e.latin !== PENDIENTE ? e.latin : t('ficha.latinPendiente')}</span>
-          </p>
+          {latin !== null && (
+            <p className="ficha-latin">
+              <span lang={latin === e.latin ? 'la' : undefined}>{latin}</span>
+            </p>
+          )}
         </div>
         <button type="button" className="cerrar" aria-label={t('ficha.cerrar')} onClick={alCerrar}>
           ×
@@ -396,7 +399,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         <div className="ficha-campo">
           <h3>{t('revision.nombres')}</h3>
           <p>
-            {t('idioma.nombre_es')}: {e.nombre.es} · {t('idioma.nombre_en')}: {e.nombre.en} · {t('ficha.latin')}: {e.latin}
+            {t('idioma.nombre_es')}: {e.nombre.es} · {t('idioma.nombre_en')}: {e.nombre.en} · {t('ficha.latin')}: {latin ?? '-'}
           </p>
           {rev('nombre', 'es')}
           {rev('nombre', 'en')}

@@ -2,9 +2,10 @@
 // nada huérfano) se verifica aquí, no a mano.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { arbol, entradaPorSlug, estructuras, grupos, marcadores, nodos, piezasDeEntrada } from '../src/data/atlas';
+import type { TFunction } from 'i18next';
+import { arbol, entradaPorSlug, estructuras, grupos, marcadores, nodos, piezasDeEntrada, SIN_TERMINO } from '../src/data/atlas';
 import { crearBuscador } from '../src/lib/busqueda';
-import { nombre } from '../src/lib/nombres';
+import { latinVisible, nombre } from '../src/lib/nombres';
 
 const idiomas = ['es', 'en'] as const;
 
@@ -75,7 +76,7 @@ describe('datos del atlas', () => {
     const pag = marcadores.find((m) => m.id === 'm-periaqueductal-grey')!;
     expect(pag.fuente_ubicacion.en).toContain('cerebral aqueduct of the midbrain');
     expect(estructuras['m-periaqueductal-grey']!.fuente_nombre).toContain('TA2');
-    expect(estructuras['m-wernicke-area']!.fuente_nombre).toBe('PENDIENTE');
+    expect(estructuras['m-wernicke-area']!.fuente_nombre).toContain('Terminologia Neuroanatomica');
   });
 
   it('el grupo del vago no repite el nombre de la estructura del vago ni su slug', () => {
@@ -115,6 +116,22 @@ describe('datos del atlas', () => {
     for (const e of Object.values(estructuras)) {
       expect(e.fuente_nombre, e.id).toBeTruthy();
     }
+  });
+
+  it('el latín es un término, PENDIENTE, sin término oficial con su fuente, o vacío solo en grupos de la interfaz', () => {
+    for (const e of Object.values(estructuras)) {
+      if (e.latin === '') expect(e.fuente_nombre, e.id).toBe('interfaz');
+      if (e.latin === SIN_TERMINO) expect(e.fuente_nombre, e.id).toMatch(/sin término oficial/i);
+    }
+    expect(estructuras['paracentral-gyrus-and-sulcus']!.latin).toBe(SIN_TERMINO);
+    expect(estructuras['m-wernicke-area']!.latin).toBe('Gyrus temporalis superior, pars posterior');
+  });
+
+  it('el latín se muestra traducido cuando no hay término y no aparece en grupos de la interfaz', () => {
+    const t = ((k: string) => k) as unknown as TFunction;
+    expect(latinVisible(estructuras['paracentral-gyrus-and-sulcus'], t)).toBe('ficha.latinSinTermino');
+    expect(latinVisible(estructuras['g-organos-referencia'], t)).toBeNull();
+    expect(latinVisible(estructuras['hippocampus'], t)).toBe('Hippocampus');
   });
 
   it('marcadores y grupos de estudio apuntan a cosas que existen', () => {
