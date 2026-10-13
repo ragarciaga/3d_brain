@@ -194,12 +194,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       if (e.key !== 'Escape') return;
       const s = useAtlas.getState();
       const accion = accionEscape({
+        dialogoRevision: s.dialogoRevision,
         menuAbierto: menu,
         ubicando: !!s.ubicando,
         aislado: !!s.aislar,
         enCampo: esCampoDeTexto(e.target as HTMLElement | null),
       });
-      if (accion === 'cerrar-menu') {
+      if (accion === 'cerrar-revision') window.dispatchEvent(new CustomEvent('atlas:cerrar-revision'));
+      else if (accion === 'cerrar-menu') {
         setMenu(false);
         botonMenu.current?.focus();
       } else if (accion === 'cancelar-ubicar') s.setUbicando(null);

@@ -11,6 +11,16 @@ import {
   type Nivel,
   type Vec3,
 } from '../lib/explosion';
+import {
+  ajustarAlRango,
+  cortesApagados,
+  hayCortes,
+  piezasEncefalo,
+  rangoCerebro,
+  type Corte,
+  type Cortes,
+  type Plano,
+} from '../lib/cortes';
 import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
@@ -100,6 +110,8 @@ interface Estado {
   // Modo revisión (F24)
   revisor: string | null;
   respuestas: Record<string, Respuesta>;
+  dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra primero
+  cargaRespuestas: number; // sube cada vez que se cargan las respuestas guardadas; la ficha remonta sus controles
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
   shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)
   hoja: number; // alto (px) de la hoja inferior de la ficha en celular; 0 si no hay o es escritorio
@@ -108,7 +120,14 @@ interface Estado {
   soloEscaneada: boolean; // F25: esconder la geometría trazada
   rutas: RutaTrazada[]; // rutas trazadas del vago (ADR 0009), cargadas de public/modelos/rutas-vago.json
   panelRecorrido: number; // alto (px) del panel del recorrido cuando tapa la parte de abajo del visor (celular)
+  cortes: Cortes; // planos de corte (F8); mm desde el centro de la caja del encéfalo
+  fantasmaCorte: boolean; // la parte cortada se ve como fantasma
+  rellenoApagado: boolean; // el relleno de la sección se apaga una vez por sesión (R8.2, R3.4)
 
+  setCorte(plano: Plano, cambios: Partial<Corte>): void;
+  quitarCortes(): void;
+  setFantasmaCorte(v: boolean): void;
+  apagarRelleno(): void;
   setCentros(c: Record<string, Vec3>, cajas?: Record<string, Caja>): void;
   seleccionar(s: Partial<Seleccion> | null): void;
   deseleccionar(): void;
@@ -127,6 +146,7 @@ interface Estado {
   responder(r: Respuesta): void;
   borrarRespuesta(clave: string): void;
   cargarRespuestas(r: Record<string, Respuesta>): void;
+  setDialogoRevision(v: boolean): void;
   setUbicando(id: string | null): void;
   setShift(v: boolean): void;
   setHoja(px: number): void;
@@ -198,6 +218,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   camara: null,
   revisor: null,
   respuestas: {},
+  dialogoRevision: false,
+  cargaRespuestas: 0,
   ubicando: null,
   shift: false,
   hoja: 0,
@@ -206,6 +228,36 @@ export const useAtlas = create<Estado>((set, get) => ({
   panelRecorrido: 0,
   soloEscaneada: false,
   rutas: [],
+  cortes: cortesApagados(),
+  fantasmaCorte: false,
+  rellenoApagado: false,
+
+  // Antes de cargar el modelo `cajas` es `{}` y todo `mm` se ajusta a 0 (el botón está deshabilitado sin
+  // modelo, R6.6; el enlace aplica `corte=` después de cargar).
+  setCorte: (plano, cambios) => {
+    const s = get();
+    const previo = s.cortes[plano];
+    const siguiente: Corte = { ...previo, ...cambios };
+    if (cambios.activo === true && !previo.activo && cambios.mm === undefined) siguiente.mm = 0;
+    if (!Number.isFinite(siguiente.mm)) siguiente.mm = previo.mm;
+    siguiente.mm = ajustarAlRango(plano, siguiente.mm, rangoCerebro(s.cajas, piezasEncefalo));
+    const cortes: Cortes = { ...s.cortes, [plano]: siguiente };
+    if (!hayCortes(s.cortes) && hayCortes(cortes)) {
+      // Cortar arma el cerebro: en una sola notificación sin explosión, sin separadas y sin inventario.
+      const devueltas = new Set<string>();
+      const armado: Estado = { ...s, cortes, explosion: 0, separadas: {}, devueltas };
+      set({ cortes, explosion: 0, separadas: {}, devueltas, ...recalcularBase(armado) });
+    } else {
+      set({ cortes });
+    }
+  },
+  quitarCortes: () => set({ cortes: cortesApagados() }),
+  setFantasmaCorte: (v) => {
+    if (get().fantasmaCorte !== v) set({ fantasmaCorte: v });
+  },
+  apagarRelleno: () => {
+    if (!get().rellenoApagado) set({ rellenoApagado: true });
+  },
 
   setCentros: (c, cajas = {}) => {
     set({ centros: c, cajas, cargado: true });
@@ -254,6 +306,8 @@ export const useAtlas = create<Estado>((set, get) => ({
     set(recalcularBase(get()));
   },
   setExplosion: (f) => {
+    // Cortar arma el cerebro: sin explosión ni inventario mientras haya cortes (F8, R2.3).
+    if (hayCortes(get().cortes)) return;
     set({ explosion: Math.min(1, Math.max(0, f)), devueltas: new Set() });
     set(recalcularBase(get()));
   },
@@ -263,6 +317,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   separar: (piezas) => {
     const s = get();
+    if (hayCortes(s.cortes)) return;
     // Conjunto armado: las piezas de estudio que se dibujan (misma condición que `visible` en Visor.tsx,
     // donde "aislar con contexto" deja las demás como fantasma pero sí dibujadas).
     const dibujadas = todasLasPiezas.filter(
@@ -305,7 +360,10 @@ export const useAtlas = create<Estado>((set, get) => ({
     delete respuestas[clave];
     set({ respuestas });
   },
-  cargarRespuestas: (r) => set({ respuestas: r }),
+  cargarRespuestas: (r) => set({ respuestas: r, cargaRespuestas: get().cargaRespuestas + 1 }),
+  setDialogoRevision: (v) => {
+    if (get().dialogoRevision !== v) set({ dialogoRevision: v });
+  },
   setUbicando: (id) => set({ ubicando: id }),
   setShift: (v) => {
     if (get().shift !== v) set({ shift: v });

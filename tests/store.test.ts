@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { esFragmentable, piezasBajo, piezasDeEntrada } from '../src/data/atlas';
+import { esFragmentable, GRUPO_VAGO, piezasBajo, piezasDeEntrada } from '../src/data/atlas';
 import { estadoAislar, estadoSeparar } from '../src/lib/alternar';
+import { cortesApagados, piezasEncefalo, rangoCerebro } from '../src/lib/cortes';
+import type { Caja } from '../src/lib/inventario';
 import { desplazamientoSeparar, promedio, type Vec3 } from '../src/lib/explosion';
 import { INICIO_INVENTARIO } from '../src/lib/inventario';
 import { bloqueDe, fueraDeSitio, hayFiltros, ladoDe, objetivo, piezasDeEncuadre, piezasVisibles, useAtlas } from '../src/store/useAtlas';
@@ -22,6 +24,9 @@ describe('estado del atlas', () => {
       separadas: {},
       devueltas: new Set(),
       seleccion: { entrada: null, pieza: null, malla: null },
+      cortes: cortesApagados(),
+      fantasmaCorte: false,
+      rellenoApagado: false,
     });
     useAtlas.getState().setCentros(centros);
   });
@@ -289,6 +294,26 @@ describe('salir de la selección y "Mostrar todo"', () => {
   });
 });
 
+describe('modo revisión: diálogo y carga de respuestas', () => {
+  it('setDialogoRevision publica si hay un diálogo abierto', () => {
+    useAtlas.getState().setDialogoRevision(true);
+    expect(useAtlas.getState().dialogoRevision).toBe(true);
+    useAtlas.getState().setDialogoRevision(false);
+    expect(useAtlas.getState().dialogoRevision).toBe(false);
+  });
+
+  it('cargarRespuestas reemplaza las respuestas y sube el contador en cada carga', () => {
+    const antes = useAtlas.getState().cargaRespuestas;
+    const resp = { estructura: 'hippocampus', campo: 'que_es', idioma: 'es', veredicto: 'correcto', version: '0.1.0', fecha: '2026-10-11T00:00:00Z' } as const;
+    useAtlas.getState().cargarRespuestas({ 'hippocampus|que_es|es': resp });
+    expect(useAtlas.getState().respuestas).toEqual({ 'hippocampus|que_es|es': resp });
+    expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
+    useAtlas.getState().cargarRespuestas({});
+    expect(useAtlas.getState().respuestas).toEqual({});
+    expect(useAtlas.getState().cargaRespuestas).toBe(antes + 2);
+  });
+});
+
 describe('grupos de estudio (F2)', () => {
   it('elegir "Sistema límbico" deja visibles exactamente sus piezas', async () => {
     const { piezasDeGrupo } = await import('../src/data/atlas');
@@ -298,5 +323,249 @@ describe('grupos de estudio (F2)', () => {
     expect(piezasVisibles(useAtlas.getState()).sort()).toEqual([...piezas].sort());
     useAtlas.getState().activarGrupo(null);
     expect(useAtlas.getState().ocultas.size).toBe(0);
+  });
+});
+
+describe('cortes (F8)', () => {
+  const vago = piezasBajo(GRUPO_VAGO)[0]!;
+  const muchos = Object.fromEntries(
+    ['amygdaloid-body-l', 'amygdaloid-body-r', 'superior-frontal-gyrus-l', 'superior-frontal-gyrus-r'].map((p, i) => [
+      p,
+      [(i % 2 ? -1 : 1) * 0.03, 1.62 + i * 0.01, 0.02] as Vec3,
+    ]),
+  );
+  const todosCentros: Record<string, Vec3> = { ...centros, ...muchos };
+  const cajas: Record<string, Caja> = {
+    ...Object.fromEntries(
+      Object.entries(todosCentros).map(([p, c]) => [
+        p,
+        [
+          [c[0] - 0.02, c[1] - 0.03, c[2] - 0.04],
+          [c[0] + 0.02, c[1] + 0.03, c[2] + 0.04],
+        ] as Caja,
+      ]),
+    ),
+    [vago]: [
+      [-0.2, 0.5, -0.3],
+      [0.2, 1.6, 0.3],
+    ],
+  };
+  const rango = rangoCerebro(cajas, piezasEncefalo);
+  const piezasProbadas = [...Object.keys(centros), vago, 'vagus-nerve-x-l', 'vagus-nerve-x-r'];
+
+  const objetivos = () => piezasProbadas.map((p) => objetivo(useAtlas.getState(), p));
+  const cuentaNotificaciones = () => {
+    let n = 0;
+    const baja = useAtlas.subscribe(() => {
+      n += 1;
+    });
+    return { baja, n: () => n };
+  };
+
+  beforeEach(() => {
+    useAtlas.setState({
+      ocultas: new Set(),
+      aislar: null,
+      explosion: 0,
+      nivel: 'piezas',
+      separadas: {},
+      devueltas: new Set(),
+      grupoActivo: null,
+      seleccion: { entrada: null, pieza: null, malla: null },
+      cortes: cortesApagados(),
+      fantasmaCorte: false,
+      rellenoApagado: false,
+    });
+    useAtlas.getState().setCentros(centros, cajas);
+  });
+
+  it('R5.1: el estado inicial tiene los tres planos inactivos, sin fantasma y con relleno', () => {
+    const s = useAtlas.getState();
+    expect(s.cortes).toEqual(cortesApagados());
+    expect(s.fantasmaCorte).toBe(false);
+    expect(s.rellenoApagado).toBe(false);
+    const inicial = useAtlas.getInitialState();
+    expect(inicial.cortes).toEqual(cortesApagados());
+    expect(inicial.fantasmaCorte).toBe(false);
+    expect(inicial.rellenoApagado).toBe(false);
+  });
+
+  it('R1.3: activar un plano inactivo lo deja en 0 mm aunque antes tuviera otro valor', () => {
+    useAtlas.setState({ cortes: { ...cortesApagados(), coronal: { activo: false, mm: 15, invertido: false } } });
+    useAtlas.getState().setCorte('coronal', { activo: true });
+    const { cortes } = useAtlas.getState();
+    expect(cortes.coronal).toEqual({ activo: true, mm: 0, invertido: false });
+    expect(cortes.sagital.activo).toBe(false);
+    expect(cortes.axial.activo).toBe(false);
+  });
+
+  it('activar con mm explícito conserva ese mm', () => {
+    useAtlas.getState().setCorte('axial', { activo: true, mm: 5 });
+    expect(useAtlas.getState().cortes.axial).toEqual({ activo: true, mm: 5, invertido: false });
+  });
+
+  it('R1.6: invertir cambia solo invertido y conserva activo y mm', () => {
+    useAtlas.getState().setCorte('sagital', { activo: true, mm: 7 });
+    useAtlas.getState().setCorte('sagital', { invertido: true });
+    expect(useAtlas.getState().cortes.sagital).toEqual({ activo: true, mm: 7, invertido: true });
+  });
+
+  it('D1: mm se ajusta al rango del encéfalo, el vago no lo agranda y un valor no finito se ignora', () => {
+    expect(rango.max.axial).toBeGreaterThan(0);
+    expect(rangoCerebro(cajas, Object.keys(cajas)).max.axial).toBeGreaterThan(rango.max.axial);
+    const { setCorte } = useAtlas.getState();
+    setCorte('axial', { activo: true });
+    setCorte('axial', { mm: 9999 });
+    expect(useAtlas.getState().cortes.axial.mm).toBe(rango.max.axial);
+    setCorte('axial', { mm: -9999 });
+    expect(useAtlas.getState().cortes.axial.mm).toBe(rango.min.axial);
+    setCorte('axial', { mm: 3.6 });
+    expect(useAtlas.getState().cortes.axial.mm).toBe(4);
+    setCorte('axial', { mm: NaN });
+    expect(useAtlas.getState().cortes.axial.mm).toBe(4);
+  });
+
+  it('R2.2: activar el primer plano arma el cerebro en una sola notificación', () => {
+    useAtlas.getState().setCentros({ ...centros, ...muchos }, cajas);
+    useAtlas.getState().setExplosion(1);
+    useAtlas.getState().separar(['thalamus-r']);
+    useAtlas.getState().devolver(['thalamus-l']);
+    const antes = useAtlas.getState();
+    expect(antes.explosion).toBe(1);
+    expect(antes.inventario).toBe(true);
+    expect(Object.keys(antes.separadas)).toEqual(['thalamus-r']);
+    expect(antes.devueltas.size).toBe(1);
+
+    const cuenta = cuentaNotificaciones();
+    useAtlas.getState().setCorte('coronal', { activo: true });
+    cuenta.baja();
+    expect(cuenta.n()).toBe(1);
+    const st = useAtlas.getState();
+    expect(st.explosion).toBe(0);
+    expect(st.separadas).toEqual({});
+    expect(st.devueltas.size).toBe(0);
+    expect(st.inventario).toBe(false);
+    expect(st.cortes.coronal.activo).toBe(true);
+    for (const p of Object.keys(todosCentros)) expect(objetivo(st, p)).toEqual([0, 0, 0]);
+  });
+
+  it('con un corte activo, setExplosion y separar no notifican ni cambian nada', () => {
+    useAtlas.getState().setCorte('coronal', { activo: true });
+    const antes = useAtlas.getState();
+    const cuenta = cuentaNotificaciones();
+    useAtlas.getState().setExplosion(0.8);
+    useAtlas.getState().separar(['thalamus-l']);
+    cuenta.baja();
+    expect(cuenta.n()).toBe(0);
+    const st = useAtlas.getState();
+    expect(st.explosion).toBe(0);
+    expect(st.separadas).toBe(antes.separadas);
+    expect(st.devueltas).toBe(antes.devueltas);
+    expect(st.base).toBe(antes.base);
+  });
+
+  it('R1.8 y R2.4: quitarCortes apaga los tres planos y rehabilita explosión y Separar', () => {
+    const { setCorte } = useAtlas.getState();
+    setCorte('sagital', { activo: true });
+    setCorte('axial', { activo: true, mm: 3, invertido: true });
+    useAtlas.getState().quitarCortes();
+    expect(useAtlas.getState().cortes).toEqual(cortesApagados());
+    useAtlas.getState().setExplosion(0.5);
+    expect(useAtlas.getState().explosion).toBe(0.5);
+    useAtlas.getState().separar(['thalamus-l']);
+    expect(fueraDeSitio(useAtlas.getState(), 'thalamus-l')).toBe(true);
+  });
+
+  it('R2.4: con dos planos activos, desactivar uno mantiene el bloqueo y desactivar el último lo quita', () => {
+    const { setCorte } = useAtlas.getState();
+    setCorte('coronal', { activo: true });
+    setCorte('axial', { activo: true });
+    setCorte('coronal', { activo: false });
+    useAtlas.getState().setExplosion(0.7);
+    expect(useAtlas.getState().explosion).toBe(0);
+    setCorte('axial', { activo: false });
+    useAtlas.getState().setExplosion(0.7);
+    expect(useAtlas.getState().explosion).toBe(0.7);
+    useAtlas.getState().separar(['thalamus-r']);
+    expect(fueraDeSitio(useAtlas.getState(), 'thalamus-r')).toBe(true);
+  });
+
+  it.each(['quitar', 'desactivar'] as const)('R2.5: objetivo no cambia al activar, mover, invertir, sumar planos y %s', (cierre) => {
+    useAtlas.getState().setCentros(todosCentros, cajas);
+    useAtlas.getState().alternarVisibles(['hippocampus-l'], false);
+    useAtlas.getState().aislarPiezas(['thalamus-l', 'thalamus-r', 'amygdaloid-body-l', 'amygdaloid-body-r'], 'solo');
+    const referencia = objetivos();
+    const baseRef = useAtlas.getState().base;
+    const igual = () => {
+      const st = useAtlas.getState();
+      expect(st.explosion).toBe(0);
+      expect(st.base).toEqual(baseRef);
+      expect(objetivos()).toEqual(referencia);
+    };
+    const { setCorte } = useAtlas.getState();
+    setCorte('coronal', { activo: true });
+    igual();
+    setCorte('coronal', { mm: 10 });
+    igual();
+    setCorte('coronal', { invertido: true });
+    igual();
+    setCorte('axial', { activo: true });
+    igual();
+    if (cierre === 'quitar') useAtlas.getState().quitarCortes();
+    else {
+      setCorte('coronal', { activo: false });
+      setCorte('axial', { activo: false });
+    }
+    igual();
+  });
+
+  it('R2.6: ocultas, aislar y grupoActivo conservan su referencia al activar, mover y quitar cortes', () => {
+    useAtlas.getState().alternarVisibles(['hippocampus-l'], false);
+    useAtlas.getState().aislarPiezas(['thalamus-l', 'thalamus-r'], 'solo');
+    useAtlas.setState({ grupoActivo: 'sistema-limbico' });
+    const { ocultas, aislar } = useAtlas.getState();
+    const visibles = piezasVisibles(useAtlas.getState());
+    const mismo = () => {
+      const st = useAtlas.getState();
+      expect(st.ocultas).toBe(ocultas);
+      expect(st.aislar).toBe(aislar);
+      expect(st.grupoActivo).toBe('sistema-limbico');
+      expect(piezasVisibles(st)).toEqual(visibles);
+    };
+    useAtlas.getState().setCorte('sagital', { activo: true });
+    mismo();
+    useAtlas.getState().setCorte('sagital', { mm: 12 });
+    mismo();
+    useAtlas.getState().quitarCortes();
+    mismo();
+  });
+
+  it('D3: con un plano activo, otro setCorte no reemplaza separadas ni devueltas', () => {
+    useAtlas.getState().setCorte('coronal', { activo: true });
+    const { separadas, devueltas } = useAtlas.getState();
+    useAtlas.getState().setCorte('axial', { activo: true });
+    useAtlas.getState().setCorte('coronal', { mm: 3 });
+    expect(useAtlas.getState().separadas).toBe(separadas);
+    expect(useAtlas.getState().devueltas).toBe(devueltas);
+  });
+
+  it('D2: fantasma y relleno son idempotentes y quitarCortes no los toca', () => {
+    useAtlas.getState().setFantasmaCorte(true);
+    expect(useAtlas.getState().fantasmaCorte).toBe(true);
+    const cuenta = cuentaNotificaciones();
+    useAtlas.getState().setFantasmaCorte(true);
+    expect(cuenta.n()).toBe(0);
+    useAtlas.getState().apagarRelleno();
+    expect(useAtlas.getState().rellenoApagado).toBe(true);
+    expect(cuenta.n()).toBe(1);
+    useAtlas.getState().apagarRelleno();
+    cuenta.baja();
+    expect(cuenta.n()).toBe(1);
+    useAtlas.getState().setCorte('coronal', { activo: true });
+    useAtlas.getState().quitarCortes();
+    expect(useAtlas.getState().fantasmaCorte).toBe(true);
+    expect(useAtlas.getState().rellenoApagado).toBe(true);
+    useAtlas.getState().setFantasmaCorte(false);
+    expect(useAtlas.getState().fantasmaCorte).toBe(false);
   });
 });

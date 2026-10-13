@@ -171,6 +171,9 @@
     "no_es_mi_area": "No es mi área",
     "propuesta": "Cambio propuesto",
     "propuestaAyuda": "Escribe el texto correcto o el cambio que propones, con su fuente si la tienes.",
+    "incompleta": "Incompleto: escribe el cambio propuesto para que se envíe.",
+    "incompletasNoSeEnvian_one": "{{count}} \"Corregir\" sin texto no se envía",
+    "incompletasNoSeEnvian_other": "{{count}} \"Corregir\" sin texto no se envían",
     "nombres": "Nombres",
     "pieza": "¿La malla corresponde a esta estructura y está bien ubicada?",
     "proponerPosicion": "Proponer posición",
@@ -182,7 +185,7 @@
     "noEsRamo": "No es un ramo (tronco del vago)",
     "noSe": "No sé",
     "enviar": "Enviar revisión",
-    "consentimiento": "Al enviar, aceptas que tu nombre aparezca como revisor en las fichas que valides (Ley 1581 de 2012). Se envía una revisión por estructura.",
+    "consentimiento": "Tu nombre aparece como revisor en las fichas que valides solo si lo autorizaste en el registro (Ley 1581 de 2012). Si aún no te registras, hazlo una sola vez con el enlace de abajo. Cada ficha de la lista se envía por separado, con su propio botón.",
     "sinFormulario": "El formulario de revisión aún no está configurado: la revisión se copia o se descarga para enviarla al editor.",
     "abrirFormulario": "Abrir formulario",
     "copiar": "Copiar o descargar",
@@ -196,6 +199,7 @@
     "parte": "Parte {{n}} de {{total}}",
     "largaExplica": "La revisión es larga: se envía en varias partes. Abre cada parte y confírmala en el formulario.",
     "sinPendientes": "No te quedan fichas por revisar.",
+    "nombrePendiente": "nombre pendiente",
     "trazadoTitulo": "Recorrido trazado: {{nombre}}",
     "trazadoAyuda": "Este nervio no está en el modelo escaneado: se trazó sobre estructuras del modelo (arterias, bronquios, esófago) siguiendo las fuentes de la ficha. Míralo en 3D, punteado, y di si el recorrido es correcto o qué cambiarías.",
     "trazadoEstado_en_revision": "Pendiente de revisión docente: el recorrido puede cambiar.",
@@ -213,6 +217,7 @@
     "guia": {
       "intro": "Gracias por revisar Maysa Brain. Todo lo que ves está como lo verían los estudiantes; tu parte es decir qué está bien y qué cambiarías. Nada se publica como verificado sin el visto bueno de un docente.",
       "responder": "En cada ficha, debajo de cada campo, hay tres botones: Correcto, Corregir (escribe el cambio, con su fuente si la tienes) y No es mi área. Puedes dejar un comentario. Para quitar una respuesta, pulsa otra vez el mismo botón. Todo se guarda solo en este navegador.",
+      "idiomas": "Los campos se revisan en el idioma que estás viendo: para revisar la versión en inglés, pulsa EN en el encabezado (y ES para volver al español); sigues en modo revisión y en la misma ficha.",
       "dudas": "Algunas fichas traen una \"Duda abierta para ti\": es una pregunta concreta que dejó la redacción. Responderla es lo que más ayuda.",
       "nombres": "Si un nombre no tiene término oficial en español o en latín, la ficha muestra la propuesta y su fuente: confírmala o corrígela.",
       "marcadores": "Los marcadores son estructuras sin malla 3D. Si la posición es aproximada o falta, usa \"Proponer posición\" y toca el punto en el modelo.",
@@ -312,6 +317,17 @@
     "siguiente": "Siguiente",
     "terminar": "Terminar",
     "salir": "Salir del recorrido"
+  },
+  "cortes": {
+    "etiqueta": {
+      "izquierda": "{{mm}} mm a la izquierda",
+      "derecha": "{{mm}} mm a la derecha",
+      "anterior": "{{mm}} mm anterior",
+      "posterior": "{{mm}} mm posterior",
+      "superior": "{{mm}} mm superior",
+      "inferior": "{{mm}} mm inferior",
+      "centro": "en el centro"
+    }
   },
   "origen": {
     "leyenda": "Origen de la geometría",

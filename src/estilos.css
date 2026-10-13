@@ -1338,6 +1338,17 @@ a {
   margin-top: 0.4rem;
 }
 
+.revision-control label {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.revision-control label + textarea {
+  margin-top: 0.2rem;
+}
+
 .chip-correcto.activo {
   background: var(--ok);
   border-color: var(--ok);
@@ -1621,7 +1632,29 @@ body:has(.pagina-texto) {
   margin: 0.8rem 0 0.3rem;
 }
 
-.dialogo-revision {
-  max-height: 70vh;
-  overflow: auto;
+.dialogo-titulo {
+  font-size: 0.95rem;
+  margin: 0 0 0.4rem;
+}
+
+/* Cerrar queda a la vista al fondo del diálogo aunque el contenido sea largo. */
+.dialogo-pie {
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+  padding-top: 0.5rem;
+}
+
+/* En celular el diálogo es una hoja inferior fija, sobre el recorrido (80) y bajo la medición (85). */
+@media (max-width: 900px) {
+  .dialogo-revision {
+    position: fixed;
+    z-index: 82;
+    inset-inline: 0.5rem;
+    top: auto;
+    bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: calc(100dvh - 1rem - env(safe-area-inset-bottom, 0px));
+    overflow: auto;
+  }
 }
