@@ -139,15 +139,17 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
       const d = desplazamiento.current;
       const p: [number, number, number] = [punto.x - d[0], punto.y - d[1], punto.z - d[2]];
       const est = estructuras[s.ubicando];
-      s.responder({
-        estructura: s.ubicando,
-        campo: 'posicion',
-        veredicto: 'corregir',
-        posicion: p.map((v) => Number(v.toFixed(5))) as [number, number, number],
-        version: est?.ficha?.version ?? 'sin-ficha',
-        fecha: new Date().toISOString(),
-      });
-      s.setUbicando(null);
+      s.proponerPosicion(
+        {
+          estructura: s.ubicando,
+          campo: 'posicion',
+          veredicto: 'corregir',
+          posicion: p.map((v) => Number(v.toFixed(5))) as [number, number, number],
+          version: est?.ficha?.version ?? 'sin-ficha',
+          fecha: new Date().toISOString(),
+        },
+        id,
+      );
       return;
     }
     const nombreMalla = (e.object.userData.nombreMalla as string | undefined) ?? null;

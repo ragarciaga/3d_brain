@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   cambiosDeTexto,
+  cargaRevision,
   claveRespuesta,
   desactualizadas,
   desdeClave,
   ESPERA_GUARDADO_MS,
   MAX_URL,
   pendientesComoCorrectas,
+  propuestaDePosicion,
   respuestaCompleta,
   separarIncompletas,
   urlFormulario,
@@ -53,6 +55,54 @@ describe('revisión docente (F24)', () => {
 
   it('marca respuestas sobre una versión vieja del contenido', () => {
     expect(desactualizadas([r('a', '0.1.0'), r('b', '0.2.0')], () => '0.2.0').map((x) => x.campo)).toEqual(['a']);
+  });
+});
+
+describe('posición propuesta (F24)', () => {
+  const MARCADOR = 'm-periaqueductal-grey';
+  const pos = (comentario?: string): Respuesta => ({
+    estructura: MARCADOR,
+    campo: 'posicion',
+    veredicto: 'corregir',
+    posicion: [0.1, 0.2, 0.3],
+    comentario,
+    version: 'sin-ficha',
+    fecha: '2026-10-11T00:00:00Z',
+  });
+  const mapa = (...rs: Respuesta[]) => Object.fromEntries(rs.map((x) => [claveRespuesta(x), x]));
+
+  it('sin respuesta para la estructura no hay propuesta', () => {
+    expect(propuestaDePosicion({}, {}, MARCADOR)).toBeNull();
+  });
+
+  it('con respuesta y pieza registrada devuelve ambas', () => {
+    const x = pos();
+    expect(propuestaDePosicion(mapa(x), { [MARCADOR]: 'stomach' }, MARCADOR)).toEqual({ respuesta: x, pieza: 'stomach' });
+  });
+
+  it('sin pieza registrada (tras recargar) la pieza es null', () => {
+    const x = pos();
+    expect(propuestaDePosicion(mapa(x), {}, MARCADOR)).toEqual({ respuesta: x, pieza: null });
+  });
+
+  it('una respuesta de otro campo de la misma estructura no cuenta', () => {
+    const otra: Respuesta = { ...r('nombre'), estructura: MARCADOR };
+    expect(propuestaDePosicion(mapa(otra), {}, MARCADOR)).toBeNull();
+  });
+
+  it('una respuesta de posición sin coordenadas no cuenta', () => {
+    const sinCoordenadas: Respuesta = { ...pos(), posicion: undefined };
+    expect(propuestaDePosicion(mapa(sinCoordenadas), { [MARCADOR]: 'stomach' }, MARCADOR)).toBeNull();
+  });
+
+  it('una respuesta de posición de otra estructura no cuenta', () => {
+    expect(propuestaDePosicion(mapa({ ...pos(), estructura: 'otro-marcador' }), {}, MARCADOR)).toBeNull();
+  });
+
+  it('el comentario y la posición viajan en la carga que se envía', () => {
+    const carga = JSON.parse(cargaRevision('PROF01', MARCADOR, [pos('comentario de prueba')]));
+    expect(carga.respuestas[0].comentario).toBe('comentario de prueba');
+    expect(carga.respuestas[0].posicion).toEqual([0.1, 0.2, 0.3]);
   });
 });
 

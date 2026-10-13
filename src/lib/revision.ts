@@ -18,6 +18,20 @@ export interface Respuesta {
 export const claveRespuesta = (r: Pick<Respuesta, 'estructura' | 'campo' | 'idioma'>) =>
   `${r.estructura}|${r.campo}|${r.idioma ?? ''}`;
 
+/**
+ * Posición que el revisor ya propuso para un marcador, o null si no hay.
+ * `piezas` dice sobre qué pieza cayó el toque (solo en esta sesión); si no se conoce, `pieza` es null.
+ */
+export function propuestaDePosicion(
+  respuestas: Record<string, Respuesta>,
+  piezas: Record<string, string>,
+  estructura: string,
+): { respuesta: Respuesta; pieza: string | null } | null {
+  const respuesta = respuestas[claveRespuesta({ estructura, campo: 'posicion' })];
+  if (!respuesta || !respuesta.posicion) return null;
+  return { respuesta, pieza: piezas[estructura] ?? null };
+}
+
 /** Inversa de `claveRespuesta`. Lanza si la clave no tiene tres partes o el idioma no es '', 'es' ni 'en'. */
 export function desdeClave(clave: string): Pick<Respuesta, 'estructura' | 'campo' | 'idioma'> {
   const partes = clave.split('|');

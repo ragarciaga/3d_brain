@@ -326,6 +326,57 @@ describe('grupos de estudio (F2)', () => {
   });
 });
 
+describe('proponer posición (F24)', () => {
+  const M = 'm-periaqueductal-grey';
+  const posicion = {
+    estructura: M,
+    campo: 'posicion',
+    veredicto: 'corregir' as const,
+    posicion: [0.1, 0.2, 0.3] as [number, number, number],
+    version: 'sin-ficha',
+    fecha: '2026-10-11T00:00:00Z',
+  };
+  const otra = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es' as const, veredicto: 'correcto' as const, version: '0.1.0', fecha: '2026-10-11T00:00:00Z' };
+
+  beforeEach(() => {
+    useAtlas.setState({ respuestas: {}, piezaPropuesta: {}, ubicando: M });
+  });
+
+  it('guarda la respuesta, recuerda la pieza tocada y deja de esperar un toque', () => {
+    useAtlas.getState().proponerPosicion(posicion, 'stomach');
+    const s = useAtlas.getState();
+    expect(s.respuestas[`${M}|posicion|`]).toEqual(posicion);
+    expect(s.piezaPropuesta[M]).toBe('stomach');
+    expect(s.ubicando).toBeNull();
+  });
+
+  it('deshacer borra la respuesta y la pieza, vuelve a esperar un toque y respeta las demás respuestas', () => {
+    useAtlas.setState({ respuestas: { 'hippocampus|ubicacion|es': otra } });
+    useAtlas.getState().proponerPosicion(posicion, 'stomach');
+    useAtlas.getState().deshacerPosicion(M);
+    const s = useAtlas.getState();
+    expect(Object.keys(s.respuestas)).toEqual(['hippocampus|ubicacion|es']);
+    expect(s.piezaPropuesta[M]).toBeUndefined();
+    expect(s.ubicando).toBe(M);
+  });
+
+  it('deshacer sin propuesta previa no falla ni cambia las respuestas', () => {
+    useAtlas.setState({ respuestas: { 'hippocampus|ubicacion|es': otra }, ubicando: null });
+    expect(() => useAtlas.getState().deshacerPosicion(M)).not.toThrow();
+    const s = useAtlas.getState();
+    expect(Object.keys(s.respuestas)).toEqual(['hippocampus|ubicacion|es']);
+    expect(s.ubicando).toBe(M);
+  });
+
+  it('cargar respuestas olvida las piezas tocadas', () => {
+    useAtlas.getState().proponerPosicion(posicion, 'stomach');
+    const antes = useAtlas.getState().cargaRespuestas;
+    useAtlas.getState().cargarRespuestas({});
+    expect(useAtlas.getState().piezaPropuesta).toEqual({});
+    expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
+  });
+});
+
 describe('cortes (F8)', () => {
   const vago = piezasBajo(GRUPO_VAGO)[0]!;
   const muchos = Object.fromEntries(
