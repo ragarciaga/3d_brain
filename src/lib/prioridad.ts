@@ -33,6 +33,8 @@ type RutasDeFicha = Pick<RutaTrazada, 'lado' | 'entrada'>[];
  * No entran la posición de un marcador ni los trazos del vago, que no son controles de tres botones.
  * OJO: si cambia algún `rev(...)` de Ficha.tsx (un campo nuevo, uno quitado, otro idioma), el mismo cambio
  * va aquí; si no, el avance y la lista "Qué revisar" cuentan campos que la ficha no muestra.
+ * Esta misma lista decide qué campos responde "Marcar todo como correcto" (Ficha.tsx): si falta un campo,
+ * el docente cree haber respondido toda la ficha.
  */
 export function camposDeFicha(id: string, idioma: Idioma, rutas: RutasDeFicha = []): string[] {
   const e = estructuras[id];

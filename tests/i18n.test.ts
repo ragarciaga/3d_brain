@@ -24,6 +24,12 @@ describe('textos de los botones de revisión', () => {
       }
     });
 
+    it(`la guía (${idioma}) nombra "Marcar todo como correcto" tal como aparece`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.marcarTodo).toBeTruthy();
+      expect(revision.guia.responder).toContain(revision.marcarTodo);
+    });
+
     it(`el consentimiento del envío (${idioma}) remite al registro y no usa los textos viejos`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       const { consentimiento } = revision;
