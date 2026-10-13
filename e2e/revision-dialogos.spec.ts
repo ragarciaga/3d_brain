@@ -205,6 +205,17 @@ test('"Corregir" sin texto queda incompleto y no se envía', async ({ page }) =>
   await expect(control.getByTestId('revision-incompleta')).toContainText('Incompleto');
   await expect(control.getByLabel('Cambio propuesto')).toHaveAttribute('aria-invalid', 'true');
 
+  // Sin texto no es una respuesta: "Qué revisar" no la cuenta en el avance de la ficha.
+  const avanceHipocampo = async () => {
+    await barra(page).getByRole('button', { name: /Qué revisar/ }).click();
+    // Las secciones cerradas (details) esconden sus botones al árbol de accesibilidad: se busca por CSS.
+    const fila = queRevisar(page).locator('li').filter({ has: page.locator('button.enlace', { hasText: /^Hipocampo$/ }) });
+    const texto = await fila.getByTestId('avance-ficha').textContent();
+    await queRevisar(page).getByRole('button', { name: 'Cerrar' }).click();
+    return texto;
+  };
+  expect(await avanceHipocampo()).toMatch(/\b0 de \d+ campos/);
+
   await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
   const fila = enviarDialogo(page).getByRole('listitem').filter({ hasText: 'Hipocampo' });
   await expect(fila.getByTestId('incompletas')).toHaveText('1 "Corregir" sin texto no se envía');
@@ -214,6 +225,8 @@ test('"Corregir" sin texto queda incompleto y no se envía', async ({ page }) =>
   await control.getByLabel('Cambio propuesto').fill('x');
   await expect(control.getByTestId('revision-incompleta')).toHaveCount(0);
   await expect(control.getByLabel('Cambio propuesto')).not.toHaveAttribute('aria-invalid');
+  // Con texto sí cuenta.
+  expect(await avanceHipocampo()).toMatch(/\b1 de \d+ campos/);
   await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
   await expect(enviarDialogo(page).getByTestId('incompletas')).toHaveCount(0);
   await expect(enviarDialogo(page).getByRole('listitem').filter({ hasText: 'Hipocampo' }).getByRole('button', { name: 'Abrir formulario' })).toBeEnabled();

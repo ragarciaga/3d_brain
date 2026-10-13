@@ -6,8 +6,16 @@ import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { nombre, nombrePendiente } from '../lib/nombres';
-import { ordenDeRevision } from '../lib/prioridad';
-import { cargaRevision, desactualizadas, formularioConfigurado, separarIncompletas, urlsFormulario, type Respuesta } from '../lib/revision';
+import { avanceDeFicha, avanceGlobal, ordenDeRevision } from '../lib/prioridad';
+import {
+  cargaRevision,
+  desactualizadas,
+  formularioConfigurado,
+  respuestaCompleta,
+  separarIncompletas,
+  urlsFormulario,
+  type Respuesta,
+} from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
 
 const claveIdb = (codigo: string) => `revision:${codigo}`;
@@ -70,6 +78,12 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
     return m;
   }, [respuestas]);
 
+  // Un "Corregir" sin texto no es una respuesta: no suma al avance ni saca la ficha de la lista.
+  const respondidas = useMemo(
+    () => new Set(Object.entries(respuestas).filter(([, r]) => respuestaCompleta(r)).map(([k]) => k)),
+    [respuestas],
+  );
+
   // La primera vez que un docente entra con su código, la guía se abre sola.
   const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
   const titulo = useRef<HTMLHeadingElement>(null);
@@ -110,7 +124,8 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
   };
   const lista = Object.values(respuestas);
   const viejas = desactualizadas(lista, versionActual);
-  const secciones = ordenDeRevision(new Set(porEstructura.keys()), rutas.map((r) => r.entrada));
+  const secciones = ordenDeRevision(respondidas, idioma, rutas);
+  const global = avanceGlobal(respondidas, idioma, rutas);
   const totalPendientes = secciones.reduce((n, x) => n + x.ids.length, 0);
   const alternar = (v: Vista) => abrir(vista === v ? null : v);
   const configurado = formularioConfigurado(configRevision);
@@ -143,7 +158,8 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
     <div className="panel-revision" role="region" aria-label={t('revision.titulo')} data-testid="panel-revision">
       <span>
         <strong>{t('revision.titulo')}</strong> · {t('revision.codigo', { codigo: revisor })} ·{' '}
-        <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span>
+        <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span> ·{' '}
+        <span data-testid="avance-global">{t('revision.avanceGlobal', { completas: global.completas, total: global.total })}</span>
       </span>
       <button type="button" ref={(el) => { botones.current.que = el; }} aria-expanded={vista === 'que'} onClick={() => alternar('que')}>
         {t('revision.queRevisar', { count: totalPendientes })}
@@ -187,6 +203,10 @@ export default function PanelRevision({ idioma, alElegir }: { idioma: Idioma; al
                         {nombre(estructuras[id], idioma) || id}
                       </button>
                       {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
+                      <span className="recurso-nota" data-testid="avance-ficha">
+                        {' '}
+                        · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
+                      </span>
                     </li>
                   ))}
                 </ul>

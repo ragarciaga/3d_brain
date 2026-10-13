@@ -897,7 +897,7 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
   expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().soloEscaneada)).toBe(true);
 });
 
-test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y la duda está en la ficha (F24)', async ({ page }) => {
+test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y la duda está en la ficha, con avance por ficha (F24)', async ({ page }) => {
   await abrir(page, '/es/revision?r=GUIA01');
   await modeloCargado(page);
   // La primera vez, la guía se abre sola, con el enlace al registro.
@@ -910,6 +910,11 @@ test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y 
   await page.getByRole('button', { name: /Qué revisar/ }).click();
   const lista = page.getByTestId('que-revisar');
   await expect(lista.locator('details').first()).toHaveAttribute('data-seccion', 'dudas');
+  // El avance global de la barra: ninguna ficha completa todavía.
+  const avanceGlobal = page.getByTestId('avance-global');
+  await expect(avanceGlobal).toHaveText(/^0 de \d+ fichas completas$/);
+  const totalFichas = Number(/^0 de (\d+) /.exec((await avanceGlobal.textContent()) ?? '')![1]);
+  expect(totalFichas).toBeGreaterThan(30);
   await lista.getByRole('button', { name: 'Lóbulo grácil' }).click();
   await expect(page.locator('#ficha-titulo')).toHaveText('Lóbulo grácil');
   // La duda está en la ficha, con su propio campo para responder.
@@ -917,7 +922,24 @@ test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y 
   await expect(duda).toContainText('VIIB');
   await duda.locator('[data-campo="duda.0"]').getByRole('button', { name: 'Correcto' }).click();
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
-  // Ya respondida, sale de "Qué revisar".
+  // Con una sola respuesta la ficha sigue en "Qué revisar", primera de su sección, con su avance.
+  const controles = page.getByTestId('ficha').locator('.revision-control');
+  const campos = await controles.count();
+  expect(campos).toBeGreaterThan(5);
+  await page.getByRole('button', { name: /Qué revisar/ }).click();
+  const dudasLista = page.getByTestId('que-revisar').locator('details[data-seccion="dudas"]');
+  const primera = dudasLista.locator('li').first();
+  await expect(primera).toContainText('Lóbulo grácil');
+  await expect(primera).toContainText(`1 de ${campos} campos`);
+  await expect(avanceGlobal).toHaveText(`0 de ${totalFichas} fichas completas`);
+  await page.getByTestId('que-revisar').getByRole('button', { name: 'Cerrar' }).click();
+  // Al responder todos sus campos, la ficha sale de la lista y la barra la cuenta como completa.
+  for (const control of await controles.all()) {
+    const correcto = control.getByRole('button', { name: 'Correcto' });
+    if ((await correcto.getAttribute('aria-pressed')) !== 'true') await correcto.click();
+  }
+  await expect(page.getByTestId('total-respuestas')).toHaveText(`${campos} respuestas`);
+  await expect(avanceGlobal).toHaveText(`1 de ${totalFichas} fichas completas`);
   await page.getByRole('button', { name: /Qué revisar/ }).click();
   await expect(page.getByTestId('que-revisar').getByRole('button', { name: 'Lóbulo grácil' })).toHaveCount(0);
   // Al volver, la guía no se abre otra vez.
