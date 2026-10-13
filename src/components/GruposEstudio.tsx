@@ -34,6 +34,12 @@ export default function GruposEstudio({ idioma, alElegir }: { idioma: Idioma; al
           </button>
         ))}
       </div>
+      {/* La descripción no solo en el título (al pasar el mouse): en tableta y celular no se vería. */}
+      {activo && grupos.find((g) => g.id === activo) && (
+        <p className="grupo-descripcion" data-testid="grupo-descripcion">
+          {grupos.find((g) => g.id === activo)!.descripcion[idioma]}
+        </p>
+      )}
     </section>
   );
 }

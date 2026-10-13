@@ -9,6 +9,10 @@ Medir la carga en los equipos de referencia (#6) con `?medir=1` y decidir con es
 adelanta la descarga del modelo o se parten las fichas. En paralelo, arrancar la revisión docente.
 
 ## Current state
+- Revisión docente dentro de la web: guía ("Cómo revisar", se abre sola la primera vez), "Qué revisar"
+  con prioridad (24 dudas abiertas en 31 fichas, vago, grupos del lanzamiento, resto), dudas dentro de
+  cada ficha con su campo, sinónimos visibles y revisables, descripción de los grupos sin pasar el
+  mouse y 5 marcadores del encéfalo con posición aproximada para corregir.
 - Vago (ADR 0009): no se fragmenta; su ficha ofrece "Recorrer el vago" (4 paradas, revelado progresivo,
   textos tomados de fichas con fuente). F25 lista en la app (punteado, aviso, leyenda, filtro), sin
   geometría trazada todavía. Pipeline listo: `auditar-vago.py` (necesita Blender y GitHub en el

@@ -25,9 +25,9 @@ Atajos dentro del sitio: Ctrl+K abre la búsqueda; Escape cierra paneles y sale 
 |---|---|
 | Formulario de registro del docente (una vez) | https://docs.google.com/forms/d/e/1FAIpQLSdy6h0gI-nrX6s_ZMGq9PSsSTYxhSd0e7ZVDx4p0_QvgHrJ2A/viewform |
 | Formulario de revisión (lo abre la app ya lleno) | https://docs.google.com/forms/d/e/1FAIpQLSfT2a766E2OwUtl65MyfFBRgZji_wEW5-EyUA4NGas_xpO5SQ/viewform |
-| Guía para mandarle a cada docente | [docs/guia-docentes.md](guia-docentes.md) |
+| Mensaje para mandarle a cada docente (la guía está dentro de la web) | [docs/guia-docentes.md](guia-docentes.md) |
 | Cómo funciona la revisión, crear códigos e importar respuestas | [docs/revision-docente.md](revision-docente.md) |
-| Dudas conocidas sobre las fichas | [docs/fichas-dudas.md](fichas-dudas.md) |
+| Dudas conocidas sobre las fichas (registro; los docentes las ven en cada ficha) | [docs/fichas-dudas.md](fichas-dudas.md) |
 | Cómo se trazó cada ruta del vago (registro; el docente revisa en la app) | [pipeline/rutas-vago.yaml](../pipeline/rutas-vago.yaml) |
 
 Las hojas de respuestas de los dos formularios están en el Drive de Maysa Digital (pestaña

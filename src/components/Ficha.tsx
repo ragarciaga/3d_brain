@@ -1,7 +1,7 @@
 // Ficha de pieza (F4), recursos (F9) y controles de revisión por campo (F24).
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { esFragmentable, estructuras, origenDe, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
+import { dudas, esFragmentable, estructuras, origenDe, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
 import { campoTrazado } from '../lib/rutas';
@@ -14,7 +14,19 @@ import { CONSULTA_MOVIL } from './useMovil';
 
 const otro = (i: Idioma): Idioma => (i === 'es' ? 'en' : 'es');
 
-function ControlRevision({ entrada, campo, idioma, version }: { entrada: string; campo: string; idioma?: Idioma; version: string }) {
+function ControlRevision({
+  entrada,
+  campo,
+  idioma,
+  version,
+  etiqueta,
+}: {
+  entrada: string;
+  campo: string;
+  idioma?: Idioma;
+  version: string;
+  etiqueta?: string; // qué se juzga, cuando hay varios controles seguidos (nombres)
+}) {
   const { t } = useTranslation();
   const clave = claveRespuesta({ estructura: entrada, campo, idioma });
   const r = useAtlas((s) => s.respuestas[clave]);
@@ -34,6 +46,7 @@ function ControlRevision({ entrada, campo, idioma, version }: { entrada: string;
     });
   return (
     <div className="revision-control" data-campo={`${campo}${idioma ? `.${idioma}` : ''}`}>
+      {etiqueta && <p className="revision-etiqueta">{etiqueta}</p>}
       <div className="revision-botones" role="group" aria-label={t('revision.veredicto')}>
         {(['correcto', 'corregir', 'no_es_mi_area'] as Veredicto[]).map((v) => (
           <button
@@ -357,7 +370,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   }
   const f = e.ficha;
   const version = f?.version ?? 'sin-ficha';
-  const rev = (campo: string, idiomaCampo?: Idioma) =>
+  const rev = (campo: string, idiomaCampo?: Idioma, etiqueta?: string) =>
     revisor ? (
       <ControlRevision
         key={claveRespuesta({ estructura: id, campo, idioma: idiomaCampo })}
@@ -365,8 +378,10 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         campo={campo}
         idioma={idiomaCampo}
         version={version}
+        etiqueta={etiqueta}
       />
     ) : null;
+  const sinonimos = (['es', 'en'] as const).filter((i) => e.sinonimos[i].length);
   const padre = padreDeEntrada(id);
   const marcador = marcadorPorId(id);
   const rutasDeLaEntrada = rutas.filter((r) => r.entrada === id);
@@ -398,6 +413,11 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
               <span lang={latin === e.latin ? 'la' : undefined}>{latin}</span>
             </p>
           )}
+          {e.sinonimos[idioma].length > 0 && (
+            <p className="ficha-sinonimos" data-testid="sinonimos">
+              {t('ficha.tambien', { nombres: e.sinonimos[idioma].join(', ') })}
+            </p>
+          )}
         </div>
         <button type="button" className="cerrar" aria-label={t('ficha.cerrar')} onClick={alCerrar}>
           ×
@@ -421,15 +441,24 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </span>
       </div>
       <GruposDeLaEntrada id={id} idioma={idioma} />
+      {revisor && dudas[id] && (
+        <section className="ficha-campo ficha-dudas" data-testid="dudas">
+          <h3>{t('revision.dudasTitulo')}</h3>
+          {dudas[id].map((d, i) => (
+            <div key={d.id} className="ficha-duda">
+              <p>{d.texto[idioma]}</p>
+              {rev(`duda.${i}`)}
+            </div>
+          ))}
+        </section>
+      )}
       {revisor && (
         <div className="ficha-campo">
           <h3>{t('revision.nombres')}</h3>
-          <p>
-            {t('idioma.nombre_es')}: {e.nombre.es} · {t('idioma.nombre_en')}: {e.nombre.en} · {t('ficha.latin')}: {latin ?? '-'}
-          </p>
-          {rev('nombre', 'es')}
-          {rev('nombre', 'en')}
-          {rev('latin')}
+          {rev('nombre', 'es', `${t('idioma.nombre_es')}: ${e.nombre.es}`)}
+          {rev('nombre', 'en', `${t('idioma.nombre_en')}: ${e.nombre.en}`)}
+          {rev('latin', undefined, `${t('ficha.latin')}: ${latin ?? '-'}`)}
+          {sinonimos.map((i) => rev('sinonimos', i, `${t(`ficha.sinonimos_${i}`)}: ${e.sinonimos[i].join(', ')}`))}
           {piezas.length > 0 && (
             <>
               <h3>{t('revision.pieza')}</h3>

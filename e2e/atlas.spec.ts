@@ -74,6 +74,13 @@ async function abrirCajon(page: Page) {
   await expect(page.locator('#panel-izq')).toBeVisible();
 }
 
+/** Entra en modo revisión y cierra la guía, que se abre sola la primera vez con cada código. */
+async function entrarRevision(page: Page, codigo = 'PRUEBA01') {
+  await abrir(page, `/es/revision?r=${codigo}`);
+  await modeloCargado(page);
+  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
+}
+
 async function modeloCargado(page: Page) {
   await expect(page.getByTestId('piezas')).toHaveText(/287 (piezas|pieces)/, { timeout: 150_000 });
 }
@@ -426,8 +433,7 @@ test('a 70 % la cámara se aleja sin girar, a 100 % mira el inventario de frente
 });
 
 test('modo revisión: el docente marca campos y el contador sube', async ({ page }) => {
-  await abrir(page, '/es/revision?r=PRUEBA01');
-  await modeloCargado(page);
+  await entrarRevision(page);
   await expect(page.getByTestId('panel-revision')).toContainText('PRUEBA01');
   await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
@@ -710,8 +716,7 @@ test.describe('celular (390 x 844)', () => {
 });
 
 test('modo revisión: "Proponer posición" acepta un toque sobre un órgano de referencia', async ({ page }) => {
-  await abrir(page, '/es/revision?r=PRUEBA01');
-  await modeloCargado(page);
+  await entrarRevision(page);
   await (await campoBusqueda(page)).fill('sustancia gris periacueductal');
   await page.keyboard.press('Enter');
   await expect(page.locator('#ficha-titulo')).toHaveText('Sustancia gris periacueductal');
@@ -879,8 +884,7 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
     await expect(page.locator(`[data-campo="trazado_${lado}"]`)).toHaveCount(0);
   }
   // En modo revisión: un campo por lado para responder.
-  await abrir(page, '/es/revision?r=PRUEBA01');
-  await modeloCargado(page);
+  await entrarRevision(page);
   await abrir(page, '/es/nervio-laringeo-recurrente');
   for (const lado of ['derecho', 'izquierdo']) {
     await expect(page.locator(`[data-campo="trazado_${lado}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
@@ -890,6 +894,35 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
   // El filtro "Solo geometría escaneada" las esconde.
   await page.getByTestId('leyenda-origen').getByRole('checkbox').check();
   expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().soloEscaneada)).toBe(true);
+});
+
+test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y la duda está en la ficha (F24)', async ({ page }) => {
+  await abrir(page, '/es/revision?r=GUIA01');
+  await modeloCargado(page);
+  // La primera vez, la guía se abre sola, con el enlace al registro.
+  const guia = page.getByTestId('como-revisar');
+  await expect(guia).toBeVisible();
+  await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', /docs\.google\.com\/forms/);
+  await guia.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(guia).toHaveCount(0);
+  // "Qué revisar": primero las dudas abiertas.
+  await page.getByRole('button', { name: /Qué revisar/ }).click();
+  const lista = page.getByTestId('que-revisar');
+  await expect(lista.locator('details').first()).toHaveAttribute('data-seccion', 'dudas');
+  await lista.getByRole('button', { name: 'Lóbulo grácil' }).click();
+  await expect(page.locator('#ficha-titulo')).toHaveText('Lóbulo grácil');
+  // La duda está en la ficha, con su propio campo para responder.
+  const duda = page.getByTestId('dudas');
+  await expect(duda).toContainText('VIIB');
+  await duda.locator('[data-campo="duda.0"]').getByRole('button', { name: 'Correcto' }).click();
+  await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+  // Ya respondida, sale de "Qué revisar".
+  await page.getByRole('button', { name: /Qué revisar/ }).click();
+  await expect(page.getByTestId('que-revisar').getByRole('button', { name: 'Lóbulo grácil' })).toHaveCount(0);
+  // Al volver, la guía no se abre otra vez.
+  await abrir(page, '/es/revision?r=GUIA01');
+  await modeloCargado(page);
+  await expect(page.getByTestId('como-revisar')).toHaveCount(0);
 });
 
 test('Separar desde la ficha reencuadra: las dos mitades del tálamo quedan dentro del lienzo (#19)', async ({ page }) => {

@@ -1,0 +1,285 @@
+{
+ "version": "0.1.0",
+ "fuente": "docs/fichas-dudas.md (2026-10-12): dudas que dejó la redacción de las fichas, con las fuentes que se citan en cada una. Se responden en modo revisión (F24), campo duda.<id>.",
+ "dudas": {
+  "gracile-lobule": [
+   {
+    "id": "lobulo-gracil",
+    "texto": {
+     "es": "¿El lóbulo grácil equivale al lóbulo VIIB? La ficha lo toma así (Fichtl 2017); algunos atlas lo agrupan con el lóbulo semilunar inferior (Akeret 2021) y Jung 2012 y Diano 2016 no coinciden sobre el VIIB.",
+     "en": "Does the gracile lobule correspond to lobule VIIB? The entry assumes so (Fichtl 2017); some atlases group it with the inferior semilunar lobule (Akeret 2021), and Jung 2012 and Diano 2016 disagree on VIIB."
+    }
+   }
+  ],
+  "posterior-leaflet-of-left-atrioventricular-valve": [
+   {
+    "id": "valva-mitral",
+    "texto": {
+     "es": "El modelo cuelga esta valva de la tricúspide; la pusimos en el complejo valvular del corazón porque no trae grupo de la mitral. ¿Es la valva posterior de la mitral?",
+     "en": "The model files this leaflet under the tricuspid valve; we placed it in the valvular complex because the model has no mitral group. Is it the posterior leaflet of the mitral valve?"
+    }
+   }
+  ],
+  "insula-subcentral-gyrus-and-ant-and-post-sulci": [
+   {
+    "id": "subcentral",
+    "texto": {
+     "es": "Z-Anatomy lo pone bajo la ínsula; Destrieux 2010 lo describe en la cara lateral (opérculo central), rodeando el extremo inferior del surco central. La ficha sigue a Destrieux. ¿Es correcto?",
+     "en": "Z-Anatomy files it under the insula; Destrieux 2010 places it on the lateral surface (central operculum), around the lower end of the central sulcus. The entry follows Destrieux. Is that right?"
+    }
+   }
+  ],
+  "olfactory-sulcus": [
+   {
+    "id": "surco-olfatorio",
+    "texto": {
+     "es": "Destrieux iguala el surco olfatorio al surco orbitario medial; Hastings 2024 los separa. Mirando la malla, ¿a cuál corresponde?",
+     "en": "Destrieux equates the olfactory sulcus with the medial orbital sulcus; Hastings 2024 separates them. Looking at the mesh, which one is it?"
+    }
+   }
+  ],
+  "hippocampal-commissure": [
+   {
+    "id": "comisura-hipocampo",
+    "texto": {
+     "es": "La ficha describe la comisura dorsal (salterio) y dice que la ventral probablemente no existe en humanos. ¿Estás de acuerdo?",
+     "en": "The entry describes the dorsal commissure (psalterium) and says the ventral one probably does not exist in humans. Do you agree?"
+    }
+   }
+  ],
+  "choroid-plexus": [
+   {
+    "id": "plexo-coroideo",
+    "texto": {
+     "es": "La malla tiene lado, así que la tratamos como el plexo coroideo del ventrículo lateral. ¿Corresponde a ese?",
+     "en": "The mesh has a side, so we treat it as the choroid plexus of the lateral ventricle. Is that the one?"
+    }
+   }
+  ],
+  "anterior-cochlear-nucleus": [
+   {
+    "id": "cocleares",
+    "texto": {
+     "es": "Tomamos anterior = ventral y posterior = dorsal (Rushmore 2020, tabla TA98). ¿Es correcta la equivalencia?",
+     "en": "We took anterior = ventral and posterior = dorsal (Rushmore 2020, TA98 table). Is the equivalence correct?"
+    }
+   }
+  ],
+  "posterior-cochlear-nucleus": [
+   {
+    "id": "cocleares",
+    "texto": {
+     "es": "Tomamos anterior = ventral y posterior = dorsal (Rushmore 2020, tabla TA98). ¿Es correcta la equivalencia?",
+     "en": "We took anterior = ventral and posterior = dorsal (Rushmore 2020, TA98 table). Is the equivalence correct?"
+    }
+   }
+  ],
+  "posterior-quadrangular-lobule": [
+   {
+    "id": "cerebelo-lobulos",
+    "texto": {
+     "es": "Tomamos lóbulo cuadrangular posterior = lóbulo simple (H VI), y crus I y II = lóbulos semilunares superior e inferior (Voogd 2012). ¿Es correcta la equivalencia?",
+     "en": "We took posterior quadrangular lobule = simple lobule (H VI), and crus I and II = superior and inferior semilunar lobules (Voogd 2012). Is the equivalence correct?"
+    }
+   }
+  ],
+  "superior-semilunar-lobule": [
+   {
+    "id": "cerebelo-lobulos",
+    "texto": {
+     "es": "Tomamos lóbulo cuadrangular posterior = lóbulo simple (H VI), y crus I y II = lóbulos semilunares superior e inferior (Voogd 2012). ¿Es correcta la equivalencia?",
+     "en": "We took posterior quadrangular lobule = simple lobule (H VI), and crus I and II = superior and inferior semilunar lobules (Voogd 2012). Is the equivalence correct?"
+    }
+   }
+  ],
+  "inferior-semilunar-lobule": [
+   {
+    "id": "cerebelo-lobulos",
+    "texto": {
+     "es": "Tomamos lóbulo cuadrangular posterior = lóbulo simple (H VI), y crus I y II = lóbulos semilunares superior e inferior (Voogd 2012). ¿Es correcta la equivalencia?",
+     "en": "We took posterior quadrangular lobule = simple lobule (H VI), and crus I and II = superior and inferior semilunar lobules (Voogd 2012). Is the equivalence correct?"
+    }
+   }
+  ],
+  "tonsil-of-cerebellum": [
+   {
+    "id": "amigdala-cerebelo",
+    "texto": {
+     "es": "La equivalencia de la amígdala cerebelosa con el paraflóculo dorsal del mono se apoya en parte en observaciones no publicadas. ¿La dejamos, la matizamos o la quitamos?",
+     "en": "The equivalence of the cerebellar tonsil with the monkey dorsal paraflocculus rests partly on unpublished observations. Keep it, qualify it or remove it?"
+    }
+   }
+  ],
+  "m-bronchial-branches-of-vagus-nerve": [
+   {
+    "id": "ramos-bronquiales",
+    "texto": {
+     "es": "Las fuentes abiertas hablan de \"ramos pulmonares\"; los tomamos como los rami bronchiales de TA2. ¿Es correcto?",
+     "en": "Open sources speak of \"pulmonary branches\"; we took them as the rami bronchiales of TA2. Is that right?"
+    }
+   }
+  ],
+  "inferior-leaflet-of-right-atrioventricular-valve": [
+   {
+    "id": "valvas-tricuspide",
+    "texto": {
+     "es": "Aquí \"inferior\" y \"posterior\" se usan como sinónimos. ¿Es aceptable?",
+     "en": "Here \"inferior\" and \"posterior\" are used as synonyms. Is that acceptable?"
+    }
+   }
+  ],
+  "inferior-papillary-muscle-of-right-ventricle": [
+   {
+    "id": "valvas-tricuspide",
+    "texto": {
+     "es": "Aquí \"inferior\" y \"posterior\" se usan como sinónimos. ¿Es aceptable?",
+     "en": "Here \"inferior\" and \"posterior\" are used as synonyms. Is that acceptable?"
+    }
+   }
+  ],
+  "septal-papillary-muscle-of-right-ventricle": [
+   {
+    "id": "papilar-septal",
+    "texto": {
+     "es": "Hay dos clasificaciones publicadas del papilar septal del ventrículo derecho (Israel 2022 y Restivo 1989). ¿Cuál conviene seguir?",
+     "en": "There are two published classifications of the septal papillary muscle of the right ventricle (Israel 2022 and Restivo 1989). Which should we follow?"
+    }
+   }
+  ],
+  "g-cerebral-peduncle": [
+   {
+    "id": "pedunculo",
+    "texto": {
+     "es": "El atlas usa \"pedúnculo cerebral\" como base más tegmento; muchos textos lo usan solo para la base (crus cerebri). ¿Cómo lo presentamos?",
+     "en": "The atlas uses \"cerebral peduncle\" for base plus tegmentum; many texts use it only for the base (crus cerebri). How should we present it?"
+    }
+   }
+  ],
+  "base-of-peduncle": [
+   {
+    "id": "pedunculo",
+    "texto": {
+     "es": "El atlas usa \"pedúnculo cerebral\" como base más tegmento; muchos textos lo usan solo para la base (crus cerebri). ¿Cómo lo presentamos?",
+     "en": "The atlas uses \"cerebral peduncle\" for base plus tegmentum; many texts use it only for the base (crus cerebri). How should we present it?"
+    }
+   }
+  ],
+  "g-cerebrum": [
+   {
+    "id": "cerebro",
+    "texto": {
+     "es": "El atlas reúne telencéfalo y diencéfalo, como TA2; muchos textos usan \"cerebro\" solo para el telencéfalo. La ficha lo aclara. ¿Es suficiente?",
+     "en": "The atlas groups telencephalon and diencephalon, as TA2 does; many texts use \"cerebrum\" for the telencephalon only. The entry explains it. Is that enough?"
+    }
+   }
+  ],
+  "cingulate-gyrus-posteroventral-part": [
+   {
+    "id": "istmo-cingulo",
+    "texto": {
+     "es": "Esta parcela equivale solo de forma aproximada a la vPCC de Foster 2023, de donde salen sus datos funcionales. ¿Es aceptable usarlos?",
+     "en": "This parcel only roughly matches the vPCC of Foster 2023, the source of its functional data. Is it acceptable to use them?"
+    }
+   }
+  ],
+  "subparietal-sulcus": [
+   {
+    "id": "subparietal",
+    "texto": {
+     "es": "Lo tratamos como sinónimo del surco esplenial (Foster 2023, Willbrand 2023). ¿Es correcto?",
+     "en": "We treat it as a synonym of the splenial sulcus (Foster 2023, Willbrand 2023). Is that right?"
+    }
+   }
+  ],
+  "superior-occipital-gyri": [
+   {
+    "id": "occipitales-superiores",
+    "texto": {
+     "es": "Ninguna fuente les asigna una función propia, y la ficha lo dice. ¿Conoces una fuente que sí lo haga?",
+     "en": "No source assigns them a function of their own, and the entry says so. Do you know a source that does?"
+    }
+   }
+  ],
+  "nucleus-ambiguus": [
+   {
+    "id": "ambiguo",
+    "texto": {
+     "es": "StatPearls lo ubica en el bulbo rostral; en los libros de texto la columna ocupa buena parte del bulbo. ¿Cómo lo describimos?",
+     "en": "StatPearls places it in the rostral medulla; in textbooks the column spans much of the medulla. How should we describe it?"
+    }
+   }
+  ],
+  "inferior-salivatory-nucleus": [
+   {
+    "id": "salivales",
+    "texto": {
+     "es": "Su ubicación en humanos es poco precisa en las fuentes. ¿La ubicación de la ficha es aceptable?",
+     "en": "Their location in humans is imprecise in the sources. Is the location in the entry acceptable?"
+    }
+   }
+  ],
+  "superior-salivatory-nucleus": [
+   {
+    "id": "salivales",
+    "texto": {
+     "es": "Su ubicación en humanos es poco precisa en las fuentes. ¿La ubicación de la ficha es aceptable?",
+     "en": "Their location in humans is imprecise in the sources. Is the location in the entry acceptable?"
+    }
+   }
+  ],
+  "olive": [
+   {
+    "id": "oliva",
+    "texto": {
+     "es": "La ficha la trata como el complejo olivar inferior; no hubo fuente abierta del relieve. ¿Es correcto?",
+     "en": "The entry treats it as the inferior olivary complex; there was no open source for the surface relief. Is that right?"
+    }
+   }
+  ],
+  "m-superior-ganglion-of-vagus-nerve": [
+   {
+    "id": "ganglio-superior",
+    "texto": {
+     "es": "No hubo fuente abierta que diga si el ganglio superior está dentro del agujero yugular o justo encima. ¿Cuál es?",
+     "en": "No open source says whether the superior ganglion lies within the jugular foramen or just above it. Which is it?"
+    }
+   }
+  ],
+  "m-coeliac-branches-of-posterior-vagal-trunk": [
+   {
+    "id": "celiacos",
+    "texto": {
+     "es": "Las fuentes no coinciden en hasta dónde llegan los ramos celíacos en el colon. ¿Qué límite usamos?",
+     "en": "Sources disagree on how far the coeliac branches reach along the colon. Which limit should we use?"
+    }
+   }
+  ],
+  "inferior-occipital-gyrus-and-sulcus": [
+   {
+    "id": "occipital-inferior",
+    "texto": {
+     "es": "\"Por debajo del giro lingual\" es literal de Winawer y Witthoft. ¿Es correcto para esta parcela?",
+     "en": "\"Below the lingual gyrus\" is taken literally from Winawer and Witthoft. Is it right for this parcel?"
+    }
+   }
+  ],
+  "m-anterior-vagal-trunk": [
+   {
+    "id": "troncos-vagales",
+    "texto": {
+     "es": "Se describen como continuación de cada vago (la simplificación habitual), aunque cada tronco lleva fibras de ambos. ¿La simplificación es aceptable?",
+     "en": "They are described as the continuation of each vagus (the usual simplification), though each trunk carries fibres from both. Is the simplification acceptable?"
+    }
+   }
+  ],
+  "m-posterior-vagal-trunk": [
+   {
+    "id": "troncos-vagales",
+    "texto": {
+     "es": "Se describen como continuación de cada vago (la simplificación habitual), aunque cada tronco lleva fibras de ambos. ¿La simplificación es aceptable?",
+     "en": "They are described as the continuation of each vagus (the usual simplification), though each trunk carries fibres from both. Is the simplification acceptable?"
+    }
+   }
+  ]
+ }
+}

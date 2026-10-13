@@ -91,7 +91,10 @@
     "descripcion": "Descripción",
     "referencias": "Recursos y artículos de referencia",
     "enPreparacionTexto": "La descripción de esta estructura se está escribiendo con fuentes y la revisarán docentes. Mientras tanto puedes ubicarla en el modelo y buscar artículos abajo.",
-    "verFichaDe": "Ver la ficha de {{nombre}}"
+    "verFichaDe": "Ver la ficha de {{nombre}}",
+    "tambien": "También: {{nombres}}",
+    "sinonimos_es": "Otros nombres en español (también se buscan)",
+    "sinonimos_en": "Otros nombres en inglés (también se buscan)"
   },
   "recurso": {
     "video": "video",
@@ -188,7 +191,6 @@
     "enviadaEl": "(enviada el {{fecha}})",
     "salir": "Salir del modo revisión",
     "comentario": "Comentario (opcional)",
-    "pendientes": "Fichas por revisar",
     "desactualizadas_one": "{{count}} respuesta es sobre una versión anterior del contenido",
     "desactualizadas_other": "{{count}} respuestas son sobre una versión anterior del contenido",
     "parte": "Parte {{n}} de {{total}}",
@@ -197,7 +199,29 @@
     "trazadoTitulo": "Recorrido trazado: {{nombre}}",
     "trazadoAyuda": "Este nervio no está en el modelo escaneado: se trazó sobre estructuras del modelo (arterias, bronquios, esófago) siguiendo las fuentes de la ficha. Míralo en 3D, punteado, y di si el recorrido es correcto o qué cambiarías.",
     "trazadoEstado_en_revision": "Pendiente de revisión docente: el recorrido puede cambiar.",
-    "trazadoEstado_aprobada": "Aprobado por revisión docente."
+    "trazadoEstado_aprobada": "Aprobado por revisión docente.",
+    "dudasTitulo": "Duda abierta para ti",
+    "queRevisar_one": "Qué revisar ({{count}})",
+    "queRevisar_other": "Qué revisar ({{count}})",
+    "queRevisarTitulo": "Qué revisar",
+    "comoRevisar": "Cómo revisar",
+    "queAyuda": "Empieza por arriba: primero va lo que más necesita tu criterio. Cuando respondes algo de una ficha, sale de la lista.",
+    "seccion_dudas": "Dudas abiertas para ti",
+    "seccion_vago": "Nervio vago: trazos, recorridos trazados y ramos",
+    "seccion_grupos": "Sistema límbico, ganglios basales, diencéfalo y tronco encefálico",
+    "seccion_resto": "Todo lo demás",
+    "guia": {
+      "intro": "Gracias por revisar Maysa Brain. Todo lo que ves está como lo verían los estudiantes; tu parte es decir qué está bien y qué cambiarías. Nada se publica como verificado sin el visto bueno de un docente.",
+      "responder": "En cada ficha, debajo de cada campo, hay tres botones: Correcto, Corregir (escribe el cambio, con su fuente si la tienes) y No es mi área. Puedes dejar un comentario. Para quitar una respuesta, pulsa otra vez el mismo botón. Todo se guarda solo en este navegador.",
+      "dudas": "Algunas fichas traen una \"Duda abierta para ti\": es una pregunta concreta que dejó la redacción. Responderla es lo que más ayuda.",
+      "nombres": "Si un nombre no tiene término oficial en español o en latín, la ficha muestra la propuesta y su fuente: confírmala o corrígela.",
+      "marcadores": "Los marcadores son estructuras sin malla 3D. Si la posición es aproximada o falta, usa \"Proponer posición\" y toca el punto en el modelo.",
+      "trazos": "Los ramos del vago vienen como trazos sin nombre. En este modo, al tocar un trazo te preguntamos qué ramo es.",
+      "recorridos": "Los laríngeos recurrentes y el vago izquierdo bajo el tórax no están en el modelo escaneado: se trazaron y se ven punteados. En su ficha, \"Recorrido trazado\" te pide juzgarlos.",
+      "enviar": "Cuando quieras, pulsa \"Enviar revisión\": se abre un formulario ya lleno por cada ficha; solo pulsa Enviar al final. Puedes enviar cuantas veces quieras.",
+      "privacidad": "Antes de la primera revisión, regístrate una sola vez: nombre como quieres que aparezca, rol y autorización (Ley 1581 de 2012). Tu nombre solo aparece en las fichas que valides.",
+      "registrarme": "Registrarme (una sola vez)"
+    }
   },
   "comun": {
     "cerrar": "Cerrar"
