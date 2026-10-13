@@ -1,6 +1,6 @@
 // Modo revisión docente (F24): avance, fichas pendientes y envío por formulario de Google.
 import { get, set } from 'idb-keyval';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
@@ -20,7 +20,9 @@ import {
   type ParteEnvio,
   type Respuesta,
 } from '../lib/revision';
+import { crearRespaldo, leerRespaldo, MAX_RESPALDO_CARACTERES, type ErrorRespaldo } from '../lib/respaldo';
 import { useAtlas } from '../store/useAtlas';
+import SeccionTrazos from './SeccionTrazos';
 import { useMovil } from './useMovil';
 
 const claveIdb = (codigo: string) => `revision:${codigo}`;
@@ -43,6 +45,15 @@ function marcarGuiaVista(codigo: string) {
   } catch {
     /* nada que guardar */
   }
+}
+
+function descargarArchivo(nombre: string, texto: string) {
+  const url = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export default function PanelRevision({
@@ -105,6 +116,8 @@ export default function PanelRevision({
   const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
   const titulo = useRef<HTMLHeadingElement>(null);
   const botones = useRef<Partial<Record<'que' | 'como' | 'enviar', HTMLButtonElement | null>>>({});
+  const [avisoRespaldo, setAvisoRespaldo] = useState('');
+  const entradaRespaldo = useRef<HTMLInputElement>(null);
 
   // Al abrir un diálogo, el foco va a su título: así se anuncia y Escape queda a un toque.
   useEffect(() => {
@@ -151,6 +164,8 @@ export default function PanelRevision({
   const pendientes = pendientesDeEnvio(lista, confirmadas);
   const clavesPendientes = new Set(pendientes.map(claveRespuesta));
   const hayCompletas = lista.some(respuestaCompleta);
+  // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra.
+  const trazosUI = <SeccionTrazos alAbrir={() => abrir(null)} />;
 
   const copiarODescargar = async (carga: string, archivo: string) => {
     try {
@@ -185,11 +200,60 @@ export default function PanelRevision({
     setConfirmadas((c) => confirmarParte(c, parte));
   };
 
+  const descargarRespaldo = () =>
+    descargarArchivo(`respaldo-revision-${revisor}-${new Date().toISOString().slice(0, 10)}.json`, crearRespaldo(revisor, respuestas));
+
+  // Llamadas literales a `t` para que check:i18n las vea.
+  const mensajeError = (e: ErrorRespaldo) =>
+    e === 'version' ? t('revision.respaldoErrorVersion') : e === 'otroRevisor' ? t('revision.respaldoErrorRevisor') : t('revision.respaldoErrorArchivo');
+
+  // El archivo es entrada externa: leerRespaldo lo valida y solo entra lo que pasa; se fusiona con lo local.
+  const cargarArchivo = async (input: HTMLInputElement) => {
+    const archivo = input.files?.[0];
+    input.value = ''; // deja volver a elegir el mismo archivo
+    if (!archivo) return;
+    if (archivo.size > MAX_RESPALDO_CARACTERES) return setAvisoRespaldo(mensajeError('grande'));
+    const texto = await archivo.text().catch(() => null);
+    if (texto === null) return setAvisoRespaldo(mensajeError('formato'));
+    const s = useAtlas.getState();
+    if (s.revisor !== revisor) return; // salió del modo revisión mientras se leía el archivo
+    const l = leerRespaldo(texto, { revisor, idOk: (id) => typeof id === 'string' && Object.hasOwn(estructuras, id) });
+    if (!l.ok) return setAvisoRespaldo(mensajeError(l.error));
+    const f = s.importarRespuestas(l.respuestas);
+    const resumen = t('revision.respaldoCargado', { agregadas: f.agregadas, actualizadas: f.actualizadas, sinCambio: f.sinCambio });
+    setAvisoRespaldo(l.descartadas > 0 ? `${resumen} ${t('revision.respaldoOmitidas', { count: l.descartadas })}` : resumen);
+  };
+
   // Elegir una acción del menú de celular lo cierra y abre (o cierra) el diálogo de esa acción.
   const elegir = (v: Vista) => {
     setAccionesAbiertas(false);
     alternar(v);
   };
+
+  // Respaldo (#60). No usan `elegir`: en celular el menú sigue abierto y se ve el resultado. El input de
+  // archivo va fuera del menú (en la raíz de la barra) para que sobreviva si el menú se desmonta.
+  const accionesRespaldo = (
+    <>
+      <button type="button" disabled={lista.length === 0} onClick={descargarRespaldo}>
+        {t('revision.descargarRespaldo')}
+      </button>
+      <button type="button" disabled={cargadoDe !== revisor} onClick={() => entradaRespaldo.current?.click()}>
+        {t('revision.cargarRespaldo')}
+      </button>
+    </>
+  );
+  const notasRespaldo = (
+    <>
+      <p className="aviso-local recurso-nota" data-testid="aviso-local">
+        {t('revision.soloEsteNavegador')}
+      </p>
+      {avisoRespaldo && (
+        <p className="aviso-respaldo" role="status" data-testid="aviso-respaldo">
+          {avisoRespaldo}
+        </p>
+      )}
+    </>
+  );
 
   // Las acciones se escriben una sola vez: en línea en escritorio, dentro del menú "Acciones" en celular.
   const acciones = (
@@ -209,9 +273,15 @@ export default function PanelRevision({
       >
         {t('revision.enviar')}
       </button>
+      {accionesRespaldo}
     </>
   );
-  const notas = viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>;
+  const notas = (
+    <>
+      {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
+      {notasRespaldo}
+    </>
+  );
 
   return (
     <div className="panel-revision" role="region" aria-label={t('revision.titulo')} data-testid="panel-revision">
@@ -264,40 +334,52 @@ export default function PanelRevision({
           {notas}
         </>
       )}
+      <input
+        ref={entradaRespaldo}
+        type="file"
+        accept=".json,application/json"
+        hidden
+        data-testid="entrada-respaldo"
+        onChange={(e) => void cargarArchivo(e.currentTarget)}
+      />
       {vista === 'que' && (
         <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO} data-testid="que-revisar">
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
             {t('revision.queRevisarTitulo')}
           </h2>
           <p>{t('revision.queAyuda')}</p>
+          {!secciones.some((sec) => sec.seccion === 'dudas') && trazosUI}
           {secciones.length ? (
             secciones.map((sec, i) => (
-              <details key={sec.seccion} open={i === 0} className="seccion-revision" data-seccion={sec.seccion}>
-                <summary>
-                  {t(`revision.seccion_${sec.seccion}`)} ({sec.ids.length})
-                </summary>
-                <ul>
-                  {sec.ids.map((id) => (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        className="enlace"
-                        onClick={() => {
-                          alElegir(id);
-                          abrir(null); // el foco ya va al título de la ficha: no se devuelve a la barra
-                        }}
-                      >
-                        {nombre(estructuras[id], idioma) || id}
-                      </button>
-                      {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
-                      <span className="recurso-nota" data-testid="avance-ficha">
-                        {' '}
-                        · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
+              <Fragment key={sec.seccion}>
+                <details open={i === 0} className="seccion-revision" data-seccion={sec.seccion}>
+                  <summary>
+                    {t(`revision.seccion_${sec.seccion}`)} ({sec.ids.length})
+                  </summary>
+                  <ul>
+                    {sec.ids.map((id) => (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          className="enlace"
+                          onClick={() => {
+                            alElegir(id);
+                            abrir(null); // el foco ya va al título de la ficha: no se devuelve a la barra
+                          }}
+                        >
+                          {nombre(estructuras[id], idioma) || id}
+                        </button>
+                        {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
+                        <span className="recurso-nota" data-testid="avance-ficha">
+                          {' '}
+                          · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+                {sec.seccion === 'dudas' && trazosUI}
+              </Fragment>
             ))
           ) : (
             <p>{t('revision.sinPendientes')}</p>

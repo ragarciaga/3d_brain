@@ -38,6 +38,19 @@ describe('textos de los botones de revisión', () => {
       expect(revision.guia.enviar).toContain(revision.loEnvie);
     });
 
+    it(`el aviso del respaldo (${idioma}) dice que las respuestas se guardan solo en este navegador`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.soloEsteNavegador).toContain(idioma === 'es' ? 'solo en este navegador' : 'only in this browser');
+    });
+
+    it(`la guía (${idioma}) nombra los botones del respaldo tal como aparecen`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.descargarRespaldo).toBeTruthy();
+      expect(revision.cargarRespaldo).toBeTruthy();
+      expect(revision.guia.responder).toContain(revision.descargarRespaldo);
+      expect(revision.guia.responder).toContain(revision.cargarRespaldo);
+    });
+
     it(`la confirmación de salida (${idioma}) dice que las respuestas quedan guardadas en el navegador`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       expect(revision.salirTexto).toContain(idioma === 'es' ? 'quedan guardadas en este navegador' : 'stay saved in this browser');

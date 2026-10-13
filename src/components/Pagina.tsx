@@ -6,6 +6,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { leer, serializar } from '../lib/enlaces';
+import { olvidarRevisor, pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
 import { useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
@@ -25,16 +26,6 @@ import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
 import Vistas, { Metricas } from './Vistas';
 import { IconoArbol, IconoBuscar, IconoCompartir, IconoGrupos } from './Iconos';
-
-const CLAVE_REVISOR = 'atlas:revisor';
-
-function leerRevisorGuardado(): string | null {
-  try {
-    return sessionStorage.getItem(CLAVE_REVISOR);
-  } catch {
-    return null;
-  }
-}
 
 export default function Pagina({ slug, revision = false }: { slug?: string; revision?: boolean }) {
   const { lang } = useParams();
@@ -80,11 +71,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     useAtlas.getState().setRevisor(null);
     useAtlas.getState().cargarRespuestas({});
     useAtlas.getState().setUbicando(null);
-    try {
-      sessionStorage.removeItem(CLAVE_REVISOR);
-    } catch {
-      /* nada que borrar */
-    }
+    olvidarRevisor(); // el avance queda en IndexedDB; solo se olvida el código
   };
   const panel = useRef<HTMLElement>(null);
   const botonMenu = useRef<HTMLButtonElement>(null);
@@ -129,16 +116,13 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     if (inicial.explosion) s.setExplosion(inicial.explosion / 100);
   }, [inicial]);
 
-  // Modo revisión: el código llega en ?r= y se conserva mientras dure la sesión del navegador.
+  // Modo revisión: el código llega en ?r= y se recuerda en este navegador hasta "Salir del modo revisión".
   useEffect(() => {
-    const codigo = (revision && codigoUrl) || leerRevisorGuardado();
+    const codigo = (revision && codigoUrl) || revisorRecordado();
     if (codigo) {
       useAtlas.getState().setRevisor(codigo);
-      try {
-        sessionStorage.setItem(CLAVE_REVISOR, codigo);
-      } catch {
-        /* sin almacenamiento de sesión: el modo dura hasta recargar */
-      }
+      recordarRevisor(codigo);
+      void pedirPersistencia();
     }
   }, [revision, codigoUrl]);
 
@@ -324,7 +308,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           {mensaje}
         </p>
       )}
-      <PanelRevision idioma={idioma} alElegir={irA} alSalir={pedirSalida} />
+      {/* un panel por código: `cargadoDe` y el estado de envío nunca pasan de un ingreso a otro */}
+      <PanelRevision key={revisor ?? ''} idioma={idioma} alElegir={irA} alSalir={pedirSalida} />
       <div className="cuerpo">
         <nav className="riel" aria-label={t('riel.titulo')}>
           <button

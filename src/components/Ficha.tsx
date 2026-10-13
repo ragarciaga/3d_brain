@@ -1,7 +1,7 @@
 // Ficha de pieza (F4), recursos (F9) y controles de revisión por campo (F24).
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { dudas, esFragmentable, estructuras, origenDe, grupos, marcadorPorId, marcadores, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
+import { dudas, esFragmentable, estructuras, origenDe, grupos, marcadorPorId, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
 import { campoTrazado } from '../lib/rutas';
@@ -19,6 +19,7 @@ import {
 import { camposDeFicha } from '../lib/prioridad';
 import { useAtlas } from '../store/useAtlas';
 import { colorDePieza } from './colores';
+import RevisionTrazo from './RevisionTrazo';
 import { CONSULTA_MOVIL } from './useMovil';
 
 const otro = (i: Idioma): Idioma => (i === 'es' ? 'en' : 'es');
@@ -156,7 +157,7 @@ function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idiom
       <textarea
         id={idComentario}
         rows={2}
-        maxLength={4000} // el mismo tope que valida el importador (scripts/lib/revisiones.ts); si no, el envío se descarta
+        maxLength={4000} // el mismo tope (MAX_TEXTO_LARGO en src/lib/revision.ts) que valida el importador; si no, el envío se descarta
         value={p.respuesta.comentario ?? ''}
         onChange={(ev) => useAtlas.getState().responder({ ...p.respuesta, comentario: ev.target.value || undefined })}
       />
@@ -400,49 +401,6 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
   );
 }
 
-function RevisionTrazo({ malla, version }: { malla: string; version: string }) {
-  const { t, i18n } = useTranslation();
-  const idioma = i18n.language as Idioma;
-  const campo = `trazo:${malla}`;
-  const clave = claveRespuesta({ estructura: 'vagus-nerve-x', campo });
-  const r = useAtlas((s) => s.respuestas[clave]);
-  const ramos = marcadores.filter((m) => m.padre === 'g-vagus-nerve-x' && m.id !== 'm-jugular-foramen');
-  const lado = malla.includes('.l#') ? t('lado.izquierdo') : t('lado.derecho');
-  const num = /#t(\d+)/.exec(malla)?.[1] ?? '?';
-  return (
-    <section className="ficha-campo revision-trazo" data-testid="revision-trazo">
-      <h3>{t('revision.trazoTitulo', { numero: num, lado })}</h3>
-      <p>{t('revision.trazoAyuda')}</p>
-      <select
-        aria-label={t('revision.trazoPregunta')}
-        value={r?.ramo ?? ''}
-        onChange={(e) =>
-          useAtlas.getState().responder({
-            estructura: 'vagus-nerve-x',
-            campo,
-            veredicto: 'corregir',
-            malla,
-            ramo: e.target.value,
-            version,
-            fecha: new Date().toISOString(),
-          })
-        }
-      >
-        <option value="" disabled>
-          {t('revision.trazoPregunta')}
-        </option>
-        {ramos.map((m) => (
-          <option key={m.id} value={m.id}>
-            {nombre(estructuras[m.id], idioma)}
-          </option>
-        ))}
-        <option value="no_es_ramo">{t('revision.noEsRamo')}</option>
-        <option value="no_se">{t('revision.noSe')}</option>
-      </select>
-    </section>
-  );
-}
-
 /** Búsquedas de artículos científicos por el nombre de la entrada (F9); salen aunque la ficha esté en preparación. */
 function Articulos({ nombreEn, nombreEs }: { nombreEn: string; nombreEs: string }) {
   const { t } = useTranslation();
@@ -606,6 +564,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </span>
       </div>
       <GruposDeLaEntrada id={id} idioma={idioma} />
+      {revisor && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} idioma={idioma} />}
       {revisor && f && <MarcarTodo key={`${id}|${idioma}`} id={id} idioma={idioma} version={version} />}
       {revisor && dudas[id] && (
         <section className="ficha-campo ficha-dudas" data-testid="dudas">
@@ -635,7 +594,6 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       )}
       <Acciones id={id} alCompartir={alCompartir} />
 
-      {revisor && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} />}
       {rutasDeLaEntrada.map((r) => (
         <section key={r.id} className="ficha-campo revision-ruta" data-testid={`ruta-${campoTrazado(r)}`}>
           <h3>{t('revision.trazadoTitulo', { nombre: r.nombre[idioma] })}</h3>

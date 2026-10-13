@@ -1349,6 +1349,29 @@ a {
   margin-top: 0.2rem;
 }
 
+.revision-trazo label {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.revision-trazo select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.revision-trazo textarea {
+  width: 100%;
+  margin-top: 0.2rem;
+}
+
+.revision-trazo .revision-botones {
+  margin-top: 0.4rem;
+}
+
 .chip-correcto.activo {
   background: var(--ok);
   border-color: var(--ok);
@@ -1380,6 +1403,7 @@ a {
 /* 44 px es el área táctil recomendada en celular (#66). En px porque el criterio habla en px. */
 @media (max-width: 900px) {
   .revision-botones .chip,
+  .revision-trazo .revision-botones button,
   .marcar-todo button {
     min-height: 44px;
   }
@@ -1402,6 +1426,13 @@ a {
   border: 1px solid var(--borde);
   border-radius: var(--radio);
   position: relative;
+}
+
+/* El aviso del respaldo y su resultado ocupan su propia línea en la barra de escritorio. */
+.panel-revision > .aviso-local,
+.panel-revision > .aviso-respaldo {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 /* Menú "Acciones" de la barra en celular; z-index 82 como la hoja de diálogo, sobre el recorrido (80). */

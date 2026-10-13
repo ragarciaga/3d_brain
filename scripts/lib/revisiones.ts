@@ -4,7 +4,7 @@
 // (pipeline/revisores.local.json, ignorado por git) y un envío con un código fuera del padrón se
 // descarta. El nombre solo vive en la hoja de registro y aparece en la ficha cuando el editor
 // aprueba la revisión.
-import { CLAVES_V2, type Respuesta } from '../../src/lib/revision.ts';
+import { CLAVES_V2, esObjeto, respuestaValida, REVISOR_VALIDO, type Respuesta } from '../../src/lib/revision.ts';
 
 export function parsearCsv(texto: string): string[][] {
   const filas: string[][] = [];
@@ -48,45 +48,6 @@ export interface Envio {
 const ID_VALIDO = /^[a-z0-9-]+$/;
 /** Alias público del revisor en los issues: D seguido de dos o tres dígitos. */
 export const ALIAS_VALIDO = /^D\d{2,3}$/;
-/** Código del revisor: 8 caracteres A-Z0-9 según docs/revision-docente.md; se admiten guion y guion bajo. */
-const REVISOR_VALIDO = /^[A-Za-z0-9_-]{1,40}$/;
-/** Campos que genera la app (nombre, latin, relevancia.N, fuente.N, posicion...) o `trazo:<malla>` sin comillas invertidas, barras verticales, saltos de línea ni ángulos. */
-const CAMPO_VALIDO = /^([a-z_]+(\.\d+)?|trazo:[^\r\n`|<>]{1,120})$/;
-/** Versión semántica de la ficha, o `sin-ficha` para un marcador. */
-const VERSION_VALIDA = /^(\d+\.\d+\.\d+|sin-ficha)$/;
-/** Tope de caracteres de los textos libres. */
-const MAX_TEXTO_LARGO = 4000;
-const MAX_TEXTO_CORTO = 200;
-const VEREDICTOS: readonly unknown[] = ['correcto', 'corregir', 'no_es_mi_area'];
-const IDIOMAS: readonly unknown[] = ['es', 'en'];
-const CAMPOS_TEXTO = ['campo', 'propuesta', 'comentario', 'version', 'malla', 'ramo'] as const;
-const TOPES: Partial<Record<(typeof CAMPOS_TEXTO)[number], number>> = { propuesta: MAX_TEXTO_LARGO, comentario: MAX_TEXTO_LARGO, malla: MAX_TEXTO_CORTO, ramo: MAX_TEXTO_CORTO };
-
-const esObjeto = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
-
-/**
- * El CSV viene de un formulario público: la carga JSON puede traer cualquier cosa. Una respuesta
- * solo vale con estructura conocida, veredicto del conjunto cerrado, idioma es o en (o ausente),
- * `campo` con la forma que genera la app, `version` semántica o `sin-ficha`, los demás textos (si
- * vienen) como texto con tope de largo (4000 propuesta y comentario, 200 malla y ramo) y `posicion`
- * (si viene) como tres números finitos. Nunca lanza: devuelve false.
- */
-function respuestaValida(r: unknown, idOk: (id: unknown) => boolean): r is Respuesta {
-  if (!esObjeto(r) || !idOk(r['estructura'])) return false;
-  if (!VEREDICTOS.includes(r['veredicto'])) return false;
-  if (r['idioma'] !== undefined && !IDIOMAS.includes(r['idioma'])) return false;
-  if (typeof r['campo'] !== 'string' || !CAMPO_VALIDO.test(r['campo'])) return false;
-  if (typeof r['version'] !== 'string' || !VERSION_VALIDA.test(r['version'])) return false;
-  for (const k of CAMPOS_TEXTO) if (r[k] !== undefined && typeof r[k] !== 'string') return false;
-  for (const [k, tope] of Object.entries(TOPES)) {
-    const v = r[k];
-    if (typeof v === 'string' && v.length > tope) return false;
-  }
-  const p = r['posicion'];
-  if (p !== undefined && !(Array.isArray(p) && p.length === 3 && p.every((n) => typeof n === 'number' && Number.isFinite(n)))) return false;
-  return true;
-}
-
 /**
  * Expande una carga `v:2` ({"v":2,"r":<código>,"e":{<id>:[{<claves cortas>}]}}) en un envío por
  * estructura. Cada clave de `e` termina como nombre de archivo (`<id>.md`), así que debe pasar `idOk`.
