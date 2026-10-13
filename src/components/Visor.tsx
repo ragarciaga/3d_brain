@@ -21,7 +21,7 @@ import type { Vista } from '../lib/enlaces';
 import { MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
-import { nombrePieza, nombreVisible } from '../lib/nombres';
+import { nombre, nombrePieza } from '../lib/nombres';
 import { fueraDeSitio, objetivo, piezasDeEncuadre, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
 import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
@@ -206,7 +206,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
       })}
       {encima && (
         <Html position={centroLocal(mallas)} center style={{ pointerEvents: 'none' }} zIndexRange={[20, 0]}>
-          <div className="etiqueta-3d">{nombrePieza(id, idioma, useAtlas.getState().ambos, t)}</div>
+          <div className="etiqueta-3d">{nombrePieza(id, idioma, t)}</div>
         </Html>
       )}
     </group>
@@ -285,7 +285,6 @@ function Modelo({ idioma }: { idioma: Idioma }) {
 function Marcadores({ idioma }: { idioma: Idioma }) {
   const cargado = useAtlas((s) => s.cargado);
   const seleccion = useAtlas((s) => s.seleccion.entrada);
-  const ambos = useAtlas((s) => s.ambos);
   const respuestas = useAtlas((s) => s.respuestas);
   // Los marcadores con ancla siguen a su pieza cuando se fragmenta.
   const base = useAtlas((s) => s.base);
@@ -338,7 +337,7 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
           />
           {p.id === seleccion && (
             <Html center style={{ pointerEvents: 'none' }} position={[0, 0.006, 0]}>
-              <div className="etiqueta-3d">{nombreVisible(estructuras[p.id], idioma, ambos)}</div>
+              <div className="etiqueta-3d">{nombre(estructuras[p.id], idioma)}</div>
             </Html>
           )}
         </mesh>

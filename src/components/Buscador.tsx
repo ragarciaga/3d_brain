@@ -5,15 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { estructuras, padreDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { crearBuscador } from '../lib/busqueda';
-import { nombreNodo, nombreVisible } from '../lib/nombres';
-import { useAtlas } from '../store/useAtlas';
+import { nombre, nombreNodo } from '../lib/nombres';
 
 export default function Buscador({ idioma, alElegir, alCerrar }: { idioma: Idioma; alElegir: (entrada: string) => void; alCerrar: () => void }) {
   const { t } = useTranslation();
   const [q, setQ] = useState('');
   const [abierto, setAbierto] = useState(false);
   const [activo, setActivo] = useState(0);
-  const ambos = useAtlas((s) => s.ambos);
   const input = useRef<HTMLInputElement>(null);
   const buscador = useMemo(() => crearBuscador(Object.values(estructuras)), []);
   const resultados = useMemo(() => buscador.buscar(q), [buscador, q]);
@@ -79,9 +77,9 @@ export default function Buscador({ idioma, alElegir, alCerrar }: { idioma: Idiom
                   elegir(id);
                 }}
               >
-                <span className="res-nombre">{nombreVisible(estructuras[id], idioma, ambos)}</span>
+                <span className="res-nombre">{nombre(estructuras[id], idioma)}</span>
                 {padre && (
-                  <span className="res-ubicacion">{t('buscar.en', { lugar: nombreNodo(padre, idioma, false, t) })}</span>
+                  <span className="res-ubicacion">{t('buscar.en', { lugar: nombreNodo(padre, idioma, t) })}</span>
                 )}
               </li>
             );

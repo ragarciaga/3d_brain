@@ -3,7 +3,7 @@ import { leer, serializar } from '../src/lib/enlaces';
 
 describe('enlaces compartibles (F11)', () => {
   it('ida y vuelta del estado de la vista', () => {
-    const e = { vista: 'lateral-izq' as const, aislar: 'contexto' as const, explosion: 40, nivel: 'lobulos' as const, ambos: true };
+    const e = { vista: 'lateral-izq' as const, aislar: 'contexto' as const, explosion: 40, nivel: 'lobulos' as const };
     expect(leer(serializar(e))).toEqual(e);
   });
 

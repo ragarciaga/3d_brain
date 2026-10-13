@@ -11,7 +11,6 @@ export interface EstadoEnlace {
   aislar?: 'solo' | 'contexto';
   explosion?: number; // 0 a 100
   nivel?: Nivel;
-  ambos?: boolean;
 }
 
 const NIVELES: Nivel[] = ['hemisferios', 'lobulos', 'piezas'];
@@ -23,7 +22,6 @@ export function serializar(e: EstadoEnlace): string {
   if (e.aislar) p.set('aislar', e.aislar);
   if (e.explosion && e.explosion > 0) p.set('explosion', String(Math.round(e.explosion)));
   if (e.nivel && e.nivel !== 'piezas') p.set('nivel', e.nivel);
-  if (e.ambos) p.set('ambos', '1');
   const s = p.toString();
   return s ? `?${s}` : '';
 }
@@ -41,6 +39,5 @@ export function leer(search: string): EstadoEnlace {
   if (Number.isFinite(ex) && ex > 0) e.explosion = Math.min(100, Math.max(0, ex));
   const nivel = p.get('nivel');
   if (nivel && (NIVELES as string[]).includes(nivel)) e.nivel = nivel as Nivel;
-  if (p.get('ambos') === '1') e.ambos = true;
   return e;
 }
