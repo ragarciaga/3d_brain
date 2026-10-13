@@ -18,6 +18,20 @@ export interface Respuesta {
 export const claveRespuesta = (r: Pick<Respuesta, 'estructura' | 'campo' | 'idioma'>) =>
   `${r.estructura}|${r.campo}|${r.idioma ?? ''}`;
 
+/**
+ * Posición que el revisor ya propuso para un marcador, o null si no hay.
+ * `piezas` dice sobre qué pieza cayó el toque (solo en esta sesión); si no se conoce, `pieza` es null.
+ */
+export function propuestaDePosicion(
+  respuestas: Record<string, Respuesta>,
+  piezas: Record<string, string>,
+  estructura: string,
+): { respuesta: Respuesta; pieza: string | null } | null {
+  const respuesta = respuestas[claveRespuesta({ estructura, campo: 'posicion' })];
+  if (!respuesta || !respuesta.posicion) return null;
+  return { respuesta, pieza: piezas[estructura] ?? null };
+}
+
 export interface ConfigFormulario {
   urlFormulario: string;
   campos: { codigo: string; estructura: string; revision: string };

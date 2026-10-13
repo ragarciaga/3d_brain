@@ -110,6 +110,7 @@ interface Estado {
   // Modo revisión (F24)
   revisor: string | null;
   respuestas: Record<string, Respuesta>;
+  piezaPropuesta: Record<string, string>; // estructura -> id de la pieza tocada al proponer su posición; solo en esta sesión, no se envía
   dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra primero
   cargaRespuestas: number; // sube cada vez que se cargan las respuestas guardadas; la ficha remonta sus controles
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
@@ -146,6 +147,8 @@ interface Estado {
   responder(r: Respuesta): void;
   borrarRespuesta(clave: string): void;
   cargarRespuestas(r: Record<string, Respuesta>): void;
+  proponerPosicion(r: Respuesta, pieza: string): void;
+  deshacerPosicion(estructura: string): void;
   setDialogoRevision(v: boolean): void;
   setUbicando(id: string | null): void;
   setShift(v: boolean): void;
@@ -218,6 +221,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   camara: null,
   revisor: null,
   respuestas: {},
+  piezaPropuesta: {},
   dialogoRevision: false,
   cargaRespuestas: 0,
   ubicando: null,
@@ -360,7 +364,20 @@ export const useAtlas = create<Estado>((set, get) => ({
     delete respuestas[clave];
     set({ respuestas });
   },
-  cargarRespuestas: (r) => set({ respuestas: r, cargaRespuestas: get().cargaRespuestas + 1 }),
+  cargarRespuestas: (r) => set({ respuestas: r, piezaPropuesta: {}, cargaRespuestas: get().cargaRespuestas + 1 }),
+  proponerPosicion: (r, pieza) =>
+    set({
+      respuestas: { ...get().respuestas, [claveRespuesta(r)]: r },
+      piezaPropuesta: { ...get().piezaPropuesta, [r.estructura]: pieza },
+      ubicando: null,
+    }),
+  deshacerPosicion: (estructura) => {
+    const respuestas = { ...get().respuestas };
+    delete respuestas[claveRespuesta({ estructura, campo: 'posicion' })];
+    const piezaPropuesta = { ...get().piezaPropuesta };
+    delete piezaPropuesta[estructura];
+    set({ respuestas, piezaPropuesta, ubicando: estructura });
+  },
   setDialogoRevision: (v) => {
     if (get().dialogoRevision !== v) set({ dialogoRevision: v });
   },

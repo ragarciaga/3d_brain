@@ -7,7 +7,7 @@ import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '
 import { campoTrazado } from '../lib/rutas';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
-import { cambiosDeTexto, claveRespuesta, ESPERA_GUARDADO_MS, type Veredicto } from '../lib/revision';
+import { cambiosDeTexto, claveRespuesta, ESPERA_GUARDADO_MS, propuestaDePosicion, type Veredicto } from '../lib/revision';
 import { useAtlas } from '../store/useAtlas';
 import { colorDePieza } from './colores';
 import { CONSULTA_MOVIL } from './useMovil';
@@ -125,6 +125,32 @@ function ControlRevision({
           />
         </>
       )}
+    </div>
+  );
+}
+
+/** Posición ya propuesta para un marcador (F24): sobre qué pieza cayó el toque, Deshacer y un comentario. */
+function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idioma }) {
+  const { t } = useTranslation();
+  const respuestas = useAtlas((s) => s.respuestas);
+  const piezaPropuesta = useAtlas((s) => s.piezaPropuesta);
+  const idComentario = useId();
+  const p = propuestaDePosicion(respuestas, piezaPropuesta, entrada);
+  if (!p) return null;
+  return (
+    <div className="revision-control" data-testid="posicion-propuesta" data-pieza={p.pieza ?? ''}>
+      <p role="status">{p.pieza ? t('revision.posicionSobre', { pieza: nombrePieza(p.pieza, idioma, t) }) : t('revision.posicionYaPropuesta')}</p>
+      <button type="button" onClick={() => useAtlas.getState().deshacerPosicion(entrada)}>
+        {t('revision.deshacer')}
+      </button>
+      <label htmlFor={idComentario}>{t('revision.comentario')}</label>
+      <textarea
+        id={idComentario}
+        rows={2}
+        maxLength={4000} // el mismo tope que valida el importador (scripts/lib/revisiones.ts); si no, el envío se descarta
+        value={p.respuesta.comentario ?? ''}
+        onChange={(ev) => useAtlas.getState().responder({ ...p.respuesta, comentario: ev.target.value || undefined })}
+      />
     </div>
   );
 }
@@ -376,8 +402,11 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const ubicando = useAtlas((s) => s.ubicando);
   const rutas = useAtlas((s) => s.rutas);
   const enfocar = useAtlas((s) => s.enfocarFicha);
+  const respuestas = useAtlas((s) => s.respuestas);
+  const piezaPropuesta = useAtlas((s) => s.piezaPropuesta);
   const cargaRespuestas = useAtlas((s) => s.cargaRespuestas);
   const id = seleccion.entrada;
+  const yaPropuesta = !!id && !!propuestaDePosicion(respuestas, piezaPropuesta, id);
   const e: Estructura | undefined = id ? estructuras[id] : undefined;
   const ficha = useRef<HTMLElement>(null);
   const refTitulo = useRef<HTMLHeadingElement>(null);
@@ -530,10 +559,15 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
           {marcador.fuente_ubicacion[idioma] && <p className="recurso-nota">{marcador.fuente_ubicacion[idioma]}</p>}
           {revisor && (
             <>
-              <button type="button" className="boton-primario" onClick={() => useAtlas.getState().setUbicando(ubicando === id ? null : id)}>
-                {ubicando === id ? t('revision.cancelarUbicar') : t('revision.proponerPosicion')}
-              </button>
-              {ubicando === id && <p className="etiqueta-aviso">{t('revision.tocaElModelo')}</p>}
+              <PropuestaPosicion key={id} entrada={id} idioma={idioma} />
+              {!yaPropuesta && (
+                <>
+                  <button type="button" className="boton-primario" onClick={() => useAtlas.getState().setUbicando(ubicando === id ? null : id)}>
+                    {ubicando === id ? t('revision.cancelarUbicar') : t('revision.proponerPosicion')}
+                  </button>
+                  {ubicando === id && <p className="etiqueta-aviso">{t('revision.tocaElModelo')}</p>}
+                </>
+              )}
             </>
           )}
         </section>

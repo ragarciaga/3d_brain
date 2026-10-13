@@ -18,6 +18,10 @@ interface VentanaAtlas {
       aislar: { modo: string } | null;
       seleccion: { entrada: string | null; pieza: string | null };
       pedirCamara(p: { encuadrar: string[] }): void;
+      respuestas: Record<string, { comentario?: string; posicion?: number[] }>;
+      piezaPropuesta: Record<string, string>;
+      aislarPiezas(p: string[], modo: string): void;
+      cargarRespuestas(r: Record<string, { comentario?: string; posicion?: number[] }>): void;
       base: Record<string, number[]>;
       separadas: Record<string, number[]>;
       devueltas: Set<string>;
@@ -716,6 +720,24 @@ test.describe('celular (390 x 844)', () => {
   });
 });
 
+/**
+ * Toca el modelo aislado hasta que la app registre la respuesta. El estómago tiene un hueco, y según el ángulo
+ * de la cámara el centro del lienzo puede caer en él: se prueba el centro y después puntos alrededor. Un toque
+ * que no da en la malla no hace nada (las demás piezas están ocultas), así que repetir es inocuo.
+ */
+async function tocarHastaRegistrar(page: Page, centro: Punto, respuestas: string) {
+  const paso = 90;
+  const puntos = [[0, 0], ...[1, 2].flatMap((k) => [[k, 0], [-k, 0], [0, k], [0, -k], [k, k], [-k, k], [k, -k], [-k, -k]])];
+  for (const [dx, dy] of puntos) {
+    await page.mouse.click(centro.x + dx! * paso, centro.y + dy! * paso);
+    const registrado = await expect(page.getByTestId('total-respuestas'))
+      .toHaveText(respuestas, { timeout: 2500 })
+      .then(() => true, () => false);
+    if (registrado) return;
+  }
+  await expect(page.getByTestId('total-respuestas')).toHaveText(respuestas);
+}
+
 test('modo revisión: "Proponer posición" acepta un toque sobre un órgano de referencia', async ({ page }) => {
   await entrarRevision(page);
   await (await campoBusqueda(page)).fill('sustancia gris periacueductal');
@@ -723,13 +745,70 @@ test('modo revisión: "Proponer posición" acepta un toque sobre un órgano de r
   await expect(page.locator('#ficha-titulo')).toHaveText('Sustancia gris periacueductal');
   await page.getByRole('button', { name: 'Proponer posición' }).click();
   await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toBeVisible();
-  // El estómago es un órgano de referencia: se encuadra y se toca en el centro del visor.
-  await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().pedirCamara({ encuadrar: ['stomach'] }));
+  // El estómago es un órgano de referencia: se aísla (solo él recibe el toque), se encuadra y se toca en el centro del visor o cerca.
+  await page.evaluate(() => {
+    const s = (window as unknown as VentanaAtlas).__atlas.getState();
+    s.aislarPiezas(['stomach'], 'solo');
+    s.pedirCamara({ encuadrar: ['stomach'] });
+  });
   await page.waitForTimeout(2500);
+  await camaraQuieta(page);
   const caja = (await page.getByTestId('visor').locator('canvas').boundingBox())!;
-  await page.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
-  await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+  const centro = { x: caja.x + caja.width / 2, y: caja.y + caja.height / 2 };
+  await tocarHastaRegistrar(page, centro, '1 respuesta');
   await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toHaveCount(0);
+
+  // La ficha dice sobre qué pieza cayó el toque y ofrece Deshacer y un comentario; ya no ofrece proponer otra vez.
+  const propuesta = page.getByTestId('posicion-propuesta');
+  await expect(propuesta).toContainText('Posición propuesta sobre Estómago');
+  await expect(propuesta).toHaveAttribute('data-pieza', 'stomach');
+  await expect(propuesta.getByRole('button', { name: 'Deshacer' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Proponer posición' })).toHaveCount(0);
+
+  // El comentario queda en la respuesta de posición, que es la que se envía.
+  const comentario = propuesta.getByRole('textbox', { name: 'Comentario (opcional)' });
+  await comentario.fill('comentario de prueba');
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().respuestas['m-periaqueductal-grey|posicion|']?.comentario))
+    .toBe('comentario de prueba');
+
+  // Al salir a otra estructura y volver, la propuesta sigue ahí con su comentario.
+  await (await campoBusqueda(page)).fill('hipocampo');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
+  await (await campoBusqueda(page)).fill('sustancia gris periacueductal');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#ficha-titulo')).toHaveText('Sustancia gris periacueductal');
+  await expect(propuesta).toContainText('Posición propuesta sobre Estómago');
+  await expect(propuesta.getByRole('textbox', { name: 'Comentario (opcional)' })).toHaveValue('comentario de prueba');
+  await expect(page.getByRole('button', { name: 'Proponer posición' })).toHaveCount(0);
+
+  // Respuestas cargadas de IndexedDB (la pieza tocada no se guarda): la ficha dice que ya hay propuesta, sin la pieza.
+  await page.evaluate(() => {
+    const s = (window as unknown as VentanaAtlas).__atlas.getState();
+    s.cargarRespuestas(s.respuestas);
+  });
+  await expect(propuesta).toContainText('Ya propusiste una posición para este marcador.');
+  await expect(propuesta).toHaveAttribute('data-pieza', '');
+  await expect(propuesta.getByRole('textbox', { name: 'Comentario (opcional)' })).toHaveValue('comentario de prueba');
+  await expect(page.getByRole('button', { name: 'Proponer posición' })).toHaveCount(0);
+
+  // Deshacer borra la respuesta y vuelve a esperar un toque; un nuevo toque la registra otra vez.
+  await propuesta.getByRole('button', { name: 'Deshacer' }).click();
+  await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
+  await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toBeVisible();
+  await expect(page.getByTestId('posicion-propuesta')).toHaveCount(0);
+  // Elegir otras estructuras movió la cámara y el aislamiento: se vuelve a encuadrar el estómago antes de tocar.
+  await page.evaluate(() => {
+    const s = (window as unknown as VentanaAtlas).__atlas.getState();
+    s.aislarPiezas(['stomach'], 'solo');
+    s.pedirCamara({ encuadrar: ['stomach'] });
+  });
+  await page.waitForTimeout(2500);
+  await camaraQuieta(page);
+  await tocarHastaRegistrar(page, centro, '1 respuesta');
+  await expect(page.getByTestId('posicion-propuesta')).toContainText('Posición propuesta sobre Estómago');
+  await expect(page.getByTestId('posicion-propuesta').getByRole('textbox', { name: 'Comentario (opcional)' })).toHaveValue('');
 });
 
 /** El botón se alterna: `aria-pressed` y la clase dicen si está activo (true), parcial (mixed) o apagado (false). */
