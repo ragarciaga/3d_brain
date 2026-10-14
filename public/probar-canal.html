@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Probar el canal de revisión</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  label { display: block; margin-top: 1rem; font-weight: 600; }
+  input { width: 100%; box-sizing: border-box; padding: 0.5rem; font-size: 1rem; }
+  button { margin-top: 1rem; padding: 0.5rem 1.25rem; font-size: 1rem; }
+  #resultado { margin-top: 1.5rem; }
+  #detalle { white-space: pre-wrap; color: #444; }
+</style>
+</head>
+<body>
+<h1>Probar el canal de revisión</h1>
+<p>
+  Esta página es una herramienta del editor, no parte del atlas. Comprueba que desde el sitio
+  publicado se pueda escribir en tu Apps Script de prueba y leer una respuesta de vuelta. Los
+  pasos están en <code>docs/revision-docente.md</code>. Solo se envía una marca aleatoria, ningún
+  dato personal.
+</p>
+<label for="url">URL de la aplicación web (termina en /exec)</label>
+<input id="url" type="url" autocomplete="off" spellcheck="false">
+<button id="probar" type="button">Probar</button>
+<p>Marca de la prueba: <code id="marca"></code></p>
+<div id="resultado" aria-live="polite">
+  <p id="escritura"></p>
+  <p id="lectura"></p>
+  <p id="detalle"></p>
+</div>
+<script>
+function urlValida(texto) {
+  return /^https:\/\/script\.google\.com\/(?:a\/macros\/[\w.-]+|macros)\/s\/[\w-]+\/exec$/.test(texto);
+}
+
+function nuevaMarca() {
+  let azar = '';
+  while (azar.length < 12) {
+    azar += Math.random().toString(36).slice(2);
+  }
+  return 'prueba-' + azar.slice(0, 12);
+}
+
+async function leerJson(res) {
+  if (!res.ok) {
+    throw new Error('respuesta HTTP ' + res.status);
+  }
+  return await res.json();
+}
+
+async function probarCanal(urlScript, marca, pedir) {
+  if (!urlValida(urlScript)) {
+    return {
+      escritura: 'Escritura: falla',
+      lectura: 'Lectura: falla',
+      detalle: 'La URL no es la de una aplicación web de Apps Script (termina en /exec)',
+    };
+  }
+  const notas = ['Marca: ' + marca];
+
+  let escrituraOk = false;
+  try {
+    const res = await pedir(urlScript, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ accion: 'probar', marca }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const datos = await leerJson(res);
+    escrituraOk = datos !== null && typeof datos === 'object' && datos.ok === true && datos.marca === marca;
+    if (!escrituraOk) {
+      notas.push('Escritura: el script respondió, pero no confirmó la marca');
+    }
+  } catch (err) {
+    notas.push('Escritura: ' + String(err));
+  }
+
+  let lecturaOk = false;
+  try {
+    const res = await pedir(urlScript + '?accion=leer&marca=' + encodeURIComponent(marca), {
+      signal: AbortSignal.timeout(15000),
+    });
+    const datos = await leerJson(res);
+    lecturaOk = datos !== null && typeof datos === 'object' && datos.ok === true && datos.encontrada === true;
+    if (!lecturaOk) {
+      notas.push('La lectura respondió, pero no encontró la fila de esta prueba');
+    }
+  } catch (err) {
+    notas.push('Lectura: ' + String(err));
+  }
+
+  return {
+    escritura: escrituraOk ? 'Escritura: ok' : 'Escritura: falla',
+    lectura: lecturaOk ? 'Lectura: ok' : 'Lectura: falla',
+    detalle: notas.join('\n'),
+  };
+}
+
+function iniciar() {
+  const campoUrl = document.getElementById('url');
+  const boton = document.getElementById('probar');
+  const previa = new URLSearchParams(location.search).get('url');
+  if (previa) {
+    campoUrl.value = previa;
+  }
+  boton.addEventListener('click', async () => {
+    const marca = nuevaMarca();
+    boton.disabled = true;
+    document.getElementById('marca').textContent = marca;
+    document.getElementById('escritura').textContent = 'Probando...';
+    document.getElementById('lectura').textContent = '';
+    document.getElementById('detalle').textContent = '';
+    try {
+      const r = await probarCanal(campoUrl.value.trim(), marca, (u, o) => fetch(u, o));
+      document.getElementById('escritura').textContent = r.escritura;
+      document.getElementById('lectura').textContent = r.lectura;
+      document.getElementById('detalle').textContent = r.detalle;
+    } finally {
+      boton.disabled = false;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', iniciar);
+</script>
+</body>
+</html>
