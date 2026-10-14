@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -40,7 +40,8 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   Ctrl+K. Paneles laterales plegables. Se quitó "Armar pieza por pieza".
 - F8 (planos de corte) en construcción: listas la lógica pura (`src/lib/cortes.ts`, PR #54), el
   estado en el store con las guardas de explosión y Separar (PR #70) y la lista medida de mallas
-  cerradas, 191 de 253, que `check:modelo` verifica (PR #57). Todavía no hay interfaz de cortes.
+  cerradas, 191 de 253, que `check:modelo` verifica (PR #57). El visor ya recorta el encéfalo,
+  con fantasma y toque recortado (PR #123); todavía no hay panel de cortes (T8 y T9).
 - Works: typecheck, lint, más de 400 pruebas unitarias, check:i18n, check:modelo (341 mallas, 287
   piezas, 6,53 MB) y build; unas 60 E2E. F1 a F7, F9, F10, F11, F24, el recorrido del vago (F14) y F25 sin
   geometría trazada todavía. Sin "Ambos idiomas" (quitado el 2026-10-13); selector ES | EN claro. Bugs #16 (Reintentar) y #19 (Separar)
@@ -84,7 +85,10 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   y #117 (#83, precarga del modelo). 04-T2 (#102) quedó bloqueada tras 2 devoluciones y espera tu
   respuesta. Segunda corrida (cycle-d52a895-vxmo): fusionados #113 (04-T1), #115 (03-T5) y #121 (e2e
   con 2 workers en CI); abiertos #114, #116, #117, #119 (02-T2); 01-T4 (cortes en el visor) en
-  revisión. El e2e de CI quedó al borde de su tope de 30 min (escalado en #1).
+  revisión. El e2e de CI quedó al borde de su tope de 30 min (escalado en #1). Tercera corrida
+  (cycle-97d0089-tqje): fusionados #114 (03-T4), #117 (#83), #123 (01-T4, cortes en el visor),
+  #116 (03-T2, Apps Script completo) y #119 (02-T2); #124 (02-T3, revisión por ruta) con revisiones
+  aprobadas esperando su e2e; 03-T6 (#92, autorización en la app) en revisión tras una devolución.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
@@ -130,15 +134,16 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 y T3 en main; T2, T4 y T5 en PR. Falta que el editor corra la
-   prueba de `probar-canal.html` (T1, #87) con su Apps Script; después siguen T6 a T13 (T13 necesita
-   la URL del script).
+1. Canal de retorno (spec 03): T1 a T5 en main; T6 (#92) en revisión. Falta que el editor corra la
+   prueba de `probar-canal.html` (T1, #87) con su Apps Script, revise el texto legal de la
+   autorización (plan en #92) y monte `Codigo.js`; después siguen T7 a T13 (T13 necesita la URL del
+   script).
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
-   un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en PR #113; T2 bloqueada
+   un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 bloqueada
    (#102, una devolución más recomendada).
 3. Revisión docente: cuando 1 y 2 estén en main, mandar el mensaje a los 10 docentes.
-4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. T1 en main (PR #112); siguen T2 y T3. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
+4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. T1 y T2 en main (PR #112 y #119); T3 en PR #124. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
 5. Carga (#6, medición hecha; tareas #83 a #85): pedir el modelo desde el inicio, junto con el
    código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
    "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; siguen #84 y #85.
@@ -149,6 +154,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 | Task | plan | implement | Total |
 |---|---:|---:|---:|
 | i83 |  |  | 0.0 |
+| i120 |  |  | 0.0 |
 | T4 | 7.2 |  | 7.2 |
 | T1 | 5.8 |  | 5.8 |
 | T3 | 5.8 | 5.1 | 10.9 |
