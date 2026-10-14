@@ -9,11 +9,12 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: pipeline/rutas-vago.yaml, pipeline/generar-ramas-vago.py, pipeline/pruebas/probar_generar.py, pipeline/pruebas/vago_sintetico.py, tests/fixtures/vago-sintetico/anclajes.json, tests/fixtures/vago-sintetico/puntos.json, tests/rutas-vago-pipeline.test.ts, tests/rutas.test.ts, e2e/atlas.spec.ts
 - Verify: `.venv-pipeline/bin/python pipeline/pruebas/probar_generar.py` (pasos `desde_ruta` y `hasta_vago`; falla nombrando el anclaje o la ruta que falta y no escribe nada; acepta `entrada: vagus-nerve-x`); `npm test -- tests/rutas-vago-pipeline.test.ts` sobre el fixture sintético regenerado (5 rutas; empalmes de 2,5 mm o menos en los dos extremos de cada tramo torácico y al inicio del distal izquierdo; cada recurrente sale a 2,5 mm o menos de su tramo torácico; las bandas coinciden con las alturas de los anclajes del fixture; el YAML no trae listas de tres números); `npm test` completo en verde (incluye `tests/asimetrias.test.ts` y los conteos de rutas de `tests/rutas.test.ts` llevados a 5); `npm run test:e2e -- e2e/atlas.spec.ts -g "rutas trazadas"` con el conteo llevado a 5
 - Issue: #46
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: keep. El orquestador suma los conteos de `tests/rutas.test.ts` y `e2e/atlas.spec.ts` para que el PR no deje el CI en rojo (nota de los revisores de T3 y T6). El comentario de cabecera del YAML pasa a hablar de revisión por ruta.
 - Ronda 2: keep.
+- 2026-10-14: pasos torácicos por defecto del ADVISORY; `reemplaza.hasta: null` explícito; rutas torácicas al principio del YAML. Tier C. Outcome: reviews pass after 0 kickbacks, PR #112.
 
 ## T2: Medir las asimetrías sobre el tronco publicado
 - Purpose: que la prueba de asimetrías mida lo que el estudiante ve, escaneado fuera de la banda más lo trazado, y falle nombrando lado y altura si queda escaneado dentro de la banda.
@@ -23,7 +24,7 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: scripts/lib/asimetrias.ts, tests/asimetrias.test.ts
 - Verify: `npm test -- tests/asimetrias.test.ts` con el fixture sintético de T1: (a) `troncoPublicado` del derecho conserva el escaneado por encima de `y_max` y por debajo de `y_min`, no deja ningún punto escaneado entre ambos e incluye la ruta torácica; el del izquierdo (`y_min` nulo) conserva solo lo de arriba, más la ruta torácica y el distal, ordenado de arriba abajo; un segmento escaneado que cruza la banda queda recortado con puntos de borde en `y_max` y `y_min`; (b) `asimetria3` usa el tronco publicado izquierdo y `asimetria4(d, r)` el derecho; las cuatro pasan; `comprobar(d, null)` sigue devolviendo solo `asimetria4`; (c) `comprobarBanda(puntos, banda, lado)` con un punto escaneado inyectado dentro de la banda lanza un error que nombra el lado y la altura, y sin ese punto pasa; (d) `comprobar` lanza nombrando la ruta si una ruta torácica no trae `reemplaza`; (e) `bandas(r)` se exporta para que la use `check:modelo`; (f) los casos sintéticos existentes siguen en verde
 - Issue: #47
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. La comprobación de R3.3 se separa del recorte para que pueda fallar; `asimetria4` recibe las rutas; `bandas()` queda exportada para T4.
@@ -37,7 +38,7 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: src/lib/rutas.ts, src/components/Ficha.tsx, scripts/lib/revisiones.ts, tests/rutas.test.ts, tests/revisiones.test.ts, e2e/atlas.spec.ts
 - Verify: `npm test -- tests/rutas.test.ts tests/revisiones.test.ts` con el fixture de T1: `campoTrazado` devuelve `trazado_<id>` y los cinco campos son distintos; `leerRutas` conserva `reemplaza` válido (`lado`, `y_max` número, `y_min` número o nulo) y descarta, sin romper las demás, una ruta con `reemplaza` mal formado; `resumenMarkdown` de una respuesta `trazado_vago_toracico_derecho` con la versión vigente sale sin "(desactualizada)" y con ese campo en su fila; una `trazado_derecho` o `trazado_izquierdo` con la versión vigente sale "(desactualizada)" con la nota de que no se aplica a ninguna ruta. `npm run test:e2e -- e2e/atlas.spec.ts -g "rutas trazadas"`: `data-testid` y `data-campo` `trazado_<id>`, un bloque por ruta en la ficha
 - Issue: #48
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Se nombran las salidas observables del importador, la validación real de `reemplaza` y el E2E existente que cambia de campo.
