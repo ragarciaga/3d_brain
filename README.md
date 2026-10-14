@@ -2,7 +2,7 @@
 
 Atlas 3D web, público, gratuito y bilingüe (español e inglés) del cerebro y el nervio vago, para
 estudiantes de psicología y ciencias de la salud. Se desarma en piezas, cada pieza tiene ficha con
-fuente, nivel de evidencia y revisor visible, y se vuelve a armar sin perder la posición exacta.
+fuente, nivel de evidencia y revisión docente visible, y se vuelve a armar sin perder la posición exacta.
 
 **Uso educativo. No es una herramienta clínica ni de diagnóstico.**
 

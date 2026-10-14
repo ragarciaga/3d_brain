@@ -509,6 +509,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const marcador = marcadorPorId(id);
   const rutasDeLaEntrada = rutas.filter((r) => r.entrada === id);
   const estadoIdioma = f?.revision[idioma]?.estado ?? 'borrador';
+  // R9.2: la ficha dice que un docente la revisó y cuándo; nunca quién (ni su nombre ni su alias).
+  const fechaIdioma = f?.revision[idioma]?.fecha ?? null;
   const estadoOtro = f?.revision[otro(idioma)]?.estado ?? 'borrador';
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, t) : nombre(e, idioma);
   const latin = latinVisible(e, t);
@@ -554,9 +556,9 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       )}
       <div className="ficha-meta">
         {f && (
-          <span className={`estado estado-${estadoIdioma}`}>
-            {t(`estado.${estadoIdioma}`)}
-            {f.revision[idioma]?.revisado_por ? ` · ${f.revision[idioma]!.revisado_por}, ${f.revision[idioma]!.fecha}` : ''}
+          <span className={`estado estado-${estadoIdioma}`} data-testid="estado-revision">
+            {estadoIdioma === 'verificado' ? t('ficha.revisadoDocente') : t(`estado.${estadoIdioma}`)}
+            {estadoIdioma === 'verificado' && fechaIdioma ? ` · ${fechaIdioma}` : ''}
           </span>
         )}
         <span className="ficha-fuente-nombre">

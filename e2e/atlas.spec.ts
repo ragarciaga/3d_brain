@@ -344,6 +344,43 @@ test('URL por estructura e idioma: cambiar de idioma conserva la estructura', as
   await expect(segmentos).toHaveText(['ES', 'EN']);
 });
 
+test('revisado por un docente universitario: la ficha verificada muestra la fecha y nunca el nombre ni el alias del revisor (R9.1, R9.2)', async ({ page }) => {
+  // La ficha no depende del modelo 3D: no se espera a que cargue (atlas.spec.ts es el piso de tiempo del CI).
+  await abrir(page, '/es');
+  await expect(page.getByTestId('idioma-actual')).toBeVisible();
+  // Se inyecta en el mismo módulo que usa la app (el servidor de desarrollo lo sirve por ruta): inglés
+  // verificado con un nombre como revisor, español en borrador.
+  await page.evaluate(async () => {
+    const atlas = '/src/data/atlas.ts';
+    const { estructuras } = await import(/* @vite-ignore */ atlas);
+    estructuras.hippocampus.ficha.revision.en = { estado: 'verificado', revisado_por: 'Ana Docente Prueba', fecha: '2026-09-30' };
+    window.dispatchEvent(new CustomEvent('atlas:elegir', { detail: { entrada: 'hippocampus' } }));
+  });
+  await expect(page).toHaveURL(/\/es\/hipocampo$/);
+  await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
+  // Idioma visible sin verificar y el otro verificado: no se anuncia revisión, se avisa del otro idioma.
+  await expect(page.getByTestId('estado-revision')).toHaveText('Borrador: aún no revisado por docentes');
+  await expect(page.getByTestId('ficha')).not.toContainText('Revisado por un docente universitario');
+  await expect(page.getByTestId('ficha')).toContainText('Esta ficha está verificada en el otro idioma');
+  await expect(page.locator('body')).not.toContainText('Ana Docente Prueba');
+  // Verificado en inglés: texto y fecha de ese idioma, sin el nombre.
+  await page.getByTestId('cambiar-idioma').click();
+  await expect(page).toHaveURL(/\/en\/hippocampus$/);
+  await expect(page.getByTestId('estado-revision')).toHaveText('Reviewed by a university teacher · 2026-09-30');
+  await expect(page.locator('body')).not.toContainText('Ana Docente Prueba');
+  // Verificado en español con un alias: tampoco se ve el alias.
+  await page.evaluate(async () => {
+    const atlas = '/src/data/atlas.ts';
+    const { estructuras } = await import(/* @vite-ignore */ atlas);
+    estructuras.hippocampus.ficha.revision.es = { estado: 'verificado', revisado_por: 'D97', fecha: '2026-10-01' };
+  });
+  await page.getByTestId('cambiar-idioma').click();
+  await expect(page).toHaveURL(/\/es\/hipocampo$/);
+  await expect(page.getByTestId('estado-revision')).toHaveText('Revisado por un docente universitario · 2026-10-01');
+  await expect(page.locator('body')).not.toContainText('D97');
+  await expect(page.locator('body')).not.toContainText('Ana Docente Prueba');
+});
+
 test('árbol y grupos: ocultar un grupo y filtrar el sistema límbico', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
