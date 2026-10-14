@@ -3,7 +3,19 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { TFunction } from 'i18next';
-import { arbol, entradaPorSlug, estructuras, grupos, marcadores, nodos, piezasDeAncla, piezasDeEntrada, SIN_TERMINO } from '../src/data/atlas';
+import {
+  arbol,
+  entradaPorSlug,
+  estructuras,
+  grupos,
+  marcadores,
+  nodos,
+  piezasDeAncla,
+  piezasDeEntrada,
+  posicionValida,
+  puntosDeMarcador,
+  SIN_TERMINO,
+} from '../src/data/atlas';
 import { crearBuscador } from '../src/lib/busqueda';
 import { latinVisible, nombre } from '../src/lib/nombres';
 
@@ -155,6 +167,79 @@ describe('datos del atlas', () => {
     for (const f of ['src/data/estructuras.json', 'src/data/grupos.json', 'src/data/marcadores.json', 'src/i18n/es.json', 'src/i18n/en.json']) {
       expect(readFileSync(f, 'utf8').includes(String.fromCharCode(0x2014)), f).toBe(false);
     }
+  });
+});
+
+describe('posición de marcadores (R3)', () => {
+  it.each([
+    ['un punto', [0.01, 1.6, -0.02]],
+    ['solo l', { l: [1, 2, 3] }],
+    ['solo r', { r: [1, 2, 3] }],
+    ['l y r', { l: [1, 2, 3], r: [-1, 2, 3] }],
+    ['null', null],
+  ])('posicionValida acepta %s', (_n, v) => {
+    expect(posicionValida(v)).toBe(true);
+  });
+
+  it.each([
+    ['dos coordenadas', [1, 2]],
+    ['una coordenada nula', [1, 2, null]],
+    ['cuatro coordenadas', [1, 2, 3, 4]],
+    ['una coordenada NaN', [1, Number.NaN, 3]],
+    ['objeto vacío', {}],
+    ['lado con dos coordenadas', { l: [1, 2] }],
+    ['un texto', '1,2,3'],
+    ['clave distinta de l o r', { x: [1, 2, 3] }],
+    ['clave extra junto a una válida', { l: [1, 2, 3], x: [1, 2, 3] }],
+    ['undefined', undefined],
+  ])('posicionValida rechaza %s', (_n, v) => {
+    expect(posicionValida(v)).toBe(false);
+  });
+
+  it('todos los marcadores de marcadores.json tienen una posición válida', () => {
+    for (const m of marcadores) expect(posicionValida(m.posicion), m.id).toBe(true);
+  });
+
+  it('puntosDeMarcador: sin posición no hay puntos, aunque haya ancla', () => {
+    expect(puntosDeMarcador({ posicion: null, ancla: 'thalamus' })).toEqual([]);
+  });
+
+  it('puntosDeMarcador: un punto sigue a todas las piezas del ancla', () => {
+    const r = puntosDeMarcador({ posicion: [1, 2, 3], ancla: 'thalamus' });
+    expect(r).toHaveLength(1);
+    expect(r[0]!.lado).toBeNull();
+    expect(r[0]!.posicion).toEqual([1, 2, 3]);
+    expect([...r[0]!.piezas].sort()).toEqual(['thalamus-l', 'thalamus-r']);
+  });
+
+  it('puntosDeMarcador: un punto sin ancla no sigue a ninguna pieza', () => {
+    expect(puntosDeMarcador({ posicion: [1, 2, 3], ancla: null })).toEqual([{ lado: null, posicion: [1, 2, 3], piezas: [] }]);
+  });
+
+  it('puntosDeMarcador: { l, r } da un punto por lado con las piezas de su lado, en orden l, r', () => {
+    expect(puntosDeMarcador({ posicion: { r: [-1, 2, 3], l: [1, 2, 3] }, ancla: 'thalamus' })).toEqual([
+      { lado: 'l', posicion: [1, 2, 3], piezas: ['thalamus-l'] },
+      { lado: 'r', posicion: [-1, 2, 3], piezas: ['thalamus-r'] },
+    ]);
+  });
+
+  it('puntosDeMarcador: { l } da solo el punto izquierdo', () => {
+    const r = puntosDeMarcador({ posicion: { l: [1, 2, 3] }, ancla: 'thalamus' });
+    expect(r).toEqual([{ lado: 'l', posicion: [1, 2, 3], piezas: ['thalamus-l'] }]);
+  });
+
+  it('puntosDeMarcador: si el ancla no tiene piezas de ese lado, sigue a todas las del ancla', () => {
+    expect(nodos['aqueduct-of-midbrain']?.lado).toBe('');
+    expect(puntosDeMarcador({ posicion: { r: [1, 2, 3] }, ancla: 'aqueduct-of-midbrain' })).toEqual([
+      { lado: 'r', posicion: [1, 2, 3], piezas: ['aqueduct-of-midbrain'] },
+    ]);
+  });
+
+  it('puntosDeMarcador: { l, r } sin ancla da dos puntos sin piezas', () => {
+    expect(puntosDeMarcador({ posicion: { l: [1, 2, 3], r: [-1, 2, 3] }, ancla: null })).toEqual([
+      { lado: 'l', posicion: [1, 2, 3], piezas: [] },
+      { lado: 'r', posicion: [-1, 2, 3], piezas: [] },
+    ]);
   });
 });
 
