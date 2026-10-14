@@ -95,6 +95,8 @@ export interface Equipo {
   nucleos: number | null;
   memoriaGB: number | null;
   gpu: string;
+  /** Densidad de píxeles del visor (issue 84); null mientras no hay dato. */
+  densidad: { valor: number; fija: boolean } | null;
 }
 
 export interface Fluidez {
@@ -128,6 +130,7 @@ export function informe(r: ResumenCarga, e: Equipo, f: Fluidez | null, fecha: st
     `Maysa Brain, medición de carga (${fecha})`,
     `Navegador: ${e.navegador}`,
     `Pantalla: ${e.pantalla}`,
+    `Densidad de píxeles del visor: ${e.densidad ? `${String(e.densidad.valor).replace('.', ',')} ${e.densidad.fija ? '(fija con ?dpr)' : '(automática)'}` : 'sin dato'}`,
     `Núcleos: ${e.nucleos ?? 'sin dato'} · Memoria: ${e.memoriaGB === null ? 'sin dato' : `${e.memoriaGB} GB`}`,
     `GPU: ${e.gpu || 'sin dato'}`,
     `Código listo: ${ms(r.codigoListoMs)} (${r.codigoKB} KB)`,

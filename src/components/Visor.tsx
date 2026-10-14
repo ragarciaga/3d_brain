@@ -36,6 +36,7 @@ import { punteado } from './acabados';
 import { esEncefalo, hayCortes } from '../lib/cortes';
 import { actualizarPlanos, crearMallaFantasma, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
+import { useDensidadAdaptativa } from './useDensidadAdaptativa';
 
 export const URL_MODELO = `${import.meta.env.BASE_URL}modelos/atlas.glb`;
 
@@ -732,6 +733,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
   const ubicando = useAtlas((s) => s.ubicando);
   const cargado = useAtlas((s) => s.cargado);
   const inicioPuntero = useRef<{ x: number; y: number } | null>(null);
+  const dpr = useDensidadAdaptativa();
 
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
@@ -766,7 +768,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
         )}
         <Canvas
           camera={{ fov: 40, near: 0.002, far: 20, position: [0.5, 1.7, 0.5] }}
-          dpr={[1, 2]}
+          dpr={dpr}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
             gl.localClippingEnabled = true; // recorrido del vago y planos de corte (F8)
