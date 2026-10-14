@@ -52,7 +52,7 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: pipeline/extraer.py, pipeline/pruebas/probar_recorte.py, scripts/check-modelo.ts, scripts/lib/modelo.ts, scripts/lib/glb.ts, tests/modelo.test.ts
 - Verify: `npm test -- tests/modelo.test.ts` (con una banda y una malla sintética del tronco, usando `bandas()` de T2: falla nombrando malla y altura si un vértice cae dentro de la banda, también en el `#toque`; pasa si no hay ninguno; un vértice sobre `y_max` o `y_min` con 0,1 mm de tolerancia cuenta como fuera; la banda del izquierdo con `y_min` nulo vigila desde `y_max` hacia abajo; los casos de cajas existentes siguen en verde); `npm run check:modelo` sigue en verde con el `public/modelos/rutas-vago.json` y el GLB actuales; `.venv-pipeline/bin/python pipeline/pruebas/probar_recorte.py` en Blender, con la función de corte recibiendo la banda por parámetro: cada vértice original conservado del tronco y de su `#toque` queda a 0,1 mm o menos de su posición fuente, los vértices nuevos del corte quedan en `y_max` o `y_min` sobre la superficie original, ninguno queda dentro de la banda, el derecho conserva arriba y abajo y el izquierdo solo arriba; con banda o `rutas-vago.json` faltante `extraer.py` se detiene antes de exportar y no escribe `cajas.json`. No se regeneran `public/modelos/**` ni `pipeline/cajas.json` en esta tarea (eso es T5)
 - Issue: #49
-- Status: todo
+- Status: in-review
 
 ### Decision log
 - Ronda 1: rewrite. Se separan vértices originales y nuevos del corte, se agregan los casos de error, la tolerancia en el borde y el lector de vértices del GLB; usa `bandas()` de T2 para no duplicar.
