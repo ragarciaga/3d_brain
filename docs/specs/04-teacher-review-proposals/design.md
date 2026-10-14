@@ -62,21 +62,21 @@ Workflow: reglas fijas y deterministas sobre un modelo fijado; no hay IA (ADR 00
 ## Interfaces and contracts
 ```yaml
 # pipeline/reglas-marcadores.yaml (R1.2, R2.1)
-m-area-postrema:
-  lado: medio            # medio | ambos | l | r
-  operacion: extremo     # extremo | centro | polo | en_curva | superficie | plano_medio | entre
-  malla: Fourth ventricle
-  eje: y                 # eje glTF
-  sentido: min           # caudal
-  cara: dorsal
-  ancla: medulla-oblongata
-  fuentes: [LaraGarcia2025, Agostinelli2023]
-  metodo: { es: "Punto más caudal del cuarto ventrículo (óbex)...", en: "Most caudal point of the fourth ventricle (obex)..." }
+marcadores:
+  m-area-postrema:
+    lado: medio          # medio | ambos | l | r
+    operacion: plano_medio   # extremo | centro | polo | en_curva | superficie | plano_medio | entre
+    mallas: [Medulla oblongata.l, Medulla oblongata.r]
+    altura: { operacion: extremo, malla: Fourth ventricle, hacia: inferior }   # punto más caudal (óbex)
+    profundidad: dorsal
+    ancla: medulla-oblongata
+    fuentes: [LaraGarcia2025, Agostinelli2023]
+    metodo: { es: "En la línea media, a la altura del punto más caudal del cuarto ventrículo (el óbex)...", en: "On the midline, at the height of the most caudal point of the fourth ventricle (the obex)..." }
 ```
 ```ts
 // scripts/lib/marcadores.ts (R1.6, R2.3, R6.2)
 aplicarPropuestas(marcadores: Marcador[], propuestas: Propuesta[]): { marcadores: Marcador[]; resumen: string };
-// Propuesta: { id, posicion: Vec3 | { l, r } | null, motivo?, metodo: {es,en}, cita: {es,en}, ancla? }
+// Propuesta: { id, posicion: Vec3 | { l, r } | null, estado: 'aproximada' | 'sin_ubicar', motivo?, metodo: {es,en}, cita: {es,en}, ancla?, desacuerdo?: {es,en} }
 ```
 
 ## Error handling
