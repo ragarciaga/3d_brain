@@ -99,7 +99,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/PanelRevision.tsx, src/store/useAtlas.ts, src/i18n/es.json, src/i18n/en.json, tests/i18n.test.ts, e2e/revision-canal.spec.ts, e2e/revision-dialogos.spec.ts, e2e/atlas.spec.ts
 - Verify: `npm run test:e2e -- e2e/revision-canal.spec.ts -g "guardado"` con el canal simulado por `page.route` sobre `urlCanal` (costura de T6): una respuesta completa sale en menos de 3 s después del último cambio, el panel dice "Guardando..." mientras espera y "Guardado ✓" con la confirmación de la misma clave y fecha; con el canal caído dice "Sin conexión: se guardará cuando vuelva" y, al recargar con el canal arriba, la pendiente se guarda sin tocar nada; con `codigo_no_activo` muestra "Tu código no está activo; escribe al editor", no sale ninguna petición `guardar` posterior y la respuesta sigue en IndexedDB; con el canal configurado no existen "Enviar revisión", "Enviar todo", "Abrir formulario" ni "Sí, lo envié". `npm run test:e2e -- e2e/revision-dialogos.spec.ts e2e/atlas.spec.ts` pasan: las pruebas del envío por formulario siguen verdes con `urlCanal` vacía y solo se reescriben las que mezclan formulario y canal. `npm test -- tests/i18n.test.ts`; `npm run check:i18n`
 - Issue: #93
-- Status: in-review
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Los pasos de envío se retiran solo con canal (R3.7 y R7.2), "Guardando...", `codigo_no_activo` sin reintento y las pruebas del formulario se conservan para el modo sin canal.
@@ -113,7 +113,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/PanelRevision.tsx, src/store/useAtlas.ts, src/lib/respaldo.ts, src/i18n/es.json, src/i18n/en.json, tests/respaldo.test.ts, tests/i18n.test.ts, e2e/revision-canal.spec.ts, e2e/respaldo.spec.ts
 - Verify: `npm run test:e2e -- e2e/revision-canal.spec.ts -g "otro equipo"`: en un contexto nuevo con el mismo enlace y `leer` simulado con respuestas guardadas, se ven respondidas en menos de 5 s con la red limitada a 4G (`page.route` con demora de 1,5 s); una respuesta local más reciente que la del canal se conserva; lo traído del canal no genera ninguna petición `guardar`; no existen "Descargar respaldo" ni "Cargar respaldo". `npm test -- tests/respaldo.test.ts tests/i18n.test.ts`: `tests/respaldo.test.ts` queda solo con la fusión y `piezasQueSiguen` (la usa `importarRespuestas`) y `tests/i18n.test.ts` ya no exige las claves de respaldo ni que `guia.responder` las nombre (solo se tocan esas aserciones), y `revision.soloEsteNavegador` ya no invita a descargar. `e2e/respaldo.spec.ts` conserva solo el caso del código recordado y pasa. `npm run check:i18n`
 - Issue: #94
-- Status: todo
+- Status: in-review
 
 ### Decision log
 - Ronda 1: rewrite. Lo traído queda marcado como guardado, fusión con lo local, limpieza de funciones, claves y pruebas de respaldo.
