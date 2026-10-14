@@ -64,11 +64,27 @@ Abre el sitio con `?medir=1` al final de la dirección, en cada equipo (iPad, ce
 https://ragarciaga.github.io/3d_brain/es?medir=1
 ```
 
-Aparece un panel con el equipo, la tarjeta gráfica, cuánto tardó el código, la descarga del modelo
-3D, la preparación del modelo, cuándo se vio el cerebro y los cuadros por segundo de los 10 s
-siguientes. Al final dice qué fue lo más lento. "Copiar resultados" copia todo como texto para
-pegarlo en el issue 6 o en el chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo
-quita. No envía nada a ningún servidor.
+Aparece un panel con el equipo, la densidad de píxeles del visor, la tarjeta gráfica, cuánto tardó
+el código, la descarga del modelo 3D, la preparación del modelo, cuándo se vio el cerebro y los
+cuadros por segundo de los 10 s siguientes. Al final dice qué fue lo más lento. "Copiar resultados"
+copia todo como texto para pegarlo en el issue 6 o en el chat. El panel sigue mientras navegas en
+esa pestaña; "Cerrar" lo quita. No envía nada a ningún servidor.
+
+Para comparar el mismo equipo con distinta densidad de píxeles, agrega `dpr=<n>` a la dirección:
+
+```
+https://ragarciaga.github.io/3d_brain/es?medir=1&dpr=1
+https://ragarciaga.github.io/3d_brain/es?medir=1&dpr=1.5
+```
+
+Se aceptan valores de 0.5 a 3, con punto decimal; cualquier otro valor se ignora y queda el modo
+automático. El valor vale mientras navegas en esa pestaña y se pierde si recargas sin él. El panel
+y el informe copiado dicen la densidad en uso ("fija con ?dpr" o "automática").
+
+Sin `?dpr`, la app ajusta la densidad sola: si el equipo va a menos de 30 cuadros/s durante unos 3 s
+con el modelo cargado, baja la densidad un paso (a 1,5 y luego a 1); si va holgado (55 o más durante
+10 s), la sube, como máximo dos veces por visita. En ese modo, la "Fluidez (10 s)" puede mezclar
+cuadros de antes y de después del ajuste, por eso las comparaciones se hacen con `?dpr`.
 
 Mide dos veces en cada equipo: la primera vez (el modelo se descarga) y recargando la página (el
 modelo sale de la memoria del navegador). Si quieres una medición limpia, abre una pestaña privada.
