@@ -70,7 +70,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/Pagina.tsx, src/lib/persistencia.ts, src/i18n/es.json, src/i18n/en.json, tests/persistencia.test.ts, e2e/revision-canal.spec.ts
 - Verify: `npm test -- tests/persistencia.test.ts`: `recordarRevisor` no guarda un código que no cumple `REVISOR_VALIDO` (vacío, 41 caracteres, `<script>`, con espacio) y sí guarda uno válido; `revisorRecordado` devuelve `null` si el valor guardado no cumple `REVISOR_VALIDO`. `npm run test:e2e -- e2e/revision-canal.spec.ts -g "enlace"`: `/es/revision?r=D03-ok` y `/en/revision?r=D03-ok` activan el modo sin pedir código; `/es/revision?r=<script>` muestra "Este enlace no es válido; pide uno nuevo al editor" y `/en/revision?r=<script>` su texto en inglés, y en ambos casos no se activa el modo y `localStorage['atlas:revisor']` queda vacío; con un código válido ya recordado, un `?r=` inválido muestra el mensaje, no activa el modo y no borra ni cambia el código recordado; `npm run check:i18n`
 - Issue: #91
-- Status: in-review
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Inglés, valor inválido ya guardado y enlace inválido con un código recordado. Crea `e2e/revision-canal.spec.ts`, que las demás tareas extienden.
