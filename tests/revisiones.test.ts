@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { agregarRevisores, aplicarPadron, errorDePadron, importar, leerEnvios, parsearCsv, resumenConsolidado, resumenMarkdown, ultimasRespuestas, type Envio } from '../scripts/lib/revisiones.ts';
-import { CLAVES_V2, partesEnvio, urlFormulario, type Respuesta } from '../src/lib/revision';
+import { CLAVES_V2, cargaRevisionV2, partesEnvio, urlFormulario, type Respuesta } from '../src/lib/revision';
 
-const fila = (carga: object, nombre = 'Ana') => `2026-10-11 10:00,X,Y,"${JSON.stringify(carga).replace(/"/g, '""')}",${nombre}`;
+const fila = (carga: object, nombre = 'Ana', recibido = '2026-10-11 10:00') => `${recibido},X,Y,"${JSON.stringify(carga).replace(/"/g, '""')}",${nombre}`;
+/** Fila de la pestaña Respuestas del Apps Script: A recepción, B código, C ids, D carga. */
+const filaHoja = (carga: { r: string; e: object }, recibido: string) =>
+  `${recibido},${carga.r},"${Object.keys(carga.e).join(',')}","${JSON.stringify({ v: 2, ...carga }).replace(/"/g, '""')}"`;
 const cabecera = 'Marca temporal,Código,Estructura,Revisión,Nombre';
-const base = { idioma: 'es' as const, version: '0.1.0', fecha: 'x' };
+const base = { idioma: 'es' as const, version: '0.1.0', fecha: '2026-10-11T10:00:00.000Z' };
 /** Padrón de prueba: todos los códigos que usan estas pruebas, con su alias. */
 const padron = { ANAT01: 'D01', PROF01: 'D02', P1: 'D03', X: 'D04' };
 const estructuras = {
@@ -20,7 +24,7 @@ const fichaCriterio: Respuesta[] = [
   { ...base, estructura: 'hippocampus', campo: 'relaciones', idioma: undefined, veredicto: 'corregir', propuesta: 'Agregar el subículo' },
 ];
 const marcadorCriterio: Respuesta[] = [
-  { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [0.00123, 1.61234, -0.01987], version: 'sin-ficha', fecha: 'x' },
+  { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [0.00123, 1.61234, -0.01987], version: 'sin-ficha', fecha: '2026-10-11T10:00:00.000Z' },
 ];
 
 /** El escenario del criterio F24, tal como la app lo manda al formulario y queda en la hoja (envío v:1, uno por estructura). */
@@ -435,9 +439,9 @@ describe('carga v:2 (#58)', () => {
 
   it('ida y vuelta de todos los campos (D6)', () => {
     const entrada: Respuesta[] = [
-      { estructura: 'hippocampus', campo: 'relaciones', veredicto: 'corregir', propuesta: 'p', comentario: 'k', version: '0.1.0', fecha: '' },
-      { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [1, 2.5, -3], malla: 'Vagus_nerve.R', ramo: 'no_se', version: 'sin-ficha', fecha: '' },
-      { estructura: 'm-periaqueductal-grey', campo: 'trazo:Vagus_nerve.R (rama) 01', idioma: 'en', veredicto: 'no_es_mi_area', version: 'sin-ficha', fecha: '' },
+      { estructura: 'hippocampus', campo: 'relaciones', veredicto: 'corregir', propuesta: 'p', comentario: 'k', version: '0.1.0', fecha: '2026-10-14T08:00:00.000Z' },
+      { estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [1, 2.5, -3], malla: 'Vagus_nerve.R', ramo: 'no_se', version: 'sin-ficha', fecha: '2026-10-14T08:01:00.000Z' },
+      { estructura: 'm-periaqueductal-grey', campo: 'trazo:Vagus_nerve.R (rama) 01', idioma: 'en', veredicto: 'no_es_mi_area', version: 'sin-ficha', fecha: '2026-10-14T08:02:00.000Z' },
     ];
     const partes = partesEnvio(configForm, 'P1', entrada);
     const { envios, invalidas } = leer(JSON.parse(new URL(partes[0]!.url!).searchParams.get('entry.3')!));
@@ -447,13 +451,43 @@ describe('carga v:2 (#58)', () => {
     expect(envios.flatMap((e) => e.respuestas)).toEqual(entrada);
   });
 
-  it('descarta las claves desconocidas de cada elemento y no deja que traigan estructura ni fecha', () => {
+  it('descarta las claves desconocidas de cada elemento y no deja que traigan estructura ni fecha con su nombre largo', () => {
     const { envios } = leer(v2({ hippocampus: [{ ...buena, estructura: 'm-periaqueductal-grey', fecha: 'hoy', zzz: 1 }] }));
     expect(envios[0]!.respuestas[0]).toEqual({ estructura: 'hippocampus', fecha: '', campo: 'ubicacion', idioma: 'es', veredicto: 'correcto', version: '0.1.0' });
   });
 
-  it('CLAVES_V2 cubre todos los campos que valida el importador', () => {
-    expect(Object.keys(CLAVES_V2).sort()).toEqual(['campo', 'comentario', 'idioma', 'malla', 'posicion', 'propuesta', 'ramo', 'veredicto', 'version']);
+  it('CLAVES_V2 cubre todos los campos que valida el importador y la fecha', () => {
+    expect(Object.keys(CLAVES_V2).sort()).toEqual(['campo', 'comentario', 'fecha', 'idioma', 'malla', 'posicion', 'propuesta', 'ramo', 'veredicto', 'version']);
+  });
+
+  it('v:2 con f devuelve la fecha original en cada respuesta', () => {
+    const { envios, invalidas } = leer(v2({ hippocampus: [{ ...buena, f: '2026-10-14T10:00:00.000Z' }, { ...buena, c: 'que_es', f: '2026-10-14T10:00:01.000Z' }] }));
+    expect(invalidas).toBe(0);
+    expect(envios[0]!.respuestas.map((x) => x.fecha)).toEqual(['2026-10-14T10:00:00.000Z', '2026-10-14T10:00:01.000Z']);
+  });
+
+  it('v:2 sin f queda con fecha vacía', () => {
+    const sola = leer(v2({ hippocampus: [buena] }));
+    expect(sola.invalidas).toBe(0);
+    expect(sola.envios[0]!.respuestas[0]!.fecha).toBe('');
+
+    const carga = cargaRevisionV2('P1', [{ estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: 'correcto', version: '0.1.0', fecha: '' }]);
+    expect(carga).not.toContain('"f"');
+    const emitida = leer(JSON.parse(carga));
+    expect(emitida.invalidas).toBe(0);
+    expect(emitida.envios[0]!.respuestas[0]!.fecha).toBe('');
+
+    const mixta = leer(v2({ hippocampus: [{ ...buena, f: '2026-10-14T10:00:00.000Z' }, { ...buena, c: 'que_es' }] }));
+    expect(mixta.invalidas).toBe(0);
+    expect(mixta.envios[0]!.respuestas.map((x) => x.fecha)).toEqual(['2026-10-14T10:00:00.000Z', '']);
+  });
+
+  it('acepta una f parseable de exactamente 40 caracteres', () => {
+    const f40 = `2026-10-10T10:00:00.${'0'.repeat(19)}Z`;
+    expect(f40).toHaveLength(40);
+    const { envios, invalidas } = leer(v2({ hippocampus: [{ ...buena, f: f40 }] }));
+    expect(invalidas).toBe(0);
+    expect(envios[0]!.respuestas[0]!.fecha).toBe(f40);
   });
 
   it.each([
@@ -478,6 +512,10 @@ describe('carga v:2 (#58)', () => {
     ['idioma fr', v2({ hippocampus: [{ ...buena, i: 'fr' }] })],
     ['malla que no es texto', v2({ hippocampus: [{ ...buena, m: 3 }] })],
     ['ramo de 201 caracteres', v2({ hippocampus: [{ ...buena, a: 'x'.repeat(201) }] })],
+    ['f de 41 caracteres', v2({ hippocampus: [{ ...buena, f: `2026-10-10T10:00:00.${'0'.repeat(20)}Z` }] })],
+    ['f que no es texto', v2({ hippocampus: [{ ...buena, f: 1760000000000 }] })],
+    ['f no parseable', v2({ hippocampus: [{ ...buena, f: 'ayer' }] })],
+    ['f vacía', v2({ hippocampus: [{ ...buena, f: '' }] })],
     ['una respuesta mala entre buenas', v2({ hippocampus: [buena, { ...buena, c: 'otro' }], 'm-periaqueductal-grey': [{ ...buena, d: 'x' }] })],
     ['revisor ausente', { v: 2, e: { hippocampus: [buena] } }],
     ['revisor con punto', v2({ hippocampus: [buena] }, 'ANA.PEREZ')],
@@ -518,5 +556,110 @@ describe('carga v:2 (#58)', () => {
     const { validos, invalidas } = importar(`${cabecera}\n${fila(v2({ hippocampus: [buena], 'm-periaqueductal-grey': [{ ...buena, s: 'sin-ficha' }] }))}\n`, estructuras, padron);
     expect(validos).toBe(2);
     expect(invalidas).toBe(0);
+  });
+});
+
+describe('pestaña Respuestas del Apps Script (spec 03)', () => {
+  const cabeceraHoja = 'Recibido,Código,Estructuras,Carga';
+  const el = (extra: object) => ({ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: '2026-10-14T10:00:00.000Z', ...extra });
+  const filasDe = (md: string, alias: string) => md.split('\n').filter((l) => l.startsWith(`| \`${alias}\` |`));
+
+  it('da los mismos archivos que el CSV del formulario (R8.1)', () => {
+    const hojaCsv = readFileSync('tests/fixtures/revisiones/hoja-respuestas.csv', 'utf8');
+    const datos = parsearCsv(hojaCsv).slice(1);
+    expect(datos).toHaveLength(3);
+    for (const f of datos) expect(f).toHaveLength(4);
+
+    const formCsv = `${cabecera}\n${datos.map(([a, , , d]) => fila(JSON.parse(d!), 'Ana', a)).join('\n')}\n`;
+    const hoja = importar(hojaCsv, estructuras, padron);
+    const form = importar(formCsv, estructuras, padron);
+    expect([...hoja.archivos]).toEqual([...form.archivos]);
+    expect(hoja.validos).toBe(form.validos);
+    expect(hoja.invalidas).toBe(form.invalidas);
+    expect(hoja.desconocidos).toBe(form.desconocidos);
+
+    expect(hoja.validos).toBe(5);
+    expect(hoja.invalidas).toBe(0);
+    expect([...hoja.archivos.keys()].sort()).toEqual(['hippocampus.md', 'm-periaqueductal-grey.md', 'resumen.md']);
+    const resumen = hoja.archivos.get('resumen.md')!;
+    expect(resumen).toContain('4 respuestas, 2 estructuras');
+    expect(resumen).toContain('`D01`');
+    expect(resumen).toContain('`D02`');
+    expect(resumen).not.toContain('ANAT01');
+    expect(resumen).not.toContain('PROF01');
+    const d01 = filasDe(resumen, 'D01');
+    expect(d01).toHaveLength(3);
+    for (const l of d01) expect(l).toMatch(/`2026-10-14 09:00:09` \|$/);
+  });
+
+  it('misma clave y misma fecha cuentan una sola respuesta (R3.6)', () => {
+    const carga = { r: 'ANAT01', e: { hippocampus: [el({})] } };
+    const csv = `${cabeceraHoja}\n${filaHoja(carga, '2026-10-14 10:00:05')}\n${filaHoja(carga, '2026-10-14 10:00:09')}\n`;
+    const { archivos } = importar(csv, estructuras, padron);
+    const resumen = archivos.get('resumen.md')!;
+    expect(resumen).toContain('1 respuestas, 1 estructuras');
+    expect(filasDe(resumen, 'D01')).toHaveLength(1);
+  });
+
+  it('con fechas distintas queda la última fila (R3.6)', () => {
+    const primera = { r: 'ANAT01', e: { hippocampus: [el({ d: 'corregir', p: 'x', f: '2026-10-14T10:00:00.000Z' })] } };
+    const segunda = { r: 'ANAT01', e: { hippocampus: [el({ d: 'correcto', f: '2026-10-14T10:05:00.000Z' })] } };
+    const csv = `${cabeceraHoja}\n${filaHoja(primera, '2026-10-14 10:00:05')}\n${filaHoja(segunda, '2026-10-14 10:05:05')}\n`;
+    const { archivos } = importar(csv, estructuras, padron);
+    const filas = filasDe(archivos.get('resumen.md')!, 'D01');
+    expect(filas).toHaveLength(1);
+    expect(filas[0]).toContain('| correcto |');
+    expect(filas[0]).not.toContain('corregir');
+    expect(filas[0]).toMatch(/`2026-10-14 10:05:05` \|$/);
+  });
+
+  describe('filas de otras pestañas (R8.2)', () => {
+    const resp1 = filaHoja({ r: 'ANAT01', e: { hippocampus: [el({})] } }, '2026-10-14 10:00:05');
+    const resp2 = filaHoja({ r: 'PROF01', e: { hippocampus: [el({ c: 'que_es' })] } }, '2026-10-14 10:02:05');
+    const soloRespuestas = `${cabeceraHoja}\n${resp1}\n${resp2}\n`;
+    const mezclado = [
+      cabeceraHoja,
+      resp1,
+      'ZZZZ9999,2026-10-14T10:00:00.000Z,aut-v1,sí',
+      'ANAT01,2026-10-14T10:01:00.000Z,aut-v1,no',
+      resp2,
+      'ANAT01,D01,sí',
+      'ZZZZ9999,D100,no',
+    ].join('\n') + '\n';
+
+    it('las filas de Autorizaciones y Padrón no cuentan ni salen', () => {
+      const ids = new Set(['hippocampus']);
+      const limpio = leerEnvios(parsearCsv(soloRespuestas), ids);
+      const sucio = leerEnvios(parsearCsv(mezclado), ids);
+      expect(limpio.envios).toHaveLength(2);
+      expect(sucio.envios).toEqual(limpio.envios);
+      expect(sucio.invalidas).toBe(0);
+
+      const a = importar(mezclado, estructuras, padron);
+      const b = importar(soloRespuestas, estructuras, padron);
+      expect([...a.archivos]).toEqual([...b.archivos]);
+      expect(a.desconocidos).toBe(0);
+      expect(a.invalidas).toBe(0);
+      expect(a.validos).toBe(2);
+      for (const md of a.archivos.values()) {
+        for (const x of ['ZZZZ9999', 'aut-v1', 'D100']) expect(md).not.toContain(x);
+      }
+    });
+
+    it.each([
+      ['Autorizaciones con A con punto', 'ANA.PEREZ,2026-10-14T10:00:00.000Z,aut-v1,sí'],
+      ['Autorizaciones con B ilegible', 'ANAT01,ayer,aut-v1,sí'],
+      ['Autorizaciones con C vacía', 'ANAT01,2026-10-14T10:00:00.000Z,,sí'],
+      ['Autorizaciones con D distinto de sí y no', 'ANAT01,2026-10-14T10:00:00.000Z,aut-v1,quizá'],
+      ['Autorizaciones con cinco columnas', 'ANAT01,2026-10-14T10:00:00.000Z,aut-v1,sí,extra'],
+      ['Padrón con A con punto', 'ANA.PEREZ,D01,sí'],
+      ['Padrón con B que no es alias', 'ANAT01,Ana,sí'],
+      ['Padrón con C distinto de sí y no', 'ANAT01,D01,quizá'],
+      ['fila sin carga y sin forma', 'texto suelto'],
+    ])('una fila casi con forma de otra pestaña sigue siendo inválida: %s', (_n, filaBasura) => {
+      const { envios, invalidas } = leerEnvios(parsearCsv(`${cabeceraHoja}\n${filaBasura}\n`), new Set(['hippocampus']));
+      expect(envios).toEqual([]);
+      expect(invalidas).toBe(1);
+    });
   });
 });
