@@ -84,13 +84,39 @@ describe('textos de los botones de revisión', () => {
       expect(revision.salirTitulo!.toLowerCase()).toContain(revision.salir!.toLowerCase());
     });
 
-    it(`el consentimiento del envío (${idioma}) remite al registro y no usa los textos viejos`, () => {
+    it(`el consentimiento del envío (${idioma}) remite al registro, dice que las fichas no muestran el nombre y no usa los textos viejos`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       const { consentimiento } = revision;
-      expect(consentimiento).toContain(idioma === 'es' ? 'solo si lo autorizaste en el registro' : 'only if you authorised it in the registration form');
-      for (const vieja of ['Al enviar, aceptas', 'Se envía una revisión por estructura', 'By sending, you agree', 'One review is sent per structure', 'Cada ficha de la lista se envía por separado', 'Each entry in the list is sent separately']) {
+      if (idioma === 'es') {
+        expect(consentimiento).toContain('Las fichas no muestran tu nombre');
+        expect(consentimiento).toContain('regístrate una sola vez');
+        expect(consentimiento).toContain('en un solo formulario');
+        expect(consentimiento).not.toMatch(/tu nombre aparece|aparece como revisor|solo si lo autorizaste/i);
+      } else {
+        expect(consentimiento).toContain('The entries never show your name');
+        expect(consentimiento).toContain('register once');
+        expect(consentimiento).toContain('in a single form');
+        expect(consentimiento).not.toMatch(/your name appears|appears as reviewer|only if you authorised it/i);
+      }
+      for (const vieja of [
+        'Al enviar, aceptas',
+        'Se envía una revisión por estructura',
+        'By sending, you agree',
+        'One review is sent per structure',
+        'Cada ficha de la lista se envía por separado',
+        'Each entry in the list is sent separately',
+        'solo si lo autorizaste en el registro',
+        'only if you authorised it in the registration form',
+      ]) {
         expect(consentimiento).not.toContain(vieja);
       }
+    });
+
+    it(`el respaldo por formulario (${idioma}) se llama como en el spec`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      if (idioma === 'es') expect(revision.enviarPorFormulario).toBe('Enviar por formulario');
+      else expect(revision.enviarPorFormulario?.trim()).toBeTruthy();
+      expect(revision.respaldoExplica?.trim()).toBeTruthy();
     });
   }
 });
