@@ -410,9 +410,9 @@ export const useAtlas = create<Estado>((set, get) => ({
     delete respuestas[clave];
     set({ respuestas });
   },
-  // Sin `piezas` se olvidan las piezas tocadas (#61); importar un respaldo pasa las que siguen valiendo.
+  // Sin `piezas` se olvidan las piezas tocadas (#61); `importarRespuestas` pasa las que siguen valiendo.
   cargarRespuestas: (r, piezas = {}) => set({ respuestas: r, piezaPropuesta: piezas, cargaRespuestas: get().cargaRespuestas + 1 }),
-  // Respaldo (#60): se fusiona con lo local; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
+  // Respuestas que trae el canal al abrir (spec 03, R4.1): se fusionan con lo local por fecha; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
   importarRespuestas: (nuevas) => {
     const { respuestas, piezaPropuesta } = get();
     const { respuestas: fusion, ...conteo } = fusionarRespuestas(respuestas, nuevas);

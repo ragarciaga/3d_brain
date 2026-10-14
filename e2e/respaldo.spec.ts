@@ -1,6 +1,5 @@
-// Modo revisión: respaldo del avance, código recordado y almacenamiento persistente (#60). Helpers propios
-// para no depender de atlas.spec.ts.
-import { readFileSync } from 'node:fs';
+// Modo revisión: código recordado y almacenamiento persistente (#60). Helpers propios para no depender de
+// atlas.spec.ts.
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
@@ -31,28 +30,6 @@ const guardadas = (page: Page, codigo: string) =>
     codigo,
   );
 
-/** Vacía el almacén de idb-keyval. No se borra la base: la conexión abierta bloquearía deleteDatabase. */
-const vaciarIdb = (page: Page) =>
-  page.evaluate(
-    () =>
-      new Promise<void>((resolver, rechazar) => {
-        const abrirDb = indexedDB.open('keyval-store');
-        abrirDb.onerror = () => rechazar(abrirDb.error);
-        abrirDb.onsuccess = () => {
-          const tx = abrirDb.result.transaction('keyval', 'readwrite');
-          tx.objectStore('keyval').clear();
-          tx.oncomplete = () => resolver();
-          tx.onerror = () => rechazar(tx.error);
-        };
-      }),
-  );
-
-/** Elige un archivo en el selector que abre "Cargar respaldo". */
-async function cargarRespaldo(page: Page, archivo: string | { name: string; mimeType: string; buffer: Buffer }) {
-  const [selector] = await Promise.all([page.waitForEvent('filechooser'), barra(page).getByRole('button', { name: 'Cargar respaldo', exact: true }).click()]);
-  await selector.setFiles(archivo);
-}
-
 const persistencias = (page: Page) => page.evaluate(() => (window as unknown as { __persistencia: number }).__persistencia);
 
 /** Dobles con la forma de StorageManager (Promise<boolean>), para que el resultado no dependa de Chromium. */
@@ -70,67 +47,6 @@ async function prepararContexto(context: BrowserContext) {
     });
   });
 }
-
-test('modo revisión: descargar y cargar el respaldo recupera el avance (#60)', async ({ page, context }) => {
-  await prepararContexto(context);
-
-  await page.goto('/es/revision?r=RESPALDO1');
-  await expect(barra(page)).toContainText('RESPALDO1');
-  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
-  await expect.poll(() => persistencias(page), { timeout: 30_000 }).toBeGreaterThan(0); // D6
-
-  await expect(page.getByTestId('aviso-local')).toContainText('solo en este navegador'); // D1
-  await expect(barra(page).getByRole('button', { name: 'Descargar respaldo', exact: true })).toBeDisabled(); // D2
-
-  await irAlHipocampo(page);
-  await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Correcto' }).click();
-  const queEs = page.locator('[data-campo="que_es.es"]');
-  await queEs.getByRole('button', { name: 'Corregir' }).click();
-  await queEs.getByLabel('Cambio propuesto').pressSequentially('Texto del respaldo');
-  await expect.poll(async () => (await guardadas(page, 'RESPALDO1'))?.['hippocampus|que_es|es']?.propuesta, { timeout: 30_000 }).toBe('Texto del respaldo');
-  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
-
-  // D2: la descarga tiene el nombre y el contenido del formato.
-  const [descarga] = await Promise.all([page.waitForEvent('download'), barra(page).getByRole('button', { name: 'Descargar respaldo', exact: true }).click()]);
-  expect(descarga.suggestedFilename()).toMatch(/^respaldo-revision-RESPALDO1-\d{4}-\d{2}-\d{2}\.json$/);
-  const ruta = (await descarga.path())!;
-  const contenido = JSON.parse(readFileSync(ruta, 'utf8')) as { formato: string; v: number; revisor: string; respuestas: Array<{ propuesta?: string }> };
-  expect([contenido.formato, contenido.v, contenido.revisor, contenido.respuestas.length]).toEqual(['atlas-revision-respaldo', 1, 'RESPALDO1', 2]);
-  expect(contenido.respuestas.some((r) => r.propuesta === 'Texto del respaldo')).toBe(true);
-
-  // D5: un archivo que no es un respaldo, y uno de otro revisor, no cargan nada.
-  const aviso = page.getByTestId('aviso-respaldo');
-  await cargarRespaldo(page, { name: 'malo.json', mimeType: 'application/json', buffer: Buffer.from('esto no es json') });
-  await expect(aviso).toContainText('no es un respaldo de revisión válido');
-  const deOtro = Buffer.from(JSON.stringify({ ...contenido, revisor: 'OTRO01' }));
-  await cargarRespaldo(page, { name: 'otro.json', mimeType: 'application/json', buffer: deOtro });
-  await expect(aviso).toContainText('otro código de revisor');
-  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
-
-  // D7, D9: sin IndexedDB, una pestaña recargada sigue en modo revisión (sin ?r) con el contador en 0.
-  await vaciarIdb(page);
-  await page.reload();
-  await expect(page).toHaveURL(/\/es\/hipocampo$/);
-  await expect(barra(page)).toContainText('RESPALDO1');
-  await expect(barra(page).getByRole('button', { name: 'Cargar respaldo', exact: true })).toBeEnabled(); // espera la lectura de IndexedDB (D13)
-  await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
-
-  // D3: cargar el respaldo recupera el avance y lo muestra en la ficha abierta.
-  await cargarRespaldo(page, ruta);
-  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
-  await expect(aviso).toContainText('Nuevas: 2');
-  await expect(page.locator('[data-campo="que_es.es"]').getByLabel('Cambio propuesto')).toHaveValue('Texto del respaldo');
-
-  // Cargar otra vez el mismo archivo no duplica.
-  await cargarRespaldo(page, ruta);
-  await expect(aviso).toContainText('Ya estaban: 2');
-  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
-
-  // D9: lo recuperado vuelve a IndexedDB y sobrevive a otra recarga.
-  await expect.poll(async () => Object.keys((await guardadas(page, 'RESPALDO1')) ?? {}).length, { timeout: 30_000 }).toBe(2);
-  await page.reload();
-  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
-});
 
 test('modo revisión: el código se recuerda en el navegador, pide almacenamiento persistente y se olvida al salir (#60)', async ({ page, context }) => {
   await prepararContexto(context);

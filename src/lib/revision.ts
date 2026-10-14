@@ -35,7 +35,7 @@ const TOPES: Partial<Record<(typeof CAMPOS_TEXTO)[number], number>> = { propuest
 export const esObjeto = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 
 /**
- * Entrada externa (el CSV del formulario público o un archivo de respaldo): puede traer cualquier cosa. Una respuesta
+ * Entrada externa (el CSV del formulario público o una respuesta que devuelve el canal de retorno): puede traer cualquier cosa. Una respuesta
  * solo vale con estructura conocida, veredicto del conjunto cerrado, idioma es o en (o ausente),
  * `campo` con la forma que genera la app, `version` semántica o `sin-ficha`, los demás textos (si
  * vienen) como texto con tope de largo (4000 propuesta y comentario, 200 malla y ramo) y `posicion`
@@ -129,13 +129,12 @@ export function urlFormulario(c: ConfigFormulario, codigo: string, estructura: s
   return url.length > MAX_URL ? null : url;
 }
 
-/** Tope de caracteres de una fecha recibida (misma regla que `leerRespaldo` en respaldo.ts). */
+/** Tope de caracteres de una fecha recibida. */
 const MAX_FECHA = 40;
 
 /**
  * Entrada externa: una fecha solo vale si es texto de hasta 40 caracteres que `Date.parse` entiende.
- * Es la misma regla que aplica `leerRespaldo` en respaldo.ts; la usan el importador, el cliente del
- * canal de retorno y el Apps Script. Nunca lanza: devuelve false.
+ * La usan el importador, el cliente del canal de retorno y el Apps Script. Nunca lanza: devuelve false.
  */
 export function fechaValida(f: unknown): f is string {
   return typeof f === 'string' && f.length <= MAX_FECHA && Number.isFinite(Date.parse(f));
