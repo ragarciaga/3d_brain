@@ -158,7 +158,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/Ficha.tsx, src/i18n/es.json, src/i18n/en.json, tests/datos.test.ts, e2e/atlas.spec.ts
 - Verify: `npm test -- tests/datos.test.ts`: todo `revisado_por` de `src/data/estructuras.json` y de las rutas es `null` o un alias `D\d{2}`; `npm run test:e2e -- e2e/atlas.spec.ts -g "revisado por"` con una ficha verificada inyectada en la prueba: muestra "Revisado por un docente universitario" y la fecha cuando el idioma visible está verificado, y el texto de la ficha no contiene el valor de `revisado_por`; `npm run check:i18n`
 - Issue: #97
-- Status: in-progress
+- Status: done
 
 ### Decision log
 - Ronda 1: keep.

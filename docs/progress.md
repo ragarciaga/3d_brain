@@ -177,7 +177,8 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 | i84 |  |  | 0.0 |
 | T7 |  |  | 0.0 |
 | T8 |  |  | 0.0 |
+| T9 |  |  | 0.0 |
 
 Minutes per phase.
-Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement.
+Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement, T9/implement.
 <!-- rb:timing:end -->
