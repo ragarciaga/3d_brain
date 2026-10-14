@@ -15,4 +15,9 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    // Apps Script corre como script clásico, no como módulo; así `/* exported */` funciona.
+    files: ['apps-script/**/*.js'],
+    languageOptions: { sourceType: 'script' },
+  },
 );
