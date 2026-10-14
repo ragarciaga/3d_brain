@@ -48,7 +48,8 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 - Medición: `?medir=1` abre un panel con tiempos de código, descarga y preparación del modelo,
   primer cuadro, cuadros por segundo y GPU, con botón para copiar (docs/operacion.md). Medido en el
   entorno de Claude: código 1,1 s, descarga del modelo 2,4 s, preparación 1 s, cerebro a los 4,5 s;
-  la descarga del modelo empieza cuando termina el código. En los equipos de referencia (#6, editor,
+  la descarga del modelo empezaba cuando terminaba el código; desde #117 (#83) el modelo se pide con el
+  HTML, en paralelo con el código. En los equipos de referencia (#6, editor,
   2026-10-13): iPhone y PC cumplen; el Android de gama baja (Tecno Spark 8C, PowerVR GE8300) da 21 a
   23 cuadros/s con el cerebro armado girando y 8,9 s hasta ver el cerebro.
 - Content: 236 de 236 fichas en borrador con fuentes verificadas (#7, PR #22; el lóbulo grácil se
