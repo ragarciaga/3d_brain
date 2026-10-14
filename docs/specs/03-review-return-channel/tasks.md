@@ -9,7 +9,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: apps-script/prueba-canal.js, public/probar-canal.html, docs/revision-docente.md, tests/apps-script-prueba.test.ts
 - Verify: `npm test -- tests/apps-script-prueba.test.ts` (el script mínimo, cargado en Node con dobles de `ContentService` y `SpreadsheetApp`, responde JSON a `doGet` y a `doPost` con cuerpo `text/plain`; `public/probar-canal.html` existe y distingue "Escritura: ok", "Escritura: falla", "Lectura: ok" y "Lectura: falla"); `[manual]` el editor, con la página ya publicada, sigue los pasos de `docs/revision-docente.md`, abre `https://ragarciaga.github.io/3d_brain/probar-canal.html` con la URL de su script y ve "Escritura: ok" y "Lectura: ok" con la fila escrita en su hoja (razón: la nube no alcanza `script.google.com`, proxy 403)
 - Issue: #87
-- Status: in-review
+- Status: done
 
 ### Decision log
 - Ronda 1: keep. El orquestador agrega los mensajes de falla explícitos (el plan B del diseño depende de distinguir escritura de lectura) y que la prueba manual va después del despliegue.
