@@ -12,6 +12,7 @@ import {
   confirmarRecibidas,
   ESPERA_ENVIO_MS,
   estadoInicial,
+  fusionarConCanal,
   porEnviar,
   trasEnvio,
   type EstadoCola,
@@ -32,7 +33,6 @@ import {
   type ParteEnvio,
   type Respuesta,
 } from '../lib/revision';
-import { crearRespaldo, leerRespaldo, MAX_RESPALDO_CARACTERES, type ErrorRespaldo } from '../lib/respaldo';
 import { useAtlas } from '../store/useAtlas';
 import DialogoAutorizacion from './DialogoAutorizacion';
 import SeccionTrazos from './SeccionTrazos';
@@ -61,15 +61,6 @@ function marcarGuiaVista(codigo: string) {
   }
 }
 
-function descargarArchivo(nombre: string, texto: string) {
-  const url = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nombre;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export default function PanelRevision({
   idioma,
   alElegir,
@@ -90,6 +81,7 @@ export default function PanelRevision({
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
   const rutas = useAtlas((s) => s.rutas);
   const [confirmadas, setConfirmadas] = useState<Record<string, string>>({});
+  const confirmadasRef = useRef(confirmadas);
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   const [aviso, setAviso] = useState('');
   const [envio, setEnvio] = useState<{ partes: ParteEnvio[]; estados: EstadoParte[] } | null>(null);
@@ -106,7 +98,9 @@ export default function PanelRevision({
         ) => {
           if (!vigente) return;
           useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
-          setConfirmadas(guardado?.confirmadas ?? {}); // el `enviadas` de versiones anteriores se ignora
+          const guardadas = guardado?.confirmadas ?? {}; // el `enviadas` de versiones anteriores se ignora
+          confirmadasRef.current = guardadas;
+          setConfirmadas(guardadas);
           useAtlas.getState().setAutorizacion(autorizacionVigente(guardado?.autorizacion)); // copia local: entrada no confiable
           setEnvio(null);
         },
@@ -115,6 +109,7 @@ export default function PanelRevision({
         // Sin la copia local de este código, lo que haya en memoria es de otro código: nunca se envía con este.
         if (!vigente) return;
         useAtlas.getState().cargarRespuestas({});
+        confirmadasRef.current = {};
         setConfirmadas({});
         setEnvio(null);
       })
@@ -122,11 +117,20 @@ export default function PanelRevision({
         if (!vigente) return;
         setCargadoDe(revisor);
         if (!canalConfigurado()) return;
-        // Lectura inicial del canal. Lo que devuelve `leer` manda sobre la copia local, también cuando es null.
-        // Sus `respuestas` todavía no se usan: fusionarlas es de T8.
+        // Lectura inicial del canal: sus respuestas se fusionan con las locales por fecha (gana la más reciente; con
+        // empate, la local) y las versiones del canal que quedan se marcan como guardadas, para no reenviarlas (R4.1,
+        // R4.2). Su autorización manda sobre la copia local, también cuando es null.
         leer(revisor, idEstructuraValido).then(
-          ({ autorizacion }) => {
+          ({ respuestas: delCanal, autorizacion }) => {
             if (!vigente) return;
+            if (delCanal.length > 0) {
+              // Se lee al resolver, no al pedir: entran las ediciones hechas mientras `leer` estaba en vuelo. La ref
+              // se actualiza antes de pasar a `hecha`, así que la cola nunca reenvía lo traído.
+              const antes = useAtlas.getState().respuestas;
+              confirmadasRef.current = fusionarConCanal(antes, confirmadasRef.current, delCanal).confirmadas;
+              setConfirmadas((c) => fusionarConCanal(antes, c, delCanal).confirmadas);
+              useAtlas.getState().importarRespuestas(delCanal);
+            }
             useAtlas.getState().setAutorizacion(autorizacion);
             useAtlas.getState().setLecturaCanal('hecha');
           },
@@ -157,7 +161,6 @@ export default function PanelRevision({
   const enVuelo = useRef(false);
   const noAntesDe = useRef(0); // fin (ms epoch) de la espera de reintento; 0 si no hay
   const reintento = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const confirmadasRef = useRef(confirmadas);
   const vivo = useRef(false);
 
   useEffect(() => {
@@ -264,8 +267,6 @@ export default function PanelRevision({
   const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
   const titulo = useRef<HTMLHeadingElement>(null);
   const botones = useRef<Partial<Record<'que' | 'como' | 'enviar', HTMLButtonElement | null>>>({});
-  const [avisoRespaldo, setAvisoRespaldo] = useState('');
-  const entradaRespaldo = useRef<HTMLInputElement>(null);
 
   // Al abrir un diálogo, el foco va a su título: así se anuncia y Escape queda a un toque.
   useEffect(() => {
@@ -372,59 +373,17 @@ export default function PanelRevision({
     setConfirmadas((c) => confirmarParte(c, parte));
   };
 
-  const descargarRespaldo = () =>
-    descargarArchivo(`respaldo-revision-${revisor}-${new Date().toISOString().slice(0, 10)}.json`, crearRespaldo(revisor, respuestas));
-
-  // Llamadas literales a `t` para que check:i18n las vea.
-  const mensajeError = (e: ErrorRespaldo) =>
-    e === 'version' ? t('revision.respaldoErrorVersion') : e === 'otroRevisor' ? t('revision.respaldoErrorRevisor') : t('revision.respaldoErrorArchivo');
-
-  // El archivo es entrada externa: leerRespaldo lo valida y solo entra lo que pasa; se fusiona con lo local.
-  const cargarArchivo = async (input: HTMLInputElement) => {
-    const archivo = input.files?.[0];
-    input.value = ''; // deja volver a elegir el mismo archivo
-    if (!archivo) return;
-    if (archivo.size > MAX_RESPALDO_CARACTERES) return setAvisoRespaldo(mensajeError('grande'));
-    const texto = await archivo.text().catch(() => null);
-    if (texto === null) return setAvisoRespaldo(mensajeError('formato'));
-    const s = useAtlas.getState();
-    if (s.revisor !== revisor) return; // salió del modo revisión mientras se leía el archivo
-    const l = leerRespaldo(texto, { revisor, idOk: idEstructuraValido });
-    if (!l.ok) return setAvisoRespaldo(mensajeError(l.error));
-    const f = s.importarRespuestas(l.respuestas);
-    const resumen = t('revision.respaldoCargado', { agregadas: f.agregadas, actualizadas: f.actualizadas, sinCambio: f.sinCambio });
-    setAvisoRespaldo(l.descartadas > 0 ? `${resumen} ${t('revision.respaldoOmitidas', { count: l.descartadas })}` : resumen);
-  };
-
   // Elegir una acción del menú de celular lo cierra y abre (o cierra) el diálogo de esa acción.
   const elegir = (v: Vista) => {
     setAccionesAbiertas(false);
     alternar(v);
   };
 
-  // Respaldo (#60). No usan `elegir`: en celular el menú sigue abierto y se ve el resultado. El input de
-  // archivo va fuera del menú (en la raíz de la barra) para que sobreviva si el menú se desmonta.
-  const accionesRespaldo = (
-    <>
-      <button type="button" disabled={lista.length === 0} onClick={descargarRespaldo}>
-        {t('revision.descargarRespaldo')}
-      </button>
-      <button type="button" disabled={cargadoDe !== revisor} onClick={() => entradaRespaldo.current?.click()}>
-        {t('revision.cargarRespaldo')}
-      </button>
-    </>
-  );
-  const notasRespaldo = (
-    <>
-      <p className="aviso-local recurso-nota" data-testid="aviso-local">
-        {t('revision.soloEsteNavegador')}
-      </p>
-      {avisoRespaldo && (
-        <p className="aviso-respaldo" role="status" data-testid="aviso-respaldo">
-          {avisoRespaldo}
-        </p>
-      )}
-    </>
+  // Solo sin canal las respuestas viven únicamente en este navegador; con canal, el estado de guardado dice dónde están.
+  const avisoLocal = conCanal ? null : (
+    <p className="aviso-local recurso-nota" data-testid="aviso-local">
+      {t('revision.soloEsteNavegador')}
+    </p>
   );
 
   // Las acciones se escriben una sola vez: en línea en escritorio, dentro del menú "Acciones" en celular.
@@ -447,13 +406,12 @@ export default function PanelRevision({
           {t('revision.enviar')}
         </button>
       )}
-      {accionesRespaldo}
     </>
   );
   const notas = (
     <>
       {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
-      {notasRespaldo}
+      {avisoLocal}
     </>
   );
 
@@ -510,14 +468,6 @@ export default function PanelRevision({
           {notas}
         </>
       )}
-      <input
-        ref={entradaRespaldo}
-        type="file"
-        accept=".json,application/json"
-        hidden
-        data-testid="entrada-respaldo"
-        onChange={(e) => void cargarArchivo(e.currentTarget)}
-      />
       {vista === 'que' && (
         <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO} data-testid="que-revisar">
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">

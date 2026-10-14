@@ -1,5 +1,6 @@
 // Canal de retorno de la revisión docente (spec 03): enlace con código, modo revisión, autorización y avisos.
 // Las tareas T7 a T10 de ese spec amplían este archivo. Helpers propios para no depender de otros specs.
+import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { VERSION_AUTORIZACION } from '../src/config/revision';
 import { ESPERA_CANAL_MS, ESPERA_ENVIO_MS, siguienteEspera } from '../src/lib/colaGuardado';
@@ -99,6 +100,8 @@ interface PeticionCanal {
   accion: string | null;
   url: string;
   cuerpo: Record<string, unknown> | null;
+  /** `Date.now()` del momento en que la petición llega al simulador. */
+  t: number;
 }
 
 interface CanalSimulado {
@@ -109,6 +112,10 @@ interface CanalSimulado {
   guardar: 'ok' | 'red' | 'otra_fecha' | 'inactivo';
   /** Si existe, la respuesta de `leer` espera a que se resuelva (para probar lo que pasa mientras la lectura está pendiente). */
   retenerLeer: Promise<void> | null;
+  /** El `e` de la carga `v:2` que devuelve `leer`: elementos por estructura, con las claves cortas del canal. */
+  respuestas: Record<string, Record<string, unknown>[]>;
+  /** Demora (ms) de la respuesta de `leer`, para modelar una red lenta. */
+  demoraLeer: number;
   peticiones: PeticionCanal[];
 }
 
@@ -122,9 +129,19 @@ function clavesRecibidas(carga: unknown, fechaFija?: string): string[] {
 
 async function simularCanal(
   page: Page,
-  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar'>> = {},
+  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar' | 'respuestas' | 'demoraLeer'>> = {},
 ): Promise<CanalSimulado> {
-  const canal: CanalSimulado = { autorizacion: null, leer: 'ok', autorizar: 'ok', guardar: 'ok', retenerLeer: null, peticiones: [], ...inicial };
+  const canal: CanalSimulado = {
+    autorizacion: null,
+    leer: 'ok',
+    autorizar: 'ok',
+    guardar: 'ok',
+    retenerLeer: null,
+    respuestas: {},
+    demoraLeer: 0,
+    peticiones: [],
+    ...inicial,
+  };
   await page.route(
     (u) => u.hostname === 'canal-prueba.invalid',
     async (route) => {
@@ -133,15 +150,16 @@ async function simularCanal(
       const json = (cuerpo: unknown) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(cuerpo) });
       if (pedido.method() === 'GET') {
         const accion = url.searchParams.get('accion');
-        canal.peticiones.push({ metodo: 'GET', accion, url: pedido.url(), cuerpo: null });
+        canal.peticiones.push({ metodo: 'GET', accion, url: pedido.url(), cuerpo: null, t: Date.now() });
         if (accion !== 'leer' || canal.leer === 'red') return route.abort('failed');
         if (canal.retenerLeer) await canal.retenerLeer;
+        if (canal.demoraLeer) await new Promise((r) => setTimeout(r, canal.demoraLeer));
         if (canal.leer === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
-        return json({ ok: true, respuestas: { v: 2, r: url.searchParams.get('r'), e: {} }, autorizacion: canal.autorizacion });
+        return json({ ok: true, respuestas: { v: 2, r: url.searchParams.get('r'), e: canal.respuestas }, autorizacion: canal.autorizacion });
       }
       const cuerpo = JSON.parse(pedido.postData() ?? '{}') as Record<string, unknown>;
       const accion = typeof cuerpo['accion'] === 'string' ? cuerpo['accion'] : null;
-      canal.peticiones.push({ metodo: pedido.method(), accion, url: pedido.url(), cuerpo });
+      canal.peticiones.push({ metodo: pedido.method(), accion, url: pedido.url(), cuerpo, t: Date.now() });
       if (accion === 'autorizar') {
         if (canal.autorizar === 'red') return route.abort('failed');
         if (canal.autorizar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
@@ -453,6 +471,11 @@ test('autorización: sin urlCanal no aparece el diálogo ni sale ninguna petici�
   await expect(estadoGuardado(page)).toHaveCount(0);
   await expect(barra(page).getByRole('button', { name: 'Enviar revisión' })).toBeVisible();
 
+  // T8 (R4.4, D5): sin canal el aviso dice que las respuestas viven solo aquí, y no hay respaldo por archivo.
+  await expect(page.getByTestId('aviso-local')).toContainText('solo en este navegador');
+  await expect(page.getByRole('button', { name: /Descargar respaldo|Cargar respaldo/ })).toHaveCount(0);
+  await expect(page.getByTestId('entrada-respaldo')).toHaveCount(0);
+
   // Control de R2.6: sin canal la guía queda como siempre, con el aviso de registro y su enlace.
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
   await expect(page.getByTestId('como-revisar')).toContainText('regístrate');
@@ -643,4 +666,84 @@ test('guardado: código no activo al autorizar o al leer', async ({ page, contex
   const claves = Object.keys((await revisionGuardada(page, 'GUA03'))?.respuestas ?? {});
   expect(claves).toContain('hippocampus|que_es|es');
   expect(claves).toContain('hippocampus|ubicacion|es');
+});
+
+// Traer lo guardado al abrir (T8). `leer` devuelve respuestas del canal; se fusionan con lo local y quedan guardadas.
+const FECHA_CANAL = '2026-01-01T10:00:00.000Z';
+const VERSION_HIPOCAMPO = (JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as { estructuras: Record<string, { ficha: { version: string } }> })
+  .estructuras['hippocampus']!.ficha.version;
+const TEXTOS_RESPALDO = /Descargar respaldo|Cargar respaldo/;
+const campo = (page: Page, nombre: string) => page.locator(`[data-campo="${nombre}"]`);
+
+test('otro equipo: trae lo guardado al abrir en menos de 5 s, no lo reenvía, conserva lo local más reciente y no hay botones de respaldo', async ({
+  page,
+  context,
+}) => {
+  const canal = await simularCanal(page, {
+    autorizacion: { version: VERSION_AUTORIZACION, vago: false },
+    demoraLeer: 1500,
+    respuestas: {
+      hippocampus: [
+        { c: 'que_es', i: 'es', d: 'no_es_mi_area', s: VERSION_HIPOCAMPO, f: FECHA_CANAL },
+        { c: 'ubicacion', i: 'es', d: 'correcto', s: VERSION_HIPOCAMPO, f: FECHA_CANAL },
+      ],
+    },
+  });
+  await conCanal(context, URL_CANAL);
+  await saltarGuia(context, 'OTR01');
+
+  // Fase A: un contexto nuevo (IndexedDB vacío) abre el enlace y encuentra lo que ya respondió.
+  await page.goto('/es/revision?r=OTR01');
+  await expect(barra(page)).toContainText('OTR01');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
+  expect(Date.now() - peticionesDe(canal, 'leer')[0]!.t).toBeLessThan(5000); // R4.1
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+
+  // D1: lo traído ya está guardado, así que no sale ningún `guardar`.
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
+
+  // R4.4 y D5 con canal: sin respaldo por archivo y sin el aviso de "solo en este navegador".
+  await expect(page.getByRole('button', { name: TEXTOS_RESPALDO })).toHaveCount(0);
+  await expect(page.getByTestId('entrada-respaldo')).toHaveCount(0);
+  await expect(page.getByTestId('aviso-local')).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(/Descargar respaldo|Cargar respaldo|solo en este navegador/);
+  await expect
+    .poll(async () => (await revisionGuardada(page, 'OTR01'))?.confirmadas)
+    .toEqual({ 'hippocampus|que_es|es': FECHA_CANAL, 'hippocampus|ubicacion|es': FECHA_CANAL });
+
+  // Fase B: la ficha marca lo que trajo el canal y lo nuevo sale solo, sin lo traído.
+  await irAlHipocampo(page);
+  await expect(campo(page, 'que_es.es').getByRole('button', { name: 'No es mi área' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(campo(page, 'ubicacion.es').getByRole('button', { name: 'Correcto' })).toHaveAttribute('aria-pressed', 'true');
+  await correcto(page, 'que_es.es').click();
+  const local = await fechaDelStore(page, 'hippocampus|que_es|es');
+  expect(local).toBeTruthy();
+  expect(local).not.toBe(FECHA_CANAL);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBeGreaterThan(0);
+  expect(cargaDe(peticionesDe(canal, 'guardar')[0]!).e).toEqual({
+    hippocampus: [expect.objectContaining({ c: 'que_es', d: 'correcto', f: local })],
+  });
+  for (const p of peticionesDe(canal, 'guardar')) {
+    expect(Object.values(cargaDe(p).e).flat().some((el) => el.f === FECHA_CANAL)).toBe(false);
+  }
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect.poll(async () => (await revisionGuardada(page, 'OTR01'))?.confirmadas['hippocampus|que_es|es']).toBe(local);
+
+  // Fase C (D2): al reabrir, el canal sigue con la versión vieja y lo local más reciente se conserva.
+  const enviadas = peticionesDe(canal, 'guardar').length;
+  await page.reload();
+  await expect(barra(page)).toContainText('OTR01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  // Lo local que ya estaba guardado sigue guardado: la fecha del canal no pisa `confirmadas` y no se reenvía nada.
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(enviadas);
+  await expect.poll(async () => (await revisionGuardada(page, 'OTR01'))?.confirmadas['hippocampus|que_es|es']).toBe(local);
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'true');
+  await expect(campo(page, 'que_es.es').getByRole('button', { name: 'No es mi área' })).toHaveAttribute('aria-pressed', 'false');
+  expect(await fechaDelStore(page, 'hippocampus|que_es|es')).toBe(local);
+  await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
+  for (const p of peticionesDe(canal, 'guardar')) {
+    expect(Object.values(cargaDe(p).e).flat().some((el) => el.f === FECHA_CANAL)).toBe(false);
+  }
 });

@@ -376,7 +376,7 @@ describe('proponer posición (F24)', () => {
     expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
   });
 
-  it('importar un respaldo conserva la pieza de la posición que no cambió y olvida la de la que reemplazó', () => {
+  it('importar respuestas (las que trae el canal al abrir) conserva la pieza de la posición que no cambió y olvida la de la que reemplazó', () => {
     const N = 'm-otro-marcador';
     const vieja = { ...posicion, estructura: N };
     useAtlas.getState().proponerPosicion(posicion, 'stomach');

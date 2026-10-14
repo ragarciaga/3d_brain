@@ -1428,9 +1428,8 @@ a {
   position: relative;
 }
 
-/* El aviso del respaldo y su resultado ocupan su propia línea en la barra de escritorio. */
-.panel-revision > .aviso-local,
-.panel-revision > .aviso-respaldo {
+/* El aviso de que las respuestas viven en este navegador ocupa su propia línea en la barra de escritorio. */
+.panel-revision > .aviso-local {
   flex-basis: 100%;
   margin: 0;
 }

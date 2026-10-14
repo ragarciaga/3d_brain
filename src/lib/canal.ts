@@ -95,10 +95,17 @@ export function autorizacionVigente(a: unknown): Autorizacion | null {
 const CLAVES_CORTAS: readonly string[] = Object.values(CLAVES_V2);
 
 /**
+ * Margen (ms) sobre la hora del cliente que se tolera en la `f` de una respuesta del canal (24 h, por relojes
+ * desajustados). Una fecha más lejana en el futuro ganaría siempre al fusionar por fecha más reciente.
+ */
+export const MARGEN_FECHA_FUTURA_MS = 24 * 60 * 60 * 1000;
+
+/**
  * Única puerta de entrada de las respuestas del canal a la app. `d` es la carga `{v:2, r, e}`. Una carga
  * de otro código, de otra versión o sin `e` objeto da cero respuestas. Una respuesta se descarta entera
  * si no es objeto, si trae alguna clave fuera de `CLAVES_V2` (incluida `__proto__`), si no tiene `f`
- * válida o si no pasa `respuestaValida`. Solo copia claves conocidas a un objeto nuevo.
+ * válida, si su `f` pasa de la hora actual más `MARGEN_FECHA_FUTURA_MS` o si no pasa `respuestaValida`.
+ * Solo copia claves conocidas a un objeto nuevo.
  */
 export function respuestasDelCanal(
   d: unknown,
@@ -109,6 +116,7 @@ export function respuestasDelCanal(
   if (d === undefined || d === null) return { respuestas, descartadas: 0 };
   if (!esObjeto(d) || d['v'] !== 2 || d['r'] !== codigo || !esObjeto(d['e'])) return { respuestas, descartadas: 1 };
   let descartadas = 0;
+  const tope = Date.now() + MARGEN_FECHA_FUTURA_MS;
   for (const [id, lista] of Object.entries(d['e'])) {
     if (!Array.isArray(lista)) {
       descartadas++;
@@ -125,7 +133,7 @@ export function respuestasDelCanal(
       }
       const copia: Record<string, unknown> = { estructura: id };
       for (const [largo, corto] of Object.entries(CLAVES_V2)) if (Object.hasOwn(el, corto)) copia[largo] = el[corto];
-      if (Object.hasOwn(el, 'f') && fechaValida(el['f']) && respuestaValida(copia, idOk)) respuestas.push(copia);
+      if (Object.hasOwn(el, 'f') && fechaValida(el['f']) && Date.parse(el['f']) <= tope && respuestaValida(copia, idOk)) respuestas.push(copia);
       else descartadas++;
     }
   }
