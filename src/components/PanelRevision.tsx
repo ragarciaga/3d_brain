@@ -1,10 +1,11 @@
-// Modo revisión docente (F24): avance, fichas pendientes y envío por formulario de Google.
+// Modo revisión docente (F24): avance, fichas pendientes, envío por formulario de Google y autorización del canal de retorno.
 import { get, set } from 'idb-keyval';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
+import { autorizacionVigente, canalConfigurado, ErrorCanal, leer } from '../lib/canal';
 import { nombre, nombrePendiente } from '../lib/nombres';
 import { avanceDeFicha, avanceGlobal, ordenDeRevision } from '../lib/prioridad';
 import {
@@ -22,6 +23,7 @@ import {
 } from '../lib/revision';
 import { crearRespaldo, leerRespaldo, MAX_RESPALDO_CARACTERES, type ErrorRespaldo } from '../lib/respaldo';
 import { useAtlas } from '../store/useAtlas';
+import DialogoAutorizacion from './DialogoAutorizacion';
 import SeccionTrazos from './SeccionTrazos';
 import { useMovil } from './useMovil';
 
@@ -30,6 +32,7 @@ const versionActual = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-fi
 const claveGuia = (codigo: string) => `atlas:guia-vista:${codigo}`;
 type Vista = 'que' | 'como' | 'enviar' | null;
 const ID_TITULO = 'dialogo-revision-titulo'; // solo hay un diálogo abierto a la vez
+const idEstructuraValido = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
 
 function guiaVista(codigo: string): boolean {
   try {
@@ -71,6 +74,8 @@ export default function PanelRevision({
   const botonAcciones = useRef<HTMLButtonElement>(null);
   const revisor = useAtlas((s) => s.revisor);
   const respuestas = useAtlas((s) => s.respuestas);
+  const autorizacion = useAtlas((s) => s.autorizacion);
+  const lecturaCanal = useAtlas((s) => s.lecturaCanal);
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
   const rutas = useAtlas((s) => s.rutas);
   const [confirmadas, setConfirmadas] = useState<Record<string, string>>({});
@@ -82,14 +87,39 @@ export default function PanelRevision({
     if (!revisor) return;
     let vigente = true;
     get(claveIdb(revisor))
-      .then((guardado: { respuestas?: Record<string, Respuesta>; confirmadas?: Record<string, string> } | undefined) => {
-        if (!vigente) return;
-        useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
-        setConfirmadas(guardado?.confirmadas ?? {}); // el `enviadas` de versiones anteriores se ignora
-        setEnvio(null);
-      })
+      .then(
+        (
+          guardado:
+            | { respuestas?: Record<string, Respuesta>; confirmadas?: Record<string, string>; autorizacion?: unknown }
+            | undefined,
+        ) => {
+          if (!vigente) return;
+          useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
+          setConfirmadas(guardado?.confirmadas ?? {}); // el `enviadas` de versiones anteriores se ignora
+          useAtlas.getState().setAutorizacion(autorizacionVigente(guardado?.autorizacion)); // copia local: entrada no confiable
+          setEnvio(null);
+        },
+      )
       .catch(() => undefined)
-      .finally(() => vigente && setCargadoDe(revisor));
+      .finally(() => {
+        if (!vigente) return;
+        setCargadoDe(revisor);
+        if (!canalConfigurado()) return;
+        // Lectura inicial del canal. Lo que devuelve `leer` manda sobre la copia local, también cuando es null.
+        // Sus `respuestas` todavía no se usan: fusionarlas es de T8.
+        leer(revisor, idEstructuraValido).then(
+          ({ autorizacion }) => {
+            if (!vigente) return;
+            useAtlas.getState().setAutorizacion(autorizacion);
+            useAtlas.getState().setLecturaCanal('hecha');
+          },
+          (e: unknown) => {
+            if (!vigente) return;
+            // Si falla, se queda la copia local de la autorización.
+            useAtlas.getState().setLecturaCanal(e instanceof ErrorCanal && e.tipo === 'codigo_no_activo' ? 'inactivo' : 'fallida');
+          },
+        );
+      });
     return () => {
       vigente = false;
     };
@@ -97,8 +127,8 @@ export default function PanelRevision({
 
   useEffect(() => {
     if (!revisor || cargadoDe !== revisor) return;
-    set(claveIdb(revisor), { respuestas, confirmadas }).catch(() => undefined);
-  }, [revisor, respuestas, confirmadas, cargadoDe]);
+    set(claveIdb(revisor), { respuestas, confirmadas, autorizacion }).catch(() => undefined);
+  }, [revisor, respuestas, confirmadas, autorizacion, cargadoDe]);
 
   const porEstructura = useMemo(() => {
     const m = new Map<string, Respuesta[]>();
@@ -111,6 +141,19 @@ export default function PanelRevision({
     () => new Set(Object.entries(respuestas).filter(([, r]) => respuestaCompleta(r)).map(([k]) => k)),
     [respuestas],
   );
+
+  // Autorización (R2.1): se pide al haber algo por guardar, sin autorización vigente y con la lectura del canal
+  // resuelta. Escape o "Cerrar" la descartan solo hasta el siguiente cambio de respuestas.
+  const [descartadaCon, setDescartadaCon] = useState<Record<string, Respuesta> | null>(null);
+  const hayPorGuardar = useMemo(() => pendientesDeEnvio(Object.values(respuestas), confirmadas).length > 0, [respuestas, confirmadas]);
+  const pedirAutorizacion =
+    !!revisor &&
+    canalConfigurado() &&
+    cargadoDe === revisor &&
+    (lecturaCanal === 'hecha' || lecturaCanal === 'fallida') &&
+    autorizacion === null &&
+    hayPorGuardar &&
+    descartadaCon !== respuestas;
 
   // La primera vez que un docente entra con su código, la guía se abre sola.
   const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
@@ -126,9 +169,9 @@ export default function PanelRevision({
 
   // Escape (Pagina) cierra el diálogo; solo la confirmación de salida va antes.
   useEffect(() => {
-    useAtlas.getState().setDialogoRevision(vista !== null);
+    useAtlas.getState().setDialogoRevision(vista !== null || pedirAutorizacion);
     return () => useAtlas.getState().setDialogoRevision(false);
-  }, [vista]);
+  }, [vista, pedirAutorizacion]);
 
   const cerrar = useCallback(
     (devolverFoco: boolean) => {
@@ -144,10 +187,11 @@ export default function PanelRevision({
   );
 
   useEffect(() => {
-    const alCerrar = () => cerrar(true);
+    // La autorización es modal y va primero: Escape la cierra sin aceptar (el foco lo devuelve el diálogo al desmontarse).
+    const alCerrar = () => (pedirAutorizacion ? setDescartadaCon(respuestas) : cerrar(true));
     window.addEventListener('atlas:cerrar-revision', alCerrar);
     return () => window.removeEventListener('atlas:cerrar-revision', alCerrar);
-  }, [cerrar]);
+  }, [cerrar, pedirAutorizacion, respuestas]);
 
   if (!revisor) return null;
   const abrir = (v: Vista) => {
@@ -217,7 +261,7 @@ export default function PanelRevision({
     if (texto === null) return setAvisoRespaldo(mensajeError('formato'));
     const s = useAtlas.getState();
     if (s.revisor !== revisor) return; // salió del modo revisión mientras se leía el archivo
-    const l = leerRespaldo(texto, { revisor, idOk: (id) => typeof id === 'string' && Object.hasOwn(estructuras, id) });
+    const l = leerRespaldo(texto, { revisor, idOk: idEstructuraValido });
     if (!l.ok) return setAvisoRespaldo(mensajeError(l.error));
     const f = s.importarRespuestas(l.respuestas);
     const resumen = t('revision.respaldoCargado', { agregadas: f.agregadas, actualizadas: f.actualizadas, sinCambio: f.sinCambio });
@@ -396,14 +440,31 @@ export default function PanelRevision({
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
             {t('revision.comoRevisar')}
           </h2>
-          {(['intro', 'responder', 'idiomas', 'dudas', 'nombres', 'marcadores', 'trazos', 'recorridos', 'enviar', 'privacidad'] as const).map((k) => (
+          {/* Con el canal configurado el registro previo (nombre, rol) ya no existe: R2.6 pide no mostrarlo.
+              La reescritura completa de la guía es de T12. */}
+          {(
+            [
+              'intro',
+              'responder',
+              'idiomas',
+              'dudas',
+              'nombres',
+              'marcadores',
+              'trazos',
+              'recorridos',
+              'enviar',
+              ...(canalConfigurado() ? [] : (['privacidad'] as const)),
+            ] as const
+          ).map((k) => (
             <p key={k}>{t(`revision.guia.${k}`)}</p>
           ))}
-          <p>
-            <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer" className="boton-primario enlace-boton">
-              {t('revision.guia.registrarme')}
-            </a>
-          </p>
+          {!canalConfigurado() && (
+            <p>
+              <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer" className="boton-primario enlace-boton">
+                {t('revision.guia.registrarme')}
+              </a>
+            </p>
+          )}
           <div className="dialogo-pie">
             <button type="button" onClick={() => cerrar(true)}>
               {t('comun.cerrar')}
@@ -503,6 +564,9 @@ export default function PanelRevision({
             </button>
           </div>
         </div>
+      )}
+      {pedirAutorizacion && (
+        <DialogoAutorizacion alAceptar={(vago) => useAtlas.getState().cambiarAutorizacion(vago)} alCerrar={() => setDescartadaCon(respuestas)} />
       )}
     </div>
   );

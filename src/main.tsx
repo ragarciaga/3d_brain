@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router'
 import BarreraErrores from './components/BarreraErrores';
 import Licencia from './components/Licencia';
 import Pagina from './components/Pagina';
+import { configRevision } from './config/revision';
 import { camaraActual, cortesVisor, marcadoresDePrueba } from './components/Visor';
 import { alturaRecorte } from './components/recorte';
 import i18n, { idiomaDelNavegador } from './i18n';
@@ -28,9 +29,11 @@ function Ruta() {
   return <Pagina slug={resto || undefined} />;
 }
 
-// Acceso al estado y a la cámara solo en desarrollo, para las pruebas E2E.
+// Acceso al estado, a la cámara y a la URL del canal de retorno solo en desarrollo, para las pruebas E2E.
 if (import.meta.env.DEV) {
   const w = window as unknown as {
+    __urlCanalInicial?: unknown;
+    __fijarUrlCanal: (url: string) => void;
     __atlas: typeof useAtlas;
     __camara: typeof camaraActual;
     __recorte: typeof alturaRecorte;
@@ -52,6 +55,12 @@ if (import.meta.env.DEV) {
     cajasMundo: () => cortesVisor.cajasMundo?.() ?? {},
   };
   w.__puntoCorte = (p) => cortesVisor.puntoCorte?.(p) ?? null;
+  // Costura del canal: `addInitScript` deja `__urlCanalInicial` antes de la primera carga ('' anula el canal);
+  // `__fijarUrlCanal` la cambia después. Nunca se lee de la URL de la página ni del almacenamiento.
+  w.__fijarUrlCanal = (url) => {
+    configRevision.urlCanal = url;
+  };
+  if (typeof w.__urlCanalInicial === 'string') configRevision.urlCanal = w.__urlCanalInicial;
 }
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
