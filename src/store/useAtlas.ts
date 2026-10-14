@@ -31,7 +31,10 @@ import { fusionarRespuestas, piezasQueSiguen } from '../lib/respaldo';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 import { ENTRADA_VAGO } from '../lib/trazos';
 
-/** Estado de la lectura inicial del canal: `inactivo` es un código que el canal no tiene activo. */
+/**
+ * Estado de la lectura inicial del canal. `inactivo`: el canal respondió `codigo_no_activo` a `leer`, `autorizar`
+ * o `guardar` para el revisor actual; con ese valor no se guarda nada en el canal.
+ */
 export type LecturaCanal = 'pendiente' | 'hecha' | 'fallida' | 'inactivo';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
@@ -118,7 +121,7 @@ interface Estado {
   // Modo revisión (F24)
   revisor: string | null;
   autorizacion: Autorizacion | null; // vigente para el revisor actual; null es "falta autorizar o no se sabe"
-  lecturaCanal: LecturaCanal; // estado de la lectura inicial `leer` del canal para el revisor actual
+  lecturaCanal: LecturaCanal; // estado del canal para el revisor actual: la lectura inicial `leer`, y `inactivo` también por `autorizar` o `guardar`
   respuestas: Record<string, Respuesta>;
   piezaPropuesta: Record<string, string>; // estructura -> id de la pieza tocada al proponer su posición; solo en esta sesión, no se envía
   dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra (después de la confirmación de salida)
@@ -157,7 +160,10 @@ interface Estado {
   setRevisor(codigo: string | null): void;
   setAutorizacion(a: Autorizacion | null): void;
   setLecturaCanal(l: LecturaCanal): void;
-  /** Registra en el canal si el revisor puede revisar el vago; el store solo cambia si el canal confirma. Falla con ErrorCanal. */
+  /**
+   * Registra en el canal si el revisor puede revisar el vago; la autorización solo cambia si el canal confirma.
+   * Falla con ErrorCanal; ante `codigo_no_activo`, además marca `lecturaCanal: 'inactivo'`.
+   */
   cambiarAutorizacion(vago: boolean): Promise<void>;
   responder(r: Respuesta): void;
   borrarRespuesta(clave: string): void;
@@ -389,7 +395,13 @@ export const useAtlas = create<Estado>((set, get) => ({
   cambiarAutorizacion: async (vago) => {
     const codigo = get().revisor;
     if (!codigo) throw new ErrorCanal('red');
-    await autorizar(codigo, { version: VERSION_AUTORIZACION, vago });
+    try {
+      await autorizar(codigo, { version: VERSION_AUTORIZACION, vago });
+    } catch (e) {
+      // Un código que el canal no tiene activo no guarda nada: el panel lo muestra y la cola no envía.
+      if (e instanceof ErrorCanal && e.tipo === 'codigo_no_activo' && get().revisor === codigo) set({ lecturaCanal: 'inactivo' });
+      throw e;
+    }
     if (get().revisor === codigo) set({ autorizacion: { version: VERSION_AUTORIZACION, vago } });
   },
   responder: (r) => set({ respuestas: { ...get().respuestas, [claveRespuesta(r)]: r } }),

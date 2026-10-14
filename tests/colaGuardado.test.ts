@@ -6,9 +6,11 @@ import {
   confirmarRecibidas,
   ESPERA_CANAL_MS,
   ESPERA_DEMASIADAS_MS,
+  ESPERA_ENVIO_MS,
   estadoInicial,
   fusionarConCanal,
   marcarPendientes,
+  MARGEN_ENVIO_MS,
   MAX_LOTE_BYTES,
   MAX_LOTE_RESPUESTAS,
   ofrecerRespaldo,
@@ -40,6 +42,12 @@ describe('constantes', () => {
   it('la espera del canal es 3 s y no es la del guardado local', () => {
     expect(ESPERA_CANAL_MS).toBe(3000);
     expect(ESPERA_CANAL_MS).not.toBe(ESPERA_GUARDADO_MS);
+  });
+
+  it('la espera del panel más la del texto de la ficha cabe en los 3 s de R3.1, con margen para los temporizadores', () => {
+    expect(ESPERA_ENVIO_MS + ESPERA_GUARDADO_MS).toBeLessThan(ESPERA_CANAL_MS);
+    expect(ESPERA_ENVIO_MS).toBe(ESPERA_CANAL_MS - MARGEN_ENVIO_MS);
+    expect(ESPERA_ENVIO_MS).toBeGreaterThan(0);
   });
 });
 
