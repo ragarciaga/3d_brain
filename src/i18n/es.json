@@ -276,6 +276,14 @@
       "enviar": "Cuando quieras, pulsa \"Enviar revisión\" y luego \"Enviar todo\": se abre un solo formulario ya lleno con todo lo que no has enviado (en partes solo si es muy largo). Pulsa Enviar al final del formulario y vuelve para pulsar \"Sí, lo envié\". Puedes enviar cuantas veces quieras.",
       "privacidad": "Antes de la primera revisión, regístrate una sola vez: nombre como quieres que aparezca, rol y autorización (Ley 1581 de 2012). Tu nombre solo aparece en las fichas que valides.",
       "registrarme": "Registrarme (una sola vez)"
+    },
+    "autorizacion": {
+      "titulo": "Autorización de tratamiento de datos",
+      "texto": "Para guardar tu revisión, el atlas envía a la hoja de Google del editor tu código de revisor, tus respuestas, la fecha y hora y esta autorización. No te pedimos nombre ni correo. El editor usa estos datos solo para revisar y corregir las fichas, y las fichas no muestran ningún dato tuyo. Puedes pedirle al editor conocer, corregir o borrar tus datos (Ley 1581 de 2012).",
+      "acepto": "Autorizo el tratamiento de estos datos (Ley 1581 de 2012)",
+      "vago": "También puedo revisar el recorrido del nervio vago en cuello y tórax",
+      "continuar": "Continuar",
+      "sinConexion": "Sin conexión: no se pudo registrar tu autorización. Intenta de nuevo."
     }
   },
   "comun": {

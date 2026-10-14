@@ -276,6 +276,14 @@
       "enviar": "Whenever you want, press \"Send review\" and then \"Send all\": a single prefilled form opens with everything you have not sent yet (in parts only if it is very long). Press Submit at the end of the form and come back to press \"Yes, I sent it\". You can send as many times as you like.",
       "privacidad": "Before your first review, register once: the name you want shown, your role and your consent (Colombian Law 1581 of 2012). Your name only appears on the entries you validate.",
       "registrarme": "Register (once)"
+    },
+    "autorizacion": {
+      "titulo": "Data processing authorization",
+      "texto": "To save your review, the atlas sends your reviewer code, your answers, the date and time and this authorization to the editor's Google sheet. We do not ask for your name or email. The editor uses these data only to review and correct the entries, and the entries never show any of your data. You can ask the editor to access, correct or delete your data (Colombian Law 1581 of 2012).",
+      "acepto": "I authorize the processing of these data (Law 1581 of 2012)",
+      "vago": "I can also review the course of the vagus nerve in the neck and thorax",
+      "continuar": "Continue",
+      "sinConexion": "No connection: your authorization could not be recorded. Try again."
     }
   },
   "comun": {
