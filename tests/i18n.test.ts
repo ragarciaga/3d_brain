@@ -10,8 +10,21 @@ describe('textos de los botones de revisión', () => {
     expect(corregir).toBe('Suggest a fix');
   });
 
-  type Revision = Record<string, string> & { guia: Record<string, string> };
+  type Revision = Record<string, string> & { guia: Record<string, string>; guardado: Record<string, string> };
   for (const idioma of ['es', 'en'] as const) {
+    it(`los estados del guardado (${idioma}) existen y dicen los textos del spec`, () => {
+      const { guardado } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')).revision as Revision;
+      if (idioma === 'es') {
+        expect(guardado.guardando).toBe('Guardando...');
+        expect(guardado.listo).toBe('Guardado ✓');
+        expect(guardado.sinConexion).toBe('Sin conexión: se guardará cuando vuelva');
+        expect(guardado.inactivo).toBe('Tu código no está activo; escribe al editor');
+      } else {
+        for (const clave of ['guardando', 'listo', 'sinConexion', 'inactivo']) expect(guardado[clave]?.trim()).toBeTruthy();
+        expect(guardado.listo).toContain('✓');
+      }
+    });
+
     it(`la guía (${idioma}) nombra los botones tal como aparecen`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       const { responder } = revision.guia;

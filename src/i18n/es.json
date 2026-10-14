@@ -284,6 +284,12 @@
       "vago": "También puedo revisar el recorrido del nervio vago en cuello y tórax",
       "continuar": "Continuar",
       "sinConexion": "Sin conexión: no se pudo registrar tu autorización. Intenta de nuevo."
+    },
+    "guardado": {
+      "guardando": "Guardando...",
+      "listo": "Guardado ✓",
+      "sinConexion": "Sin conexión: se guardará cuando vuelva",
+      "inactivo": "Tu código no está activo; escribe al editor"
     }
   },
   "comun": {

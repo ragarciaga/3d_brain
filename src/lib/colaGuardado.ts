@@ -1,6 +1,6 @@
 // Cola del guardado automático del modo revisión (F24, spec 03): lógica pura y probada sin red. No usa
 // `fetch`, ni `Date.now()`, ni temporizadores: el reloj entra como `ahora` y la espera sale como
-// número, para que quien la conecte (el store) decida cuándo reintentar.
+// número, para que quien la conecte (el panel de revisión, `src/components/PanelRevision.tsx`) decida cuándo reintentar.
 import { fusionarRespuestas } from './respaldo';
 import { cuerpoGuardar } from './canal';
 import type { TipoErrorCanal } from './canal';
@@ -9,6 +9,13 @@ import type { Respuesta } from './revision';
 
 /** Pausa (ms) entre la última edición y el envío al canal. Distinta de `ESPERA_GUARDADO_MS` (la de IndexedDB). */
 export const ESPERA_CANAL_MS = 3000;
+/**
+ * Margen (ms) que el panel descuenta de `ESPERA_CANAL_MS`: cubre los 500 ms de la espera del texto en la ficha
+ * (`ESPERA_GUARDADO_MS`, antes de que la tecla llegue al store) más el retraso de los temporizadores.
+ */
+export const MARGEN_ENVIO_MS = 600;
+/** Espera real (ms) del panel desde el cambio en el store; con el margen, el envío sale a más tardar a los 3 s del último gesto (R3.1). */
+export const ESPERA_ENVIO_MS = ESPERA_CANAL_MS - MARGEN_ENVIO_MS;
 /** Primera espera de reintento (ms); se duplica con cada fallo seguido. */
 export const ESPERA_INICIAL_MS = 2000;
 /** Tope de la espera de reintento (5 min). */

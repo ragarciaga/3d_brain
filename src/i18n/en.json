@@ -284,6 +284,12 @@
       "vago": "I can also review the course of the vagus nerve in the neck and thorax",
       "continuar": "Continue",
       "sinConexion": "No connection: your authorization could not be recorded. Try again."
+    },
+    "guardado": {
+      "guardando": "Saving...",
+      "listo": "Saved ✓",
+      "sinConexion": "No connection: it will be saved when the connection is back",
+      "inactivo": "Your code is not active; write to the editor"
     }
   },
   "comun": {
