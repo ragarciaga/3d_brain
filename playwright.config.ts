@@ -8,8 +8,12 @@ const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['.explore/**'],
-  fullyParallel: false,
-  workers: 1,
+  // En CI, 2 workers (runner de 4 vCPU): en serie la suite llegó a 29,4 min (PR #113) frente al
+  // tope de 30 min del job. Medido con 2 workers y paralelismo solo por archivo: 25,7 min, porque
+  // atlas.spec.ts es el piso (19,1 min en serie, 25,7 min con la CPU compartida). Por eso en CI
+  // también se reparten las pruebas de un mismo archivo (fullyParallel). En local, 1 worker y en serie.
+  fullyParallel: !!process.env.CI,
+  workers: process.env.CI ? 2 : 1,
   forbidOnly: !!process.env.CI,
   // No retries: a flaky test must be classified by the healer, never passed by luck.
   retries: 0,
