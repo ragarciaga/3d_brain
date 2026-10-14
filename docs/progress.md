@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corrida nocturna cycle-79c539f-qbnz: PR #110 a #112 fusionados, #113 a #117 abiertos)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -76,6 +76,12 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   "Acciones" y salir con confirmación (#63), respaldo descargable y código recordado (#60), trazos
   del vago en "Qué revisar" con "Siguiente trazo" y propuesta de la auditoría (#62), y "Enviar todo"
   en un solo formulario con "Sí, lo envié" (#58, PR #78, fusionado el 2026-10-13).
+- Corrida nocturna cycle-79c539f-qbnz (2026-10-14, merges de nivel C autorizados por el editor solo
+  esa noche): fusionados #110 (03-T3, fecha en la carga e importador), #111 (03-T1, página y script
+  para probar el canal) y #112 (02-T1, rutas torácicas del vago en el generador). Abiertos con
+  revisiones aprobadas: #113 (04-T1), #114 (03-T4), #115 (03-T5), #116 (03-T2, Apps Script completo)
+  y #117 (#83, precarga del modelo). 04-T2 (#102) quedó bloqueada tras 2 devoluciones y espera tu
+  respuesta.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
@@ -121,25 +127,31 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03 en main, PR #100): construir #87 a #99. T1 necesita una prueba del
-   editor en su navegador con el Apps Script publicado, y T13 la URL del script.
+1. Canal de retorno (spec 03): T1 y T3 en main; T2, T4 y T5 en PR. Falta que el editor corra la
+   prueba de `probar-canal.html` (T1, #87) con su Apps Script; después siguen T6 a T13 (T13 necesita
+   la URL del script).
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
-   un toque. Los datos llegan en PR de nivel C que fusiona el editor.
+   un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en PR #113; T2 bloqueada
+   (#102, una devolución más recomendada).
 3. Revisión docente: cuando 1 y 2 estén en main, mandar el mensaje a los 10 docentes.
-4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
+4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. T1 en main (PR #112); siguen T2 y T3. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
 5. Carga (#6, medición hecha; tareas #83 a #85): pedir el modelo desde el inicio, junto con el
    código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
-   "preparar el modelo" en el panel de medición. No se abre F19.
+   "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; siguen #84 y #85.
 6. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
-| Task | plan | implement | check | verify | audit | fix | pr | merge | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| T1 | 3.8 | 2.8 | 0.4 | 1.8 | 2.7 |  | 0.4 | 0.8 | 12.8 |
-| T3 | 4.4 | 2.3 | 0.5 | 3.7 | 3.3 | 0.9 | 0.5 | 0.9 | 16.5 |
-| T2 | 3.0 | 2.3 | 0.6 | 3.3 | 12.0 | 1.4 | 0.5 | 0.8 | 24.0 |
+| Task | plan | implement | Total |
+|---|---:|---:|---:|
+| i83 |  |  | 0.0 |
+| T4 | 7.2 |  | 7.2 |
+| T1 | 5.8 |  | 5.8 |
+| T3 | 5.8 | 5.1 | 10.9 |
+| T5 | 2.8 | 14.2 | 17.0 |
+| T11 | 4.9 |  | 4.9 |
+| T2 | 17.1 |  | 17.1 |
 
 Minutes per phase.
 <!-- rb:timing:end -->
