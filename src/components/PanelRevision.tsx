@@ -1,6 +1,6 @@
 // Modo revisión docente (F24): avance, fichas pendientes, autorización y guardado automático por el canal de retorno
 // (con `urlCanal`), con el formulario de Google como respaldo si el canal no confirma en 10 min; sin `urlCanal`, envío
-// por formulario.
+// por formulario. Con canal, la casilla del vago (Acciones) filtra los trazos y las rutas trazadas (R5).
 import { get, set } from 'idb-keyval';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +38,7 @@ import {
   type ParteEnvio,
   type Respuesta,
 } from '../lib/revision';
-import { useAtlas } from '../store/useAtlas';
+import { useAtlas, vagoVisible } from '../store/useAtlas';
 import DialogoAutorizacion from './DialogoAutorizacion';
 import SeccionTrazos from './SeccionTrazos';
 import { useMovil } from './useMovil';
@@ -85,11 +85,15 @@ export default function PanelRevision({
   const lecturaCanal = useAtlas((s) => s.lecturaCanal);
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
   const rutas = useAtlas((s) => s.rutas);
+  const vago = useAtlas(vagoVisible);
   const [confirmadas, setConfirmadas] = useState<Record<string, string>>({});
   const confirmadasRef = useRef(confirmadas);
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   const [aviso, setAviso] = useState('');
   const [envio, setEnvio] = useState<{ partes: ParteEnvio[]; estados: EstadoParte[] } | null>(null);
+  // Casilla del vago (R5.3): el valor en vuelo mientras `autorizar` responde, y el aviso si falla.
+  const [cambiandoVago, setCambiandoVago] = useState<boolean | null>(null);
+  const [errorVago, setErrorVago] = useState(false);
 
   useEffect(() => {
     if (!revisor) return;
@@ -332,8 +336,8 @@ export default function PanelRevision({
   };
   const lista = Object.values(respuestas);
   const viejas = desactualizadas(lista, versionActual);
-  const secciones = ordenDeRevision(respondidas, idioma, rutas);
-  const global = avanceGlobal(respondidas, idioma, rutas);
+  const secciones = ordenDeRevision(respondidas, idioma, rutas, vago);
+  const global = avanceGlobal(respondidas, idioma, rutas, vago);
   const totalPendientes = secciones.reduce((n, x) => n + x.ids.length, 0);
   const alternar = (v: Vista) => abrir(vista === v ? null : v);
   const configurado = formularioConfigurado(configRevision);
@@ -387,8 +391,24 @@ export default function PanelRevision({
       )}
     </>
   ) : null;
-  // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra.
-  const trazosUI = <SeccionTrazos alAbrir={() => abrir(null)} />;
+  // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra. Sin la casilla del vago (con
+  // canal) no hay sección de trazos (R5.1).
+  const trazosUI = vago ? <SeccionTrazos alAbrir={() => abrir(null)} /> : null;
+
+  // El filtro (`vago`) solo cambia cuando el canal confirma; mientras tanto la casilla muestra el valor pedido y queda
+  // deshabilitada; si falla, vuelve al confirmado. Con `codigo_no_activo` el store ya marca `inactivo`: el estado de
+  // guardado lo dice y la casilla desaparece.
+  const cambiarVago = async (nuevo: boolean) => {
+    setCambiandoVago(nuevo);
+    setErrorVago(false);
+    try {
+      await useAtlas.getState().cambiarAutorizacion(nuevo);
+    } catch (e) {
+      if (vivo.current && !(e instanceof ErrorCanal && e.tipo === 'codigo_no_activo')) setErrorVago(true);
+    } finally {
+      if (vivo.current) setCambiandoVago(null);
+    }
+  };
 
   const copiarODescargar = async (carga: string, archivo: string) => {
     try {
@@ -456,6 +476,22 @@ export default function PanelRevision({
         >
           {t('revision.enviar')}
         </button>
+      )}
+      {listo && (
+        <label data-testid="casilla-vago">
+          <input
+            type="checkbox"
+            checked={cambiandoVago ?? autorizacion?.vago === true}
+            disabled={cambiandoVago !== null}
+            onChange={(e) => void cambiarVago(e.currentTarget.checked)}
+          />{' '}
+          {t('revision.autorizacion.vago')}
+        </label>
+      )}
+      {errorVago && (
+        <span role="alert" className="etiqueta-aviso">
+          {t('revision.vagoSinConexion')}
+        </span>
       )}
     </>
   );
@@ -549,7 +585,7 @@ export default function PanelRevision({
                         {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
                         <span className="recurso-nota" data-testid="avance-ficha">
                           {' '}
-                          · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
+                          · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas, vago))}
                         </span>
                       </li>
                     ))}
@@ -584,8 +620,8 @@ export default function PanelRevision({
               'dudas',
               'nombres',
               'marcadores',
-              'trazos',
-              'recorridos',
+              // Sin la casilla del vago (con canal) esas secciones no existen: la guía explica cómo activarla (R5).
+              ...(vago ? (['trazos', 'recorridos'] as const) : (['vagoCasilla'] as const)),
               ...(conCanal ? [] : (['enviar', 'privacidad'] as const)),
             ] as const
           ).map((k) => (

@@ -5,6 +5,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
 import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, siguienteEspera } from '../src/lib/colaGuardado';
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
+import { leerRutas } from '../src/lib/rutas';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
 
@@ -115,6 +116,8 @@ interface CanalSimulado {
   guardar: 'ok' | 'red' | 'otra_fecha' | 'formato' | 'inactivo';
   /** Si existe, la respuesta de `leer` espera a que se resuelva (para probar lo que pasa mientras la lectura está pendiente). */
   retenerLeer: Promise<void> | null;
+  /** Si existe, `autorizar` espera a que se resuelva antes de responder (para mirar la página con la petición en vuelo). */
+  retenerAutorizar: Promise<void> | null;
   /** El `e` de la carga `v:2` que devuelve `leer`: elementos por estructura, con las claves cortas del canal. */
   respuestas: Record<string, Record<string, unknown>[]>;
   /** Demora (ms) de la respuesta de `leer`, para modelar una red lenta. */
@@ -140,6 +143,7 @@ async function simularCanal(
     autorizar: 'ok',
     guardar: 'ok',
     retenerLeer: null,
+    retenerAutorizar: null,
     respuestas: {},
     demoraLeer: 0,
     peticiones: [],
@@ -164,6 +168,7 @@ async function simularCanal(
       const accion = typeof cuerpo['accion'] === 'string' ? cuerpo['accion'] : null;
       canal.peticiones.push({ metodo: pedido.method(), accion, url: pedido.url(), cuerpo, t: Date.now() });
       if (accion === 'autorizar') {
+        if (canal.retenerAutorizar) await canal.retenerAutorizar;
         if (canal.autorizar === 'red') return route.abort('failed');
         if (canal.autorizar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
         return json(canal.autorizar === 'interno' ? { ok: false, error: 'interno' } : { ok: true });
@@ -457,7 +462,10 @@ test('autorización: la vigente no se vuelve a pedir, ni sin conexión, y la del
   await expect.poll(() => autorizacionGuardada(page, 'AUT03')).toBeNull();
 });
 
-test('formulario de respaldo: sin urlCanal el formulario es el único camino, sin diálogo de autorización ni peticiones al canal', async ({ page, context }) => {
+test('formulario de respaldo: sin urlCanal el formulario es el único camino, sin diálogo de autorización ni peticiones al canal, y los trazos y recorridos del vago como hoy', async ({
+  page,
+  context,
+}) => {
   const salidas: string[] = [];
   page.on('request', (p) => {
     const url = new URL(p.url());
@@ -466,7 +474,9 @@ test('formulario de respaldo: sin urlCanal el formulario es el único camino, si
     }
   });
   await conCanal(context, '');
+  await rutasSinteticas(page);
   await entrarEnRevision(page, context, 'AUT05');
+  await inyectarVago(page);
   await correcto(page, 'que_es.es').click();
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   await asentar(page);
@@ -484,9 +494,22 @@ test('formulario de respaldo: sin urlCanal el formulario es el único camino, si
   await expect(page.getByRole('button', { name: /Descargar respaldo|Cargar respaldo/ })).toHaveCount(0);
   await expect(page.getByTestId('entrada-respaldo')).toHaveCount(0);
 
+  // T10 (R5, R7.2), D2: sin canal el filtro del vago no actúa: trazos y recorridos trazados salen como hoy y no hay casilla.
+  await abrirQueRevisar(page);
+  await expect(seccionQR(page, 'trazos')).toHaveCount(1);
+  await expect(seccionQR(page, 'vago')).toHaveCount(1);
+  await seccionQR(page, 'vago').locator('summary').click();
+  await seccionQR(page, 'vago').getByRole('button').first().click();
+  await expect(queRevisar(page)).toHaveCount(0); // elegir una ficha cierra la lista
+  await expect(page.locator('[data-campo^="trazado_"]').first().getByRole('button', { name: 'Correcto' })).toBeVisible();
+  await expect(barra(page).getByRole('checkbox')).toHaveCount(0);
+  await expect(page.getByTestId('casilla-vago')).toHaveCount(0);
+
   // Control de R2.6: sin canal la guía queda como siempre, con el aviso de registro y su enlace.
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
   await expect(page.getByTestId('como-revisar')).toContainText('regístrate');
+  await expect(page.getByTestId('como-revisar')).toContainText('Trazos del vago');
+  await expect(page.getByTestId('como-revisar')).not.toContainText('solo aparecen si marcas');
   await expect(page.getByTestId('como-revisar').getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(1);
   await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
   await expect(page.getByTestId('como-revisar')).toHaveCount(0);
@@ -951,4 +974,244 @@ test('formulario de respaldo: con el canal confirmando no aparece a los 10 min, 
   await expect(abrirForm).toBeVisible();
   expect(cargaDelEnlace((await abrirForm.getAttribute('href'))!).e).toEqual({ hippocampus: [expect.objectContaining({ c: 'para_que_sirve' })] });
   expect(peticionesDe(canal, 'guardar')).toHaveLength(4); // la rechazada no se reenvía
+});
+
+// Filtro del vago (T10, R5). Trazos y rutas sin esperar el modelo: el GLB tarda hasta 150 s en CI; los mismos datos que
+// cargaría el visor.
+const TRAZOS = Object.keys((JSON.parse(readFileSync('pipeline/cajas.json', 'utf8')) as { cajas: Record<string, unknown> }).cajas)
+  .filter((n) => /#t\d+$/.test(n))
+  .sort();
+const RUTAS_JSON = readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8');
+const RUTAS = leerRutas(JSON.parse(RUTAS_JSON));
+const L00 = 'Vagus nerve (X).l#t00';
+const TEXTO_VAGO = 'También puedo revisar el recorrido del nervio vago en cuello y tórax';
+// El testid, porque el diálogo de autorización está dentro de `panel-revision` y tiene una casilla con el mismo nombre.
+const casillaAcciones = (page: Page) => page.getByTestId('casilla-vago').getByRole('checkbox', { name: TEXTO_VAGO });
+const queRevisar = (page: Page) => page.getByTestId('que-revisar');
+const seccionQR = (page: Page, seccion: string) => queRevisar(page).locator(`details[data-seccion="${seccion}"]`);
+const guiaDeRevision = (page: Page) => page.getByTestId('como-revisar');
+
+async function abrirQueRevisar(page: Page) {
+  await barra(page).getByRole('button', { name: /Qué revisar/ }).click();
+  await expect(queRevisar(page)).toBeVisible();
+}
+
+async function cerrarQueRevisar(page: Page) {
+  await queRevisar(page).getByRole('button', { name: 'Cerrar' }).click();
+  await expect(queRevisar(page)).toHaveCount(0);
+}
+
+async function abrirGuia(page: Page) {
+  await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
+  await expect(guiaDeRevision(page)).toBeVisible();
+}
+
+async function cerrarGuia(page: Page) {
+  await guiaDeRevision(page).getByRole('button', { name: 'Cerrar' }).click();
+  await expect(guiaDeRevision(page)).toHaveCount(0);
+}
+
+/** `rutas-vago.json` con las rutas sintéticas, para que una carga tardía del modelo deje las mismas que `inyectarVago`. */
+const rutasSinteticas = (page: Page) =>
+  page.route('**/modelos/rutas-vago.json', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: RUTAS_JSON }));
+
+/** Pone en el store los trazos y las rutas que cargaría el visor; `setTrazos` ignora una lista igual. */
+const inyectarVago = (page: Page) =>
+  page.evaluate(
+    ([trazos, rutas]) => {
+      const s = (window as unknown as { __atlas: { getState: () => { setTrazos(l: string[]): void; setRutas(r: unknown[]): void } } }).__atlas.getState();
+      s.setTrazos(trazos as string[]);
+      s.setRutas(rutas as unknown[]);
+    },
+    [TRAZOS, RUTAS] as const,
+  );
+
+/** Como `entrarDirecto`, pero en otra ficha (`entrarDirecto` está fijo en el hipocampo y lo usa T9). */
+async function entrarDirectoEn(page: Page, context: BrowserContext, codigo: string, ruta: string) {
+  await saltarGuia(context, codigo);
+  await context.addInitScript((c) => localStorage.setItem('atlas:revisor', c), codigo);
+  await page.goto(ruta);
+  await expect(barra(page)).toContainText(codigo);
+  await expect(correcto(page, 'que_es.es')).toBeVisible();
+}
+
+/** Toca un trazo en el modelo sin esperar el GLB: la misma selección y el mismo evento que `alTocar` de Visor.tsx. */
+const tocarTrazo = (page: Page, malla: string) =>
+  page.evaluate((m) => {
+    (window as unknown as { __atlas: { getState: () => { abrirTrazo(m: string): void } } }).__atlas.getState().abrirTrazo(m);
+    window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: 'vagus-nerve-x' } }));
+  }, malla);
+
+test('vago: sin la casilla no hay trazos ni recorridos que revisar, la casilla de Acciones los muestra y los quita, y si autorizar falla no cambia nada', async ({
+  page,
+  context,
+}) => {
+  const canal = await simularCanal(page, { autorizacion: null });
+  await conCanal(context, URL_CANAL);
+  await rutasSinteticas(page);
+  await entrarDirectoEn(page, context, 'VAG01', '/es/nervio-laringeo-recurrente');
+  await inyectarVago(page);
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  // Sanidad: sin estos datos las negativas de abajo pasarían sin probar nada.
+  expect(TRAZOS).toContain(L00);
+  expect(RUTAS).toHaveLength(5);
+  const trazadoRLN = 'trazado_laringeo_recurrente_derecho';
+  const trazadoVago = 'trazado_vago_toracico_derecho';
+
+  // (d) Sin autorización registrada no hay casilla ni sale `autorizar`.
+  await asentar(page);
+  await expect(casillaAcciones(page)).toHaveCount(0);
+  await expect(page.getByTestId('casilla-vago')).toHaveCount(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+  await expect(page.locator('[data-campo^="trazado_"]')).toHaveCount(0);
+
+  // Autorizar sin vago: la autorización queda registrada con `vago: false`.
+  await correcto(page, 'que_es.es').click();
+  await expect(dialogoAut(page)).toBeVisible();
+  await casillaAcepto(page).check();
+  await continuar(page).click();
+  await expect(dialogoAut(page)).toHaveCount(0);
+  await expect.poll(() => autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+  expect(peticionesDe(canal, 'autorizar')[0]!.cuerpo).toEqual({ accion: 'autorizar', r: 'VAG01', version: VERSION_AUTORIZACION, vago: false });
+
+  // (a) Con autorización y sin la casilla: ni trazos ni recorridos trazados que revisar.
+  await expect(casillaAcciones(page)).toBeVisible();
+  await expect(casillaAcciones(page)).not.toBeChecked();
+  await expect(page.getByTestId(`ruta-${trazadoRLN}`)).toContainText('Pendiente de revisión docente');
+  await expect(page.locator('[data-campo^="trazado_"]')).toHaveCount(0);
+  await expect(page.getByTestId('ficha')).not.toContainText('Míralo en 3D');
+  await expect(correcto(page, 'ubicacion.es')).toBeVisible(); // control positivo del modo revisión
+  const nombreRln = ((await page.locator('#ficha-titulo').textContent()) ?? '').trim();
+  expect(nombreRln).not.toBe('');
+  // Solo la primera sección de la lista viene abierta; un `details` cerrado esconde sus botones al árbol de accesibilidad.
+  const avanceRln = async (seccion: string) => {
+    const detalle = seccionQR(page, seccion);
+    if ((await detalle.getAttribute('open')) === null) await detalle.locator('summary').click();
+    return detalle
+      .locator('li')
+      .filter({ has: page.getByRole('button', { name: nombreRln, exact: true }) })
+      .getByTestId('avance-ficha');
+  };
+  await abrirQueRevisar(page);
+  await expect(seccionQR(page, 'trazos')).toHaveCount(0);
+  await expect(seccionQR(page, 'vago')).toHaveCount(0);
+  await expect(await avanceRln('resto')).toHaveText(/1 de \d+ campos/);
+  const sinRutas = Number(/1 de (\d+) campos/.exec((await (await avanceRln('resto')).textContent()) ?? '')![1]);
+  await cerrarQueRevisar(page);
+
+  // D3: la guía explica cómo activar la casilla y no describe secciones que este docente no ve.
+  await abrirGuia(page);
+  await expect(guiaDeRevision(page)).toContainText('solo aparecen si marcas');
+  await expect(guiaDeRevision(page)).not.toContainText('Trazos del vago');
+  await expect(guiaDeRevision(page)).not.toContainText('Recorrido trazado');
+  await cerrarGuia(page);
+
+  // Tocar un trazo en el modelo lleva a la ficha del vago, sin el control de revisión.
+  await tocarTrazo(page, L00);
+  await expect(page).toHaveURL(/\/es\/nervio-vago-x$/);
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __atlas: { getState: () => { seleccion: { malla: string | null } } } }).__atlas.getState().seleccion.malla))
+    .toBe(L00);
+  await asentar(page);
+  await expect(page.getByTestId('revision-trazo')).toHaveCount(0);
+  await expect(page.locator(`[data-campo="${trazadoVago}"]`)).toHaveCount(0);
+  await expect(page.getByTestId(`ruta-${trazadoVago}`)).toContainText('Pendiente de revisión docente');
+
+  // (b) Marcar la casilla: sale `autorizar` con `vago: true` y aparecen los trazos, las rutas y sus controles.
+  await casillaAcciones(page).check();
+  await expect.poll(() => peticionesDe(canal, 'autorizar').length).toBe(2);
+  expect(peticionesDe(canal, 'autorizar')[1]!.cuerpo).toEqual({ accion: 'autorizar', r: 'VAG01', version: VERSION_AUTORIZACION, vago: true });
+  await expect.poll(() => autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: true });
+  await expect(casillaAcciones(page)).toBeChecked();
+  await expect(page.getByTestId('revision-trazo')).toBeVisible();
+  await expect(page.getByTestId('trazos-pendientes')).toHaveText(`Trazos por revisar: ${TRAZOS.length} de ${TRAZOS.length}`);
+  await expect(correcto(page, trazadoVago)).toBeVisible();
+  await abrirQueRevisar(page);
+  await expect(seccionQR(page, 'trazos')).toHaveCount(1);
+  await expect(seccionQR(page, 'vago')).toHaveCount(1);
+  await expect(await avanceRln('vago')).toHaveText(new RegExp(`1 de ${sinRutas + 2} campos`)); // las dos rutas del laríngeo recurrente
+  await cerrarQueRevisar(page);
+
+  // (b) Desmarcarla: sale `autorizar` con `vago: false` y todo eso desaparece.
+  await casillaAcciones(page).uncheck();
+  await expect.poll(() => peticionesDe(canal, 'autorizar').length).toBe(3);
+  expect(peticionesDe(canal, 'autorizar')[2]!.cuerpo).toEqual({ accion: 'autorizar', r: 'VAG01', version: VERSION_AUTORIZACION, vago: false });
+  await expect.poll(() => autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  await expect(page.getByTestId('revision-trazo')).toHaveCount(0);
+  await expect(page.locator('[data-campo^="trazado_"]')).toHaveCount(0);
+  await abrirQueRevisar(page);
+  await expect(seccionQR(page, 'trazos')).toHaveCount(0);
+  await expect(seccionQR(page, 'vago')).toHaveCount(0);
+  await expect(await avanceRln('resto')).toHaveText(new RegExp(`1 de ${sinRutas} campos`));
+  await cerrarQueRevisar(page);
+  await expect.poll(() => autorizacionGuardada(page, 'VAG01')).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+
+  // (e) Con la petición en vuelo, la casilla muestra lo pedido pero el filtro sigue en el valor confirmado; si `autorizar`
+  // falla, la casilla vuelve a su valor anterior y nada cambia.
+  canal.autorizar = 'red';
+  let soltarAutorizar!: () => void;
+  canal.retenerAutorizar = new Promise<void>((resolver) => {
+    soltarAutorizar = resolver;
+  });
+  await casillaAcciones(page).click(); // `click` y no `check`: tras el aborto `check` vería la casilla ya desmarcada
+  await expect.poll(() => peticionesDe(canal, 'autorizar').length).toBe(4);
+  expect(peticionesDe(canal, 'autorizar')[3]!.cuerpo).toEqual({ accion: 'autorizar', r: 'VAG01', version: VERSION_AUTORIZACION, vago: true });
+  await expect(casillaAcciones(page)).toBeChecked();
+  await expect(casillaAcciones(page)).toBeDisabled();
+  expect(await autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  // Lecturas únicas y no `toHaveCount(0)`: este reintenta hasta que la petición falla por tiempo y el estado vuelve atrás,
+  // y así una aserción negativa pasaría aunque el filtro hubiera seguido el valor en vuelo.
+  expect(await page.getByTestId('revision-trazo').count()).toBe(0);
+  await abrirQueRevisar(page);
+  expect(await seccionQR(page, 'trazos').count()).toBe(0);
+  expect(await seccionQR(page, 'vago').count()).toBe(0);
+  expect(await page.getByTestId('casilla-vago').getByRole('checkbox').isDisabled()).toBe(true); // sigue en vuelo
+  await cerrarQueRevisar(page);
+  soltarAutorizar();
+  await expect(barra(page).getByRole('alert')).toContainText('Sin conexión: no se pudo cambiar la casilla del vago');
+  await expect(casillaAcciones(page)).not.toBeChecked();
+  await expect(casillaAcciones(page)).toBeEnabled();
+  expect(await autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  await expect(page.getByTestId('revision-trazo')).toHaveCount(0);
+  await abrirQueRevisar(page);
+  await expect(seccionQR(page, 'trazos')).toHaveCount(0);
+  await expect(seccionQR(page, 'vago')).toHaveCount(0);
+  await cerrarQueRevisar(page);
+
+  // "Marcar todo como correcto" tampoco responde las rutas que este docente no ve (misma lista que la ficha).
+  await page.getByTestId('marcar-todo').getByRole('button', { name: 'Marcar todo como correcto' }).click();
+  await page.getByTestId('marcar-todo').getByRole('button', { name: /^Marcar \d+ campos?$/ }).click();
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'true');
+  const claves = await page.evaluate(() =>
+    Object.keys((window as unknown as { __atlas: { getState: () => { respuestas: Record<string, unknown> } } }).__atlas.getState().respuestas),
+  );
+  expect(claves.filter((c) => c.startsWith('vagus-nerve-x|')).length).toBeGreaterThan(1);
+  expect(claves.filter((c) => c.includes('|trazado_'))).toEqual([]);
+});
+
+test('vago: en otro equipo, con vago true en el canal, los trazos y recorridos aparecen sin tocar la casilla', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: true } });
+  await conCanal(context, URL_CANAL);
+  await rutasSinteticas(page);
+  await entrarDirectoEn(page, context, 'VAG03', '/es/nervio-laringeo-recurrente');
+  await inyectarVago(page);
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+
+  // (c) Sin tocar nada: control de recorrido, casilla marcada y las dos secciones.
+  await expect(correcto(page, 'trazado_laringeo_recurrente_derecho')).toBeVisible();
+  await expect(casillaAcciones(page)).toBeChecked();
+  await abrirQueRevisar(page);
+  await expect(seccionQR(page, 'trazos')).toHaveCount(1);
+  await expect(seccionQR(page, 'vago')).toHaveCount(1);
+  await cerrarQueRevisar(page);
+
+  // D3: la guía describe los trazos y recorridos, no la casilla.
+  await abrirGuia(page);
+  await expect(guiaDeRevision(page)).toContainText('Trazos del vago');
+  await expect(guiaDeRevision(page)).not.toContainText('solo aparecen si marcas');
+  await cerrarGuia(page);
+
+  await asentar(page);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
 });

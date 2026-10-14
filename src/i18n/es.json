@@ -209,6 +209,7 @@
     "enlaceInvalido": "Este enlace no es válido; pide uno nuevo al editor.",
     "tituloCorto": "Revisión",
     "acciones": "Acciones",
+    "vagoSinConexion": "Sin conexión: no se pudo cambiar la casilla del vago. Intenta de nuevo.",
     "salirTitulo": "¿Salir del modo revisión?",
     "salirTexto": "Tus respuestas no enviadas quedan guardadas en este navegador. Para seguir revisando, abre otra vez tu enlace personal.",
     "salirConfirmar": "Salir",
@@ -268,6 +269,7 @@
       "marcadores": "Los marcadores son estructuras sin malla 3D. Si la posición es aproximada o falta, usa \"Proponer posición\" y toca el punto en el modelo.",
       "trazos": "Los ramos del vago vienen como trazos sin nombre. En \"Qué revisar\", la sección \"Trazos del vago\" abre el primero pendiente; elige qué ramo es (o confirma la propuesta de la auditoría), deja un comentario si quieres y sigue con \"Siguiente trazo\". También puedes tocar un trazo en el modelo.",
       "recorridos": "Los laríngeos recurrentes y el vago izquierdo bajo el tórax no están en el modelo escaneado: se trazaron y se ven punteados. En su ficha, \"Recorrido trazado\" te pide juzgarlos.",
+      "vagoCasilla": "Los trazos y los recorridos trazados del vago solo aparecen si marcas \"También puedo revisar el recorrido del nervio vago en cuello y tórax\": al dar tu autorización o, cuando quieras, en Acciones.",
       "enviar": "Cuando quieras, pulsa \"Enviar revisión\" y luego \"Enviar todo\": se abre un solo formulario ya lleno con todo lo que no has enviado (en partes solo si es muy largo). Pulsa Enviar al final del formulario y vuelve para pulsar \"Sí, lo envié\". Puedes enviar cuantas veces quieras.",
       "privacidad": "Antes de la primera revisión, regístrate una sola vez: nombre como quieres que aparezca, rol y autorización (Ley 1581 de 2012). Tu nombre solo aparece en las fichas que valides.",
       "registrarme": "Registrarme (una sola vez)"

@@ -209,6 +209,7 @@
     "enlaceInvalido": "This link is not valid; ask the editor for a new one.",
     "tituloCorto": "Review",
     "acciones": "Actions",
+    "vagoSinConexion": "No connection: the vagus checkbox could not be changed. Try again.",
     "salirTitulo": "Leave review mode?",
     "salirTexto": "Your unsent answers stay saved in this browser. To keep reviewing, open your personal link again.",
     "salirConfirmar": "Leave",
@@ -268,6 +269,7 @@
       "marcadores": "Markers are structures without a 3D mesh. If the position is approximate or missing, use \"Propose position\" and tap the point on the model.",
       "trazos": "The vagus branches come as unnamed strands. In \"What to review\", the \"Vagus strands\" section opens the first pending one; choose which branch it is (or confirm the audit's proposal), leave a comment if you like and continue with \"Next strand\". You can also tap a strand on the model.",
       "recorridos": "The recurrent laryngeal nerves and the left vagus below the thorax are not in the scanned model: they were traced and appear dotted. In their entry, \"Traced course\" asks for your judgement.",
+      "vagoCasilla": "The vagus strands and traced courses only appear if you tick \"I can also review the course of the vagus nerve in the neck and thorax\": when you give your authorization or, whenever you like, in Actions.",
       "enviar": "Whenever you want, press \"Send review\" and then \"Send all\": a single prefilled form opens with everything you have not sent yet (in parts only if it is very long). Press Submit at the end of the form and come back to press \"Yes, I sent it\". You can send as many times as you like.",
       "privacidad": "Before your first review, register once: the name you want shown, your role and your consent (Colombian Law 1581 of 2012). Your name only appears on the entries you validate.",
       "registrarme": "Register (once)"
