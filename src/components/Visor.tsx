@@ -33,7 +33,8 @@ import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
 import { punteado } from './acabados';
-import { planoRecorrido, SIN_RECORTE } from './recorte';
+import { esEncefalo, hayCortes } from '../lib/cortes';
+import { actualizarPlanos, crearMallaFantasma, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
 
 export const URL_MODELO = `${import.meta.env.BASE_URL}modelos/atlas.glb`;
@@ -66,8 +67,6 @@ export const camaraActual: {
   piezaEnPantalla: ((pieza: string) => { casa: Punto2; actual: Punto2 } | null) | null;
 } = { leer: null, objetivoEnPantalla: null, piezaEnPantalla: null };
 
-const raycastNulo = () => null;
-
 /** Nombre de la tarjeta gráfica, si el navegador lo informa (Safari suele decir solo "Apple GPU"). */
 function nombreGpu(ctx: WebGLRenderingContext | WebGL2RenderingContext): string {
   try {
@@ -98,7 +97,6 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const referencia = nodo.clase === 'referencia';
   // En el inventario (F6) lo que no se desarma (órganos de referencia y vago) quedaría encima de las repisas: se oculta.
   const fija = referencia || !esFragmentable(id);
-  const recortable = !esFragmentable(id); // el vago se revela parada por parada en el recorrido
   const aproximada = origenDe(id) === 'aproximada'; // F25: trazado, no medido
   const visible = useAtlas(
     (s) =>
@@ -113,8 +111,11 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const ubicando = useAtlas((s) => !!s.ubicando);
   const revisando = useAtlas((s) => !!s.revisor);
   const shift = useAtlas((s) => s.shift);
+  const conCortes = useAtlas((s) => hayCortes(s.cortes));
   const [encima, setEncima] = useState(false);
 
+  // Planos de la pieza: los de corte (encéfalo), el del recorrido (vago) o ninguno (órganos y sin cortes).
+  const planos = planosDePieza(id, conCortes);
   const color = colorDePieza(id);
 
   useFrame((_, dt) => {
@@ -201,7 +202,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
             geometry={m.geometria}
             matrixAutoUpdate={false}
             matrix={m.matriz}
-            raycast={seleccionable ? acceleratedRaycast : raycastNulo}
+            raycast={seleccionable ? (planos === PLANOS_CORTE ? raycastCorte : acceleratedRaycast) : raycastNulo}
             userData={{ nombreMalla: m.nombre }}
             renderOrder={referencia ? 2 : m.toque ? 3 : 0}
           >
@@ -219,7 +220,7 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
                 depthWrite={!(referencia || fantasma)}
                 emissive={seleccionada ? '#3c83f6' : encima ? '#444444' : '#000000'}
                 emissiveIntensity={seleccionada ? 0.55 : 0.35}
-                clippingPlanes={recortable ? PLANOS_RECORRIDO : null}
+                clippingPlanes={planos}
               />
             )}
           </mesh>
@@ -303,6 +304,48 @@ function Modelo({ idioma }: { idioma: Idioma }) {
     <>
       {[...porPieza.entries()].map(([id, mallas]) => (
         <Pieza key={id} id={id} mallas={mallas} idioma={idioma} />
+      ))}
+      <FantasmaCorte porPieza={porPieza} />
+    </>
+  );
+}
+
+/**
+ * Fantasma del corte (F8): una copia translúcida del lado oculto de cada pieza del encéfalo visible que un plano cruza.
+ * Se suscribe a los campos crudos y calcula con useMemo: un selector que devuelva un arreglo nuevo hace un bucle en zustand 5.
+ */
+function FantasmaCorte({ porPieza }: { porPieza: Map<string, MallaCargada[]> }) {
+  const cortes = useAtlas((s) => s.cortes);
+  const fantasmaCorte = useAtlas((s) => s.fantasmaCorte);
+  const ocultas = useAtlas((s) => s.ocultas);
+  const aislar = useAtlas((s) => s.aislar);
+  const soloEscaneada = useAtlas((s) => s.soloEscaneada);
+  const cajas = useAtlas((s) => s.cajas);
+  const ids = useMemo(
+    () => piezasFantasmaCorte({ cortes, fantasmaCorte, ocultas, aislar, soloEscaneada, cajas }),
+    [cortes, fantasmaCorte, ocultas, aislar, soloEscaneada, cajas],
+  );
+  if (!ids.length) return null;
+  return (
+    <>
+      {ids.map((id) => (
+        <FantasmaDePieza key={id} id={id} mallas={porPieza.get(id) ?? []} />
+      ))}
+    </>
+  );
+}
+
+function FantasmaDePieza({ id, mallas }: { id: string; mallas: MallaCargada[] }) {
+  const copias = useMemo(
+    () => mallas.filter((m) => !m.toque).map((m) => crearMallaFantasma(m.geometria, m.matriz, colorDePieza(id), id)),
+    [id, mallas],
+  );
+  // Solo el material: la geometría es la de la pieza y se comparte.
+  useEffect(() => () => copias.forEach((c) => (c.material as THREE.Material).dispose()), [copias]);
+  return (
+    <>
+      {copias.map((c) => (
+        <primitive key={c.uuid} object={c} />
       ))}
     </>
   );
@@ -557,8 +600,6 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
   return <CameraControls ref={controles} makeDefault minDistance={0.01} maxDistance={3} dollySpeed={0.6} />;
 }
 
-const PLANOS_RECORRIDO = [planoRecorrido];
-
 /** Baja el plano del recorrido hasta el nivel de la parada, con una animación corta. */
 function RecorteRecorrido() {
   useFrame((_, dt) => {
@@ -575,6 +616,85 @@ function RecorteRecorrido() {
     const d = destino - planoRecorrido.constant;
     planoRecorrido.constant = reducirMovimiento() || Math.abs(d) < 1e-4 ? destino : planoRecorrido.constant + d * Math.min(1, dt * 3);
   });
+  return null;
+}
+
+/** Pone los planos de corte del estado en los planos compartidos, una vez por cuadro. */
+function PlanosCorte() {
+  useFrame(() => {
+    const s = useAtlas.getState();
+    actualizarPlanos(s.cortes, rangoActual(s.cajas));
+  });
+  return null;
+}
+
+/** Solo pruebas E2E: se exponen en DEV desde src/main.tsx. Leen la escena, no el estado. */
+export const cortesVisor: {
+  planosDe: ((pieza: string) => number) | null;
+  fantasmas: (() => string[]) | null;
+  cajasMundo: (() => Record<string, number[]>) | null;
+  /** Punto en px CSS del viewport (listo para `page.mouse`), distinto de los px del lienzo de `piezaEnPantalla`. */
+  puntoCorte: ((pieza: string) => { x: number; y: number } | null) | null;
+} = { planosDe: null, fantasmas: null, cajasMundo: null, puntoCorte: null };
+
+const seVeEnMundo = (o: THREE.Object3D) => {
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
+  return true;
+};
+
+function AyudasCortes() {
+  const obtener = useThree((s) => s.get);
+  useEffect(() => {
+    // Solo mallas de pieza (con `nombreMalla`): quedan fuera los fantasmas y las esferas de los marcadores.
+    const mallasDePieza = () => {
+      const res: { malla: THREE.Mesh; pieza: string; toque: boolean }[] = [];
+      obtener().scene.traverse((o) => {
+        const nombreMalla = o.userData.nombreMalla as string | undefined;
+        const pieza = nombreMalla && !o.userData.fantasmaCorte ? piezaDeMalla(nombreMalla) : undefined;
+        if ((o as THREE.Mesh).isMesh && pieza) res.push({ malla: o as THREE.Mesh, pieza, toque: esMallaDeToque(nombreMalla!) });
+      });
+      return res;
+    };
+    cortesVisor.planosDe = (pieza) => {
+      const m = mallasDePieza().find((x) => x.pieza === pieza && !x.toque);
+      return (m?.malla.material as THREE.Material | undefined)?.clippingPlanes?.length ?? 0;
+    };
+    cortesVisor.fantasmas = () => {
+      const ids = new Set<string>();
+      obtener().scene.traverse((o) => {
+        if (o.userData.fantasmaCorte && seVeEnMundo(o)) ids.add(o.userData.pieza as string);
+      });
+      return [...ids].sort();
+    };
+    cortesVisor.cajasMundo = () => {
+      const res: Record<string, THREE.Box3> = {};
+      const vertices: Record<string, number> = {};
+      for (const { malla, pieza, toque } of mallasDePieza()) {
+        if (toque) continue;
+        const caja = new THREE.Box3().setFromObject(malla);
+        res[pieza] = res[pieza] ? res[pieza].union(caja) : caja;
+        vertices[pieza] = (vertices[pieza] ?? 0) + malla.geometry.attributes.position!.count;
+      }
+      return Object.fromEntries(Object.entries(res).map(([p, c]) => [p, [...c.min.toArray(), ...c.max.toArray(), vertices[p]!]]));
+    };
+    cortesVisor.puntoCorte = (pieza) => {
+      if (!hayCortes(useAtlas.getState().cortes)) return null;
+      const { camera, gl } = obtener();
+      const candidatas: CandidataCorte[] = mallasDePieza()
+        .filter((x) => !x.toque && seVeEnMundo(x.malla) && x.malla.raycast !== raycastNulo)
+        .map((x) => ({ pieza: x.pieza, malla: x.malla, cortada: esEncefalo(x.pieza) }));
+      const ndc = puntoDeCorte(pieza, candidatas, camera);
+      if (!ndc) return null;
+      const r = gl.domElement.getBoundingClientRect();
+      return { x: r.left + ((ndc.x + 1) / 2) * r.width, y: r.top + ((1 - ndc.y) / 2) * r.height };
+    };
+    return () => {
+      cortesVisor.planosDe = null;
+      cortesVisor.fantasmas = null;
+      cortesVisor.cajasMundo = null;
+      cortesVisor.puntoCorte = null;
+    };
+  }, [obtener]);
   return null;
 }
 
@@ -649,7 +769,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
-            gl.localClippingEnabled = true; // revelado progresivo del recorrido del vago
+            gl.localClippingEnabled = true; // recorrido del vago y planos de corte (F8)
             useMetricas.getState().setGpu(nombreGpu(gl.getContext()));
           }}
           onPointerMissed={(e) => {
@@ -672,6 +792,8 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           <ControlCamara vistaInicial={vistaInicial} camaraInicial={camaraInicial} />
           <MedidorCuadros />
           <RecorteRecorrido />
+          <PlanosCorte />
+          <AyudasCortes />
         </Canvas>
       </BarreraVisor>
     </div>
