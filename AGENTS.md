@@ -15,7 +15,7 @@ the headings exactly as written.
 ## Goal
 Atlas 3D web, público, gratuito y bilingüe (es, en) del cerebro y el nervio vago, para estudiantes
 de psicología y ciencias de la salud. Se desarma en piezas, cada pieza tiene ficha con fuente,
-nivel de evidencia y revisor visible, y se vuelve a armar sin perder la posición exacta.
+nivel de evidencia y revisión docente visible, y se vuelve a armar sin perder la posición exacta.
 
 Diferenciales que toda decisión debe proteger: circuitos funcionales para psicología; cerebro y
 vago integrados en el mismo espacio; bilingüe real (búsqueda cruzada en los dos idiomas y en latín);
@@ -56,9 +56,10 @@ Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y 
 - **Cero textos en duro.** Todo texto visible pasa por i18next (`src/i18n/es.json`,
   `src/i18n/en.json`). Un test compara las claves de ambos archivos y falla si falta una.
 - **Sin backend ni datos personales de usuarios.** Notas y progreso solo en IndexedDB. Nada de
-  cookies de rastreo. Única excepción: los revisores docentes (F24) envían sus revisiones por
-  un formulario de Google del editor, con consentimiento explícito para mostrar su nombre
-  (Ley 1581 de 2012). La app no guarda nada de ellos en un servidor propio.
+  cookies de rastreo. Única excepción: los revisores docentes (F24) guardan sus revisiones en la
+  hoja de Google del editor mediante un Apps Script de su cuenta (ADR 0012), con autorización
+  explícita de tratamiento de datos dentro de la app (Ley 1581 de 2012). La app no muestra datos
+  personales de los revisores y no guarda nada de ellos en un servidor propio.
 - **Licencias visibles.** Modelo y derivados CC BY-SA 4.0 con crédito a Z-Anatomy y
   BodyParts3D (DBCLS); código MIT. Aviso "Uso educativo, no clínico" en la primera visita y en
   el pie.

@@ -66,3 +66,10 @@ se abría el formulario, aunque el docente nunca lo enviara. Ahora:
   ids conocidos y la misma forma de slug que en `v:1`.
 - Se mantiene el mismo formulario de Google y no hay host nuevo. Un Apps Script que reciba el envío
   y evite la confirmación manual queda como decisión aparte (#67).
+
+## Actualización 2026-10-14: canal por Apps Script (#67)
+
+El canal de retorno pasa a un Apps Script en la cuenta del editor que guarda cada respuesta sola en
+su hoja, con la autorización de tratamiento de datos dentro de la app y sin mostrar datos
+personales de los revisores. El formulario de revisión queda como respaldo y el de registro se
+retira. Ver el ADR 0012 y `docs/specs/03-review-return-channel/`.

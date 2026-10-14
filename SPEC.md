@@ -40,7 +40,7 @@ Ya existen atlas 3D abiertos y gratuitos, como Z-Anatomy y los atlas de Open Ana
 - Circuitos funcionales pensados para psicología (Papez, vías del miedo, ganglios basales, eje vago-cerebro), además de la anatomía.
 - El nervio vago integrado con el cerebro en un mismo modelo, con recorrido guiado.
 - Bilingüe completo: búsqueda cruzada entre idiomas y un modo que muestra los términos en español e inglés al tiempo.
-- Fichas con fuente, nivel de evidencia y revisor visible.
+- Fichas con fuente, nivel de evidencia y revisión docente visible ("Revisado por un docente universitario", sin datos personales).
 
 ## 3. Usuarios y escenarios de uso
 
@@ -222,24 +222,24 @@ Cada pieza tiene su propia lista de recursos: título, enlace, tipo (video, art�
 
 Mecanismo para que cada docente diga, en cada parte específica, si es correcta o qué cambio propone.
 
-- **Acceso:** cada revisor recibe un enlace personal, por ejemplo `/es/revision?r=<código>`. El código solo identifica al revisor para atribuir la revisión; no es una contraseña. El registro de revisores (nombre, rol, consentimiento) lo lleva el editor.
+- **Acceso:** cada revisor recibe un enlace personal, por ejemplo `/es/revision?r=<código>`. El código solo identifica al revisor para atribuir la revisión; no es una contraseña. El padrón de revisores (código, alias, activo) lo lleva el editor en una pestaña privada de su hoja.
 - **Unidades revisables**, cada una con tres botones (**Correcto**, **Corregir** con texto propuesto, **No es mi área**) y un comentario:
   - La pieza: si la malla corresponde a la estructura y si está bien ubicada.
   - Los nombres, por separado: español, inglés y latín.
   - Cada campo de la ficha en cada idioma: ubicación, qué es, para qué sirve y relaciones; además, cada afirmación de relevancia con su nivel de evidencia y cada fuente.
   - Marcadores: "Proponer posición". El revisor toca el punto correcto en el modelo y se envían las coordenadas.
   - Trazos del vago: "Qué revisar" tiene la sección "Trazos del vago (pendientes de total)", que abre el primer trazo pendiente, lo resalta y lo encuadra; también se llega tocando un trazo. El revisor elige de una lista qué ramo es, "no es un ramo" o "no sé", o "Correcto, es lo propuesto" cuando la auditoría (`pipeline/auditar-vago.py`) propone una sola opción de la lista; puede dejar un comentario y pasa con "Siguiente trazo".
-  - Recorridos trazados del vago (F25): "Recorrido trazado" por lado.
+  - Recorridos trazados del vago (F25): "Recorrido trazado" por ruta. Los trazos y las rutas del vago solo aparecen a quien marcó "También puedo revisar el recorrido del nervio vago en cuello y tórax".
   - Dudas abiertas: las preguntas que dejó la redacción (`src/data/dudas.json`) aparecen arriba en su ficha, cada una con su propio campo.
   - Sinónimos, por idioma: también se muestran en la ficha para todos, porque cambian lo que encuentra la búsqueda.
   - Pasos de circuitos y casos clásicos, cuando existan (fase 2).
-- **Envío:** las respuestas se acumulan en el navegador del revisor mientras trabaja. "Enviar revisión" muestra lo que falta por enviar y "Enviar todo" abre un solo formulario de Google del editor ya lleno con todas las respuestas completas aún no enviadas (código, fichas y revisión). Un "Corregir" sin texto no se envía. Solo si el enlace pasaría de 7000 caracteres se parte, y cada parte muestra si está sin abrir, abierta o confirmada. Una respuesta cuenta como enviada solo cuando el revisor confirma "Sí, lo envié", y vuelve a quedar por enviar si la cambia. Nombre, rol y consentimiento se dan una sola vez, en un formulario de registro del revisor. Cada respuesta lleva estructura, campo, idioma, versión del contenido, revisor, veredicto y propuesta.
-- **Procesamiento:** las respuestas llegan al formulario del editor, de donde se descargan en CSV (o a una hoja de cálculo vinculada). `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen y con códigos que no están en el padrón privado de revisores (`pipeline/revisores.local.json`, fuera de git). Los issues muestran el alias del revisor (D01, D02...), nunca su código ni su nombre. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
-- **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando una ficha tiene el visto bueno de los tres roles (anatomía, psicología, traducción) en un idioma, pasa a "verificada" con revisor y fecha.
-- **Vista del revisor:** todo se ve como lo verían los estudiantes; el revisor solo suma los botones. "Qué revisar" ordena lo pendiente: primero las fichas con dudas abiertas, luego los trazos del vago (en su propia sección, con cuántos faltan), luego las fichas del vago, luego sistema límbico, ganglios basales, diencéfalo y tronco encefálico, y al final el resto; cada ficha muestra cuántos de sus campos revisables van respondidos en el idioma activo (los de tres botones; la posición de un marcador y los trazos del vago no cuentan), las fichas empezadas van arriba de su sección y una ficha sale de la lista solo cuando todos sus campos tienen respuesta. La barra de revisión muestra cuántas fichas están completas de todas las del alcance. "Cómo revisar" es la guía dentro de la web, con el enlace al registro; se abre sola la primera vez con cada código. El docente no necesita ningún documento aparte.
-- **Privacidad:** el formulario pide consentimiento explícito para mostrar el nombre del revisor en las fichas (Ley 1581 de 2012). La app no guarda datos de revisores en un servidor propio.
+- **Guardado:** cada respuesta completa se guarda sola en la hoja del editor, mediante un Apps Script de su cuenta (ADR 0012), unos segundos después de marcarla; la app muestra "Guardado ✓" solo cuando el script confirma esa versión, reintenta sola sin conexión y, si el script no responde por 10 minutos, ofrece el formulario de Google como respaldo. Un "Corregir" sin texto no se guarda. Al abrir el enlace en otro equipo aparece lo ya guardado. Antes del primer guardado, el revisor autoriza una sola vez dentro de la app el tratamiento de sus datos y marca, si quiere, la casilla del vago; no se le pide nombre, correo ni profesión. Cada respuesta lleva estructura, campo, idioma, versión del contenido, fecha, revisor, veredicto y propuesta. Spec: `docs/specs/03-review-return-channel/`.
+- **Procesamiento:** las respuestas llegan a la pestaña Respuestas de la hoja del editor, de donde se descargan en CSV. `scripts/importar-revisiones.ts` las convierte en un resumen por ficha y un resumen de toda la importación, que se vuelve issue. Descarta envíos con ids que no existen y con códigos que no están en el padrón privado de revisores (`pipeline/revisores.local.json`, fuera de git). Los issues muestran el alias del revisor (D01, D02...), nunca su código ni su nombre. Configuración paso a paso: `docs/revision-docente.md`. Claude prepara el cambio y **el editor lo aprueba**; ninguna corrección se aplica sola.
+- **Estado:** una respuesta sobre una versión vieja del contenido queda marcada como desactualizada. Cuando todos los campos de una ficha tienen el visto bueno docente en un idioma, pasa a "verificada" con fecha; la ficha muestra "Revisado por un docente universitario", nunca el nombre del revisor.
+- **Vista del revisor:** todo se ve como lo verían los estudiantes; el revisor solo suma los botones. "Qué revisar" ordena lo pendiente: primero las fichas con dudas abiertas, luego los trazos del vago (en su propia sección, con cuántos faltan), luego las fichas del vago, luego sistema límbico, ganglios basales, diencéfalo y tronco encefálico, y al final el resto; cada ficha muestra cuántos de sus campos revisables van respondidos en el idioma activo (los de tres botones; la posición de un marcador y los trazos del vago no cuentan), las fichas empezadas van arriba de su sección y una ficha sale de la lista solo cuando todos sus campos tienen respuesta. La barra de revisión muestra cuántas fichas están completas de todas las del alcance. "Cómo revisar" es la guía dentro de la web; se abre sola la primera vez con cada código. El docente no necesita ningún documento aparte.
+- **Privacidad:** la autorización de tratamiento de datos (Ley 1581 de 2012) se da dentro de la app y queda en la hoja del editor con fecha y versión del texto. La app solo envía el código y las respuestas, no muestra datos personales de los revisores y no guarda nada de ellos en un servidor propio.
 
-**Criterio:** un revisor marca tres campos como correctos, propone un cambio en un cuarto y ubica un marcador; tras enviar, las respuestas del formulario del editor tienen las cinco respuestas con estructura, campo, idioma, versión y coordenadas (en un solo envío), y el script genera un resumen de la importación con las cinco, que es el cuerpo de un solo issue.
+**Criterio:** un revisor marca tres campos como correctos, propone un cambio en un cuarto y ubica un marcador; sin pulsar nada más, la hoja del editor tiene las cinco respuestas con estructura, campo, idioma, versión y coordenadas, y el importador genera un resumen de la importación con las cinco, que es el cuerpo de un solo issue.
 
 #### F25. Origen de la geometría (hito 2)
 
@@ -706,7 +706,7 @@ para que la hoja no las tape. No hay riel.
 
 - Sin cuentas de usuario. Notas, recursos personales, progreso del quiz y revisiones en curso viven solo en el navegador de cada persona.
 - Así el proyecto no almacena datos personales de usuarios, lo que simplifica mucho frente a la Ley 1581 de 2012. Antes de agregar cuentas, formularios propios o analítica con datos personales, se revisa con asesoría legal.
-- **Revisores docentes (F24):** sus revisiones llegan por un formulario de Google del editor. El formulario pide consentimiento explícito para tratar su nombre y mostrarlo como revisor en las fichas.
+- **Revisores docentes (F24):** sus revisiones se guardan en la hoja de Google del editor mediante un Apps Script de su cuenta (ADR 0012). La app pide una sola vez autorización explícita de tratamiento de datos y no muestra datos personales de los revisores.
 - Si se quiere saber qué estructuras se usan más, la analítica debe ser sin cookies y sin datos personales.
 
 **Licencias**
@@ -746,7 +746,7 @@ para que la hoja no las tape. No hay riel.
 1. Lateralidad: estructuras separadas por hemisferio, como vienen en el modelo. Fusionarlas exigiría modificar geometría. El hipotálamo viene como una sola pieza.
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
-9. Canal de revisión docente: formulario de Google del editor (F24).
+9. Canal de revisión docente: Apps Script en la cuenta del editor que guarda en su hoja de Google, con el formulario como respaldo (14 de octubre de 2026, ADR 0012, spec 03).
 11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25. Ampliado el mismo día (ADR 0010): también se traza el tramo torácico de los dos troncos, porque el escaneado es un espejo.
 10. Sin "modo ambos idiomas" (13 de octubre de 2026): el editor lo quitó porque recargaba la interfaz. Lo bilingüe queda en la búsqueda cruzada, el nombre latino siempre visible y un selector de idioma claro.
 3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
