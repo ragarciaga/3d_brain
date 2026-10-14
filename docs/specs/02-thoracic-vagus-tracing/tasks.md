@@ -38,7 +38,7 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: src/lib/rutas.ts, src/components/Ficha.tsx, scripts/lib/revisiones.ts, tests/rutas.test.ts, tests/revisiones.test.ts, e2e/atlas.spec.ts
 - Verify: `npm test -- tests/rutas.test.ts tests/revisiones.test.ts` con el fixture de T1: `campoTrazado` devuelve `trazado_<id>` y los cinco campos son distintos; `leerRutas` conserva `reemplaza` válido (`lado`, `y_max` número, `y_min` número o nulo) y descarta, sin romper las demás, una ruta con `reemplaza` mal formado; `resumenMarkdown` de una respuesta `trazado_vago_toracico_derecho` con la versión vigente sale sin "(desactualizada)" y con ese campo en su fila; una `trazado_derecho` o `trazado_izquierdo` con la versión vigente sale "(desactualizada)" con la nota de que no se aplica a ninguna ruta. `npm run test:e2e -- e2e/atlas.spec.ts -g "rutas trazadas"`: `data-testid` y `data-campo` `trazado_<id>`, un bloque por ruta en la ficha
 - Issue: #48
-- Status: todo
+- Status: in-review
 
 ### Decision log
 - Ronda 1: rewrite. Se nombran las salidas observables del importador, la validación real de `reemplaza` y el E2E existente que cambia de campo.
