@@ -1,8 +1,8 @@
-# Rutas del vago que se trazan (ADR 0009). Es el registro de cómo se trazó cada una. El docente no
-# revisa este archivo: revisa la ruta dibujada en la app, en modo revisión, con el campo "Recorrido
-# trazado" de la ficha (F24). La app la muestra con su estado ("Pendiente de revisión docente" mientras
-# diga en_revision); cuando el editor aplica una aprobación, pasa a "aprobada". Antes del lanzamiento
-# público, toda ruta que siga en revisión se aprueba o se retira.
+# Rutas del vago que se trazan (ADR 0009 y 0010). Es el registro de cómo se trazó cada una. El docente no
+# revisa este archivo: revisa la ruta dibujada en la app, en modo revisión, con el campo propio de esa
+# ruta en la ficha (trazado_<id de la ruta>, F24). La app la muestra con su estado ("Pendiente de revisión
+# docente" mientras diga en_revision); cuando el editor aplica una aprobación, pasa a "aprobada". Antes del
+# lanzamiento público, toda ruta que siga en revisión se aprueba o se retira.
 #
 # Cómo se lee: cada ruta es una lista de pasos, de arriba hacia abajo o en el orden del nervio. Cada
 # paso nombra una estructura del modelo (el "anclaje", con su nombre exacto en Z-Anatomy) y dice por
@@ -12,7 +12,13 @@
 #
 # Palabras de los pasos:
 #   desde_vago        el punto del tronco del vago (escaneado) de ese lado, a la altura indicada
-#   rodear            el nervio pasa por ese lado del anclaje: debajo, encima, anterior, posterior
+#   hasta_vago        igual que desde_vago, pero cierra la ruta en el tronco escaneado a esa altura
+#   desde_ruta        arranca sobre otra ruta de este archivo (ruta: <id>), a la altura de un anclaje
+#                     (a_la_altura_de) o en su final (punto: final). Se resuelven en orden de dependencia.
+#   reemplaza         solo en las rutas torácicas: la banda del tronco escaneado que la ruta reemplaza,
+#                     de la altura de desde a la de hasta (hasta: null es hasta abajo). Sale de medir
+#                     los anclajes; el generador la publica como reemplaza: {lado, y_max, y_min}.
+#   rodear           el nervio pasa por ese lado del anclaje: debajo, encima, anterior, posterior
 #   surco             surco traqueoesofágico de ese lado (entre la tráquea y el esófago)
 #   seguir            el nervio acompaña la cara indicada del anclaje entre el paso anterior y el siguiente
 #   a_la_altura_de    la altura de un punto de otro anclaje (mas_alto, mas_bajo, centro)
@@ -32,15 +38,64 @@ fuentes:
   - "Kenny BJ, Bordoni B. Neuroanatomy, Cranial Nerve 10 (Vagus Nerve). StatPearls. https://www.ncbi.nlm.nih.gov/books/NBK537171/"
 
 rutas:
+  # Tramos torácicos de los dos vagos (ADR 0010). Van antes de sus ramos: los recurrentes y el vago
+  # izquierdo distal salen de ellos. El orden aquí no cambia el resultado.
+  vago_toracico_derecho:
+    nombre: { es: "Nervio vago derecho (tramo torácico trazado)", en: "Right vagus nerve (traced thoracic segment)" }
+    lado: derecho
+    entrada: vagus-nerve-x   # ficha que abre al tocar la ruta y donde se revisa
+    revision: { estado: en_revision, revisado_por: null, fecha: null }
+    # Banda del tronco escaneado que reemplaza: de lo más alto de la subclavia a lo más bajo del bronquio.
+    reemplaza:
+      desde: { anclaje: "Right subclavian artery", punto: mas_alto }
+      hasta: { anclaje: "Right main bronchus", punto: mas_bajo }
+    pasos:
+      # Empieza en el tronco escaneado, a la altura de lo más alto de la subclavia derecha.
+      - desde_vago: derecho
+        a_la_altura_de: { anclaje: "Right subclavian artery", punto: mas_alto }
+      # Pasa por detrás del bronquio principal derecho (asimetría 4).
+      - anclaje: "Right main bronchus"
+        punto: centro
+        rodear: posterior
+      # Vuelve al tronco escaneado a la altura de lo más bajo del bronquio principal derecho.
+      - hasta_vago: derecho
+        a_la_altura_de: { anclaje: "Right main bronchus", punto: mas_bajo }
+
+  vago_toracico_izquierdo:
+    nombre: { es: "Nervio vago izquierdo (tramo torácico trazado)", en: "Left vagus nerve (traced thoracic segment)" }
+    lado: izquierdo
+    entrada: vagus-nerve-x
+    revision: { estado: en_revision, revisado_por: null, fecha: null }
+    # Desde lo más alto de la subclavia izquierda hacia abajo: hasta: null es hasta el final del tronco
+    # escaneado, y lo que sigue lo traza vago_izquierdo_distal.
+    reemplaza:
+      desde: { anclaje: "Left subclavian artery", punto: mas_alto }
+      hasta: null
+    pasos:
+      # Empieza en el tronco escaneado, a la altura de lo más alto de la subclavia izquierda.
+      - desde_vago: izquierdo
+        a_la_altura_de: { anclaje: "Left subclavian artery", punto: mas_alto }
+      # Pasa por la cara anterolateral izquierda del arco aórtico, por delante de él (asimetría 3).
+      - anclaje: "Aortic arch"
+        punto: mas_alto
+        rodear: anterior
+        cara_lateral: true
+      # Pasa por detrás del bronquio principal izquierdo (asimetría 3).
+      - anclaje: "Left main bronchus"
+        punto: centro
+        rodear: posterior
+
   laringeo_recurrente_derecho:
     nombre: { es: "Nervio laríngeo recurrente derecho", en: "Right recurrent laryngeal nerve" }
     lado: derecho
     entrada: m-recurrent-laryngeal-nerve   # ficha que abre al tocar la ruta y donde se revisa
     revision: { estado: en_revision, revisado_por: null, fecha: null }   # en_revision | aprobada
     pasos:
-      # Se separa del vago en la base del cuello, a la altura de la subclavia derecha.
-      - desde_vago: derecho
-        a_la_altura_de: { anclaje: "Right subclavian artery", punto: mas_alto }
+      # Se separa del vago en la base del cuello, a la altura de la subclavia derecha: sale del tramo
+      # torácico derecho trazado.
+      - desde_ruta:
+          ruta: vago_toracico_derecho
+          a_la_altura_de: { anclaje: "Right subclavian artery", punto: mas_alto }
       # Pasa por debajo de la subclavia derecha (asimetría 1).
       - anclaje: "Right subclavian artery"
         punto: mas_bajo
@@ -60,9 +115,11 @@ rutas:
     entrada: m-recurrent-laryngeal-nerve
     revision: { estado: en_revision, revisado_por: null, fecha: null }
     pasos:
-      # Se separa del vago izquierdo en el tórax, cuando este cruza el arco aórtico.
-      - desde_vago: izquierdo
-        a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
+      # Se separa del vago izquierdo en el tórax, cuando este cruza el arco aórtico: sale del tramo
+      # torácico izquierdo trazado.
+      - desde_ruta:
+          ruta: vago_toracico_izquierdo
+          a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
       # Rodea el arco aórtico por debajo, junto al ligamento arterioso (asimetría 2).
       # Z-Anatomy no trae el ligamento: se usa su ganglio ("Node of ligamentum arteriosum"), que en el
       # modelo está 8 mm bajo la superficie del arco y 8 mm sobre la bifurcación del tronco pulmonar.
@@ -87,13 +144,10 @@ rutas:
     entrada: m-anterior-vagal-trunk
     revision: { estado: en_revision, revisado_por: null, fecha: null }
     pasos:
-      # Empieza donde termina el vago izquierdo escaneado, debajo de la bifurcación de la tráquea.
-      - desde_vago: izquierdo
-        punto: extremo_inferior
-      # Pasa por detrás del bronquio principal izquierdo (asimetría 3).
-      - anclaje: "Left main bronchus"
-        punto: centro
-        rodear: posterior
+      # Empieza donde termina el tramo torácico izquierdo trazado, detrás del bronquio principal izquierdo.
+      - desde_ruta:
+          ruta: vago_toracico_izquierdo
+          punto: final
       # Baja sobre la cara anterior del esófago (plexo esofágico, tronco vagal anterior).
       - seguir: { anclaje: "Oesophagus", cara: anterior }
       # Atraviesa el hiato con el esófago y llega a la cara anterior del estómago, cerca del cardias.
