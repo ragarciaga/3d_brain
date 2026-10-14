@@ -1088,18 +1088,43 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
   await expect.poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().rutas.length)).toBe(5);
   await expect(page.getByTestId('leyenda-origen')).toBeVisible();
   await expect(page.getByTestId('aviso-aproximada')).toBeVisible();
-  for (const lado of ['derecho', 'izquierdo']) {
-    await expect(page.getByTestId(`ruta-trazado_${lado}`)).toContainText('Pendiente de revisión docente');
-    await expect(page.locator(`[data-campo="trazado_${lado}"]`)).toHaveCount(0);
+  const ficha = page.getByTestId('ficha');
+  const recurrentes = ['laringeo_recurrente_derecho', 'laringeo_recurrente_izquierdo'];
+  for (const id of recurrentes) {
+    await expect(page.getByTestId(`ruta-trazado_${id}`)).toContainText('Pendiente de revisión docente');
+    await expect(page.locator(`[data-campo="trazado_${id}"]`)).toHaveCount(0);
   }
-  // En modo revisión: un campo por lado para responder.
+  await expect(ficha.locator('.revision-ruta')).toHaveCount(2);
+  await expect(page.locator('[data-testid="ruta-trazado_derecho"]')).toHaveCount(0);
+  // En modo revisión: un campo por ruta para responder, y ninguno por lado.
   await entrarRevision(page);
   await abrir(page, '/es/nervio-laringeo-recurrente');
-  for (const lado of ['derecho', 'izquierdo']) {
-    await expect(page.locator(`[data-campo="trazado_${lado}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
+  for (const id of recurrentes) {
+    await expect(page.locator(`[data-campo="trazado_${id}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
   }
-  await page.locator('[data-campo="trazado_izquierdo"]').getByRole('button', { name: 'Corregir' }).click();
+  await expect(ficha.locator('.revision-ruta')).toHaveCount(2);
+  await expect(page.locator('[data-campo="trazado_derecho"]')).toHaveCount(0);
+  await expect(page.locator('[data-campo="trazado_izquierdo"]')).toHaveCount(0);
+  await page.locator('[data-campo="trazado_laringeo_recurrente_izquierdo"]').getByRole('button', { name: 'Corregir' }).click();
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+  // Otras fichas, sin recargar la página: un bloque por ruta de la entrada (2 en el vago, 1 en el tronco, 0 sin rutas).
+  const irA = async (busqueda: string, url: RegExp) => {
+    await (await campoBusqueda(page)).fill(busqueda);
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(url);
+  };
+  await irA('neumogastrico', /\/es\/nervio-vago-x$/);
+  await expect(ficha.locator('.revision-ruta')).toHaveCount(2);
+  for (const id of ['vago_toracico_derecho', 'vago_toracico_izquierdo']) {
+    await expect(page.getByTestId(`ruta-trazado_${id}`)).toBeVisible();
+    await expect(page.locator(`[data-campo="trazado_${id}"]`).getByRole('button', { name: 'Correcto' })).toBeVisible();
+  }
+  await irA('tronco vagal anterior', /\/es\/tronco-vagal-anterior$/);
+  await expect(ficha.locator('.revision-ruta')).toHaveCount(1);
+  await expect(page.getByTestId('ruta-trazado_vago_izquierdo_distal')).toBeVisible();
+  await irA('hipocampo', /\/es\/hipocampo$/);
+  await expect(ficha.locator('.revision-control').first()).toBeVisible();
+  await expect(ficha.locator('.revision-ruta')).toHaveCount(0);
   // El filtro "Solo geometría escaneada" las esconde.
   await page.getByTestId('leyenda-origen').getByRole('checkbox').check();
   expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().soloEscaneada)).toBe(true);

@@ -26,7 +26,7 @@ export function entradasBajo(id: string): string[] {
   return res;
 }
 
-type RutasDeFicha = Pick<RutaTrazada, 'lado' | 'entrada'>[];
+type RutasDeFicha = Pick<RutaTrazada, 'id' | 'entrada'>[];
 
 /**
  * Claves de respuesta (`claveRespuesta`) de los controles de tres botones que `Ficha.tsx` dibuja para una

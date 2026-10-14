@@ -5,6 +5,13 @@ import type { Bilingue } from '../data/tipos';
 
 export type P3 = [number, number, number];
 
+/** Banda de alturas glTF (m) del tronco escaneado que reemplaza una ruta torácica. `y_min` nulo: hasta abajo (ADR 0010). */
+export interface Reemplaza {
+  lado: 'izquierdo' | 'derecho';
+  y_max: number;
+  y_min: number | null;
+}
+
 export interface RutaTrazada {
   id: string;
   nombre: Bilingue;
@@ -13,6 +20,7 @@ export interface RutaTrazada {
   revision: { estado: 'en_revision' | 'aprobada'; revisado_por: string | null; fecha: string | null };
   radio: [number, number];
   puntos: P3[];
+  reemplaza?: Reemplaza;
 }
 
 interface ArchivoRutas {
@@ -20,6 +28,18 @@ interface ArchivoRutas {
 }
 
 const esPunto = (p: unknown): p is P3 => Array.isArray(p) && p.length === 3 && p.every((v) => typeof v === 'number' && Number.isFinite(v));
+
+const esNumero = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+const esReemplaza = (x: unknown): x is Reemplaza => {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return false;
+  const b = x as Record<string, unknown>;
+  return (
+    (b.lado === 'izquierdo' || b.lado === 'derecho') &&
+    esNumero(b.y_max) &&
+    (b.y_min === null || (esNumero(b.y_min) && b.y_min < b.y_max))
+  );
+};
 
 /** Valida lo que llega del archivo publicado: una ruta mal formada se descarta, no rompe la app. */
 export function leerRutas(datos: unknown): RutaTrazada[] {
@@ -40,7 +60,9 @@ export function leerRutas(datos: unknown): RutaTrazada[] {
     ) {
       continue;
     }
-    res.push({ ...r, id });
+    if (r.reemplaza !== undefined && !esReemplaza(r.reemplaza)) continue;
+    const { reemplaza, ...resto } = r;
+    res.push(reemplaza ? { ...resto, id, reemplaza: { lado: reemplaza.lado, y_max: reemplaza.y_max, y_min: reemplaza.y_min } } : { ...resto, id });
   }
   return res;
 }
@@ -56,5 +78,8 @@ export async function cargarRutas(base: string, traer: typeof fetch = fetch): Pr
   }
 }
 
-/** Campo de revisión (F24) del recorrido trazado de una ruta: uno por lado en la ficha. */
-export const campoTrazado = (r: Pick<RutaTrazada, 'lado'>) => `trazado_${r.lado}`;
+/**
+ * Campo de revisión (F24) del recorrido trazado de una ruta: uno por ruta (spec 02 R5.1). Los campos por
+ * lado `trazado_derecho` y `trazado_izquierdo` quedan obsoletos: el importador los marca como desactualizados.
+ */
+export const campoTrazado = (r: Pick<RutaTrazada, 'id'>) => `trazado_${r.id}`;
