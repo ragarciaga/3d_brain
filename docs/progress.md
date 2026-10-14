@@ -1,14 +1,14 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
 ## Current objective
-Arrancar la revisión docente: mandar el mensaje de `docs/guia-docentes.md` a cada docente. En
-paralelo: construir F8 (#33 a #42), implementar el ADR 0010 (trazar el vago torácico), escribir el
-spec del canal de retorno con Apps Script (#67) y hacer los dos cambios baratos de carga que salieron
-de la medición (#6).
+Preparar la única sesión de cada docente: construir el canal de retorno con Apps Script (spec 03,
+#87 a #99) y las propuestas razonadas para marcadores y trazos del vago (spec 04), para que el
+docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #42), el ADR 0010
+(trazar el vago torácico) y los cambios baratos de carga (#83 a #85).
 
 ## Current state
 - Revisión docente dentro de la web (PR #31): todo se ve como lo verá el público y el docente suma
@@ -63,7 +63,8 @@ de la medición (#6).
   visibles (#8).
   Todo lo anatómico (nombres, fichas, posiciones, trazos) lo validan docentes, no el editor.
 - Pending (editor):
-  - fusionar el PR del harness Rockbuilt 0.4.0 (horas por proyecto, feature y tarea con `rb hours`);
+  - fusionar el PR de la spec 04 y, después, los PR de nivel C que traen las posiciones y la
+    evidencia propuestas (resumen antes y después en cada PR);
   - mandar a cada docente el mensaje de docs/guia-docentes.md con su enlace (el registro está dentro
     de la web) y anotar su nombre junto al alias en el documento de enlaces del Drive;
   - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
@@ -79,8 +80,14 @@ de la medición (#6).
   vago con docentes (#11).
 
 ## Key decisions
-- 2026-10-14: el canal de retorno de la revisión docente pasa a un Apps Script, en un solo momento
-  dentro del navegador (decisión del editor en #67; spec pendiente)
+- 2026-10-14: posiciones de marcadores propuestas por regla anatómica sobre piezas vecinas del
+  modelo, cada una con fuente verificada, como `aproximada`; trazos del vago con evidencia medida y
+  propuesta con confianza (spec 04 por delegación del editor), see
+  docs/adr/0013-posiciones-propuestas-por-regla-anatomica.md y docs/research/marcadores/fuentes.md
+- 2026-10-14: el canal de retorno de la revisión docente pasa a un Apps Script del editor, en un solo
+  momento dentro del navegador, con el código en la URL y sin créditos públicos ("Revisado por un
+  docente universitario"), see docs/adr/0012-apps-script-canal-revision.md y
+  docs/specs/03-review-return-channel/
 - 2026-10-14: medición en los equipos de referencia hecha (#6): iPhone y PC cumplen; el Android de
   gama baja (Tecno Spark 8C, PowerVR GE8300) da 21 a 23 cuadros/s con el cerebro armado girando y
   8,9 s hasta ver el cerebro. Se hacen dos cambios baratos (pedir el modelo desde el inicio y
@@ -114,16 +121,17 @@ de la medición (#6).
   revisión (#8)
 
 ## Next steps
-1. Escribir el spec del canal de retorno con Apps Script (#67, con su ADR frente a la regla "sin
-   backend propio") y revisar el formulario para docentes externos (#68). Mientras tanto, la pregunta
-   "Estructura" del formulario de Google no debe tener validación (lo exige "Enviar todo", PR #78).
-2. Revisión docente: mandar el mensaje a los 10 docentes e importar las primeras respuestas con
-   `scripts/importar-revisiones.ts`.
-3. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
-4. Carga (#6, medición hecha): pedir el modelo desde el inicio, junto con el código, y bajar la
-   densidad de píxeles solo cuando el equipo va lento, más un desglose de "preparar el modelo" en el
-   panel de medición. No se abre F19.
-5. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
+1. Canal de retorno (spec 03 en main, PR #100): construir #87 a #99. T1 necesita una prueba del
+   editor en su navegador con el Apps Script publicado, y T13 la URL del script.
+2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
+   ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
+   un toque. Los datos llegan en PR de nivel C que fusiona el editor.
+3. Revisión docente: cuando 1 y 2 estén en main, mandar el mensaje a los 10 docentes.
+4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
+5. Carga (#6, medición hecha; tareas #83 a #85): pedir el modelo desde el inicio, junto con el
+   código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
+   "preparar el modelo" en el panel de medición. No se abre F19.
+6. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
