@@ -203,6 +203,7 @@
     "copiada": "Review copied. Paste it in your message to the editor.",
     "descargada": "Review downloaded as a file.",
     "salir": "Leave review mode",
+    "enlaceInvalido": "This link is not valid; ask the editor for a new one.",
     "tituloCorto": "Review",
     "acciones": "Actions",
     "salirTitulo": "Leave review mode?",
