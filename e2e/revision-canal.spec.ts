@@ -2,6 +2,8 @@
 // Las tareas T7 a T10 de ese spec amplían este archivo. Helpers propios para no depender de otros specs.
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { VERSION_AUTORIZACION } from '../src/config/revision';
+import { ESPERA_CANAL_MS, ESPERA_ENVIO_MS, siguienteEspera } from '../src/lib/colaGuardado';
+import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
 
@@ -101,8 +103,10 @@ interface PeticionCanal {
 
 interface CanalSimulado {
   autorizacion: unknown;
-  leer: 'ok' | 'red';
-  autorizar: 'ok' | 'red' | 'interno';
+  leer: 'ok' | 'red' | 'inactivo';
+  autorizar: 'ok' | 'red' | 'interno' | 'inactivo';
+  /** `otra_fecha` confirma cada respuesta con una fecha distinta de la enviada; `red` aborta la petición. */
+  guardar: 'ok' | 'red' | 'otra_fecha' | 'inactivo';
   /** Si existe, la respuesta de `leer` espera a que se resuelva (para probar lo que pasa mientras la lectura está pendiente). */
   retenerLeer: Promise<void> | null;
   peticiones: PeticionCanal[];
@@ -110,8 +114,17 @@ interface CanalSimulado {
 
 const CORS = { 'access-control-allow-origin': '*' };
 
-async function simularCanal(page: Page, inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar'>> = {}): Promise<CanalSimulado> {
-  const canal: CanalSimulado = { autorizacion: null, leer: 'ok', autorizar: 'ok', retenerLeer: null, peticiones: [], ...inicial };
+/** Claves que confirma el canal real (`clavesRecibidas` de apps-script/Codigo.js): `estructura|campo|idioma|fecha`. */
+function clavesRecibidas(carga: unknown, fechaFija?: string): string[] {
+  const e = (JSON.parse(String(carga)) as { e: Record<string, { c: string; i?: string; f?: string }[]> }).e;
+  return Object.entries(e).flatMap(([id, elementos]) => elementos.map((el) => [id, el.c, el.i ?? '', fechaFija ?? el.f ?? ''].join('|')));
+}
+
+async function simularCanal(
+  page: Page,
+  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar'>> = {},
+): Promise<CanalSimulado> {
+  const canal: CanalSimulado = { autorizacion: null, leer: 'ok', autorizar: 'ok', guardar: 'ok', retenerLeer: null, peticiones: [], ...inicial };
   await page.route(
     (u) => u.hostname === 'canal-prueba.invalid',
     async (route) => {
@@ -123,6 +136,7 @@ async function simularCanal(page: Page, inicial: Partial<Pick<CanalSimulado, 'au
         canal.peticiones.push({ metodo: 'GET', accion, url: pedido.url(), cuerpo: null });
         if (accion !== 'leer' || canal.leer === 'red') return route.abort('failed');
         if (canal.retenerLeer) await canal.retenerLeer;
+        if (canal.leer === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
         return json({ ok: true, respuestas: { v: 2, r: url.searchParams.get('r'), e: {} }, autorizacion: canal.autorizacion });
       }
       const cuerpo = JSON.parse(pedido.postData() ?? '{}') as Record<string, unknown>;
@@ -130,9 +144,14 @@ async function simularCanal(page: Page, inicial: Partial<Pick<CanalSimulado, 'au
       canal.peticiones.push({ metodo: pedido.method(), accion, url: pedido.url(), cuerpo });
       if (accion === 'autorizar') {
         if (canal.autorizar === 'red') return route.abort('failed');
+        if (canal.autorizar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
         return json(canal.autorizar === 'interno' ? { ok: false, error: 'interno' } : { ok: true });
       }
-      if (accion === 'guardar') return json({ ok: true, recibidas: [] });
+      if (accion === 'guardar') {
+        if (canal.guardar === 'red') return route.abort('failed');
+        if (canal.guardar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
+        return json({ ok: true, recibidas: clavesRecibidas(cuerpo['carga'], canal.guardar === 'otra_fecha' ? '2000-01-01T00:00:00.000Z' : undefined) });
+      }
       return route.abort('failed');
     },
   );
@@ -167,6 +186,56 @@ const autorizacionGuardada = (page: Page, codigo: string) =>
       }),
     codigo,
   );
+
+interface RevisionGuardada {
+  respuestas: Record<string, { fecha: string }>;
+  confirmadas: Record<string, string>;
+}
+
+/** El registro `revision:<código>` de IndexedDB completo (undefined si no hay). */
+const revisionGuardada = (page: Page, codigo: string) =>
+  page.evaluate(
+    (c) =>
+      new Promise<RevisionGuardada | undefined>((resolver) => {
+        const abrirDb = indexedDB.open('keyval-store');
+        abrirDb.onerror = () => resolver(undefined);
+        abrirDb.onsuccess = () => {
+          const db = abrirDb.result;
+          if (!db.objectStoreNames.contains('keyval')) return resolver(undefined);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          pedido.onsuccess = () => resolver(pedido.result);
+          pedido.onerror = () => resolver(undefined);
+        };
+      }),
+    codigo,
+  );
+
+/** Fecha de una respuesta en el store (undefined si no está). */
+const fechaDelStore = (page: Page, clave: string) =>
+  page.evaluate(
+    (k) => (window as unknown as { __atlas: { getState: () => { respuestas: Record<string, { fecha: string }> } } }).__atlas.getState().respuestas[k]?.fecha,
+    clave,
+  );
+
+interface CargaGuardar {
+  v: number;
+  r: string;
+  e: Record<string, { c: string; i?: string; d?: string; f?: string }[]>;
+}
+
+/** Carga `v:2` (texto JSON dentro del cuerpo) de una petición `guardar`. */
+const cargaDe = (p: PeticionCanal) => JSON.parse(String(p.cuerpo?.['carga'])) as CargaGuardar;
+
+const estadoGuardado = (page: Page) => page.getByTestId('estado-guardado');
+
+/** Entra directo a la ficha del hipocampo con el código ya recordado, sin guía ni búsqueda. */
+async function entrarDirecto(page: Page, context: BrowserContext, codigo: string) {
+  await saltarGuia(context, codigo);
+  await context.addInitScript((c) => localStorage.setItem('atlas:revisor', c), codigo);
+  await page.goto('/es/hipocampo');
+  await expect(barra(page)).toContainText(codigo);
+  await expect(correcto(page, 'que_es.es')).toBeVisible();
+}
 
 const aislarModo = (page: Page) =>
   page.evaluate(() => (window as unknown as { __atlas: { getState(): { aislar: { modo: string } | null } } }).__atlas.getState().aislar?.modo ?? null);
@@ -289,7 +358,6 @@ test('autorización: con la casilla del vago manda vago true y si autorizar fall
   expect(peticionesDe(canal, 'autorizar')).toHaveLength(3);
   expect(peticionesDe(canal, 'autorizar')[2]!.cuerpo).toEqual({ accion: 'autorizar', r: 'AUT02', version: VERSION_AUTORIZACION, vago: true });
   expect(await autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: true });
-  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
 
   // R2.6: con el canal, la guía ya no habla de un registro previo con nombre ni de rol, ni enlaza al formulario.
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
@@ -298,10 +366,15 @@ test('autorización: con la casilla del vago manda vago true y si autorizar fall
   await expect(guia).not.toContainText(/regístrate/i);
   await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(0);
   await expect(guia.getByRole('link')).toHaveCount(0);
+
+  // T7: ya autorizada, la respuesta pendiente se guarda sola.
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBeGreaterThan(0);
 });
 
 test('autorización: la vigente no se vuelve a pedir, ni sin conexión, y la del canal manda sobre la copia local', async ({ page, context }) => {
-  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false } });
+  // `guardar: 'red'`: así la respuesta nunca queda guardada y el diálogo puede volver con la autorización de otra
+  // versión. Si el canal la confirmara, antes de la última recarga no habría nada por guardar y no aparecería.
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false }, guardar: 'red' });
   await conCanal(context, URL_CANAL);
 
   // R2.4: la respuesta de `leer` se retiene. Con la lectura todavía pendiente, marcar una respuesta no
@@ -376,8 +449,198 @@ test('autorización: sin urlCanal no aparece el diálogo ni sale ninguna petici�
   const estado = await estadoDelStore(page);
   expect(estado).toEqual({ autorizacion: null, lecturaCanal: 'pendiente' });
 
+  // D1: sin canal no hay estado de guardado y el envío por formulario sigue en la barra.
+  await expect(estadoGuardado(page)).toHaveCount(0);
+  await expect(barra(page).getByRole('button', { name: 'Enviar revisión' })).toBeVisible();
+
   // Control de R2.6: sin canal la guía queda como siempre, con el aviso de registro y su enlace.
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
   await expect(page.getByTestId('como-revisar')).toContainText('regístrate');
   await expect(page.getByTestId('como-revisar').getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(1);
+});
+
+// Guardado automático (T7). Con canal, cada respuesta completa sale sola; sin pasos de envío por formulario.
+const TEXTOS_DE_ENVIO = /Enviar revisión|Enviar todo|Abrir formulario|Sí, lo envié/;
+
+async function sinPasosDeEnvio(page: Page) {
+  await expect(page.getByRole('button', { name: /Enviar revisión|Enviar todo|Sí, lo envié/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Abrir formulario/ })).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(TEXTOS_DE_ENVIO);
+}
+
+test('guardado: sale a los 3 s, dice Guardando... y Guardado ✓ solo con la misma fecha, sin pasos de envío', async ({ page, context }) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false }, guardar: 'otra_fecha' });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'GUA01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(estadoGuardado(page)).toHaveText('');
+
+  // R3.7: con canal no hay botón ni diálogo de envío, ni enlace al formulario, tampoco en la guía.
+  await sinPasosDeEnvio(page);
+  await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
+  await expect(page.getByTestId('como-revisar')).toBeVisible();
+  await sinPasosDeEnvio(page);
+  // Con el reloj simulado, la espera de estabilidad de Playwright tarda unos 20 s por clic: `force` la salta (el botón ya se vio).
+  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click({ force: true });
+  await expect(page.getByTestId('como-revisar')).toHaveCount(0);
+
+  // `asentar` usa el requestAnimationFrame de la página, que el reloj pausado congela: no se usa desde aquí.
+  const ahora = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(ahora + 1000);
+
+  // R3.1: mientras espera dice "Guardando..." y no sale nada antes de la espera del panel; en cuanto se cumple, sale.
+  // `fastForward` y no `runFor`: este avanza frame por frame y el visor, que dibuja en cada uno, tarda minutos;
+  // aquel dispara cada temporizador vencido una vez.
+  await correcto(page, 'que_es.es').click({ force: true });
+  await expect(estadoGuardado(page)).toHaveText('Guardando...');
+  const fecha = await fechaDelStore(page, 'hippocampus|que_es|es');
+  expect(fecha).toBeTruthy();
+  await page.clock.fastForward(ESPERA_ENVIO_MS - 1);
+  await page.waitForTimeout(500); // tiempo real: deja llegar al simulador una petición que hubiera salido antes
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
+  await expect(estadoGuardado(page)).toHaveText('Guardando...');
+  await page.clock.fastForward(1);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(1);
+  const carga = cargaDe(peticionesDe(canal, 'guardar')[0]!);
+  expect(carga.r).toBe('GUA01');
+  expect(carga.e['hippocampus']).toEqual([expect.objectContaining({ c: 'que_es', i: 'es', d: 'correcto', f: fecha })]);
+
+  // R3.2: una confirmación de otra fecha no es "Guardado ✓" y la respuesta sigue pendiente.
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+  await expect(estadoGuardado(page)).not.toContainText('Guardado ✓');
+
+  // El reintento llega a los 2000 ms; con la confirmación correcta queda guardada.
+  canal.guardar = 'ok';
+  await page.clock.fastForward(siguienteEspera(1));
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(2);
+  expect(cargaDe(peticionesDe(canal, 'guardar')[1]!).e['hippocampus']).toEqual([expect.objectContaining({ c: 'que_es', f: fecha })]);
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect.poll(async () => (await revisionGuardada(page, 'GUA01'))?.confirmadas['hippocampus|que_es|es']).toBe(fecha);
+
+  // R3.1 con texto: la propuesta llega al store 500 ms después de la última tecla (`ESPERA_GUARDADO_MS`) y el
+  // envío sale antes de que pasen 3 s de la última tecla, no 3 s después de que el texto llegó al store.
+  const control = page.locator('[data-campo="ubicacion.es"]');
+  await control.getByRole('button', { name: 'Corregir' }).click({ force: true });
+  const propuesta = control.getByLabel('Cambio propuesto');
+  await propuesta.fill('Texto propuesto', { force: true });
+  await expect(propuesta).toHaveValue('Texto propuesto');
+  await page.clock.fastForward(ESPERA_GUARDADO_MS); // pasan 500 ms desde la última tecla
+  await expect(estadoGuardado(page)).toHaveText('Guardando...');
+  await page.clock.fastForward(ESPERA_ENVIO_MS - 1); // 2899 ms desde la última tecla
+  await page.waitForTimeout(500);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(2);
+  await page.clock.fastForward(1); // 2900 ms: menos de ESPERA_CANAL_MS
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(3);
+  expect(cargaDe(peticionesDe(canal, 'guardar')[2]!).e['hippocampus']).toEqual([
+    expect.objectContaining({ c: 'ubicacion', d: 'corregir', p: 'Texto propuesto' }),
+  ]);
+});
+
+test('guardado: sin conexión queda pendiente, al recargar se guarda sola y un código no activo detiene el guardado', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false }, guardar: 'red' });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'GUA02');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+
+  // R3.5: con la red caída la respuesta queda pendiente.
+  await correcto(page, 'que_es.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+  expect(peticionesDe(canal, 'guardar').length).toBeGreaterThan(0);
+  await expect.poll(async () => Object.keys((await revisionGuardada(page, 'GUA02'))?.respuestas ?? {})).toContain('hippocampus|que_es|es');
+  expect((await revisionGuardada(page, 'GUA02'))?.confirmadas).not.toHaveProperty(['hippocampus|que_es|es']);
+  const fecha = await fechaDelStore(page, 'hippocampus|que_es|es');
+
+  // Al recargar con el canal arriba, sin tocar nada, sale sola.
+  canal.guardar = 'ok';
+  await page.reload();
+  await expect(barra(page)).toContainText('GUA02');
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  const ultima = peticionesDe(canal, 'guardar').at(-1)!;
+  expect(cargaDe(ultima).e['hippocampus']).toEqual([expect.objectContaining({ c: 'que_es', f: fecha })]);
+  await expect.poll(async () => (await revisionGuardada(page, 'GUA02'))?.confirmadas['hippocampus|que_es|es']).toBe(fecha);
+
+  // R1.3: con `codigo_no_activo` al guardar, el panel lo dice y no vuelve a salir nada.
+  canal.guardar = 'inactivo';
+  await correcto(page, 'ubicacion.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Tu código no está activo; escribe al editor');
+  expect(await lecturaDelStore(page)).toBe('inactivo');
+  const n = peticionesDe(canal, 'guardar').length;
+  await correcto(page, 'para_que_sirve.es').click();
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(n);
+  const claves = Object.keys((await revisionGuardada(page, 'GUA02'))?.respuestas ?? {});
+  expect(claves).toContain('hippocampus|ubicacion|es');
+  expect(claves).toContain('hippocampus|para_que_sirve|es');
+
+  // Si falla la lectura de IndexedDB de otro código, las respuestas en memoria son del anterior: no salen con el nuevo.
+  canal.guardar = 'ok';
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.get;
+    IDBObjectStore.prototype.get = function (this: IDBObjectStore, clave: IDBValidKey | IDBKeyRange) {
+      if (clave === 'revision:GUA04') throw new Error('lectura de prueba rota');
+      return original.call(this, clave);
+    };
+  });
+  const antes = peticionesDe(canal, 'guardar').length;
+  await page.evaluate(() => (window as unknown as { __atlas: { getState: () => { setRevisor: (c: string) => void } } }).__atlas.getState().setRevisor('GUA04'));
+  await expect(barra(page)).toContainText('GUA04');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(antes);
+});
+
+test('guardado: código no activo al autorizar o al leer', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: null, autorizar: 'inactivo' });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'GUA03');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+
+  // R1.3 por `autorizar`: el diálogo se cierra con el mensaje y no sale ningún `guardar`.
+  await correcto(page, 'que_es.es').click();
+  await expect(dialogoAut(page)).toBeVisible();
+  await casillaAcepto(page).check();
+  await continuar(page).click();
+  await expect(dialogoAut(page)).toHaveCount(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+  await expect(estadoGuardado(page)).toHaveText('Tu código no está activo; escribe al editor');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
+
+  // R1.3 por `leer`: sin diálogo y sin `guardar`, y las respuestas siguen en IndexedDB. Caso real: el docente ya tenía
+  // una autorización vigente guardada en este navegador y después le desactivaron el código; solo `inactivo` frena el envío.
+  await page.evaluate(
+    (version) =>
+      new Promise<void>((resolver, rechazar) => {
+        const abrirDb = indexedDB.open('keyval-store');
+        abrirDb.onerror = () => rechazar(abrirDb.error);
+        abrirDb.onsuccess = () => {
+          const almacen = abrirDb.result.transaction('keyval', 'readwrite').objectStore('keyval');
+          const pedido = almacen.get('revision:GUA03');
+          pedido.onsuccess = () => {
+            const poner = almacen.put({ ...pedido.result, autorizacion: { version, vago: false } }, 'revision:GUA03');
+            poner.onsuccess = () => resolver();
+            poner.onerror = () => rechazar(poner.error);
+          };
+          pedido.onerror = () => rechazar(pedido.error);
+        };
+      }),
+    VERSION_AUTORIZACION,
+  );
+  expect(await autorizacionGuardada(page, 'GUA03')).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  canal.leer = 'inactivo';
+  await page.reload();
+  await expect(barra(page)).toContainText('GUA03');
+  await expect.poll(() => lecturaDelStore(page)).toBe('inactivo');
+  expect(await autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  await expect(estadoGuardado(page)).toHaveText('Tu código no está activo; escribe al editor');
+  await expect(dialogoAut(page)).toHaveCount(0);
+  await correcto(page, 'ubicacion.es').click();
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+  await expect(dialogoAut(page)).toHaveCount(0);
+  const claves = Object.keys((await revisionGuardada(page, 'GUA03'))?.respuestas ?? {});
+  expect(claves).toContain('hippocampus|que_es|es');
+  expect(claves).toContain('hippocampus|ubicacion|es');
 });
