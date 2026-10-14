@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corrida nocturna cycle-79c539f-qbnz: PR #110 a #112 fusionados, #113 a #117 abiertos)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -81,7 +81,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   para probar el canal) y #112 (02-T1, rutas torácicas del vago en el generador). Abiertos con
   revisiones aprobadas: #113 (04-T1), #114 (03-T4), #115 (03-T5), #116 (03-T2, Apps Script completo)
   y #117 (#83, precarga del modelo). 04-T2 (#102) quedó bloqueada tras 2 devoluciones y espera tu
-  respuesta.
+  respuesta. Segunda corrida (cycle-d52a895-vxmo): fusionados #113 (04-T1), #115 (03-T5) y #121 (e2e
+  con 2 workers en CI); abiertos #114, #116, #117, #119 (02-T2); 01-T4 (cortes en el visor) en
+  revisión. El e2e de CI quedó al borde de su tope de 30 min (escalado en #1).
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
