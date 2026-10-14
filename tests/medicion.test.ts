@@ -69,6 +69,88 @@ describe('medición de carga (issue 6)', () => {
     expect(resumirFluidez([0, 30, 60, 45])).toEqual({ promedio: 45, minimo: 30, muestras: 3 });
   });
 
+  it('modelo pedido con el HTML que llega antes que el código', () => {
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 20, 2_500, 6_845_332)],
+      marcas: { [MARCA_INICIO_APP]: 3_000, [MARCA_MODELO_LISTO]: 3_600 },
+    });
+    expect(r.modeloInicioMs).toBe(20);
+    expect(r.modeloDescargaMs).toBe(2_480);
+    expect(r.modeloEsperaMs).toBe(0);
+    expect(r.procesamientoMs).toBe(600); // desde que el código estuvo listo, no desde el último byte
+    expect(cuelloDeBotella(r)).toBe('codigo');
+  });
+
+  it('el cuello compara la espera por el modelo, no su descarga completa', () => {
+    // Descarga larga (2500 ms) pero casi toda dentro de la espera por el código: solo se esperó 500 ms.
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 0, 2_500, 6_845_332)],
+      marcas: { [MARCA_INICIO_APP]: 2_000, [MARCA_MODELO_LISTO]: 2_600 },
+    });
+    expect(r.modeloDescargaMs).toBe(2_500);
+    expect(r.modeloEsperaMs).toBe(500);
+    expect(r.procesamientoMs).toBe(100);
+    expect(cuelloDeBotella(r)).toBe('codigo');
+  });
+
+  it('modelo pedido temprano que termina después del código', () => {
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 20, 4_000, 6_845_332)],
+      marcas: { [MARCA_INICIO_APP]: 1_000, [MARCA_MODELO_LISTO]: 4_600 },
+    });
+    expect(r.modeloEsperaMs).toBe(3_000);
+    expect(r.procesamientoMs).toBe(600);
+    expect(cuelloDeBotella(r)).toBe('modelo');
+  });
+
+  it('sin dato del código, la preparación cuenta desde el último byte y no hay diagnóstico', () => {
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 100, 900, 6_845_332)],
+      marcas: { [MARCA_MODELO_LISTO]: 1_500 },
+    });
+    expect(r.procesamientoMs).toBe(600);
+    expect(r.modeloEsperaMs).toBeNull();
+    expect(cuelloDeBotella(r)).toBeNull();
+  });
+
+  it('una entrada fallida antes de la buena no cuenta', () => {
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 10, 15, 0, 0), recurso('/modelos/atlas.glb', 2_000, 5_000, 6_845_332)],
+      marcas: {},
+    });
+    expect(r.modeloInicioMs).toBe(2_000);
+    expect(r.modeloDescargaMs).toBe(3_000);
+  });
+
+  it('con dos entradas con cuerpo, cuenta la primera (la precarga)', () => {
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 20, 2_500, 6_845_332), recurso('/modelos/atlas.glb', 3_000, 3_010, 0, 6_845_332)],
+      marcas: {},
+    });
+    expect(r.modeloInicioMs).toBe(20);
+    expect(r.modeloDescargaMs).toBe(2_480);
+    expect(r.modeloDesdeCache).toBe(false);
+  });
+
+  it('sin ninguna entrada con cuerpo, usa la última', () => {
+    const r = resumirCarga({
+      recursos: [recurso('/modelos/atlas.glb', 10, 15, 0, 0), recurso('/modelos/atlas.glb', 40, 50, 0, 0)],
+      marcas: {},
+    });
+    expect(r.modeloInicioMs).toBe(40);
+  });
+
+  it('el informe trae la espera después del código', () => {
+    const txt = informe(
+      resumirCarga(datos),
+      { navegador: 'Chrome', pantalla: '1920 x 1080 @1x', nucleos: 4, memoriaGB: 8, gpu: 'Intel' },
+      null,
+      '2026-10-14',
+    );
+    expect(txt).toContain('Modelo 3D: empezó a los 1000 ms, descarga 3000 ms (6685 KB)');
+    expect(txt).toContain('espera después del código 3050 ms');
+  });
+
   it('el informe trae equipo, tiempos y lo más lento', () => {
     const txt = informe(
       resumirCarga(datos),

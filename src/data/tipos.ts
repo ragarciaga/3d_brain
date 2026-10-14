@@ -75,12 +75,17 @@ export interface Estructuras {
   estructuras: Record<string, Estructura>;
 }
 
+export type Punto3 = [number, number, number];
+
+/** glTF, Y arriba; un punto, un punto por lado (`l`, `r`) o `null` = sin ubicar. */
+export type PosicionMarcador = Punto3 | { l?: Punto3; r?: Punto3 } | null;
+
 export interface Marcador {
   id: string; // llave en estructuras.json
   padre: string; // nodo del árbol donde se lista
-  ancla: string | null; // pieza o estructura cuyo centro da la posición aproximada
+  ancla: string | null; // pieza o estructura que el marcador sigue al separar; sin posición propia, su centro da la posición aproximada
   unir?: boolean; // un solo punto en el centro de todas las piezas del ancla (estructuras de la línea media)
-  posicion: [number, number, number] | null; // glTF, Y arriba; null = sin ubicar
+  posicion: PosicionMarcador;
   estado: 'sin_ubicar' | 'aproximada' | 'validada';
   fuente_ubicacion: Bilingue; // vacío ("") si no hay fuente escrita
 }

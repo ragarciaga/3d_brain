@@ -203,6 +203,7 @@
     "copiada": "Revisión copiada. Pégala en el mensaje al editor.",
     "descargada": "Revisión descargada como archivo.",
     "salir": "Salir del modo revisión",
+    "enlaceInvalido": "Este enlace no es válido; pide uno nuevo al editor.",
     "tituloCorto": "Revisión",
     "acciones": "Acciones",
     "salirTitulo": "¿Salir del modo revisión?",
