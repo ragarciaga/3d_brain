@@ -9,7 +9,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: apps-script/prueba-canal.js, public/probar-canal.html, docs/revision-docente.md, tests/apps-script-prueba.test.ts
 - Verify: `npm test -- tests/apps-script-prueba.test.ts` (el script mínimo, cargado en Node con dobles de `ContentService` y `SpreadsheetApp`, responde JSON a `doGet` y a `doPost` con cuerpo `text/plain`; `public/probar-canal.html` existe y distingue "Escritura: ok", "Escritura: falla", "Lectura: ok" y "Lectura: falla"); `[manual]` el editor, con la página ya publicada, sigue los pasos de `docs/revision-docente.md`, abre `https://ragarciaga.github.io/3d_brain/probar-canal.html` con la URL de su script y ve "Escritura: ok" y "Lectura: ok" con la fila escrita en su hoja (razón: la nube no alcanza `script.google.com`, proxy 403)
 - Issue: #87
-- Status: todo
+- Status: in-progress
 
 ### Decision log
 - Ronda 1: keep. El orquestador agrega los mensajes de falla explícitos (el plan B del diseño depende de distinguir escritura de lectura) y que la prueba manual va después del despliegue.
@@ -38,7 +38,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/lib/revision.ts, scripts/lib/revisiones.ts, tests/revision.test.ts, tests/revisiones.test.ts, tests/fixtures/revisiones/hoja-respuestas.csv
 - Verify: `npm test -- tests/revision.test.ts tests/revisiones.test.ts`: (a) `CLAVES_V2` gana `fecha: 'f'` y `cargaRevisionV2` emite `f` por respuesta solo si `fecha` no está vacía (una respuesta con `fecha: ''` sale sin `f`); se reescriben las aserciones que dejan de valer: la lista exacta de claves de `tests/revisiones.test.ts` ("CLAVES_V2 cubre todos los campos..."), el `toEqual` de las claves cortas de `tests/revision.test.ts` ("las claves cortas llevan cada campo opcional...") y el comentario de `CLAVES_V2`; los fixtures con `fecha: 'x'` (`base` y `marcadorCriterio` de `tests/revisiones.test.ts`) pasan a fechas ISO y la ida y vuelta de todos los campos usa fechas ISO para comprobar que la `fecha` original vuelve; (b) el importador acepta `v:2` con `f` (la ida y vuelta devuelve la `fecha` original) y sin `f` (queda `fecha: ''`, como hoy); (c) `fechaValida` (nueva, exportada de `src/lib/revision.ts`: texto de hasta 40 caracteres con `Date.parse` finito) se aplica a `f` dentro de `expandirV2`, y una fila con `f` de 41 caracteres, con `f` que no es texto o con `f` no parseable cuenta como inválida; (d) un CSV con cabecera y las columnas de la pestaña Respuestas (A fecha de recepción, B código, C ids, D carga) produce los mismos archivos de `importar` que el CSV equivalente del formulario (`tests/fixtures/revisiones/hoja-respuestas.csv`); (e) dos filas con la misma clave y la misma fecha cuentan una sola respuesta en `resumen.md`, y con fechas distintas queda la última fila; (f) filas con la forma de Autorizaciones (4 columnas: A cumple `REVISOR_VALIDO`, B fecha con `Date.parse` finito, C versión no vacía, D `sí` o `no`) y de Padrón (3 columnas: A cumple `REVISOR_VALIDO`, B alias que cumple `ALIAS_VALIDO`, C `sí` o `no`) mezcladas con las de Respuestas no suman a `envios` ni a `invalidas` y no aparecen en la salida, mientras una fila basura sin esa forma (4 columnas con D distinto de `sí`/`no`, o una fila sin celda `{"v":`) sigue contando como inválida; (g) los demás casos hostiles de `v:2` y `v:1` siguen en verde sin cambios
 - Issue: #89
-- Status: todo
+- Status: in-progress
 
 ### Decision log
 - Ronda 1: rewrite. `f` es entrada externa (regla `fechaValida`, la misma de `respaldo.ts`), regla explícita para no contar como inválidas las filas de otras pestañas y aserciones viejas que se reescriben.
@@ -68,7 +68,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/Pagina.tsx, src/lib/persistencia.ts, src/i18n/es.json, src/i18n/en.json, tests/persistencia.test.ts, e2e/revision-canal.spec.ts
 - Verify: `npm test -- tests/persistencia.test.ts`: `recordarRevisor` no guarda un código que no cumple `REVISOR_VALIDO` (vacío, 41 caracteres, `<script>`, con espacio) y sí guarda uno válido; `revisorRecordado` devuelve `null` si el valor guardado no cumple `REVISOR_VALIDO`. `npm run test:e2e -- e2e/revision-canal.spec.ts -g "enlace"`: `/es/revision?r=D03-ok` y `/en/revision?r=D03-ok` activan el modo sin pedir código; `/es/revision?r=<script>` muestra "Este enlace no es válido; pide uno nuevo al editor" y `/en/revision?r=<script>` su texto en inglés, y en ambos casos no se activa el modo y `localStorage['atlas:revisor']` queda vacío; con un código válido ya recordado, un `?r=` inválido muestra el mensaje, no activa el modo y no borra ni cambia el código recordado; `npm run check:i18n`
 - Issue: #91
-- Status: todo
+- Status: in-progress
 
 ### Decision log
 - Ronda 1: rewrite. Inglés, valor inválido ya guardado y enlace inválido con un código recordado. Crea `e2e/revision-canal.spec.ts`, que las demás tareas extienden.
@@ -156,7 +156,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/Ficha.tsx, src/i18n/es.json, src/i18n/en.json, tests/datos.test.ts, e2e/atlas.spec.ts
 - Verify: `npm test -- tests/datos.test.ts`: todo `revisado_por` de `src/data/estructuras.json` y de las rutas es `null` o un alias `D\d{2}`; `npm run test:e2e -- e2e/atlas.spec.ts -g "revisado por"` con una ficha verificada inyectada en la prueba: muestra "Revisado por un docente universitario" y la fecha cuando el idioma visible está verificado, y el texto de la ficha no contiene el valor de `revisado_por`; `npm run check:i18n`
 - Issue: #97
-- Status: todo
+- Status: in-progress
 
 ### Decision log
 - Ronda 1: keep.
