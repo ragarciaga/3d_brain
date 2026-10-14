@@ -1200,11 +1200,12 @@ test('textos de la revisión docente: botones en la guía inglesa, registro en e
   await expect(page.getByTestId('como-revisar')).toContainText('pulsa EN en el encabezado');
   await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
 
-  // Envío: el nombre solo aparece si se autorizó en el registro, con enlace al registro y sin jerga.
+  // Envío: remite al registro, dice que las fichas no muestran el nombre y no usa jerga.
   await page.getByRole('button', { name: 'Enviar revisión' }).click();
   const envio = page.getByRole('dialog', { name: 'Enviar revisión' });
   await expect(envio.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', configRevision.urlRegistro);
-  await expect(envio).toContainText('solo si lo autorizaste en el registro');
+  await expect(envio).toContainText('Las fichas no muestran tu nombre');
+  await expect(envio).not.toContainText('Tu nombre aparece');
   await expect(envio).toContainText('en un solo formulario');
   await expect(envio).not.toContainText('Al enviar, aceptas');
   await expect(envio).not.toContainText('Se envía una revisión por estructura');
@@ -1221,7 +1222,8 @@ test('textos de la revisión docente: botones en la guía inglesa, registro en e
   await modeloCargado(page);
   await page.getByRole('button', { name: 'Send review' }).click();
   const envioEn = page.getByRole('dialog', { name: 'Send review' });
-  await expect(envioEn).toContainText('only if you authorised it in the registration form');
+  await expect(envioEn).toContainText('The entries never show your name');
+  await expect(envioEn).not.toContainText('Your name appears');
   await expect(envioEn).toContainText('in a single form');
   await expect(envioEn).not.toContainText('By sending, you agree');
   await expect(envioEn).not.toContainText('One review is sent per structure');

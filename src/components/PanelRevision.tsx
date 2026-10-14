@@ -1,5 +1,6 @@
 // Modo revisión docente (F24): avance, fichas pendientes, autorización y guardado automático por el canal de retorno
-// (con `urlCanal`) o envío por formulario de Google (sin ella).
+// (con `urlCanal`), con el formulario de Google como respaldo si el canal no confirma en 10 min; sin `urlCanal`, envío
+// por formulario.
 import { get, set } from 'idb-keyval';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,10 +10,14 @@ import type { Idioma } from '../data/tipos';
 import { autorizacionVigente, canalConfigurado, ErrorCanal, guardar, leer } from '../lib/canal';
 import {
   armarLotes,
+  AVISO_RESPALDO_MS,
+  claveConfirmacion,
   confirmarRecibidas,
   ESPERA_ENVIO_MS,
   estadoInicial,
   fusionarConCanal,
+  marcarPendientes,
+  ofrecerRespaldo,
   porEnviar,
   trasEnvio,
   type EstadoCola,
@@ -157,6 +162,9 @@ export default function PanelRevision({
   const listo =
     canalConfigurado() && cargadoDe === revisor && (lecturaCanal === 'hecha' || lecturaCanal === 'fallida') && autorizacion !== null;
   const [fallos, setFallos] = useState(0);
+  // Ventana del respaldo por formulario (R7.1): `abierta` es la que vio el último render, `vencida` que pasaron 10 min
+  // sin confirmación en ella y `ronda` sube con cada confirmación del canal para reprogramar el temporizador.
+  const [respaldo, setRespaldo] = useState({ abierta: false, vencida: false, ronda: 0 });
   const colaRef = useRef<EstadoCola>(estadoInicial());
   const enVuelo = useRef(false);
   const noAntesDe = useRef(0); // fin (ms epoch) de la espera de reintento; 0 si no hay
@@ -208,6 +216,7 @@ export default function PanelRevision({
             const { recibidas } = resultado;
             confirmadasRef.current = confirmarRecibidas(confirmadasRef.current, lote, recibidas);
             setConfirmadas((c) => confirmarRecibidas(c, lote, recibidas));
+            if (lote.some((r) => recibidas.has(claveConfirmacion(r)))) setRespaldo((r) => ({ ...r, vencida: false, ronda: r.ronda + 1 }));
           }
           if (estado.inactivo) {
             useAtlas.getState().setLecturaCanal('inactivo');
@@ -254,6 +263,23 @@ export default function PanelRevision({
   // resuelta. Escape o "Cerrar" la descartan solo hasta el siguiente cambio de respuestas.
   const [descartadaCon, setDescartadaCon] = useState<Record<string, Respuesta> | null>(null);
   const hayPorGuardar = useMemo(() => pendientesDeEnvio(Object.values(respuestas), confirmadas).length > 0, [respuestas, confirmadas]);
+  // Respaldo por formulario (R7.1): con pendientes y 10 min sin ninguna confirmación del canal se ofrece el formulario
+  // de hoy. La ventana se abre al aparecer pendientes, se mueve con cada confirmación (`trasEnvio`) y se cierra sin
+  // pendientes. Las rechazadas solas cuentan como pendientes, así que también salen por aquí.
+  const ventanaAbierta = listo && hayPorGuardar;
+  if (respaldo.abierta !== ventanaAbierta) setRespaldo({ abierta: ventanaAbierta, vencida: false, ronda: respaldo.ronda });
+  useEffect(() => {
+    colaRef.current = marcarPendientes(colaRef.current, ventanaAbierta, Date.now());
+    const desde = colaRef.current.ultimaConfirmacion;
+    if (!ventanaAbierta || desde === null) return;
+    const id = setTimeout(
+      () => {
+        if (ofrecerRespaldo(colaRef.current.ultimaConfirmacion, Date.now(), true)) setRespaldo((r) => (r.abierta ? { ...r, vencida: true } : r));
+      },
+      Math.max(0, desde + AVISO_RESPALDO_MS - Date.now()),
+    );
+    return () => clearTimeout(id);
+  }, [ventanaAbierta, respaldo.ronda]);
   const pedirAutorizacion =
     !!revisor &&
     canalConfigurado() &&
@@ -329,12 +355,36 @@ export default function PanelRevision({
           : hayCompletas
             ? t('revision.guardado.listo')
             : '';
+  // No abre nada solo: cada parte se abre con su propio enlace y solo se confirma a mano.
+  const enviarTodo = () => {
+    const partes = partesEnvio(configRevision, revisor, pendientes);
+    setEnvio({ partes, estados: partes.map((): EstadoParte => 'sin_abrir') });
+  };
+  const ofrecerFormulario = ventanaAbierta && respaldo.abierta && respaldo.vencida;
+  const enviarPorFormulario = () => {
+    enviarTodo();
+    abrir('enviar');
+  };
   const estadoUI = conCanal ? (
     <>
       {estadoGuardado && ' · '}
       <span role="status" data-testid="estado-guardado">
         {estadoGuardado}
       </span>
+      {ofrecerFormulario && (
+        <>
+          {' '}
+          <button
+            type="button"
+            className="boton-primario"
+            data-testid="enviar-por-formulario"
+            ref={(el) => { botones.current.enviar = el; }}
+            onClick={enviarPorFormulario}
+          >
+            {t('revision.enviarPorFormulario')}
+          </button>
+        </>
+      )}
     </>
   ) : null;
   // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra.
@@ -355,12 +405,6 @@ export default function PanelRevision({
     }
   };
 
-  // No abre nada solo: cada parte se abre con su propio enlace y solo se confirma a mano.
-  const enviarTodo = () => {
-    const partes = partesEnvio(configRevision, revisor, pendientes);
-    setEnvio({ partes, estados: partes.map((): EstadoParte => 'sin_abrir') });
-  };
-
   const marcar = (i: number, estado: EstadoParte) =>
     setEnvio((e) =>
       e && { ...e, estados: e.estados.map((x, k) => (k === i && x !== 'confirmada' ? estado : x)) },
@@ -370,7 +414,14 @@ export default function PanelRevision({
     const parte = envio?.partes[i];
     if (!parte) return;
     marcar(i, 'confirmada');
-    setConfirmadas((c) => confirmarParte(c, parte));
+    if (!conCanal) {
+      setConfirmadas((c) => confirmarParte(c, parte));
+      return;
+    }
+    // Con canal solo el canal confirma (R3.3, R4.1): las respuestas siguen pendientes y la cola las manda cuando vuelva.
+    // Se reinicia la ventana de 10 min para no ofrecer el formulario otra vez con las mismas versiones.
+    colaRef.current = { ...colaRef.current, ultimaConfirmacion: Date.now() };
+    setRespaldo((r) => ({ ...r, vencida: false, ronda: r.ronda + 1 }));
   };
 
   // Elegir una acción del menú de celular lo cierra y abre (o cierra) el diálogo de esa acción.
@@ -523,7 +574,8 @@ export default function PanelRevision({
             {t('revision.comoRevisar')}
           </h2>
           {/* Con el canal configurado ya no existen el registro previo (nombre, rol; R2.6) ni el paso de envío por
-              formulario (R3.7): la respuesta se guarda sola. La reescritura completa de la guía es de T12. */}
+              formulario (R3.7) en la guía: la respuesta se guarda sola. El formulario de respaldo (R7.1) sale del botón
+              de la barra a los 10 min sin confirmación, no de la guía. La reescritura completa de la guía es de T12. */}
           {(
             [
               'intro',
@@ -553,17 +605,23 @@ export default function PanelRevision({
           </div>
         </div>
       )}
-      {vista === 'enviar' && !conCanal && (
+      {vista === 'enviar' && (
         <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO}>
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
-            {t('revision.enviar')}
+            {conCanal ? t('revision.enviarPorFormulario') : t('revision.enviar')}
           </h2>
-          <p>{t('revision.consentimiento')}</p>
-          <p>
-            <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
-              {t('revision.guia.registrarme')}
-            </a>
-          </p>
+          {conCanal ? (
+            <p>{t('revision.respaldoExplica')}</p>
+          ) : (
+            <>
+              <p>{t('revision.consentimiento')}</p>
+              <p>
+                <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
+                  {t('revision.guia.registrarme')}
+                </a>
+              </p>
+            </>
+          )}
           {!configurado && <p className="etiqueta-aviso">{t('revision.sinFormulario')}</p>}
           <p data-testid="pendientes-envio">
             {pendientes.length > 0

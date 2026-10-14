@@ -2,8 +2,8 @@
 // Las tareas T7 a T10 de ese spec amplían este archivo. Helpers propios para no depender de otros specs.
 import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { VERSION_AUTORIZACION } from '../src/config/revision';
-import { ESPERA_CANAL_MS, ESPERA_ENVIO_MS, siguienteEspera } from '../src/lib/colaGuardado';
+import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
+import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, siguienteEspera } from '../src/lib/colaGuardado';
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
@@ -108,8 +108,11 @@ interface CanalSimulado {
   autorizacion: unknown;
   leer: 'ok' | 'red' | 'inactivo';
   autorizar: 'ok' | 'red' | 'interno' | 'inactivo';
-  /** `otra_fecha` confirma cada respuesta con una fecha distinta de la enviada; `red` aborta la petición. */
-  guardar: 'ok' | 'red' | 'otra_fecha' | 'inactivo';
+  /**
+   * `otra_fecha` confirma cada respuesta con una fecha distinta de la enviada; `red` aborta la petición; `formato`
+   * rechaza el lote como el script ante una carga que no cumple `v:2`.
+   */
+  guardar: 'ok' | 'red' | 'otra_fecha' | 'formato' | 'inactivo';
   /** Si existe, la respuesta de `leer` espera a que se resuelva (para probar lo que pasa mientras la lectura está pendiente). */
   retenerLeer: Promise<void> | null;
   /** El `e` de la carga `v:2` que devuelve `leer`: elementos por estructura, con las claves cortas del canal. */
@@ -168,6 +171,7 @@ async function simularCanal(
       if (accion === 'guardar') {
         if (canal.guardar === 'red') return route.abort('failed');
         if (canal.guardar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
+        if (canal.guardar === 'formato') return json({ ok: false, error: 'formato' });
         return json({ ok: true, recibidas: clavesRecibidas(cuerpo['carga'], canal.guardar === 'otra_fecha' ? '2000-01-01T00:00:00.000Z' : undefined) });
       }
       return route.abort('failed');
@@ -245,6 +249,10 @@ interface CargaGuardar {
 const cargaDe = (p: PeticionCanal) => JSON.parse(String(p.cuerpo?.['carga'])) as CargaGuardar;
 
 const estadoGuardado = (page: Page) => page.getByTestId('estado-guardado');
+const enviarPorForm = (page: Page) => barra(page).getByRole('button', { name: 'Enviar por formulario' });
+
+/** La carga `v:2` que lleva el enlace "Abrir formulario" en el campo de revisión. */
+const cargaDelEnlace = (href: string) => JSON.parse(new URL(href).searchParams.get(configRevision.campos.revision)!) as CargaGuardar;
 
 /** Entra directo a la ficha del hipocampo con el código ya recordado, sin guía ni búsqueda. */
 async function entrarDirecto(page: Page, context: BrowserContext, codigo: string) {
@@ -449,7 +457,7 @@ test('autorización: la vigente no se vuelve a pedir, ni sin conexión, y la del
   await expect.poll(() => autorizacionGuardada(page, 'AUT03')).toBeNull();
 });
 
-test('autorización: sin urlCanal no aparece el diálogo ni sale ninguna petición', async ({ page, context }) => {
+test('formulario de respaldo: sin urlCanal el formulario es el único camino, sin diálogo de autorización ni peticiones al canal', async ({ page, context }) => {
   const salidas: string[] = [];
   page.on('request', (p) => {
     const url = new URL(p.url());
@@ -480,9 +488,28 @@ test('autorización: sin urlCanal no aparece el diálogo ni sale ninguna petici�
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
   await expect(page.getByTestId('como-revisar')).toContainText('regístrate');
   await expect(page.getByTestId('como-revisar').getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(1);
+  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
+  await expect(page.getByTestId('como-revisar')).toHaveCount(0);
+
+  // T9 (R7.2): sin canal el envío por formulario es el de siempre: diálogo con registro y "Enviar todo", sin el respaldo.
+  await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
+  const envio = page.getByRole('dialog', { name: 'Enviar revisión' });
+  await expect(envio).toBeVisible();
+  await expect(envio).toContainText('Las fichas no muestran tu nombre');
+  await expect(envio.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(1);
+  await envio.getByRole('button', { name: 'Enviar todo' }).click();
+  const abrirForm = envio.getByRole('link', { name: 'Abrir formulario' });
+  await expect(abrirForm).toBeVisible();
+  expect((await abrirForm.getAttribute('href'))?.startsWith(configRevision.urlFormulario)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Enviar por formulario' })).toHaveCount(0);
+  await envio.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(envio).toHaveCount(0);
+  await expect(dialogoAut(page)).toHaveCount(0);
+  expect(salidas).toEqual([]);
 });
 
-// Guardado automático (T7). Con canal, cada respuesta completa sale sola; sin pasos de envío por formulario.
+// Guardado automático (T7). Con canal, cada respuesta completa sale sola; sin pasos de envío por formulario mientras el
+// canal confirma (el respaldo de R7.1 aparece a los 10 min sin confirmación y tiene sus propias pruebas).
 const TEXTOS_DE_ENVIO = /Enviar revisión|Enviar todo|Abrir formulario|Sí, lo envié/;
 
 async function sinPasosDeEnvio(page: Page) {
@@ -499,7 +526,7 @@ test('guardado: sale a los 3 s, dice Guardando... y Guardado ✓ solo con la mis
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
   await expect(estadoGuardado(page)).toHaveText('');
 
-  // R3.7: con canal no hay botón ni diálogo de envío, ni enlace al formulario, tampoco en la guía.
+  // R3.7: con canal (y sin 10 min sin confirmar) no hay botón ni diálogo de envío, ni enlace al formulario, tampoco en la guía.
   await sinPasosDeEnvio(page);
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
   await expect(page.getByTestId('como-revisar')).toBeVisible();
@@ -746,4 +773,182 @@ test('otro equipo: trae lo guardado al abrir en menos de 5 s, no lo reenvía, co
   for (const p of peticionesDe(canal, 'guardar')) {
     expect(Object.values(cargaDe(p).e).flat().some((el) => el.f === FECHA_CANAL)).toBe(false);
   }
+});
+
+// Respaldo por formulario (T9, R7.1). Con canal, 10 min sin ninguna confirmación y con pendientes ofrecen el formulario.
+// Reloj simulado: `fastForward` dispara cada temporizador vencido una vez, y cada salto que dispara un envío espera
+// antes su petición y su efecto, para que el temporizador de 10 s del canal no aborte una petición en vuelo.
+test('formulario de respaldo: con el canal caído no aparece a los 9 min, aparece a los 10, abre las partes con la carga v:2 y se va cuando el canal vuelve', async ({
+  page,
+  context,
+}) => {
+  await page.clock.install();
+  // Una respuesta que el canal ya tiene: se trae al abrir y no sale en el formulario.
+  const canal = await simularCanal(page, {
+    autorizacion: { version: VERSION_AUTORIZACION, vago: false },
+    guardar: 'red',
+    respuestas: { hippocampus: [{ c: 'ubicacion', i: 'es', d: 'correcto', s: VERSION_HIPOCAMPO, f: FECHA_CANAL }] },
+  });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RES01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+  await expect(correcto(page, 'ubicacion.es')).toHaveAttribute('aria-pressed', 'true');
+  const ahora = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(ahora + 1000);
+
+  // Primer envío: con la red caída queda pendiente.
+  await correcto(page, 'que_es.es').click({ force: true });
+  const fecha = await fechaDelStore(page, 'hippocampus|que_es|es');
+  expect(fecha).toBeTruthy();
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBeGreaterThanOrEqual(1);
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+
+  // (a) a los 9 min del cambio no hay botón.
+  await page.clock.fastForward(AVISO_RESPALDO_MS - 60_000 - ESPERA_ENVIO_MS);
+  await page.waitForTimeout(500); // tiempo real: deja pintar lo que haya disparado el salto
+  await expect(enviarPorForm(page)).toHaveCount(0);
+
+  // (b) a los 10 min aparece y abre el diálogo de partes con la carga v:2.
+  await page.clock.fastForward(60_000);
+  await expect(enviarPorForm(page)).toBeVisible();
+  await enviarPorForm(page).click({ force: true });
+  const dialogo = page.getByRole('dialog', { name: 'Enviar por formulario' });
+  await expect(dialogo).toBeVisible();
+  await expect(dialogo.getByRole('link')).toHaveCount(1);
+  const abrirForm = dialogo.getByRole('link', { name: 'Abrir formulario' });
+  await expect(abrirForm).toBeVisible();
+  const href = (await abrirForm.getAttribute('href'))!;
+  expect(href.startsWith(configRevision.urlFormulario)).toBe(true);
+  expect(cargaDelEnlace(href)).toEqual({
+    v: 2,
+    r: 'RES01',
+    e: { hippocampus: [expect.objectContaining({ c: 'que_es', i: 'es', d: 'correcto', f: fecha })] },
+  });
+
+  // D1: con canal, el diálogo explica el respaldo y no pide ni promete nada del nombre (R2.6).
+  await expect(dialogo).toContainText('lleva 10 minutos sin confirmar');
+  await expect(dialogo).not.toContainText('Las fichas no muestran tu nombre');
+  await expect(dialogo.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(0);
+
+  // R3.3 y R4.1: con canal, "Sí, lo envié" cierra la parte pero no marca nada como guardado: solo lo confirma el canal.
+  // El enlace no navega (no se abre docs.google.com): el clic llega a React, que marca la parte como abierta.
+  await abrirForm.evaluate((el) => el.addEventListener('click', (e) => e.preventDefault()));
+  await abrirForm.click({ force: true });
+  await dialogo.getByRole('button', { name: 'Sí, lo envié' }).click({ force: true });
+  await expect(dialogo.getByTestId('parte-envio')).toHaveAttribute('data-estado', 'confirmada');
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+  await expect(estadoGuardado(page)).not.toContainText('Guardado ✓');
+  // La ventana de 10 min se reinicia: un salto corto dispara el temporizador que hubiera vencido y no vuelve el botón.
+  await page.clock.fastForward(1000);
+  await page.waitForTimeout(500); // tiempo real: deja pintar y que IndexedDB reciba lo que hubiera marcado
+  await expect(enviarPorForm(page)).toHaveCount(0);
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+  const guardada = await revisionGuardada(page, 'RES01');
+  expect(guardada?.respuestas).toHaveProperty(['hippocampus|que_es|es']);
+  expect(guardada?.confirmadas).not.toHaveProperty(['hippocampus|que_es|es']);
+  await dialogo.getByRole('button', { name: 'Cerrar' }).click({ force: true });
+  await expect(dialogo).toHaveCount(0);
+
+  // D2: cuando el canal vuelve, lo pendiente sale por el canal y solo entonces dice "Guardado ✓".
+  const antes = peticionesDe(canal, 'guardar').length;
+  canal.guardar = 'ok';
+  await page.clock.fastForward(ESPERA_MAXIMA_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBeGreaterThan(antes);
+  expect(cargaDe(peticionesDe(canal, 'guardar').at(-1)!).e['hippocampus']).toEqual([expect.objectContaining({ c: 'que_es', f: fecha })]);
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect(enviarPorForm(page)).toHaveCount(0);
+  await expect.poll(async () => (await revisionGuardada(page, 'RES01'))?.confirmadas['hippocampus|que_es|es']).toBe(fecha);
+});
+
+test('formulario de respaldo: sin autorización vigente o con el código no activo no se ofrece, ni a los 10 min', async ({ page, context }) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, { autorizacion: null, autorizar: 'ok', guardar: 'ok' });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RES03');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  const ahora = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(ahora + 1000);
+
+  // Sin autorización: el diálogo se descarta y la respuesta queda pendiente, sin enviarse ni ofrecer el formulario.
+  await correcto(page, 'que_es.es').click({ force: true });
+  await expect(dialogoAut(page)).toBeVisible();
+  await dialogoAut(page).getByRole('button', { name: 'Cerrar' }).click({ force: true });
+  await expect(dialogoAut(page)).toHaveCount(0);
+  await page.clock.fastForward(AVISO_RESPALDO_MS);
+  await page.waitForTimeout(500);
+  await expect(enviarPorForm(page)).toHaveCount(0);
+  expect(await autorizacionDelStore(page)).toBeNull();
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
+
+  // Con el código no activo: se autoriza en el siguiente cambio y el canal responde `codigo_no_activo` al guardar.
+  canal.guardar = 'inactivo';
+  await correcto(page, 'ubicacion.es').click({ force: true });
+  await expect(dialogoAut(page)).toBeVisible();
+  await casillaAcepto(page).check({ force: true });
+  await continuar(page).click({ force: true });
+  await expect(dialogoAut(page)).toHaveCount(0);
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(1);
+  await expect(estadoGuardado(page)).toHaveText('Tu código no está activo; escribe al editor');
+  expect(await lecturaDelStore(page)).toBe('inactivo');
+  await page.clock.fastForward(AVISO_RESPALDO_MS);
+  await page.waitForTimeout(500);
+  await expect(enviarPorForm(page)).toHaveCount(0);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(1);
+});
+
+test('formulario de respaldo: con el canal confirmando no aparece a los 10 min, y una respuesta rechazada sola sale por el formulario 10 min después de la última confirmación', async ({
+  page,
+  context,
+}) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false }, guardar: 'ok' });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RES02');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  const ahora = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(ahora + 1000);
+
+  // R7.1 negativo: el canal confirma la primera; la segunda queda pendiente 1 s antes de cumplirse 10 min desde esa confirmación.
+  await correcto(page, 'que_es.es').click({ force: true });
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(1);
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await page.clock.fastForward(AVISO_RESPALDO_MS - 1000);
+  await correcto(page, 'ubicacion.es').click({ force: true });
+  await page.clock.fastForward(1000);
+  await page.waitForTimeout(500);
+  await expect(enviarPorForm(page)).toHaveCount(0);
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(2);
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect(enviarPorForm(page)).toHaveCount(0);
+
+  // D3: el canal rechaza sola una respuesta (`formato`): sigue pendiente y no se reenvía.
+  canal.guardar = 'formato';
+  await correcto(page, 'para_que_sirve.es').click({ force: true });
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(3);
+  await expect(estadoGuardado(page)).toHaveText('Guardando...');
+  // 5 min después otra respuesta sí se confirma: la ventana se mueve a esa confirmación.
+  canal.guardar = 'ok';
+  await page.clock.fastForward(300_000 - ESPERA_ENVIO_MS);
+  await correcto(page, 'nombre.es').click({ force: true });
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(4);
+  expect(cargaDe(peticionesDe(canal, 'guardar')[3]!).e['hippocampus']).toEqual([expect.objectContaining({ c: 'nombre' })]);
+  await expect.poll(async () => (await revisionGuardada(page, 'RES02'))?.confirmadas['hippocampus|nombre|es']).toBeTruthy();
+  // A los 10 min de la primera pendiente rechazada todavía no; a los 10 min de la última confirmación, sí.
+  await page.clock.fastForward(AVISO_RESPALDO_MS - 300_000);
+  await page.waitForTimeout(500);
+  await expect(enviarPorForm(page)).toHaveCount(0);
+  await page.clock.fastForward(300_000);
+  await expect(enviarPorForm(page)).toBeVisible();
+  await enviarPorForm(page).click({ force: true });
+  const abrirForm = page.getByRole('dialog', { name: 'Enviar por formulario' }).getByRole('link', { name: 'Abrir formulario' });
+  await expect(abrirForm).toBeVisible();
+  expect(cargaDelEnlace((await abrirForm.getAttribute('href'))!).e).toEqual({ hippocampus: [expect.objectContaining({ c: 'para_que_sirve' })] });
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(4); // la rechazada no se reenvía
 });
