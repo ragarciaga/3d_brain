@@ -92,7 +92,10 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   tras una devolución. Cuarta corrida (cycle-026d53f-mxwp): fusionados #124 (02-T3, revisión por
   ruta), #126 (03-T6, autorización Ley 1581 en la app), #128 (01-T5, cortes por enlace) y #129 (#84,
   densidad de píxeles adaptativa); #127 (02-T4, corte del tronco en el pipeline) espera la prueba de
-  Blender del editor (#49); 03-T7 (guardado automático) en revisión. El e2e de CI ya no cabe en su tope
+  Blender del editor (#49); 03-T7 (guardado automático) en revisión. Quinta corrida
+  (cycle-197b7e3-pqzw): #131 (03-T7) con las tres revisiones aprobadas, frenado solo por el tope de
+  30 min del e2e de CI; 03-T8 (traer lo guardado al abrir y retirar el respaldo por archivo)
+  implementado sobre #131 y en revisión. El e2e de CI ya no cabe en su tope
   de 30 min (main en rojo desde #124 por tiempo, no por fallas): el arreglo va en el harness.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
@@ -139,7 +142,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T6 en main; T7 (#93) en revisión. Falta que el editor corra la
+1. Canal de retorno (spec 03): T1 a T6 en main; T7 en PR #131 (espera el arreglo del tope del e2e); T8 en revisión. Falta que el editor corra la
    prueba de `probar-canal.html` (T1, #87) con su Apps Script, revise el texto legal de la
    autorización (plan en #92) y monte `Codigo.js`; después siguen T8 a T13 (T13 necesita la URL del
    script).
@@ -169,7 +172,8 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 | T2 | 17.1 |  | 17.1 |
 | i84 |  |  | 0.0 |
 | T7 |  |  | 0.0 |
+| T8 |  |  | 0.0 |
 
 Minutes per phase.
-Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement.
+Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement.
 <!-- rb:timing:end -->
