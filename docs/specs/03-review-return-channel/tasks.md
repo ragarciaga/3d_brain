@@ -9,11 +9,12 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: apps-script/prueba-canal.js, public/probar-canal.html, docs/revision-docente.md, tests/apps-script-prueba.test.ts
 - Verify: `npm test -- tests/apps-script-prueba.test.ts` (el script mínimo, cargado en Node con dobles de `ContentService` y `SpreadsheetApp`, responde JSON a `doGet` y a `doPost` con cuerpo `text/plain`; `public/probar-canal.html` existe y distingue "Escritura: ok", "Escritura: falla", "Lectura: ok" y "Lectura: falla"); `[manual]` el editor, con la página ya publicada, sigue los pasos de `docs/revision-docente.md`, abre `https://ragarciaga.github.io/3d_brain/probar-canal.html` con la URL de su script y ve "Escritura: ok" y "Lectura: ok" con la fila escrita en su hoja (razón: la nube no alcanza `script.google.com`, proxy 403)
 - Issue: #87
-- Status: in-progress
+- Status: in-review
 
 ### Decision log
 - Ronda 1: keep. El orquestador agrega los mensajes de falla explícitos (el plan B del diseño depende de distinguir escritura de lectura) y que la prueba manual va después del despliegue.
 - Ronda 2: keep. El script lleva `/* global ... */` y `/* exported doGet, doPost */` (o una entrada en `eslint.config.js`) para que `npm run lint` pase.
+- 2026-10-14: script mínimo y página de prueba; T2 y T4 se construyen sin esperar la prueba manual (pedido del editor); si sale plan B se reabren. Tier C. Outcome: reviews pass after 1 kickback, PR #111.
 
 ## T2: Escribir el Apps Script completo con validación, padrón, ritmo y bloqueo
 - Purpose: que el canal solo acepte revisiones válidas de códigos del padrón, escriba cada respuesta en el formato que el importador ya lee, guarde la autorización y devuelva a cada código solo lo suyo.
