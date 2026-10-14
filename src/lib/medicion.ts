@@ -31,7 +31,12 @@ export interface ResumenCarga {
   modeloKB: number;
   /** El modelo vino de la memoria del navegador (no se descargó de nuevo). */
   modeloDesdeCache: boolean;
-  /** Preparar el modelo después de descargarlo: descomprimir, armar las piezas y sus cajas. */
+  /** Cuánto se esperó el modelo después de que el código estuvo listo (0 si llegó antes). */
+  modeloEsperaMs: number | null;
+  /**
+   * Preparar el modelo desde que estaban listos el modelo y el código: descomprimir, armar las
+   * piezas y sus cajas.
+   */
   procesamientoMs: number | null;
   modeloListoMs: number | null;
   primerCuadroMs: number | null;
@@ -45,16 +50,24 @@ const redondo = (n: number | null | undefined) => (n === null || n === undefined
 
 export function resumirCarga(d: DatosCarga): ResumenCarga {
   const codigo = d.recursos.filter(esCodigo);
-  const modelo = d.recursos.filter(esModelo).at(-1);
+  // Con la precarga del HTML puede haber más de una entrada: cuenta la primera con cuerpo (la
+  // descarga real, no una petición fallida) y, si ninguna lo tiene, la última.
+  const entradasModelo = d.recursos.filter(esModelo);
+  const modelo = entradasModelo.find((r) => r.decodedBodySize > 0) ?? entradasModelo.at(-1);
   const modeloListo = d.marcas[MARCA_MODELO_LISTO];
+  const codigoListo = d.marcas[MARCA_INICIO_APP] ?? (codigo.length ? Math.max(...codigo.map((r) => r.responseEnd)) : undefined);
   return {
-    codigoListoMs: redondo(d.marcas[MARCA_INICIO_APP] ?? (codigo.length ? Math.max(...codigo.map((r) => r.responseEnd)) : undefined)),
+    codigoListoMs: redondo(codigoListo),
     codigoKB: kb(codigo.reduce((s, r) => s + (r.transferSize || r.decodedBodySize), 0)),
     modeloInicioMs: redondo(modelo?.startTime),
     modeloDescargaMs: modelo ? redondo(modelo.responseEnd - modelo.startTime) : null,
     modeloKB: kb(modelo ? modelo.transferSize || modelo.decodedBodySize : 0),
     modeloDesdeCache: !!modelo && modelo.transferSize === 0 && modelo.decodedBodySize > 0,
-    procesamientoMs: modelo && modeloListo !== undefined ? redondo(Math.max(0, modeloListo - modelo.responseEnd)) : null,
+    modeloEsperaMs: modelo && codigoListo !== undefined ? redondo(Math.max(0, modelo.responseEnd - codigoListo)) : null,
+    procesamientoMs:
+      modelo && modeloListo !== undefined
+        ? redondo(Math.max(0, modeloListo - Math.max(modelo.responseEnd, codigoListo ?? modelo.responseEnd)))
+        : null,
     modeloListoMs: redondo(modeloListo),
     primerCuadroMs: redondo(d.marcas[MARCA_PRIMER_CUADRO]),
   };
@@ -63,14 +76,14 @@ export function resumirCarga(d: DatosCarga): ResumenCarga {
 export type Cuello = 'codigo' | 'modelo' | 'procesamiento';
 
 /**
- * Qué parte pesó más en la espera hasta ver el cerebro: la descarga del código, la del modelo o
- * preparar el modelo. Null mientras falten datos.
+ * Qué parte pesó más en la espera hasta ver el cerebro: la descarga del código, la espera por el
+ * modelo después del código o preparar el modelo. Null mientras falten datos.
  */
 export function cuelloDeBotella(r: ResumenCarga): Cuello | null {
-  if (r.codigoListoMs === null || r.modeloDescargaMs === null || r.procesamientoMs === null) return null;
+  if (r.codigoListoMs === null || r.modeloEsperaMs === null || r.procesamientoMs === null) return null;
   const partes: [Cuello, number][] = [
     ['codigo', r.codigoListoMs],
-    ['modelo', r.modeloDescargaMs],
+    ['modelo', r.modeloEsperaMs],
     ['procesamiento', r.procesamientoMs],
   ];
   return partes.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
@@ -118,7 +131,7 @@ export function informe(r: ResumenCarga, e: Equipo, f: Fluidez | null, fecha: st
     `Núcleos: ${e.nucleos ?? 'sin dato'} · Memoria: ${e.memoriaGB === null ? 'sin dato' : `${e.memoriaGB} GB`}`,
     `GPU: ${e.gpu || 'sin dato'}`,
     `Código listo: ${ms(r.codigoListoMs)} (${r.codigoKB} KB)`,
-    `Modelo 3D: empezó a los ${ms(r.modeloInicioMs)}, descarga ${ms(r.modeloDescargaMs)} (${r.modeloDesdeCache ? 'desde la memoria del navegador' : `${r.modeloKB} KB`})`,
+    `Modelo 3D: empezó a los ${ms(r.modeloInicioMs)}, descarga ${ms(r.modeloDescargaMs)} (${r.modeloDesdeCache ? 'desde la memoria del navegador' : `${r.modeloKB} KB`}), espera después del código ${ms(r.modeloEsperaMs)}`,
     `Preparar el modelo: ${ms(r.procesamientoMs)}`,
     `Modelo listo: ${ms(r.modeloListoMs)} · Primer cuadro: ${ms(r.primerCuadroMs)}`,
     `Cuadros por segundo (10 s): ${f ? `promedio ${f.promedio}, mínimo ${f.minimo}` : 'midiendo'}`,

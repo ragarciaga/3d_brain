@@ -21,6 +21,25 @@ describe('código del revisor recordado', () => {
     expect(sesion.getItem(CLAVE_REVISOR)).toBeNull();
   });
 
+  it.each(['', 'A'.repeat(41), '<script>', 'D03 ok'])('recordarRevisor no guarda un código inválido: %j', (invalido) => {
+    const local = falso();
+    const sesion = falso({ [CLAVE_REVISOR]: 'SESION' });
+    recordarRevisor(invalido, local, sesion);
+    expect(local.getItem(CLAVE_REVISOR)).toBeNull();
+    expect(sesion.getItem(CLAVE_REVISOR)).toBe('SESION');
+
+    const conPrevio = falso({ [CLAVE_REVISOR]: 'PREVIO' });
+    recordarRevisor(invalido, conPrevio, sesion);
+    expect(conPrevio.getItem(CLAVE_REVISOR)).toBe('PREVIO');
+    expect(sesion.getItem(CLAVE_REVISOR)).toBe('SESION');
+  });
+
+  it.each(['D03-ok', 'A'.repeat(40)])('recordarRevisor guarda un código válido: %s', (valido) => {
+    const local = falso();
+    recordarRevisor(valido, local, falso());
+    expect(local.getItem(CLAVE_REVISOR)).toBe(valido);
+  });
+
   it.each<[string, ReturnType<typeof falso> | null, ReturnType<typeof falso> | null, string | null]>([
     ['lee de local primero', falso({ [CLAVE_REVISOR]: 'LOCAL' }), falso({ [CLAVE_REVISOR]: 'SESION' }), 'LOCAL'],
     ['sin local cae a sesión', falso(), falso({ [CLAVE_REVISOR]: 'SESION' }), 'SESION'],
@@ -28,6 +47,11 @@ describe('código del revisor recordado', () => {
     ['sin ninguno', falso(), falso(), null],
     ['almacenes nulos', null, null, null],
     ['almacenes que lanzan', quePeta(), quePeta(), null],
+    ['un valor inválido en local con sesión vacía da null', falso({ [CLAVE_REVISOR]: '<script>' }), falso(), null],
+    ['un valor de 41 caracteres en local da null', falso({ [CLAVE_REVISOR]: 'A'.repeat(41) }), falso(), null],
+    ['un valor con espacio en local da null', falso({ [CLAVE_REVISOR]: 'con espacio' }), falso(), null],
+    ['local inválido cae a la sesión válida', falso({ [CLAVE_REVISOR]: '<script>' }), falso({ [CLAVE_REVISOR]: 'SESION' }), 'SESION'],
+    ['un valor de 40 caracteres en local es válido', falso({ [CLAVE_REVISOR]: 'A'.repeat(40) }), falso(), 'A'.repeat(40)],
   ])('revisorRecordado: %s', (_n, local, sesion, esperado) => {
     expect(revisorRecordado(local, sesion)).toBe(esperado);
   });
