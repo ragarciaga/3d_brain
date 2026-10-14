@@ -9,7 +9,7 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: pipeline/rutas-vago.yaml, pipeline/generar-ramas-vago.py, pipeline/pruebas/probar_generar.py, pipeline/pruebas/vago_sintetico.py, tests/fixtures/vago-sintetico/anclajes.json, tests/fixtures/vago-sintetico/puntos.json, tests/rutas-vago-pipeline.test.ts, tests/rutas.test.ts, e2e/atlas.spec.ts
 - Verify: `.venv-pipeline/bin/python pipeline/pruebas/probar_generar.py` (pasos `desde_ruta` y `hasta_vago`; falla nombrando el anclaje o la ruta que falta y no escribe nada; acepta `entrada: vagus-nerve-x`); `npm test -- tests/rutas-vago-pipeline.test.ts` sobre el fixture sintético regenerado (5 rutas; empalmes de 2,5 mm o menos en los dos extremos de cada tramo torácico y al inicio del distal izquierdo; cada recurrente sale a 2,5 mm o menos de su tramo torácico; las bandas coinciden con las alturas de los anclajes del fixture; el YAML no trae listas de tres números); `npm test` completo en verde (incluye `tests/asimetrias.test.ts` y los conteos de rutas de `tests/rutas.test.ts` llevados a 5); `npm run test:e2e -- e2e/atlas.spec.ts -g "rutas trazadas"` con el conteo llevado a 5
 - Issue: #46
-- Status: in-review
+- Status: done
 
 ### Decision log
 - Ronda 1: keep. El orquestador suma los conteos de `tests/rutas.test.ts` y `e2e/atlas.spec.ts` para que el PR no deje el CI en rojo (nota de los revisores de T3 y T6). El comentario de cabecera del YAML pasa a hablar de revisión por ruta.
