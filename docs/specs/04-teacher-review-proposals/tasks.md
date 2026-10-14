@@ -9,7 +9,7 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 - Files: src/data/tipos.ts, src/data/atlas.ts, src/components/Visor.tsx, src/main.tsx, tests/datos.test.ts, e2e/marcadores.spec.ts
 - Verify: `npm test -- tests/datos.test.ts`: la función `posicionValida` (nueva, en `src/data/atlas.ts`) acepta `[x,y,z]` finito, `{ l }`, `{ r }`, `{ l, r }` y `null`, y rechaza `[1,2]`, `[1,2,null]`, `{}`, `{ l: [1,2] }`, un texto y una clave distinta de `l` o `r`; todos los marcadores actuales de `marcadores.json` la cumplen. `npm run test:e2e -- e2e/marcadores.spec.ts` con un marcador de prueba inyectado por un gancho solo de desarrollo en `src/main.tsx` (`import.meta.env.DEV`, como `__atlas`), que además expone la posición mundial dibujada de cada punto: (a) con `posicion: { l, r }` y ancla par se ven dos puntos, el izquierdo sobre la pieza de `nodos[p].lado === 'l'` y el derecho sobre la de `'r'`; (b) al separar al 60 % cada punto se desplaza lo mismo que su pieza ancla (`objetivo`), con diferencia de 0,1 mm o menos; con `posicion` única y ancla de varias piezas el desplazamiento es el promedio de las piezas del ancla; (c) al reensamblar cada punto queda exactamente en su `posicion` (diferencia 0); (d) un marcador con ancla y sin posición sigue en el centro de su pieza como hoy; (e) un marcador con `posicion` y sin ancla se queda fijo al separar; `npm run typecheck`
 - Issue: #101
-- Status: todo
+- Status: done
 
 ### Decision log
 - 2026-10-14 ronda 1: `posicionValida` en `src/data/atlas.ts` y gancho de desarrollo en `src/main.tsx` para que el e2e pueda leer posiciones dibujadas; casos (b) con ancla de varias piezas y (e) sin ancla agregados.
