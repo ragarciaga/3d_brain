@@ -18,6 +18,7 @@ python pipeline/listar.py             # inventario completo: pipeline/salida/est
 python pipeline/mapear.py             # pipeline/mapeo.csv, src/data/arbol.json, siembra estructuras.json
 python pipeline/extraer.py            # pipeline/salida/atlas-crudo.glb y pipeline/cajas.json
 node scripts/comprimir-modelo.ts      # public/modelos/atlas.glb (meshopt, sin simplificar)
+node scripts/mallas-cerradas.ts       # src/config/mallas-cerradas.json (mallas del encéfalo sin bordes abiertos, F8)
 npm run check:modelo                  # 0,1 mm de tolerancia por pieza y presupuesto de 15 MB
 ```
 
@@ -34,6 +35,7 @@ py -3.13 -m venv .venv-pipeline
 .\.venv-pipeline\Scripts\python pipeline\mapear.py
 .\.venv-pipeline\Scripts\python pipeline\extraer.py
 node scripts\comprimir-modelo.ts
+node scripts\mallas-cerradas.ts
 npm run check:modelo
 ```
 
@@ -55,6 +57,10 @@ Alternativa con Blender instalado (sin pip), desde la carpeta del repositorio:
   revisión docente, y cada nervio lleva una malla de toque invisible (`#toque`).
 - `cajas.json` guarda la caja de cada malla medida en Blender; `check:modelo` la compara con el GLB
   en cada CI. Si alguien mueve una pieza, CI falla.
+- `mallas-cerradas.ts` mide en el GLB qué mallas del encéfalo no tienen bordes abiertos (ADR 0011) y
+  escribe `src/config/mallas-cerradas.json`, que `check:modelo` también verifica. Si regeneras el GLB
+  y no regeneras la lista, `check:modelo` y CI fallan con "Falta en mallas-cerradas.json" o
+  "Sobra en mallas-cerradas.json".
 
 Los cambios a `mapeo.csv`, `cajas.json` y `public/modelos/` son de nivel C: los aprueba el editor.
 
