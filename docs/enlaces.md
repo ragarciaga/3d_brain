@@ -27,6 +27,7 @@ Atajos dentro del sitio: Ctrl+K abre la búsqueda; Escape cierra paneles y sale 
 | Formulario de revisión (lo abre la app ya lleno) | https://docs.google.com/forms/d/e/1FAIpQLSfT2a766E2OwUtl65MyfFBRgZji_wEW5-EyUA4NGas_xpO5SQ/viewform |
 | Mensaje para mandarle a cada docente (la guía está dentro de la web) | [docs/guia-docentes.md](guia-docentes.md) |
 | Cómo funciona la revisión, crear códigos e importar respuestas | [docs/revision-docente.md](revision-docente.md) |
+| Probar el canal de revisión (Apps Script, issue 87) | https://ragarciaga.github.io/3d_brain/probar-canal.html |
 | Dudas conocidas sobre las fichas (registro; los docentes las ven en cada ficha) | [docs/fichas-dudas.md](fichas-dudas.md) |
 | Cómo se trazó cada ruta del vago (registro; el docente revisa en la app) | [pipeline/rutas-vago.yaml](../pipeline/rutas-vago.yaml) |
 | Auditoría del vago: anclajes y nombre propuesto por trazo | [docs/research/vago/auditoria-vago.md](research/vago/auditoria-vago.md) |
