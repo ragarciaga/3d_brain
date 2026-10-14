@@ -5,6 +5,9 @@ Los docentes no leen documentos: la guía ("Cómo revisar", con el botón de reg
 priorizada ("Qué revisar") y las dudas abiertas están dentro de la web, en el modo revisión. A cada
 docente solo se le manda el mensaje corto de `docs/guia-docentes.md` con su enlace.
 
+Cambio en camino: el canal de retorno pasará a un Apps Script del editor (decisión en #67; el spec
+está pendiente). Mientras tanto, todo lo de esta guía sigue vigente.
+
 ## Estado (2026-10-13)
 
 | Pieza | Dónde está |
@@ -68,7 +71,10 @@ Si hubiera que rehacerlo, para sacar los identificadores:
 Si `urlFormulario` quedara vacío, el botón de enviar copia la revisión al portapapeles o la
 descarga como archivo, para que el docente te la mande por correo.
 
-Desde #58 la app manda todo en un solo envío: el campo **Estructura** recibe los ids de las fichas
+Desde #58 (PR #78) el docente pulsa "Enviar revisión" y luego **"Enviar todo"**: se abre un solo
+formulario ya lleno con todo lo que aún no ha enviado (en partes solo si es muy largo). Pulsa Enviar
+al final del formulario y vuelve a la app para pulsar **"Sí, lo envié"**; hasta entonces esas
+respuestas siguen sin enviar. El campo **Estructura** recibe los ids de las fichas
 revisadas separados por coma (por ejemplo `hippocampus,thalamus`) y el campo **Revisión** recibe
 una carga con todas las respuestas pendientes. La pregunta Estructura no debe tener validación: si
 le pones una (por ejemplo, de formato o de largo), Google rechazará el envío con varios ids. Si la

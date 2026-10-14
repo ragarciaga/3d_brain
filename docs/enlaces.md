@@ -63,7 +63,7 @@ Los mismos archivos están en `public/marca/` del repositorio.
 
 | Qué | Dónde |
 |---|---|
-| Alcance y funciones (F1 a F24) | [SPEC.md](../SPEC.md) |
+| Alcance y funciones (F1 a F25) | [SPEC.md](../SPEC.md) |
 | Estado actual y siguiente paso | [docs/progress.md](progress.md) |
 | Guía del editor (publicar, revisar, medir, trabajar con Claude) | [docs/operacion.md](operacion.md) |
 | Lo que se dejó para después y por qué | [docs/v2.md](v2.md) |

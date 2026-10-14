@@ -8,7 +8,7 @@ alcance, `SPEC.md`; para las reglas que siguen los agentes, `AGENTS.md`.
 
 | Ruta | Qué es | Quién lo cambia |
 |---|---|---|
-| `SPEC.md` | Alcance y funciones (F1 a F24) | Tú; un cambio de alcance va aquí primero |
+| `SPEC.md` | Alcance y funciones (F1 a F25) | Tú; un cambio de alcance va aquí primero |
 | `AGENTS.md` | Contrato del proyecto para agentes y personas | Tú (nivel C) |
 | `docs/brief.md`, `docs/adr/` | Producto y decisiones | Tú (nivel C) |
 | `docs/progress.md` | Estado actual y siguiente paso | Los agentes en cada cierre |
@@ -41,8 +41,10 @@ están dentro de la web, en el modo revisión.
 ## Regenerar el modelo
 
 Solo hace falta si cambia la fuente o la selección de piezas. Pasos y comandos de PowerShell en
-`pipeline/README.md`. Al terminar, `npm run check:modelo` debe decir que todas las mallas están en
-su posición; si alguna se corrió más de 0,1 mm, no se sube.
+`pipeline/README.md`. Después de `node scripts\comprimir-modelo.ts`, corre
+`node scripts\mallas-cerradas.ts`: regenera la lista de mallas cerradas que usan los cortes (F8) y
+que `check:modelo` verifica; sin ella, `check:modelo` y CI fallan. Al terminar, `npm run check:modelo`
+debe decir que todas las mallas están en su posición; si alguna se corrió más de 0,1 mm, no se sube.
 
 ## Correr la app en tu portátil
 

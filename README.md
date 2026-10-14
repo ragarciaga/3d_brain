@@ -56,7 +56,7 @@ npm run test:e2e
 ## Documentos
 
 - docs/enlaces.md: **todos los enlaces del proyecto** (sitio, formularios, logos, GitHub).
-- SPEC.md: alcance y funciones (F1 a F24).
+- SPEC.md: alcance y funciones (F1 a F25).
 - AGENTS.md: reglas del proyecto para agentes y personas.
 - docs/brief.md y docs/adr/: decisiones.
 - pipeline/README.md: cómo se genera el modelo desde Z-Anatomy.
