@@ -7,6 +7,7 @@ import {
   MARCA_PRIMER_CUADRO,
   resumirCarga,
   resumirFluidez,
+  type Equipo,
   type Recurso,
 } from '../src/lib/medicion';
 
@@ -143,7 +144,7 @@ describe('medición de carga (issue 6)', () => {
   it('el informe trae la espera después del código', () => {
     const txt = informe(
       resumirCarga(datos),
-      { navegador: 'Chrome', pantalla: '1920 x 1080 @1x', nucleos: 4, memoriaGB: 8, gpu: 'Intel' },
+      { navegador: 'Chrome', pantalla: '1920 x 1080 @1x', nucleos: 4, memoriaGB: 8, gpu: 'Intel', densidad: null },
       null,
       '2026-10-14',
     );
@@ -154,7 +155,7 @@ describe('medición de carga (issue 6)', () => {
   it('el informe trae equipo, tiempos y lo más lento', () => {
     const txt = informe(
       resumirCarga(datos),
-      { navegador: 'Safari 18 (iPad)', pantalla: '1180 x 820 @2x', nucleos: 6, memoriaGB: null, gpu: 'Apple GPU' },
+      { navegador: 'Safari 18 (iPad)', pantalla: '1180 x 820 @2x', nucleos: 6, memoriaGB: null, gpu: 'Apple GPU', densidad: null },
       { promedio: 58, minimo: 41, muestras: 20 },
       '2026-10-12',
     );
@@ -163,5 +164,27 @@ describe('medición de carga (issue 6)', () => {
     expect(txt).toContain('descarga 3000 ms (6685 KB)');
     expect(txt).toContain('promedio 58, mínimo 41');
     expect(txt).toContain('Lo más lento: la descarga del modelo 3D');
+  });
+
+  describe('línea de densidad de píxeles (issue 84)', () => {
+    const conDensidad = (densidad: Equipo['densidad']) =>
+      informe(
+        resumirCarga(datos),
+        { navegador: 'Chrome', pantalla: '1920 x 1080 @1x', nucleos: 4, memoriaGB: 8, gpu: 'Intel', densidad },
+        null,
+        '2026-10-14',
+      );
+
+    it('fija con ?dpr, con coma decimal', () => {
+      expect(conDensidad({ valor: 1.5, fija: true })).toContain('Densidad de píxeles del visor: 1,5 (fija con ?dpr)');
+    });
+
+    it('automática', () => {
+      expect(conDensidad({ valor: 2, fija: false })).toContain('Densidad de píxeles del visor: 2 (automática)');
+    });
+
+    it('sin dato cuando no hay densidad', () => {
+      expect(conDensidad(null)).toContain('Densidad de píxeles del visor: sin dato');
+    });
   });
 });
