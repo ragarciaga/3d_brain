@@ -67,7 +67,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/lib/enlaces.ts, tests/enlaces.test.ts, src/components/Pagina.tsx, e2e/cortes-enlace.spec.ts
 - Verify: `npm test -- tests/enlaces.test.ts`: `serializar` emite `corte=coronal:12,axial:-8:inv` en orden sagital, coronal, axial y no emite `corte` sin planos activos (R7.1); `entradasDeCortes(cortes)` convierte el estado del store en entradas solo de planos activos (R7.1); `leer` y `validarCortes(entradas, rango)` ignoran solo la entrada mal escrita, la repetida (gana la primera) y la de fuera de rango (R7.3); un enlace sin `corte` se lee y se genera igual que hoy; con el store real, `aplicarCortesEnlace(entradas)` con `explosion=40` previa deja `explosion=0`, `separadas={}` y los planos en sus posiciones, y aplicarla dos veces deja el mismo estado (R7.4). `npm run test:e2e -- e2e/cortes-enlace.spec.ts`: abrir `?corte=coronal:12,axial:-8:inv` deja coronal y axial activos en 12 y -8 (axial invertido) según `window.__atlas.getState().cortes` una vez cargado el modelo (R7.2); un enlace con una entrada inválida y otra válida aplica solo la válida; con `corte=` y `explosion=40` la explosión queda en 0; con cortes activos, "Compartir" produce una URL con `corte=` y los mismos planos (R7.1)
 - Issue: #37
-- Status: todo
+- Status: in-review
 
 ### Decision log
 - Ronda 1: rewrite. `validarCortes` queda en `enlaces.ts`; R7.4 se prueba con el store real; se nombran los casos.
