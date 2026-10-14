@@ -6,7 +6,52 @@ priorizada ("Qué revisar") y las dudas abiertas están dentro de la web, en el 
 docente solo se le manda el mensaje corto de `docs/guia-docentes.md` con su enlace.
 
 Cambio en camino: el canal de retorno pasará a un Apps Script del editor (decisión en #67; el spec
-está pendiente). Mientras tanto, todo lo de esta guía sigue vigente.
+está aprobado en `docs/specs/03-review-return-channel/`). El primer paso es la prueba de la sección
+"Probar el canal antes de construirlo". Mientras no se construya el resto, todo lo demás de esta
+guía sigue vigente.
+
+## Probar el canal antes de construirlo (T1, #87)
+
+Antes de construir el canal definitivo hay que confirmar que una página publicada en GitHub Pages
+puede escribir en un Apps Script tuyo y leer lo que responde. Es una prueba corta, con un script
+mínimo (`apps-script/prueba-canal.js`) y una hoja de prueba aparte. El script completo
+(`Codigo.js`) se monta después, en otro paso.
+
+1. En el Drive de Maysa Digital, crea una hoja de cálculo nueva, por ejemplo "Prueba canal Maysa Brain".
+2. En la hoja, menú Extensiones, Apps Script. Borra todo lo que trae `Código.gs`.
+3. Copia el script. Desde la carpeta del repositorio, en PowerShell:
+
+   ```powershell
+   cd C:\Users\TU_USUARIO\proyectos\3d_brain
+   Get-Content -Raw -Encoding UTF8 apps-script\prueba-canal.js | Set-Clipboard
+   ```
+
+   (Alternativa: abre `apps-script/prueba-canal.js` en GitHub y copia todo el contenido.) Pégalo en
+   el editor de Apps Script y pulsa Guardar.
+4. Arriba a la derecha, Implementar, Nueva implementación. En el engranaje elige el tipo
+   "Aplicación web", Ejecutar como "Yo" y Quién tiene acceso "Cualquier usuario". Pulsa Implementar y
+   autoriza los permisos. Si Google avisa que la app no está verificada, pulsa Configuración
+   avanzada e Ir a (nombre del proyecto): es tu propio script.
+5. Copia la "URL de la aplicación web". Termina en `/exec`.
+6. Cuando la página esté publicada (después de fusionar el PR y de que termine el workflow `pages`),
+   abre https://ragarciaga.github.io/3d_brain/probar-canal.html, pega la URL y pulsa "Probar".
+7. Mira la pestaña `Prueba` de la hoja: debe haber una fila con la fecha y la marca que muestra la
+   página.
+
+Cómo leer el resultado:
+
+| Escritura | Lectura | Qué significa |
+|---|---|---|
+| ok | ok | El diseño sigue como está. |
+| falla | ok | Plan B: la escritura se envía sin leer la respuesta y se confirma con la lectura. Avisa antes de construir lo demás. |
+| cualquiera | falla | Avisa: el diseño cambia antes de construir el canal. |
+
+Pega en el issue #87 las dos líneas ("Escritura: ..." y "Lectura: ...") y el detalle que muestra la
+página. Si la URL que copiaste tiene la forma `/a/macros/<dominio>/...` (cuenta de Google
+Workspace), dilo también en el issue.
+
+Cuando termines, archiva la implementación para que nadie más pueda escribir en la hoja: en Apps
+Script, Implementar, Gestionar implementaciones, Archivar.
 
 ## Estado (2026-10-13)
 

@@ -1,10 +1,10 @@
-// Convierte las respuestas del formulario de Google (CSV exportado de la hoja) en un resumen por
-// estructura. El repositorio es público: los issues muestran el alias del revisor (D01, D02...),
-// nunca su código ni su nombre (#15). El padrón código -> alias vive solo en el portátil del editor
-// (pipeline/revisores.local.json, ignorado por git) y un envío con un código fuera del padrón se
-// descarta. El nombre solo vive en la hoja de registro y aparece en la ficha cuando el editor
-// aprueba la revisión.
-import { CLAVES_V2, esObjeto, respuestaValida, REVISOR_VALIDO, type Respuesta } from '../../src/lib/revision.ts';
+// Convierte el CSV exportado del formulario de Google o de la pestaña Respuestas de la hoja del
+// Apps Script (ADR 0012) en un resumen por estructura. El repositorio es público: los issues
+// muestran el alias del revisor (D01, D02...), nunca su código ni su nombre (#15). El padrón
+// código -> alias vive solo en el portátil del editor (pipeline/revisores.local.json, ignorado por
+// git) y un envío con un código fuera del padrón se descarta. Las fichas nunca muestran datos del
+// revisor.
+import { CLAVES_V2, esObjeto, fechaValida, respuestaValida, REVISOR_VALIDO, type Respuesta } from '../../src/lib/revision.ts';
 
 export function parsearCsv(texto: string): string[][] {
   const filas: string[][] = [];
@@ -52,8 +52,9 @@ export const ALIAS_VALIDO = /^D\d{2,3}$/;
  * Expande una carga `v:2` ({"v":2,"r":<código>,"e":{<id>:[{<claves cortas>}]}}) en un envío por
  * estructura. Cada clave de `e` termina como nombre de archivo (`<id>.md`), así que debe pasar `idOk`.
  * Los elementos se copian solo por las claves conocidas de `CLAVES_V2` (el resto se descarta), llevan
- * la estructura de su clave y pasan `respuestaValida`. Devuelve null si algo está mal: una respuesta
- * mala invalida la fila entera, igual que en `v:1`.
+ * la estructura de su clave y pasan `respuestaValida`. Si traen `f` (la fecha de la respuesta), debe
+ * pasar `fechaValida` (texto de hasta 40 caracteres que `Date.parse` entiende); sin `f` la fecha queda
+ * ''. Devuelve null si algo está mal: una respuesta mala invalida la fila entera, igual que en `v:1`.
  */
 function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, marcaTemporal: string): Envio[] | null {
   const revisor = d['r'];
@@ -72,6 +73,7 @@ function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, 
       for (const [largo, corto] of Object.entries(CLAVES_V2)) {
         if (Object.hasOwn(el, corto)) r[largo] = el[corto];
       }
+      if (Object.hasOwn(el, CLAVES_V2.fecha) && !fechaValida(el[CLAVES_V2.fecha])) return null;
       if (!respuestaValida(r, idOk)) return null;
       respuestas.push(r);
     }
@@ -80,12 +82,28 @@ function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, 
   return envios;
 }
 
+const SI_NO = ['sí', 'no'];
+
 /**
- * Busca en cada fila la celda con la carga JSON de la app ({"v":1,...} o {"v":2,...}). Un envío solo vale si su
- * estructura (y la de cada respuesta) es un id conocido y con forma de slug, así nadie puede
+ * Fila con la forma exacta de las otras pestañas de la hoja del Apps Script, que no son envíos:
+ * Autorizaciones (4 columnas: código, fecha legible, versión del texto, sí o no) o Padrón (3 columnas:
+ * código, alias, sí o no). Las celdas se comparan sin recortar.
+ */
+function esFilaDeOtraPestana(fila: string[]): boolean {
+  const [a = '', b = '', c = '', d = ''] = fila;
+  if (fila.length === 4) return REVISOR_VALIDO.test(a) && Number.isFinite(Date.parse(b)) && c !== '' && SI_NO.includes(d);
+  if (fila.length === 3) return REVISOR_VALIDO.test(a) && ALIAS_VALIDO.test(b) && SI_NO.includes(c);
+  return false;
+}
+
+/**
+ * Busca en cada fila, en cualquier columna, la celda con la carga JSON de la app ({"v":1,...} o
+ * {"v":2,...}), sea el CSV del formulario o el de la pestaña Respuestas del Apps Script. Un envío solo
+ * vale si su estructura (y la de cada respuesta) es un id conocido y con forma de slug, así nadie puede
  * escribir fuera de la carpeta de salida, si el código del revisor son solo letras, dígitos, guion
- * y guion bajo (hasta 40, sin truncar) y si cada respuesta pasa `respuestaValida`. Una fila mal
- * formada se cuenta como inválida y nunca aborta la importación completa.
+ * y guion bajo (hasta 40, sin truncar) y si cada respuesta pasa `respuestaValida`. Las filas sin carga
+ * con la forma de Autorizaciones o de Padrón se ignoran sin contarse; cualquier otra fila mal formada
+ * se cuenta como inválida y nunca aborta la importación completa.
  */
 export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envios: Envio[]; invalidas: number } {
   const envios: Envio[] = [];
@@ -95,7 +113,7 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
     try {
       const celda = fila.find((c) => c.trim().startsWith('{"v":'));
       if (!celda) {
-        invalidas++;
+        if (!esFilaDeOtraPestana(fila)) invalidas++;
         continue;
       }
       const d: unknown = JSON.parse(celda);

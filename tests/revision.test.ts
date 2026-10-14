@@ -9,6 +9,7 @@ import {
   desactualizadas,
   desdeClave,
   ESPERA_GUARDADO_MS,
+  fechaValida,
   MAX_URL,
   partesEnvio,
   pendientesComoCorrectas,
@@ -207,10 +208,16 @@ describe('envío en un solo formulario (#58)', () => {
       ramo: 'a1',
       version: 'sin-ficha',
     });
-    const sinIdioma: Respuesta = { estructura: 'x', campo: 'nombre', veredicto: 'correcto', version: '0.1.0', fecha: 'f' };
+    const sinIdioma: Respuesta = { estructura: 'x', campo: 'nombre', veredicto: 'correcto', version: '0.1.0', fecha: '' };
     const { e } = JSON.parse(cargaRevisionV2('P', [completa, sinIdioma]));
-    expect(e.x[0]).toEqual({ c: 'trazo:Vagus_nerve.R 01', i: 'es', d: 'corregir', p: 'p', k: 'k', x: [1, 2, 3], m: 'm1', a: 'a1', s: 'sin-ficha' });
+    expect(e.x[0]).toEqual({ c: 'trazo:Vagus_nerve.R 01', i: 'es', d: 'corregir', p: 'p', k: 'k', x: [1, 2, 3], m: 'm1', a: 'a1', s: 'sin-ficha', f: '2026-10-11T00:00:00Z' });
     expect(e.x[1]).toEqual({ c: 'nombre', d: 'correcto', s: '0.1.0' });
+    expect(Object.hasOwn(e.x[1], 'f')).toBe(false);
+  });
+
+  it('una fecha no vacía viaja tal cual en f', () => {
+    const { e } = JSON.parse(cargaRevisionV2('P', [{ ...r('nombre'), fecha: 'abc' }]));
+    expect(e.hippocampus[0].f).toBe('abc');
   });
 
   it('tres fichas cortas salen en una sola parte con los tres ids en el campo Estructura (D2)', () => {
@@ -405,5 +412,37 @@ describe('marcar todo como correcto (#66)', () => {
     const salida = pendientesComoCorrectas([clave('a'), clave('b')], respuestas, 'v1', 'ahora');
     expect(salida.map((x) => x.campo)).toEqual(['b']);
     expect(respuestas).toEqual(antes);
+  });
+});
+
+describe('fechaValida (entrada externa)', () => {
+  const de40 = `2026-10-10T10:00:00.${'0'.repeat(19)}Z`;
+  const de41 = `2026-10-10T10:00:00.${'0'.repeat(20)}Z`;
+
+  it('acepta una fecha ISO', () => {
+    expect(fechaValida('2026-10-14T10:00:00.000Z')).toBe(true);
+  });
+
+  it('acepta una cadena parseable de exactamente 40 caracteres', () => {
+    expect(de40.length).toBe(40);
+    expect(Number.isFinite(Date.parse(de40))).toBe(true);
+    expect(fechaValida(de40)).toBe(true);
+  });
+
+  it('rechaza una cadena parseable de 41 caracteres', () => {
+    expect(de41.length).toBe(41);
+    expect(Number.isFinite(Date.parse(de41))).toBe(true);
+    expect(fechaValida(de41)).toBe(false);
+  });
+
+  it.each<[string, unknown]>([
+    ['un número', 1760000000000],
+    ['null', null],
+    ['undefined', undefined],
+    ['un objeto', { a: 1 }],
+    ['un texto vacío', ''],
+    ['un texto ilegible', 'ayer'],
+  ])('rechaza %s', (_n, valor) => {
+    expect(fechaValida(valor)).toBe(false);
   });
 });
