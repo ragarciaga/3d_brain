@@ -95,7 +95,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   Blender del editor (#49); 03-T7 (guardado automático) en revisión. Quinta corrida
   (cycle-197b7e3-pqzw): #131 (03-T7) con las tres revisiones aprobadas, frenado solo por el tope de
   30 min del e2e de CI; 03-T8 (traer lo guardado al abrir y retirar el respaldo por archivo)
-  implementado sobre #131 y en revisión. El e2e de CI ya no cabe en su tope
+  implementado sobre #131 y en revisión. Sexta corrida (cycle-197b7e3-hjkt): Rockbuilt 0.5.0 con el e2e en 3
+  shards (#134, el CI vuelve a caber); fusionados #131 (03-T7, guardado automático) y #135 (03-T8, traer lo
+  guardado al abrir y retirar el respaldo por archivo). El e2e de CI ya no cabe en su tope
   de 30 min (main en rojo desde #124 por tiempo, no por fallas): el arreglo va en el harness.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
@@ -142,7 +144,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T6 en main; T7 en PR #131 (espera el arreglo del tope del e2e); T8 en revisión. Falta que el editor corra la
+1. Canal de retorno (spec 03): T1 a T6 en main; T1 a T8 en main; T9 planificado (#95). Falta que el editor corra la
    prueba de `probar-canal.html` (T1, #87) con su Apps Script, revise el texto legal de la
    autorización (plan en #92) y monte `Codigo.js`; después siguen T8 a T13 (T13 necesita la URL del
    script).

@@ -113,7 +113,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/PanelRevision.tsx, src/store/useAtlas.ts, src/lib/respaldo.ts, src/i18n/es.json, src/i18n/en.json, tests/respaldo.test.ts, tests/i18n.test.ts, e2e/revision-canal.spec.ts, e2e/respaldo.spec.ts
 - Verify: `npm run test:e2e -- e2e/revision-canal.spec.ts -g "otro equipo"`: en un contexto nuevo con el mismo enlace y `leer` simulado con respuestas guardadas, se ven respondidas en menos de 5 s con la red limitada a 4G (`page.route` con demora de 1,5 s); una respuesta local más reciente que la del canal se conserva; lo traído del canal no genera ninguna petición `guardar`; no existen "Descargar respaldo" ni "Cargar respaldo". `npm test -- tests/respaldo.test.ts tests/i18n.test.ts`: `tests/respaldo.test.ts` queda solo con la fusión y `piezasQueSiguen` (la usa `importarRespuestas`) y `tests/i18n.test.ts` ya no exige las claves de respaldo ni que `guia.responder` las nombre (solo se tocan esas aserciones), y `revision.soloEsteNavegador` ya no invita a descargar. `e2e/respaldo.spec.ts` conserva solo el caso del código recordado y pasa. `npm run check:i18n`
 - Issue: #94
-- Status: in-review
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Lo traído queda marcado como guardado, fusión con lo local, limpieza de funciones, claves y pruebas de respaldo.
