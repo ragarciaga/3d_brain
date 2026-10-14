@@ -5,7 +5,7 @@ import estructurasJson from './estructuras.json';
 import gruposJson from './grupos.json';
 import marcadoresJson from './marcadores.json';
 import trazosVagoJson from './trazos-vago.json';
-import type { Arbol, Bilingue, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria, PropuestaTrazo } from './tipos';
+import type { Arbol, Bilingue, Estructura, Estructuras, GrupoEstudio, Idioma, Marcador, NodoArbol, OrigenGeometria, PosicionMarcador, Punto3, PropuestaTrazo } from './tipos';
 
 export const arbol = arbolJson as unknown as Arbol;
 export const datos = estructurasJson as unknown as Estructuras;
@@ -94,6 +94,40 @@ export function piezasDeEntrada(id: string): string[] {
 /** Piezas del ancla de un marcador: una estructura (sus lados) o una pieza de un solo lado. */
 export function piezasDeAncla(ancla: string): string[] {
   return nodos[ancla]?.tipo === 'pieza' ? [ancla] : piezasDeEntrada(ancla);
+}
+
+function esPunto3(v: unknown): v is Punto3 {
+  return Array.isArray(v) && v.length === 3 && v.every((x) => typeof x === 'number' && Number.isFinite(x));
+}
+
+/** Forma de `Marcador.posicion`: un punto, un punto por lado (`l`, `r`) o `null`. */
+export function posicionValida(v: unknown): v is PosicionMarcador {
+  if (v === null || esPunto3(v)) return true;
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
+  const claves = Object.keys(v);
+  return claves.length > 0 && claves.every((k) => (k === 'l' || k === 'r') && esPunto3((v as Record<string, unknown>)[k]));
+}
+
+/**
+ * Puntos base de un marcador con posición propia y las piezas cuyo desplazamiento sigue cada uno (R3.1, R3.3).
+ * Un punto único sigue a todas las piezas del ancla; con `{ l, r }`, cada punto sigue a las piezas de su lado
+ * (si el ancla no tiene ninguna de ese lado, a todas). Sin ancla no sigue a nadie. Sin posición: ningún punto.
+ */
+export function puntosDeMarcador(
+  m: Pick<Marcador, 'posicion' | 'ancla'>,
+): { lado: 'l' | 'r' | null; posicion: Punto3; piezas: string[] }[] {
+  const pos = m.posicion;
+  if (!pos) return [];
+  const todas = m.ancla ? piezasDeAncla(m.ancla) : [];
+  if (Array.isArray(pos)) return [{ lado: null, posicion: pos, piezas: todas }];
+  const res: { lado: 'l' | 'r' | null; posicion: Punto3; piezas: string[] }[] = [];
+  for (const lado of ['l', 'r'] as const) {
+    const posicion = pos[lado];
+    if (!posicion) continue;
+    const delLado = todas.filter((p) => nodos[p]?.lado === lado);
+    res.push({ lado, posicion, piezas: delLado.length ? delLado : todas });
+  }
+  return res;
 }
 
 /** Entrada de estructuras.json que describe un nodo del árbol. */
