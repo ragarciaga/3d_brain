@@ -14,6 +14,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 ### Decision log
 - Ronda 1: keep. El orquestador agrega los mensajes de falla explícitos (el plan B del diseño depende de distinguir escritura de lectura) y que la prueba manual va después del despliegue.
 - Ronda 2: keep. El script lleva `/* global ... */` y `/* exported doGet, doPost */` (o una entrada en `eslint.config.js`) para que `npm run lint` pase.
+- 2026-10-14: script mínimo y página de prueba; T2 y T4 se construyen sin esperar la prueba manual (pedido del editor); si sale plan B se reabren. Tier C. Outcome: reviews pass after 1 kickback, PR #111.
 
 ## T2: Escribir el Apps Script completo con validación, padrón, ritmo y bloqueo
 - Purpose: que el canal solo acepte revisiones válidas de códigos del padrón, escriba cada respuesta en el formato que el importador ya lee, guarde la autorización y devuelva a cada código solo lo suyo.
@@ -44,6 +45,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Ronda 1: rewrite. `f` es entrada externa (regla `fechaValida`, la misma de `respaldo.ts`), regla explícita para no contar como inválidas las filas de otras pestañas y aserciones viejas que se reescriben.
 - Ronda 2: rewrite. `f` solo si la fecha no está vacía, aserciones y fixtures concretos que se ajustan, forma exacta de las filas de Autorizaciones y Padrón; sale `scripts/importar-revisiones.ts` de `Files` (no cambia).
 - Ronda 3: keep. El orquestador alinea el alias del Padrón con `ALIAS_VALIDO` del importador (`D` y 2 o 3 dígitos).
+- 2026-10-14: fecha `f` validada con `fechaValida`; T2 escribe ISO en Autorizaciones; gana la última fila en orden de la hoja; solo `sí`/`no` exactos, porque así lo fija la tarea. Tier B. Outcome: reviews pass after 0 kickbacks, PR #110.
 
 ## T4: Crear la cola de guardado y el cliente del canal
 - Purpose: tener la lógica de guardado automático probada sin red: espera de 3 s, reintentos crecientes, partición de lotes, confirmación por versión, aviso de 10 min, fusión por fecha y validación de lo que vuelve del canal; incluye las constantes `urlCanal` (vacía) y `VERSION_AUTORIZACION`.
