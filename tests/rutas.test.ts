@@ -10,9 +10,9 @@ import { campoTrazado, cargarRutas, leerRutas } from '../src/lib/rutas';
 const sintetico = JSON.parse(readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8')) as unknown;
 
 describe('rutas trazadas: archivo publicado', () => {
-  it('lee las tres rutas que escribe el generador, con su ficha y su estado', () => {
+  it('lee las cinco rutas que escribe el generador, con su ficha y su estado', () => {
     const rutas = leerRutas(sintetico);
-    expect(rutas.map((r) => r.id).sort()).toEqual(['laringeo_recurrente_derecho', 'laringeo_recurrente_izquierdo', 'vago_izquierdo_distal']);
+    expect(rutas.map((r) => r.id).sort()).toEqual(['laringeo_recurrente_derecho', 'laringeo_recurrente_izquierdo', 'vago_izquierdo_distal', 'vago_toracico_derecho', 'vago_toracico_izquierdo']);
     for (const r of rutas) {
       expect(estructuras[r.entrada], r.entrada).toBeDefined();
       expect(r.revision.estado).toBe('en_revision');
@@ -24,7 +24,7 @@ describe('rutas trazadas: archivo publicado', () => {
     const malo = JSON.parse(JSON.stringify(sintetico)) as { rutas: Record<string, Record<string, unknown>> };
     malo.rutas['laringeo_recurrente_derecho']!['puntos'] = [[0, 1, 'x']];
     malo.rutas['laringeo_recurrente_izquierdo']!['revision'] = { estado: 'lista' };
-    expect(leerRutas(malo).map((r) => r.id)).toEqual(['vago_izquierdo_distal']);
+    expect(leerRutas(malo).map((r) => r.id).sort()).toEqual(['vago_izquierdo_distal', 'vago_toracico_derecho', 'vago_toracico_izquierdo']);
     expect(leerRutas(null)).toEqual([]);
     expect(leerRutas({ rutas: 'x' })).toEqual([]);
   });
@@ -39,7 +39,7 @@ describe('rutas trazadas: archivo publicado', () => {
     expect(await cargarRutas('/', con({ ok: false }))).toEqual([]);
     expect(await cargarRutas('/', con({ ok: true, json: () => Promise.reject(new SyntaxError('<html>')) }))).toEqual([]);
     expect(await cargarRutas('/', (() => Promise.reject(new Error('red'))) as unknown as typeof fetch)).toEqual([]);
-    expect(await cargarRutas('/', con({ ok: true, json: () => Promise.resolve(sintetico) }))).toHaveLength(3);
+    expect(await cargarRutas('/', con({ ok: true, json: () => Promise.resolve(sintetico) }))).toHaveLength(5);
   });
 });
 
