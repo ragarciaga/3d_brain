@@ -1,6 +1,7 @@
 // Integridad del contenido: lo que la app promete en AGENTS.md (fuente obligatoria, bilingüe,
 // nada huérfano) se verifica aquí, no a mano.
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TFunction } from 'i18next';
 import {
@@ -18,6 +19,7 @@ import {
 } from '../src/data/atlas';
 import { crearBuscador } from '../src/lib/busqueda';
 import { latinVisible, nombre } from '../src/lib/nombres';
+import { ALIAS_VALIDO } from '../scripts/lib/revisiones.ts';
 
 const idiomas = ['es', 'en'] as const;
 
@@ -167,6 +169,74 @@ describe('datos del atlas', () => {
     for (const f of ['src/data/estructuras.json', 'src/data/grupos.json', 'src/data/marcadores.json', 'src/i18n/es.json', 'src/i18n/en.json']) {
       expect(readFileSync(f, 'utf8').includes(String.fromCharCode(0x2014)), f).toBe(false);
     }
+  });
+});
+
+// R9.3: el repositorio nunca guarda el nombre de un revisor; solo `null` o un alias `D07`.
+function revisorPublico(v: unknown): boolean {
+  return v === null || (typeof v === 'string' && ALIAS_VALIDO.test(v));
+}
+
+function archivosTs(dir: string): string[] {
+  return readdirSync(dir).flatMap((f) => {
+    const r = join(dir, f);
+    return statSync(r).isDirectory() ? archivosTs(r) : /\.tsx?$/.test(f) ? [r] : [];
+  });
+}
+
+describe('revisión sin datos personales (R9)', () => {
+  it.each([
+    ['null', null],
+    ['un alias de dos dígitos', 'D07'],
+    ['un alias de tres dígitos', 'D123'],
+  ])('revisorPublico acepta %s', (_n, v) => {
+    expect(revisorPublico(v)).toBe(true);
+  });
+
+  it.each([
+    ['un nombre', 'Ana Pérez'],
+    ['un código de revisor', 'PRUEBA01'],
+    ['la cadena vacía', ''],
+    ['un alias en minúscula', 'd07'],
+    ['un alias de un dígito', 'D7'],
+    ['un alias de cuatro dígitos', 'D1234'],
+    ['undefined', undefined],
+  ])('revisorPublico rechaza %s', (_n, v) => {
+    expect(revisorPublico(v)).toBe(false);
+  });
+
+  it('todo revisado_por de estructuras.json es null o un alias', () => {
+    let vistos = 0;
+    for (const e of Object.values(estructuras)) {
+      if (!e.ficha) continue;
+      for (const i of idiomas) {
+        vistos++;
+        expect(revisorPublico(e.ficha.revision[i].revisado_por), `${e.id} ${i}`).toBe(true);
+      }
+    }
+    expect(vistos).toBeGreaterThan(0);
+  });
+
+  it('todo revisado_por de las rutas publicadas es null o un alias', () => {
+    const json = JSON.parse(readFileSync('public/modelos/rutas-vago.json', 'utf8')) as {
+      rutas?: Record<string, { revision?: { revisado_por?: unknown } }>;
+    };
+    for (const [id, ruta] of Object.entries(json.rutas ?? {})) {
+      expect(revisorPublico(ruta.revision?.revisado_por), id).toBe(true);
+    }
+  });
+
+  it('todo revisado_por de pipeline/rutas-vago.yaml es null o un alias', () => {
+    const texto = readFileSync('pipeline/rutas-vago.yaml', 'utf8');
+    const valores = [...texto.matchAll(/revisado_por:\s*([^,}\s]+)/g)].map((m) => m[1]!);
+    // El mínimo evita que la guarda pase vacía si cambia el formato del archivo.
+    expect(valores.length).toBeGreaterThanOrEqual(5);
+    for (const v of valores) expect(v === 'null' || ALIAS_VALIDO.test(v), v).toBe(true);
+  });
+
+  it('ninguna vista pública lee revisado_por (src/components)', () => {
+    const lectores = archivosTs('src/components').filter((f) => readFileSync(f, 'utf8').includes('revisado_por'));
+    expect(lectores).toEqual([]);
   });
 });
 
