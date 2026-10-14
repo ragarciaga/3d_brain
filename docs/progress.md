@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -97,8 +97,10 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   30 min del e2e de CI; 03-T8 (traer lo guardado al abrir y retirar el respaldo por archivo)
   implementado sobre #131 y en revisión. Sexta corrida (cycle-197b7e3-hjkt): Rockbuilt 0.5.0 con el e2e en 3
   shards (#134, el CI vuelve a caber); fusionados #131 (03-T7, guardado automático) y #135 (03-T8, traer lo
-  guardado al abrir y retirar el respaldo por archivo). El e2e de CI ya no cabe en su tope
-  de 30 min (main en rojo desde #124 por tiempo, no por fallas): el arreglo va en el harness.
+  guardado al abrir y retirar el respaldo por archivo). Séptima corrida (cycle-032bd1e-wqnz):
+  fusionados #137 (03-T9, formulario de respaldo cuando el canal falla) y #138 (03-T11, "Revisado
+  por un docente universitario" sin datos personales); 03-T10 (filtrar trazos según la casilla)
+  planificado en #96.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
@@ -144,10 +146,10 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T6 en main; T1 a T8 en main; T9 planificado (#95). Falta que el editor corra la
+1. Canal de retorno (spec 03): T1 a T9 y T11 en main; T10 planificado (#96). Falta que el editor corra la
    prueba de `probar-canal.html` (T1, #87) con su Apps Script, revise el texto legal de la
-   autorización (plan en #92) y monte `Codigo.js`; después siguen T8 a T13 (T13 necesita la URL del
-   script).
+   autorización (plan en #92) y monte `Codigo.js`; después siguen T10, T12 y T13 (T13 necesita la URL del
+   script). No mandar el enlace a docentes antes de T13: sin canal ya no hay respaldo por archivo.
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
    un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 bloqueada
