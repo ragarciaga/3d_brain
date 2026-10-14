@@ -1,10 +1,15 @@
-"""Rutas trazadas del vago (ADR 0009, fases C y D). Lee pipeline/rutas-vago.yaml y los anclajes que
+"""Rutas trazadas del vago (ADR 0009 y 0010). Lee pipeline/rutas-vago.yaml y los anclajes que
 midió pipeline/auditar-vago.py, y calcula los puntos de cada ruta. No hay coordenadas escritas a mano:
-todo sale de los anclajes. No usa Blender, así que se prueba sin él (pipeline/tests/).
+todo sale de los anclajes. No usa Blender, así que se prueba sin él (pipeline/pruebas/).
+
+Una ruta puede arrancar sobre otra (paso desde_ruta) o cerrarse en el tronco escaneado (hasta_vago).
+Las rutas se resuelven en orden de dependencia; la salida conserva el orden del YAML.
 
 Salida:
 - public/modelos/rutas-vago.json: lo que dibuja la app. Cada ruta lleva su estado de revisión
   ("en_revision" o "aprobada"), que la ficha muestra; los docentes la juzgan con F24.
+  Las rutas torácicas llevan además reemplaza: {lado, y_max, y_min}, la banda del tronco escaneado
+  que reemplazan, en metros glTF (y_min nulo significa hasta abajo).
 - pipeline/salida/rutas-vago-borrador.json con --borrador, para mirarla sin publicarla.
 
 La prueba de las cuatro asimetrías (tests/asimetrias.test.ts) corre en CI sobre esos puntos y falla
@@ -23,10 +28,15 @@ ESTADOS = ("en_revision", "aprobada")
 PASO_MUESTREO = 0.002  # un punto cada 2 mm a lo largo de la ruta
 HOLGURA = 1.5  # el nervio pasa a 1,5 de su radio de la superficie del anclaje
 FINAL_GROSOR = 0.6  # el grosor baja del tronco hacia lo distal hasta el 60 %
+TOLERANCIA_ALTURA = 1e-5  # 0,01 mm: la curva redondea a 6 decimales y un punto puede quedar justo en el borde
 SIDE = {"izquierdo": 1, "derecho": -1}  # +X es la izquierda del cuerpo en el modelo
 
 
 class FaltaAnclaje(Exception):
+    pass
+
+
+class FaltaRuta(Exception):
     pass
 
 
@@ -148,22 +158,69 @@ def largo(pts):
     return sum(math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
 
 
-def en_polilinea_a_altura(pts, y):
+def en_polilinea_a_altura(pts, y, que="El tronco del vago"):
     """Primer punto (de arriba hacia abajo) donde la polilínea cruza la altura y."""
     orden = pts if pts[0][1] >= pts[-1][1] else list(reversed(pts))
     for a, b in zip(orden, orden[1:]):
         if (a[1] - y) * (b[1] - y) <= 0 and a[1] != b[1]:
             t = (a[1] - y) / (a[1] - b[1])
             return [a[i] + (b[i] - a[i]) * t for i in range(3)]
-    raise FaltaAnclaje(f"El tronco del vago no llega a la altura {y:.3f} m")
+    raise FaltaAnclaje(f"{que} no llega a la altura {y:.3f} m")
 
 
-def resolver(modelo, ruta):
-    """Pasos del YAML a puntos de control. 'seguir' se expande entre el paso anterior y el siguiente."""
+def punto_en_ruta(puntos, y, id_ruta):
+    """Punto de una ruta ya generada a la altura y. Si y queda fuera por TOLERANCIA_ALTURA o menos
+    (el redondeo de la curva), devuelve el extremo más cercano."""
+    alto = max(puntos, key=lambda p: p[1])
+    bajo = min(puntos, key=lambda p: p[1])
+    if y > alto[1] and y - alto[1] <= TOLERANCIA_ALTURA:
+        return list(alto)
+    if y < bajo[1] and bajo[1] - y <= TOLERANCIA_ALTURA:
+        return list(bajo)
+    return en_polilinea_a_altura(puntos, y, que=f"La ruta '{id_ruta}'")
+
+
+def dependencias(ruta):
+    """Ids de las rutas sobre las que arranca esta (pasos desde_ruta)."""
+    return {paso["desde_ruta"]["ruta"] for paso in ruta["pasos"] if "desde_ruta" in paso}
+
+
+def banda(modelo, id_ruta, ruta):
+    """Banda del tronco escaneado que reemplaza una ruta torácica, o None si no reemplaza nada."""
+    reemplaza = ruta.get("reemplaza")
+    if reemplaza is None:
+        return None
+    if not reemplaza.get("desde"):
+        raise ValueError(f"{id_ruta}: 'reemplaza' necesita 'desde'")
+    y_max = modelo.altura(reemplaza["desde"])
+    y_min = modelo.altura(reemplaza["hasta"]) if reemplaza.get("hasta") is not None else None
+    if y_min is not None and y_min >= y_max:
+        raise ValueError(f"{id_ruta}: 'reemplaza' tiene la altura de 'hasta' por encima de la de 'desde'")
+    return {"lado": ruta["lado"], "y_max": round(y_max, 6), "y_min": None if y_min is None else round(y_min, 6)}
+
+
+def resolver(modelo, ruta, hechas):
+    """Pasos del YAML a puntos de control. 'seguir' se expande entre el paso anterior y el siguiente.
+    `hechas` trae las rutas ya generadas (id a salida) para los pasos desde_ruta."""
     lado = ruta["lado"]
     fijos = []
     for paso in ruta["pasos"]:
-        if "desde_vago" in paso:
+        if "hasta_vago" in paso:
+            if "a_la_altura_de" not in paso:
+                raise ValueError(f"El paso hasta_vago necesita a_la_altura_de: {paso}")
+            fijos.append(en_polilinea_a_altura(modelo.tronco(paso["hasta_vago"]), modelo.altura(paso["a_la_altura_de"])))
+        elif "desde_ruta" in paso:
+            ref = paso["desde_ruta"]["ruta"]
+            if ref not in hechas:
+                raise FaltaRuta(f"Falta la ruta '{ref}': no está en rutas-vago.yaml")
+            puntos = hechas[ref]["puntos"]
+            if paso["desde_ruta"].get("punto") == "final":
+                fijos.append(list(puntos[-1]))
+            elif "a_la_altura_de" in paso["desde_ruta"]:
+                fijos.append(punto_en_ruta(puntos, modelo.altura(paso["desde_ruta"]["a_la_altura_de"]), ref))
+            else:
+                raise ValueError(f"El paso desde_ruta necesita punto: final o a_la_altura_de: {paso}")
+        elif "desde_vago" in paso:
             tronco = modelo.tronco(paso["desde_vago"])
             if paso.get("punto") == "extremo_inferior":
                 fijos.append(min(tronco, key=lambda p: p[1]))
@@ -229,19 +286,50 @@ def generar(datos_anclajes, rutas_yaml):
     modelo = Modelo(datos_anclajes)
     salida = {"unidad": "metro", "ejes": "glTF (Y arriba, +X izquierda del cuerpo)", "anterior_z": modelo.anterior,
               "fuentes": rutas_yaml["fuentes"], "rutas": {}}
-    for id_ruta, ruta in rutas_yaml["rutas"].items():
+    todas = rutas_yaml["rutas"]
+    for id_ruta, ruta in todas.items():
         if ruta["revision"]["estado"] not in ESTADOS:
             raise ValueError(f"{id_ruta}: estado de revisión desconocido {ruta['revision']['estado']!r}")
-        control = resolver(modelo, ruta)
-        salida["rutas"][id_ruta] = {
-            "nombre": ruta["nombre"],
-            "lado": ruta["lado"],
-            "entrada": ruta["entrada"],
-            "revision": ruta["revision"],
-            "radio": [modelo.radio_nervio, round(modelo.radio_nervio * FINAL_GROSOR, 6)],
-            "control": [[round(v, 6) for v in p] for p in control],
-            "puntos": catmull_rom(control),
-        }
+    for id_ruta, ruta in todas.items():
+        for ref in sorted(dependencias(ruta)):
+            if ref not in todas:
+                raise FaltaRuta(f"{id_ruta}: falta la ruta '{ref}' en rutas-vago.yaml")
+    # Se resuelven en orden de dependencia: cada pasada toma las rutas cuyas dependencias ya están hechas.
+    hechas = {}
+    pendientes = list(todas)
+    while pendientes:
+        listas = [i for i in pendientes if dependencias(todas[i]) <= hechas.keys()]
+        if not listas:
+            raise ValueError(f"Dependencia circular entre rutas: {', '.join(pendientes)}")
+        for id_ruta in listas:
+            ruta = todas[id_ruta]
+            control = resolver(modelo, ruta, hechas)
+            resuelta = {
+                "nombre": ruta["nombre"],
+                "lado": ruta["lado"],
+                "entrada": ruta["entrada"],
+                "revision": ruta["revision"],
+                "radio": [modelo.radio_nervio, round(modelo.radio_nervio * FINAL_GROSOR, 6)],
+                "control": [[round(v, 6) for v in p] for p in control],
+                "puntos": catmull_rom(control),
+            }
+            reemplaza = banda(modelo, id_ruta, ruta)
+            if reemplaza is not None:
+                resuelta["reemplaza"] = reemplaza
+            hechas[id_ruta] = resuelta
+        pendientes = [i for i in pendientes if i not in hechas]
+    # La salida conserva el orden del YAML. Nada se escribe aquí: si algo falló, ya se lanzó.
+    salida["rutas"] = {i: hechas[i] for i in todas}
+    return salida
+
+
+def generar_y_escribir(datos_anclajes, rutas_yaml, destino):
+    """Genera y, solo si terminó sin error, escribe el JSON en `destino`."""
+    salida = generar(datos_anclajes, rutas_yaml)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump(salida, f, ensure_ascii=False, indent=0)
+        f.write("\n")
     return salida
 
 
@@ -256,15 +344,11 @@ def main():
         raise SystemExit("Falta pipeline/anclajes-vago.json: corre primero pipeline/auditar-vago.py")
     with open(ruta_anclajes, encoding="utf-8") as f:
         anclajes = json.load(f)
-    try:
-        salida = generar(anclajes, rutas)
-    except FaltaAnclaje as e:
-        raise SystemExit(str(e)) from e
     destino = (RAIZ / "salida" / "rutas-vago-borrador.json") if borrador else PUBLICADO
-    destino.parent.mkdir(exist_ok=True)
-    with open(destino, "w", encoding="utf-8") as f:
-        json.dump(salida, f, ensure_ascii=False, indent=0)
-        f.write("\n")
+    try:
+        salida = generar_y_escribir(anclajes, rutas, destino)
+    except (FaltaAnclaje, FaltaRuta) as e:
+        raise SystemExit(str(e)) from e
     print(f"{len(salida['rutas'])} rutas en {destino}")
 
 

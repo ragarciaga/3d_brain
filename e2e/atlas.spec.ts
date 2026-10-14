@@ -1073,7 +1073,7 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
   // Sin modo revisión: se ven como en el lanzamiento, con su estado, pero sin botones para responder.
   await abrir(page, '/es/nervio-laringeo-recurrente');
   await modeloCargado(page);
-  await expect.poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().rutas.length)).toBe(3);
+  await expect.poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().rutas.length)).toBe(5);
   await expect(page.getByTestId('leyenda-origen')).toBeVisible();
   await expect(page.getByTestId('aviso-aproximada')).toBeVisible();
   for (const lado of ['derecho', 'izquierdo']) {
