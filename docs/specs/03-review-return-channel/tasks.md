@@ -128,7 +128,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/components/PanelRevision.tsx, src/i18n/es.json, src/i18n/en.json, tests/i18n.test.ts, e2e/revision-canal.spec.ts, e2e/atlas.spec.ts
 - Verify: `npm run test:e2e -- e2e/revision-canal.spec.ts -g "formulario de respaldo"` (los títulos de estos casos empiezan así, para no tomar casos de T8), con el canal simulado por `page.route`, la costura de T6 y el reloj simulado con `page.clock`: (a) canal caído con pendientes, a los 9 min no aparece "Enviar por formulario"; (b) a los 10 min aparece y al pulsarlo se abre el diálogo de partes con "Abrir formulario" cuyo `href` empieza con `configRevision.urlFormulario` y lleva la carga `v:2`; (c) con el canal confirmando cada envío, a los 10 min no aparece; (d) con `urlCanal` vacía el panel muestra "Enviar revisión" y "Enviar todo" como hoy, no sale ninguna petición al canal y no aparece el diálogo de autorización. `npm test -- tests/i18n.test.ts`: `revision.consentimiento` (es y en) no dice que el nombre aparece en las fichas, y la aserción vieja que lo fijaba se reescribe. `npm run test:e2e -- e2e/atlas.spec.ts -g "textos de la revisión docente"` pasa con las aserciones del consentimiento (es y en) reescritas al texto nuevo; el resto del caso, incluido el enlace "Registrarme" y "en un solo formulario", no cambia. `npm run check:i18n`
 - Issue: #95
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Casos negativos (9 min y canal sano), qué se ve al abrir el respaldo, `urlCanal` vacía sin autorización, la costura viene de T6, y el texto de consentimiento del diálogo de envío pasa a esta tarea (contradecía R9.2). Depende de T8 para serializar los cambios en `PanelRevision.tsx`.
