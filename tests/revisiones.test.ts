@@ -351,6 +351,95 @@ describe('texto del formulario público: validación y salida como código en l�
   });
 });
 
+describe('revisión por ruta trazada (spec 02 R5)', () => {
+  const NOTA = '(desactualizada) campo por lado, no se aplica a ninguna ruta';
+  const estructurasVago = { ...estructuras, 'vagus-nerve-x': { ficha: { version: '0.1.0' } } };
+  const resp = (campo: string, extra: Partial<Respuesta> = {}): Respuesta => ({
+    estructura: 'vagus-nerve-x',
+    campo,
+    veredicto: 'correcto',
+    version: '0.1.0',
+    fecha: '2026-10-11T10:00:00.000Z',
+    ...extra,
+  });
+  const envio = (revisor: string, ...respuestas: Respuesta[]): Envio => ({ revisor, estructura: 'vagus-nerve-x', marcaTemporal: '2026-10-11 10:00', respuestas });
+  const filas = (md: string) => md.split('\n').filter((l) => l.startsWith('| `P1` |'));
+
+  it('R5.2: un campo por ruta con la versión vigente sale sin "desactualizada" y con su campo en la fila', () => {
+    const md = resumenMarkdown('vagus-nerve-x', [envio('P1', resp('trazado_vago_toracico_derecho'))], '0.1.0');
+    const f = filas(md);
+    expect(f).toHaveLength(1);
+    expect(f[0]).toContain('| `trazado_vago_toracico_derecho` |');
+    expect(f[0]).toContain('| `0.1.0` |');
+    expect(f[0]).not.toContain('desactualizada');
+  });
+
+  it('R5.2: las respuestas a dos rutas del mismo revisor salen en dos filas, cada una con su veredicto', () => {
+    const e = envio('P1', resp('trazado_vago_toracico_derecho', { veredicto: 'correcto' }), resp('trazado_vago_toracico_izquierdo', { veredicto: 'corregir', propuesta: 'Más medial' }));
+    const f = filas(resumenMarkdown('vagus-nerve-x', [e], '0.1.0'));
+    expect(f).toHaveLength(2);
+    const derecha = f.find((l) => l.includes('`trazado_vago_toracico_derecho`'))!;
+    const izquierda = f.find((l) => l.includes('`trazado_vago_toracico_izquierdo`'))!;
+    expect(derecha).toContain('| correcto |');
+    expect(derecha).not.toContain('corregir');
+    expect(izquierda).toContain('| corregir |');
+    expect(izquierda).toContain('`Más medial`');
+  });
+
+  it.each(['trazado_derecho', 'trazado_izquierdo'])('R5.3: %s con la versión vigente sale desactualizada y sin aplicarse a ninguna ruta', (campo) => {
+    const f = filas(resumenMarkdown('vagus-nerve-x', [envio('P1', resp(campo))], '0.1.0'));
+    expect(f).toHaveLength(1);
+    expect(f[0]).toContain(`| \`${campo}\` |`);
+    expect(f[0]).toContain(`\`0.1.0\` ${NOTA} |`);
+  });
+
+  it('R5.3: un campo por lado con una versión vieja lleva un solo "(desactualizada)" y la nota', () => {
+    const f = filas(resumenMarkdown('vagus-nerve-x', [envio('P1', resp('trazado_derecho', { version: '0.0.9' }))], '0.1.0'));
+    expect(f).toHaveLength(1);
+    expect(f[0]).toContain(`\`0.0.9\` ${NOTA} |`);
+    expect(f[0]!.match(/desactualizada/g)).toHaveLength(1);
+  });
+
+  it.each(['trazado_vago_izquierdo_distal', 'trazado_laringeo_recurrente_derecho'])('control: %s lleva la palabra del lado pero es un campo por ruta y no se marca', (campo) => {
+    const f = filas(resumenMarkdown('vagus-nerve-x', [envio('P1', resp(campo))], '0.1.0'));
+    expect(f).toHaveLength(1);
+    expect(f[0]).not.toContain('desactualizada');
+    expect(f[0]).not.toContain('campo por lado');
+  });
+
+  it('un campo por ruta con una versión vieja sigue marcándose como cualquier otro campo', () => {
+    const f = filas(resumenMarkdown('vagus-nerve-x', [envio('P1', resp('trazado_vago_toracico_derecho', { version: '0.0.9' }))], '0.1.0'));
+    expect(f[0]).toContain('`0.0.9` (desactualizada) |');
+    expect(f[0]).not.toContain('campo por lado');
+  });
+
+  it('importar() de punta a punta: la nota solo sale en las filas por lado y la tabla no se rompe', () => {
+    const carga = {
+      v: 2,
+      r: 'P1',
+      e: {
+        'vagus-nerve-x': [
+          { c: 'trazado_vago_toracico_derecho', d: 'correcto', s: '0.1.0' },
+          { c: 'trazado_derecho', d: 'correcto', s: '0.1.0' },
+          { c: 'trazado_izquierdo', d: 'corregir', s: '0.1.0', p: 'x' },
+        ],
+      },
+    };
+    const { archivos, validos, invalidas } = importar(`${cabecera}\n${fila(carga)}\n`, estructurasVago, padron);
+    expect(invalidas).toBe(0);
+    expect(validos).toBe(1);
+    const md = archivos.get('vagus-nerve-x.md')!;
+    const f = md.split('\n').filter((l) => l.startsWith('| `D03` |'));
+    expect(f).toHaveLength(3);
+    for (const l of f) expect(l.split('|')).toHaveLength(9);
+    const porRuta = f.find((l) => l.includes('`trazado_vago_toracico_derecho`'))!;
+    expect(porRuta).not.toContain('desactualizada');
+    for (const campo of ['trazado_derecho', 'trazado_izquierdo']) {
+      expect(f.find((l) => l.includes(`\`${campo}\``))).toContain(`\`0.1.0\` ${NOTA} |`);
+    }
+  });
+});
+
 describe('reenvíos', () => {
   const r = (idioma: 'es' | 'en', veredicto: 'correcto' | 'corregir'): Respuesta => ({ ...base, estructura: 'hippocampus', campo: 'ubicacion', idioma, veredicto });
   const env = (revisor: string, respuestas: Respuesta[]): Envio => ({ revisor, estructura: 'hippocampus', marcaTemporal: '', respuestas });

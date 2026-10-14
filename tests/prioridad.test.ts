@@ -11,8 +11,8 @@ const sinSinonimosEs = Object.keys(estructuras).find(
   (id) => estructuras[id]!.ficha && estructuras[id]!.sinonimos.es.length === 0 && estructuras[id]!.sinonimos.en.length > 0,
 )!;
 const k = (estructura: string, campo: string, idioma?: 'es' | 'en') => claveRespuesta({ estructura, campo, idioma });
-const ruta = (lado: RutaTrazada['lado'], entrada: string) => ({ lado, entrada });
-const todas = (id: string, idioma: 'es' | 'en' = 'es', rutas: { lado: RutaTrazada['lado']; entrada: string }[] = []) =>
+const ruta = (id: string, entrada: string) => ({ id, entrada });
+const todas = (id: string, idioma: 'es' | 'en' = 'es', rutas: Pick<RutaTrazada, 'id' | 'entrada'>[] = []) =>
   new Set(camposDeFicha(id, idioma, rutas));
 
 describe('dudas abiertas', () => {
@@ -31,7 +31,7 @@ describe('dudas abiertas', () => {
 
 describe('qué revisar', () => {
   it('cubre todas las fichas una sola vez, con las dudas primero y el vago después', () => {
-    const orden = ordenDeRevision(new Set(), 'es', [ruta('derecho', 'm-recurrent-laryngeal-nerve')]);
+    const orden = ordenDeRevision(new Set(), 'es', [ruta('laringeo_recurrente_derecho', 'm-recurrent-laryngeal-nerve')]);
     expect(orden.map((s) => s.seccion)).toEqual(['dudas', 'vago', 'grupos', 'resto']);
     const todos = orden.flatMap((s) => s.ids);
     expect(new Set(todos).size).toBe(todos.length);
@@ -86,7 +86,10 @@ describe('qué revisar', () => {
   });
 
   it('las rutas trazadas suman campos a la ficha del vago: sin responderlas, sigue', () => {
-    const rutas = [ruta('derecho', 'm-recurrent-laryngeal-nerve'), ruta('izquierdo', 'm-recurrent-laryngeal-nerve')];
+    const rutas = [
+      ruta('laringeo_recurrente_derecho', 'm-recurrent-laryngeal-nerve'),
+      ruta('laringeo_recurrente_izquierdo', 'm-recurrent-laryngeal-nerve'),
+    ];
     const resp = todas('m-recurrent-laryngeal-nerve', 'es');
     expect(ordenDeRevision(resp, 'es', rutas).flatMap((s) => s.ids)).toContain('m-recurrent-laryngeal-nerve');
     expect(ordenDeRevision(todas('m-recurrent-laryngeal-nerve', 'es', rutas), 'es', rutas).flatMap((s) => s.ids)).not.toContain(
@@ -158,13 +161,23 @@ describe('campos y avance de una ficha', () => {
   it('cada ruta de la entrada suma su campo; las de otra entrada y las repetidas no', () => {
     const id = 'm-recurrent-laryngeal-nerve';
     const base = camposDeFicha(id, 'es');
-    const rutas = [ruta('derecho', id), ruta('izquierdo', id), ruta('izquierdo', id), ruta('derecho', 'hippocampus')];
+    const rutas = [
+      ruta('laringeo_recurrente_derecho', id),
+      ruta('laringeo_recurrente_izquierdo', id),
+      ruta('laringeo_recurrente_izquierdo', id),
+      ruta('vago_toracico_derecho', 'hippocampus'),
+    ];
     const con = camposDeFicha(id, 'es', rutas);
     expect(con.length).toBe(base.length + 2);
     expect(new Set(con).size).toBe(con.length);
-    expect(con).toContain(k(id, 'trazado_derecho'));
-    expect(con).toContain(k(id, 'trazado_izquierdo'));
-    expect(camposDeFicha('hippocampus', 'es', rutas)).toContain(k('hippocampus', 'trazado_derecho'));
+    expect(con).toContain(k(id, 'trazado_laringeo_recurrente_derecho'));
+    expect(con).toContain(k(id, 'trazado_laringeo_recurrente_izquierdo'));
+    expect(con).not.toContain(k(id, 'trazado_vago_toracico_derecho'));
+    expect(camposDeFicha('hippocampus', 'es', rutas)).toContain(k('hippocampus', 'trazado_vago_toracico_derecho'));
+    // Ya no hay campos por lado.
+    for (const clave of [...con, ...camposDeFicha('hippocampus', 'es', rutas)]) {
+      expect(clave).not.toMatch(/\|trazado_(derecho|izquierdo)\|/);
+    }
   });
 
   it('una entrada sin ficha no tiene campos', () => {

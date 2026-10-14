@@ -218,6 +218,12 @@ export function agregarRevisores(padron: Padron, n: number, azar: (max: number) 
   return { padron: res, nuevos };
 }
 
+/**
+ * Campos de revisión por lado del recorrido trazado, de antes de que cada ruta tuviera el suyo (spec 02 R5.3).
+ * No dicen a qué ruta se refieren, así que ninguna respuesta a ellos se aplica a una ruta.
+ */
+export const CAMPOS_POR_LADO: ReadonlySet<string> = new Set(['trazado_derecho', 'trazado_izquierdo']);
+
 /** Texto libre como código en línea: no se interpreta como Markdown. Las comillas invertidas se cambian por comillas simples. */
 const codigo = (t: string) => (t.trim() ? `\`${limpiar(t).replace(/`/g, "'")}\`` : '');
 
@@ -226,6 +232,9 @@ const codigo = (t: string) => (t.trim() ? `\`${limpiar(t).replace(/`/g, "'")}\``
  * y malla) sale como código en línea, así enlaces, HTML y referencias `#123` o `owner/repo#123` del
  * formulario público no se interpretan en el issue. Solo el texto fijo y los valores de conjuntos
  * cerrados (veredicto, idioma) van sin código.
+ * Una respuesta a un campo por lado (`CAMPOS_POR_LADO`) sale siempre como desactualizada, aunque traiga la
+ * versión vigente, con la nota de que no se aplica a ninguna ruta; las de `trazado_<id de la ruta>` salen
+ * como cualquier otro campo.
  */
 export function resumenMarkdown(estructura: string, envios: Envio[], versionActual: string): string {
   const lineas = [`## Revisiones de \`${estructura}\``, '', `Versión actual del contenido: ${versionActual}`, ''];
@@ -233,7 +242,11 @@ export function resumenMarkdown(estructura: string, envios: Envio[], versionActu
   for (const { revisor, r, marcaTemporal } of ultimasRespuestas(envios)) {
     const propuesta = r.propuesta !== undefined ? codigo(r.propuesta) : r.posicion ? `posición ${r.posicion.join(', ')}` : r.ramo ? `ramo: ${codigo(r.ramo)} (${codigo(r.malla ?? '')})` : '';
     const comentario = r.comentario?.trim() ? ` Comentario: ${codigo(r.comentario)}` : '';
-    const vieja = r.version !== versionActual ? ' (desactualizada)' : '';
+    const vieja = CAMPOS_POR_LADO.has(r.campo)
+      ? ' (desactualizada) campo por lado, no se aplica a ninguna ruta'
+      : r.version !== versionActual
+        ? ' (desactualizada)'
+        : '';
     lineas.push(`| ${codigo(revisor)} | ${codigo(r.campo)} | ${r.idioma ?? ''} | ${r.veredicto} | ${propuesta}${comentario} | ${codigo(r.version)}${vieja} | ${codigo(marcaTemporal)} |`);
   }
   lineas.push('', 'Siguiente paso: preparar el cambio en `src/data/estructuras.json` y que el editor lo apruebe (tier C).');
