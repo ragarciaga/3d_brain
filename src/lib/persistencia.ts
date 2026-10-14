@@ -1,4 +1,6 @@
 // Lo que el modo revisión recuerda en este navegador: el código del revisor y el almacenamiento persistente.
+import { REVISOR_VALIDO } from './revision';
+
 export const CLAVE_REVISOR = 'atlas:revisor';
 
 type Almacen = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;
@@ -12,12 +14,15 @@ function almacen(nombre: 'localStorage' | 'sessionStorage'): Almacen {
   }
 }
 
-/** Código guardado en este navegador, o null. Si solo está en sessionStorage (pestaña anterior al cambio), se usa ese. */
+/**
+ * Código válido (REVISOR_VALIDO) guardado en este navegador, o null. Un valor guardado que no cumple el formato
+ * se ignora sin borrarlo. Si solo hay uno válido en sessionStorage (pestaña anterior al cambio), se usa ese.
+ */
 export function revisorRecordado(local: Almacen = almacen('localStorage'), sesion: Almacen = almacen('sessionStorage')): string | null {
   for (const a of [local, sesion]) {
     try {
       const v = a?.getItem(CLAVE_REVISOR);
-      if (v) return v;
+      if (v && REVISOR_VALIDO.test(v)) return v;
     } catch {
       /* almacenamiento no disponible */
     }
@@ -25,8 +30,12 @@ export function revisorRecordado(local: Almacen = almacen('localStorage'), sesio
   return null;
 }
 
-/** Guarda el código en localStorage (hasta "Salir del modo revisión") y limpia la copia de sesión. */
+/**
+ * Guarda el código en localStorage (hasta "Salir del modo revisión") y limpia la copia de sesión, solo si cumple
+ * REVISOR_VALIDO. Un código inválido no escribe ni borra nada.
+ */
 export function recordarRevisor(codigo: string, local: Almacen = almacen('localStorage'), sesion: Almacen = almacen('sessionStorage')): void {
+  if (!REVISOR_VALIDO.test(codigo)) return;
   try {
     local?.setItem(CLAVE_REVISOR, codigo);
     sesion?.removeItem(CLAVE_REVISOR);

@@ -2,7 +2,7 @@
 // un grupo cuyo único papel es sumar el desplazamiento de fragmentar (F6, F7).
 import { CameraControls, Html, useGLTF } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
@@ -16,10 +16,11 @@ import {
   piezaDeMalla,
   piezasDeAncla,
   piezasDeEntrada,
+  puntosDeMarcador,
   trazoDeMalla,
 } from '../data/atlas';
-import type { Idioma } from '../data/tipos';
-import { acercar, CERO, type Vec3 } from '../lib/explosion';
+import type { Idioma, Marcador } from '../data/tipos';
+import { acercar, CERO, promedio, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
 import { MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
@@ -307,9 +308,52 @@ function Modelo({ idioma }: { idioma: Idioma }) {
   );
 }
 
-/** Marcadores (SPEC sección 6): lo que no tiene malla. Solo se dibujan los que tienen posición. */
+/** Un punto de marcador tal como se dibuja, con su posición en el mundo. */
+export interface PuntoDibujado {
+  id: string;
+  lado: 'l' | 'r' | null;
+  propuesta: boolean;
+  pos: [number, number, number];
+}
+
+let extraPrueba: Marcador[] = [];
+const oyentesPrueba = new Set<() => void>();
+function suscribirPrueba(cb: () => void) {
+  oyentesPrueba.add(cb);
+  return () => {
+    oyentesPrueba.delete(cb);
+  };
+}
+
+/** Solo pruebas E2E: se expone en DEV desde src/main.tsx. Inyecta marcadores y lee los puntos dibujados. */
+export const marcadoresDePrueba: { inyectar(lista: Marcador[]): void; puntos: (() => PuntoDibujado[]) | null } = {
+  inyectar(lista) {
+    extraPrueba = [...lista];
+    for (const cb of oyentesPrueba) cb();
+  },
+  puntos: null,
+};
+
+/**
+ * Marcadores (SPEC sección 6): lo que no tiene malla. Con posición propia se dibuja uno o un punto por lado y
+ * sigue a su ancla al separar. Sin posición y con ancla, en el centro de cada pieza del ancla.
+ */
 function Marcadores({ idioma }: { idioma: Idioma }) {
   const cargado = useAtlas((s) => s.cargado);
+  const extra = useSyncExternalStore(suscribirPrueba, () => extraPrueba);
+  const grupo = useRef<THREE.Group>(null);
+  useEffect(() => {
+    marcadoresDePrueba.puntos = () =>
+      (grupo.current?.children ?? []).flatMap((obj) => {
+        const u = obj.userData as { marcador?: string; lado?: 'l' | 'r' | null; propuesta?: boolean };
+        if (!u.marcador) return [];
+        const p = obj.getWorldPosition(new THREE.Vector3()).toArray();
+        return [{ id: u.marcador, lado: u.lado ?? null, propuesta: u.propuesta ?? false, pos: [p[0], p[1], p[2]] as [number, number, number] }];
+      });
+    return () => {
+      marcadoresDePrueba.puntos = null;
+    };
+  }, []);
   const seleccion = useAtlas((s) => s.seleccion.entrada);
   const respuestas = useAtlas((s) => s.respuestas);
   // Los marcadores con ancla siguen a su pieza cuando se fragmenta.
@@ -323,39 +367,52 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
   const aislar = useAtlas((s) => s.aislar);
   const visibles = useMemo(() => new Set(piezasVisibles({ ocultas, aislar })), [ocultas, aislar]);
   if (!cargado) return null;
-  const puntos: { id: string; pos: THREE.Vector3; aproximada: boolean; propuesta: boolean }[] = [];
-  for (const m of marcadores) {
+  const s = useAtlas.getState();
+  const puntos: { id: string; lado: 'l' | 'r' | null; pos: THREE.Vector3; aproximada: boolean; propuesta: boolean }[] = [];
+  for (const m of [...marcadores, ...extra]) {
     if (m.posicion) {
-      puntos.push({ id: m.id, pos: new THREE.Vector3(...m.posicion), aproximada: m.estado !== 'validada', propuesta: false });
+      // Con posición propia, cada punto suma lo que se desplaza su ancla (el promedio si son varias piezas).
+      // Se dibuja aunque el ancla esté oculta.
+      for (const b of puntosDeMarcador(m)) {
+        const d = promedio(b.piezas.map((p) => objetivo(s, p)));
+        puntos.push({
+          id: m.id,
+          lado: b.lado,
+          pos: new THREE.Vector3(...b.posicion).add(new THREE.Vector3(...d)),
+          aproximada: m.estado !== 'validada',
+          propuesta: false,
+        });
+      }
     } else if (m.ancla) {
       // El ancla puede ser una estructura (sus lados) o una pieza de un solo lado (Wernicke, izquierda).
       const piezas = piezasDeAncla(m.ancla);
       if (!piezas.some((p) => visibles.has(p))) continue;
-      const s = useAtlas.getState();
       const centros = piezas.flatMap((p) => {
         const c = cajasPiezas.get(p)?.getCenter(new THREE.Vector3());
-        return c ? [c.add(new THREE.Vector3(...objetivo(s, p)))] : [];
+        const lado = nodos[p]?.lado;
+        return c ? [{ pos: c.add(new THREE.Vector3(...objetivo(s, p))), lado: lado === 'l' || lado === 'r' ? lado : null }] : [];
       });
       if (m.unir && centros.length) {
         // Línea media (rafe, área postrema): un punto entre los dos lados, no uno por lado.
-        const medio = centros.reduce((a, c) => a.add(c), new THREE.Vector3()).multiplyScalar(1 / centros.length);
-        puntos.push({ id: m.id, pos: medio, aproximada: true, propuesta: false });
+        const medio = centros.reduce((a, c) => a.add(c.pos), new THREE.Vector3()).multiplyScalar(1 / centros.length);
+        puntos.push({ id: m.id, lado: null, pos: medio, aproximada: true, propuesta: false });
       } else {
-        for (const c of centros) puntos.push({ id: m.id, pos: c, aproximada: true, propuesta: false });
+        for (const c of centros) puntos.push({ id: m.id, lado: c.lado, pos: c.pos, aproximada: true, propuesta: false });
       }
     }
   }
   for (const r of Object.values(respuestas)) {
     if (r.campo === 'posicion' && r.posicion) {
-      puntos.push({ id: r.estructura, pos: new THREE.Vector3(...r.posicion), aproximada: true, propuesta: true });
+      puntos.push({ id: r.estructura, lado: null, pos: new THREE.Vector3(...r.posicion), aproximada: true, propuesta: true });
     }
   }
   return (
-    <>
+    <group ref={grupo}>
       {puntos.map((p, i) => (
         <mesh
           key={`${p.id}-${i}`}
           position={p.pos}
+          userData={{ marcador: p.id, lado: p.lado, propuesta: p.propuesta }}
           renderOrder={5}
           onClick={(e) => {
             e.stopPropagation();
@@ -376,7 +433,7 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
           )}
         </mesh>
       ))}
-    </>
+    </group>
   );
 }
 
