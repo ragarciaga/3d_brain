@@ -129,9 +129,22 @@ export function urlFormulario(c: ConfigFormulario, codigo: string, estructura: s
   return url.length > MAX_URL ? null : url;
 }
 
+/** Tope de caracteres de una fecha recibida (misma regla que `leerRespaldo` en respaldo.ts). */
+const MAX_FECHA = 40;
+
 /**
- * Claves cortas de la carga `v:2`: nombre largo del campo de `Respuesta` a clave corta. `estructura` y
- * `fecha` no van: la estructura es la clave de `e` y el importador nunca usa la fecha.
+ * Entrada externa: una fecha solo vale si es texto de hasta 40 caracteres que `Date.parse` entiende.
+ * Es la misma regla que aplica `leerRespaldo` en respaldo.ts; la usan el importador, el cliente del
+ * canal de retorno y el Apps Script. Nunca lanza: devuelve false.
+ */
+export function fechaValida(f: unknown): f is string {
+  return typeof f === 'string' && f.length <= MAX_FECHA && Number.isFinite(Date.parse(f));
+}
+
+/**
+ * Claves cortas de la carga `v:2`: nombre largo del campo de `Respuesta` a clave corta. `estructura` no
+ * va porque es la clave de `e`. `fecha` viaja como `f` solo si no está vacía y sirve para confirmar por
+ * versión y quedarse con la más reciente (spec 03).
  */
 export const CLAVES_V2 = {
   campo: 'c',
@@ -143,6 +156,7 @@ export const CLAVES_V2 = {
   malla: 'm',
   ramo: 'a',
   version: 's',
+  fecha: 'f',
 } as const;
 
 /**
@@ -155,7 +169,8 @@ export function cargaRevisionV2(codigo: string, respuestas: Respuesta[]): string
     const fila: Record<string, unknown> = {};
     for (const [largo, corto] of Object.entries(CLAVES_V2)) {
       const valor = r[largo as keyof typeof CLAVES_V2];
-      if (valor !== undefined) fila[corto] = valor;
+      if (valor === undefined || (largo === 'fecha' && valor === '')) continue;
+      fila[corto] = valor;
     }
     (e[r.estructura] ??= []).push(fila);
   }
