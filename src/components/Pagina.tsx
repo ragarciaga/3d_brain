@@ -7,6 +7,7 @@ import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { leer, serializar } from '../lib/enlaces';
 import { olvidarRevisor, pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
+import { REVISOR_VALIDO } from '../lib/revision';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
 import { useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
@@ -36,6 +37,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const inicial = useMemo(() => leer(location.search), []); // solo la primera carga
   const codigoUrl = useMemo(() => new URLSearchParams(location.search).get('r'), [location.search]);
+  // Un ?r= que no cumple el formato (también vacío) no activa el modo y se avisa; sin ?r= todo sigue igual.
+  const enlaceInvalido = revision && codigoUrl !== null && !REVISOR_VALIDO.test(codigoUrl);
   const cargado = useAtlas((s) => s.cargado);
   const revisor = useAtlas((s) => s.revisor);
   const [menu, setMenu] = useState(false);
@@ -116,15 +119,17 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     if (inicial.explosion) s.setExplosion(inicial.explosion / 100);
   }, [inicial]);
 
-  // Modo revisión: el código llega en ?r= y se recuerda en este navegador hasta "Salir del modo revisión".
+  // Modo revisión: el código llega en ?r= y, si cumple el formato, se recuerda en este navegador hasta
+  // "Salir del modo revisión". Con un enlace inválido no se activa nada ni se toca el código recordado.
   useEffect(() => {
+    if (enlaceInvalido) return;
     const codigo = (revision && codigoUrl) || revisorRecordado();
     if (codigo) {
       useAtlas.getState().setRevisor(codigo);
       recordarRevisor(codigo);
       void pedirPersistencia();
     }
-  }, [revision, codigoUrl]);
+  }, [revision, codigoUrl, enlaceInvalido]);
 
   // La URL decide la selección. El encuadre espera a que el modelo cargue (las cajas salen del GLB).
   // Un enlace compartido trae cámara y modo aislar: se respetan una sola vez, en la primera carga.
@@ -301,6 +306,11 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       {noEncontrada && (
         <p className="mensaje mensaje-aviso" role="alert" data-testid="no-encontrada">
           {t('ruta.noEncontrada')} <Link to={`/${idioma}`}>{t('ruta.volver')}</Link>
+        </p>
+      )}
+      {enlaceInvalido && (
+        <p className="mensaje mensaje-aviso" role="alert" data-testid="enlace-invalido">
+          {t('revision.enlaceInvalido')}
         </p>
       )}
       {mensaje && (
