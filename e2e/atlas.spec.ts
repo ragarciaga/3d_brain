@@ -169,12 +169,24 @@ test('carga el modelo, muestra piezas, cuadros por segundo, aviso educativo y li
 
 test('con red lenta se ve el aviso de carga, el modelo carga y la página no lanza errores', async ({ page, context }) => {
   // Antes, el aviso era un <Html> de drei dentro del lienzo y al desmontarse lanzaba removeChild.
+  // Desde #83 el modelo se pide con el HTML en paralelo con el código y puede llegar antes de que la
+  // app pinte (el código sin empaquetar de desarrollo pesa más que el modelo). Por eso la respuesta del
+  // modelo se retiene hasta que el aviso ya se vea. La precarga retiene el evento load, así que no se
+  // espera a goto más allá del primer byte de la página.
   const errores: string[] = [];
   page.on('pageerror', (e) => errores.push(e.message));
+  let soltarModelo!: () => void;
+  const modeloRetenido = new Promise<void>((resolver) => (soltarModelo = resolver));
+  await page.route('**/modelos/atlas.glb', async (route) => {
+    await modeloRetenido;
+    await route.continue();
+  });
   const cdp = await context.newCDPSession(page);
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 80, downloadThroughput: (20 * 1024 * 1024) / 8, uploadThroughput: 1e6 });
-  await abrir(page, '/es');
-  await expect(page.getByTestId('cargando')).toBeVisible();
+  await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
+  await page.goto('/es', { waitUntil: 'commit' });
+  await expect(page.getByTestId('cargando')).toBeVisible({ timeout: 120_000 });
+  soltarModelo();
   await modeloCargado(page);
   await expect(page.getByTestId('cargando')).toHaveCount(0);
   expect(errores).toEqual([]);
