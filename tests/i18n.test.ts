@@ -51,17 +51,27 @@ describe('textos de los botones de revisión', () => {
       expect(revision.guia.enviar).toContain(revision.loEnvie);
     });
 
-    it(`el aviso del respaldo (${idioma}) dice que las respuestas se guardan solo en este navegador`, () => {
+    it(`el aviso local (${idioma}) dice que las respuestas se guardan solo en este navegador y no invita a descargar`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       expect(revision.soloEsteNavegador).toContain(idioma === 'es' ? 'solo en este navegador' : 'only in this browser');
+      expect(revision.soloEsteNavegador).not.toMatch(idioma === 'es' ? /descarg|respaldo/i : /download|backup/i);
+      expect(revision.guia.responder).not.toMatch(idioma === 'es' ? /descarg|respaldo/i : /download|backup/i);
     });
 
-    it(`la guía (${idioma}) nombra los botones del respaldo tal como aparecen`, () => {
+    it(`las claves del respaldo por archivo (${idioma}) ya no existen`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
-      expect(revision.descargarRespaldo).toBeTruthy();
-      expect(revision.cargarRespaldo).toBeTruthy();
-      expect(revision.guia.responder).toContain(revision.descargarRespaldo);
-      expect(revision.guia.responder).toContain(revision.cargarRespaldo);
+      for (const clave of [
+        'descargarRespaldo',
+        'cargarRespaldo',
+        'respaldoCargado',
+        'respaldoOmitidas_one',
+        'respaldoOmitidas_other',
+        'respaldoErrorArchivo',
+        'respaldoErrorVersion',
+        'respaldoErrorRevisor',
+      ]) {
+        expect(Object.hasOwn(revision, clave), clave).toBe(false);
+      }
     });
 
     it(`la confirmación de salida (${idioma}) dice que las respuestas quedan guardadas en el navegador`, () => {

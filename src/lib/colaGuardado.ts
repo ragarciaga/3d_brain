@@ -7,7 +7,7 @@ import type { TipoErrorCanal } from './canal';
 import { claveRespuesta, pendientesDeEnvio } from './revision';
 import type { Respuesta } from './revision';
 
-/** Pausa (ms) entre la última edición y el envío al canal. Distinta de `ESPERA_GUARDADO_MS` (la de IndexedDB). */
+/** Tope (ms) de R3.1 entre el último gesto del docente y el envío al canal. El panel no la usa directo: espera `ESPERA_ENVIO_MS`. Distinta de `ESPERA_GUARDADO_MS` (la de IndexedDB). */
 export const ESPERA_CANAL_MS = 3000;
 /**
  * Margen (ms) que el panel descuenta de `ESPERA_CANAL_MS`: cubre los 500 ms de la espera del texto en la ficha
