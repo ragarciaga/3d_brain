@@ -57,7 +57,7 @@ export function leerRespaldo(
   return { ok: true, respuestas, descartadas };
 }
 
-/** Une las respuestas importadas con las actuales: por clave gana la `fecha` estrictamente más nueva. No muta. */
+/** Une las respuestas importadas (respaldo) o traídas del canal (`fusionarConCanal`) con las actuales: por clave gana la `fecha` estrictamente más nueva. No muta. */
 export function fusionarRespuestas(
   actuales: Record<string, Respuesta>,
   nuevas: Respuesta[],
