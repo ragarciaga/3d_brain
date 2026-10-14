@@ -24,7 +24,7 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: scripts/lib/asimetrias.ts, tests/asimetrias.test.ts
 - Verify: `npm test -- tests/asimetrias.test.ts` con el fixture sintético de T1: (a) `troncoPublicado` del derecho conserva el escaneado por encima de `y_max` y por debajo de `y_min`, no deja ningún punto escaneado entre ambos e incluye la ruta torácica; el del izquierdo (`y_min` nulo) conserva solo lo de arriba, más la ruta torácica y el distal, ordenado de arriba abajo; un segmento escaneado que cruza la banda queda recortado con puntos de borde en `y_max` y `y_min`; (b) `asimetria3` usa el tronco publicado izquierdo y `asimetria4(d, r)` el derecho; las cuatro pasan; `comprobar(d, null)` sigue devolviendo solo `asimetria4`; (c) `comprobarBanda(puntos, banda, lado)` con un punto escaneado inyectado dentro de la banda lanza un error que nombra el lado y la altura, y sin ese punto pasa; (d) `comprobar` lanza nombrando la ruta si una ruta torácica no trae `reemplaza`; (e) `bandas(r)` se exporta para que la use `check:modelo`; (f) los casos sintéticos existentes siguen en verde
 - Issue: #47
-- Status: in-review
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. La comprobación de R3.3 se separa del recorte para que pueda fallar; `asimetria4` recibe las rutas; `bandas()` queda exportada para T4.
