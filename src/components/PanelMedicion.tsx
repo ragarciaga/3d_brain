@@ -38,7 +38,7 @@ function describirNavegador(): string {
   return `${sistema} · ${nav}${version ? ` ${version}` : ''}`;
 }
 
-function equipo(gpu: string): Equipo {
+function equipo(gpu: string, densidad: number, densidadFija: boolean): Equipo {
   const memoria = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   return {
     navegador: describirNavegador(),
@@ -46,6 +46,7 @@ function equipo(gpu: string): Equipo {
     nucleos: navigator.hardwareConcurrency || null,
     memoriaGB: memoria ?? null,
     gpu,
+    densidad: densidad > 0 ? { valor: densidad, fija: densidadFija } : null,
   };
 }
 
@@ -69,6 +70,8 @@ export default function PanelMedicion() {
   const [fluidez, setFluidez] = useState<Fluidez | null>(null);
   const [copiado, setCopiado] = useState(false);
   const gpu = useMetricas((s) => s.gpu);
+  const densidad = useMetricas((s) => s.densidad);
+  const densidadFija = useMetricas((s) => s.densidadFija);
   const muestras = useRef<number[]>([]);
 
   // Tiempos de carga: se leen cada medio segundo hasta tener el primer cuadro y la ventana de fluidez.
@@ -94,7 +97,7 @@ export default function PanelMedicion() {
   if (!activo) return null;
   const cuello = resumen ? cuelloDeBotella(resumen) : null;
   const ms = (n: number | null | undefined) => (n === null || n === undefined ? t('medicion.esperando') : `${n} ms`);
-  const eq = equipo(gpu);
+  const eq = equipo(gpu, densidad, densidadFija);
   const copiar = async () => {
     if (!resumen) return;
     const texto = `${informe(resumen, eq, fluidez, new Date().toISOString())}\n${navigator.userAgent}`;
@@ -114,6 +117,14 @@ export default function PanelMedicion() {
         <dd>{eq.navegador}</dd>
         <dt>{t('medicion.pantalla')}</dt>
         <dd>{eq.pantalla}</dd>
+        <dt>{t('medicion.densidad')}</dt>
+        <dd data-testid="medicion-densidad">
+          {densidad > 0
+            ? densidadFija
+              ? t('medicion.densidadFija', { valor: densidad })
+              : t('medicion.densidadAuto', { valor: densidad })
+            : t('medicion.sinDato')}
+        </dd>
         <dt>{t('medicion.gpu')}</dt>
         <dd>{eq.gpu || t('medicion.sinDato')}</dd>
         <dt>{t('medicion.codigo')}</dt>
