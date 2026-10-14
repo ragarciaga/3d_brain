@@ -10,7 +10,9 @@ export const configRevision = {
   urlRegistro: 'https://docs.google.com/forms/d/e/1FAIpQLSdy6h0gI-nrX6s_ZMGq9PSsSTYxhSd0e7ZVDx4p0_QvgHrJ2A/viewform',
   /**
    * URL /exec del Apps Script del editor (ADR 0012). Vacía significa sin canal: la revisión usa el
-   * formulario como hasta ahora (R7.2). Se llena después del montaje (docs/revision-docente.md).
+   * formulario como hasta ahora (R7.2). Se llena después del montaje (docs/revision-docente.md). Las
+   * pruebas e2e la fijan o la anulan con la costura de desarrollo de src/main.tsx (`__urlCanalInicial` o
+   * `__fijarUrlCanal`); este archivo no puede leer `import.meta` ni `window` porque Playwright lo importa desde Node.
    */
   urlCanal: '',
   /** Identificadores de las preguntas, del tipo entry.123456789 (se ven en "Obtener vínculo prellenado"). */
