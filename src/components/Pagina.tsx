@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import { leer, serializar } from '../lib/enlaces';
+import { aplicarCortesEnlace, entradasDeCortes, leer, serializar } from '../lib/enlaces';
 import { olvidarRevisor, pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
 import { REVISOR_VALIDO } from '../lib/revision';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
@@ -118,6 +118,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     if (inicial.nivel) s.setNivel(inicial.nivel);
     if (inicial.explosion) s.setExplosion(inicial.explosion / 100);
   }, [inicial]);
+
+  // Cortes del enlace (`corte=`): una sola vez, cuando el modelo ya cargó y hay cajas para el rango.
+  const cortesAplicados = useRef(false);
+  useEffect(() => {
+    if (!cargado || !inicial.corte || cortesAplicados.current) return;
+    cortesAplicados.current = true;
+    aplicarCortesEnlace(inicial.corte);
+  }, [cargado, inicial]);
 
   // Modo revisión: el código llega en ?r= y, si cumple el formato, se recuerda en este navegador hasta
   // "Salir del modo revisión". Con un enlace inválido no se activa nada ni se toca el código recordado.
@@ -241,6 +249,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       aislar: s.aislar?.modo,
       explosion: s.explosion * 100,
       nivel: s.nivel,
+      corte: entradasDeCortes(s.cortes),
     });
     const url = `${window.location.origin}${ruta}${consulta}`;
     try {
