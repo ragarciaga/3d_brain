@@ -1,0 +1,157 @@
+// Cliente del canal de retorno del modo revisión (F24, docs/adr/0012): habla con el Apps Script del
+// editor mediante `fetch`. Toda respuesta del canal es entrada externa: se valida antes de usarla.
+//
+// Contrato de cable que el script (spec 03, T2) debe cumplir:
+// - POST con `Content-Type: text/plain` (cualquier otra cabecera dispara la petición previa, que el
+//   Apps Script no responde) y cuerpo JSON:
+//   - `{accion:'guardar', carga:<texto de cargaRevisionV2>}`: `carga` va como texto, el mismo que el
+//     script escribe en la hoja. El código del revisor va dentro de la carga. Responde
+//     `{ok:true, recibidas:[<estructura|campo|idioma|fecha>, ...]}`.
+//   - `{accion:'autorizar', r:<código>, version, vago}`. Responde `{ok:true}`.
+// - GET `?accion=leer&r=<código>`. Responde
+//   `{ok:true, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, autorizacion:{version, vago} | null}`.
+// - Un error siempre responde `{ok:false, error}` con `error` en `codigo_no_activo`, `demasiado_grande`,
+//   `formato`, `demasiadas_peticiones` o `interno`.
+//
+// Red caída, tiempo agotado (10 s), HTTP que no es 2xx y cuerpo que no es JSON valen `red`.
+import { configRevision, VERSION_AUTORIZACION } from '../config/revision';
+import { CLAVES_V2, cargaRevisionV2, esObjeto, fechaValida, respuestaValida } from './revision';
+import type { Respuesta } from './revision';
+
+export interface Autorizacion {
+  version: string;
+  vago: boolean;
+}
+
+export type TipoErrorCanal = 'codigo_no_activo' | 'demasiado_grande' | 'formato' | 'demasiadas_peticiones' | 'interno' | 'red';
+
+const ERRORES_DEL_CONTRATO: readonly unknown[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'interno'];
+
+/** Error del canal con su tipo traducido del contrato. */
+export class ErrorCanal extends Error {
+  readonly tipo: TipoErrorCanal;
+
+  constructor(tipo: TipoErrorCanal) {
+    super(`Canal: ${tipo}`);
+    this.name = 'ErrorCanal';
+    this.tipo = tipo;
+  }
+}
+
+/** Milisegundos sin respuesta tras los cuales una petición cuenta como `red`. */
+export const TIEMPO_CANAL_MS = 10_000;
+
+/** Hay canal solo si `urlCanal` no está vacía. Se lee al llamar, nunca al importar. */
+export function canalConfigurado(): boolean {
+  return Boolean(configRevision.urlCanal);
+}
+
+/** Cuerpo del POST `guardar`: la carga `v:2` va como texto, igual que la guarda el script. */
+export function cuerpoGuardar(codigo: string, respuestas: Respuesta[]): string {
+  return JSON.stringify({ accion: 'guardar', carga: cargaRevisionV2(codigo, respuestas) });
+}
+
+interface Peticion {
+  metodo: 'GET' | 'POST';
+  params?: Record<string, string>;
+  cuerpo?: string;
+}
+
+/** Hace la petición y devuelve la respuesta con `ok: true`; todo lo demás lanza `ErrorCanal`. */
+async function pedir(p: Peticion): Promise<Record<string, unknown>> {
+  if (!configRevision.urlCanal) throw new ErrorCanal('red');
+  let datos: unknown;
+  const control = new AbortController();
+  // No se usa AbortSignal.timeout: los relojes simulados de Vitest no lo controlan.
+  const temporizador = setTimeout(() => control.abort(), TIEMPO_CANAL_MS);
+  try {
+    const url = new URL(configRevision.urlCanal);
+    for (const [k, v] of Object.entries(p.params ?? {})) url.searchParams.set(k, v);
+    const init: RequestInit = { method: p.metodo, signal: control.signal };
+    if (p.metodo === 'POST') {
+      init.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+      init.body = p.cuerpo ?? '';
+    }
+    const res = await fetch(url, init);
+    if (!res.ok) throw new ErrorCanal('red');
+    datos = JSON.parse(await res.text());
+  } catch {
+    throw new ErrorCanal('red');
+  } finally {
+    clearTimeout(temporizador);
+  }
+  if (!esObjeto(datos) || typeof datos['ok'] !== 'boolean') throw new ErrorCanal('red');
+  if (datos['ok']) return datos;
+  const error = datos['error'];
+  throw new ErrorCanal(ERRORES_DEL_CONTRATO.includes(error) ? (error as TipoErrorCanal) : 'interno');
+}
+
+/** La autorización solo vale con la versión vigente y `vago` booleano; en otro caso es null (falta autorizar). */
+export function autorizacionVigente(a: unknown): Autorizacion | null {
+  if (!esObjeto(a) || a['version'] !== VERSION_AUTORIZACION || typeof a['vago'] !== 'boolean') return null;
+  return { version: VERSION_AUTORIZACION, vago: a['vago'] };
+}
+
+const CLAVES_CORTAS: readonly string[] = Object.values(CLAVES_V2);
+
+/**
+ * Única puerta de entrada de las respuestas del canal a la app. `d` es la carga `{v:2, r, e}`. Una carga
+ * de otro código, de otra versión o sin `e` objeto da cero respuestas. Una respuesta se descarta entera
+ * si no es objeto, si trae alguna clave fuera de `CLAVES_V2` (incluida `__proto__`), si no tiene `f`
+ * válida o si no pasa `respuestaValida`. Solo copia claves conocidas a un objeto nuevo.
+ */
+export function respuestasDelCanal(
+  d: unknown,
+  codigo: string,
+  idOk: (id: unknown) => boolean,
+): { respuestas: Respuesta[]; descartadas: number } {
+  const respuestas: Respuesta[] = [];
+  if (d === undefined || d === null) return { respuestas, descartadas: 0 };
+  if (!esObjeto(d) || d['v'] !== 2 || d['r'] !== codigo || !esObjeto(d['e'])) return { respuestas, descartadas: 1 };
+  let descartadas = 0;
+  for (const [id, lista] of Object.entries(d['e'])) {
+    if (!Array.isArray(lista)) {
+      descartadas++;
+      continue;
+    }
+    if (!idOk(id)) {
+      descartadas += lista.length;
+      continue;
+    }
+    for (const el of lista as unknown[]) {
+      if (!esObjeto(el) || Object.keys(el).some((k) => !CLAVES_CORTAS.includes(k))) {
+        descartadas++;
+        continue;
+      }
+      const copia: Record<string, unknown> = { estructura: id };
+      for (const [largo, corto] of Object.entries(CLAVES_V2)) if (Object.hasOwn(el, corto)) copia[largo] = el[corto];
+      if (Object.hasOwn(el, 'f') && fechaValida(el['f']) && respuestaValida(copia, idOk)) respuestas.push(copia);
+      else descartadas++;
+    }
+  }
+  return { respuestas, descartadas };
+}
+
+/** Lo que el canal guarda de un código: sus respuestas validadas y su autorización vigente (o null). */
+export async function leer(
+  codigo: string,
+  idOk: (id: unknown) => boolean,
+): Promise<{ respuestas: Respuesta[]; autorizacion: Autorizacion | null }> {
+  const res = await pedir({ metodo: 'GET', params: { accion: 'leer', r: codigo } });
+  const { respuestas, descartadas } = respuestasDelCanal(res['respuestas'], codigo, idOk);
+  // Solo el número: nunca el código ni el contenido.
+  if (descartadas > 0) console.warn(`Canal: ${descartadas} respuesta(s) descartada(s) por no ser válidas`);
+  return { respuestas, autorizacion: autorizacionVigente(res['autorizacion']) };
+}
+
+/** Envía las respuestas y devuelve las claves de confirmación (`estructura|campo|idioma|fecha`) que el canal recibió. */
+export async function guardar(codigo: string, respuestas: Respuesta[]): Promise<Set<string>> {
+  const res = await pedir({ metodo: 'POST', cuerpo: cuerpoGuardar(codigo, respuestas) });
+  const recibidas = res['recibidas'];
+  return new Set(Array.isArray(recibidas) ? recibidas.filter((x): x is string => typeof x === 'string') : []);
+}
+
+/** Registra la autorización de tratamiento de datos del código (Ley 1581 de 2012). */
+export async function autorizar(codigo: string, a: Autorizacion): Promise<void> {
+  await pedir({ metodo: 'POST', cuerpo: JSON.stringify({ accion: 'autorizar', r: codigo, version: a.version, vago: a.vago }) });
+}

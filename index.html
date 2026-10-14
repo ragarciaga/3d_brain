@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      Pide el modelo 3D desde el primer instante (#83), en paralelo con el código. La ruta debe
+      coincidir con URL_MODELO en src/components/Visor.tsx. El atributo crossorigin es obligatorio:
+      sin él, el fetch de three (modo cors) no reutiliza la descarga y el modelo se baja dos veces.
+      Sin atributo type: un tipo no reconocido hace que el navegador ignore la precarga.
+    -->
+    <link rel="preload" href="/modelos/atlas.glb" as="fetch" crossorigin />
     <meta name="description" content="Maysa Brain: atlas 3D del cerebro y el nervio vago / 3D atlas of the brain and the vagus nerve" />
     <title>Maysa Brain: atlas 3D del cerebro y el nervio vago</title>
     <script>
