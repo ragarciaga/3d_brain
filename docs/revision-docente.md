@@ -34,7 +34,7 @@ mínimo (`apps-script/prueba-canal.js`) y una hoja de prueba aparte. El script c
    avanzada e Ir a (nombre del proyecto): es tu propio script.
 5. Copia la "URL de la aplicación web". Termina en `/exec`.
 6. Cuando la página esté publicada (después de fusionar el PR y de que termine el workflow `pages`),
-   abre https://ragarciaga.github.io/3d_brain/probar-canal.html, pega la URL y pulsa "Probar".
+   abre https://brain.maysasp.com/probar-canal.html, pega la URL y pulsa "Probar".
 7. Mira la pestaña `Prueba` de la hoja: debe haber una fila con la fecha y la marca que muestra la
    página.
 
@@ -157,7 +157,7 @@ de registro y la guía para docentes, y anota su nombre junto al alias en el doc
 El enlace personal tiene esta forma:
 
 ```
-https://ragarciaga.github.io/3d_brain/es/revision?r=CODIGO
+https://brain.maysasp.com/es/revision?r=CODIGO
 ```
 
 El código atribuye la revisión; no es una contraseña. Por eso nunca se publica, el importador
