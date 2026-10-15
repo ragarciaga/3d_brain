@@ -67,9 +67,19 @@ https://brain.maysasp.com/es?medir=1
 
 Aparece un panel con el equipo, la densidad de píxeles del visor, la tarjeta gráfica, cuánto tardó
 el código, la descarga del modelo 3D, la preparación del modelo, cuándo se vio el cerebro y los
-cuadros por segundo de los 10 s siguientes. Al final dice qué fue lo más lento. "Copiar resultados"
-copia todo como texto para pegarlo en el issue 6 o en el chat. El panel sigue mientras navegas en
-esa pestaña; "Cerrar" lo quita. No envía nada a ningún servidor.
+cuadros por segundo. "Copiar resultados" copia todo como texto para pegarlo en el issue 6 o en el
+chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo quita. No envía nada a ningún
+servidor.
+
+La preparación del modelo viene desglosada en tres partes que suman el total: "Leer el modelo"
+(parseo y decodificación), "Índice de toque" (los árboles BVH que hacen rápido el toque) y "Armar
+las piezas" (piezas, cajas y centros). Si falta alguna marca, esa parte sigue en "midiendo..." en
+el panel y dice "sin dato" en el informe copiado.
+
+Los cuadros por segundo cuentan solo de 1 a 10 s después de que se ve el cerebro: el primer segundo
+es arranque y compilación de sombreadores, y no dice qué tan fluido va el visor. Por eso los
+promedios de antes del issue 85 no se comparan con los nuevos. "Lo más lento" solo aparece si el
+cerebro tardó más de 3 s en verse; si no, no hace falta señalar nada.
 
 Para comparar el mismo equipo con distinta densidad de píxeles, agrega `dpr=<n>` a la dirección:
 
@@ -84,7 +94,7 @@ y el informe copiado dicen la densidad en uso ("fija con ?dpr" o "automática").
 
 Sin `?dpr`, la app ajusta la densidad sola: si el equipo va a menos de 30 cuadros/s durante unos 3 s
 con el modelo cargado, baja la densidad un paso (a 1,5 y luego a 1); si va holgado (55 o más durante
-10 s), la sube, como máximo dos veces por visita. En ese modo, la "Fluidez (10 s)" puede mezclar
+10 s), la sube, como máximo dos veces por visita. En ese modo, la "Fluidez (de 1 a 10 s tras el primer cuadro)" puede mezclar
 cuadros de antes y de después del ajuste, por eso las comparaciones se hacen con `?dpr`.
 
 Mide dos veces en cada equipo: la primera vez (el modelo se descarga) y recargando la página (el
