@@ -45,8 +45,9 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const [menu, setMenu] = useState(false);
   const [seccion, setSeccion] = useState<'grupos' | 'arbol'>('arbol'); // qué muestra el cajón del riel
   const [paleta, setPaleta] = useState(false); // paleta de búsqueda (riel, lupa o Ctrl+K)
-  const [cortesAbierto, setCortesAbierto] = useState(false); // panel de cortes (riel, escritorio)
+  const [cortesAbierto, setCortesAbierto] = useState(false); // panel de cortes (riel en escritorio, encabezado en celular)
   const botonCortes = useRef<HTMLButtonElement>(null);
+  const botonCortesMovil = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
@@ -239,7 +240,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
         botonMenu.current?.focus();
       } else if (accion === 'cerrar-cortes') {
         setCortesAbierto(false);
-        botonCortes.current?.focus();
+        (movil ? botonCortesMovil : botonCortes).current?.focus();
       } else if (accion === 'cancelar-ubicar') s.setUbicando(null);
       else if (accion === 'salir-aislar') s.salirAislar();
     };
@@ -251,7 +252,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       window.removeEventListener('atlas:elegir', alElegir);
       window.removeEventListener('keydown', alTeclear);
     };
-  }, [irA, menu, cortesAbierto, confirmarSalida, cancelarSalida]);
+  }, [irA, menu, cortesAbierto, movil, confirmarSalida, cancelarSalida]);
 
   const compartir = useCallback(async () => {
     const s = useAtlas.getState();
@@ -281,10 +282,15 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
 
   return (
     <div
-      className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${entrada ? ' con-ficha' : ''}`}
+      className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${entrada ? ' con-ficha' : ''}${cortesAbierto ? ' cortes-abierto' : ''}`}
     >
       <header className="encabezado">
-        <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq" onClick={() => setMenu(!menu)}>
+        <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq"
+          onClick={() => {
+            if (!menu) setCortesAbierto(false); // el cajón de Estructuras y el de cortes se excluyen
+            setMenu(!menu);
+          }}
+        >
           {t('menu.boton')}
         </button>
         <Link to={`/${idioma}`} className="marca">
@@ -294,6 +300,20 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
         </Link>
         <button type="button" className="boton-buscar" aria-label={t('riel.buscar')} title={t('riel.buscar')} onClick={() => setPaleta(true)}>
           <IconoBuscar />
+        </button>
+        {/* Solo en celular (sin riel): abre el cajón inferior de cortes. */}
+        <button
+          ref={botonCortesMovil}
+          type="button"
+          className="boton-cortes"
+          aria-label={t('riel.cortes')}
+          title={cargado ? t('riel.cortes') : t('cortes.sinModelo')}
+          aria-expanded={cortesAbierto}
+          aria-controls="panel-cortes"
+          disabled={!cargado}
+          onClick={alternarCortes}
+        >
+          <IconoCortes />
         </button>
         <span className="espacio" />
         {/* Siempre ES y luego EN, con el activo relleno: se distingue por color, forma y orden fijo. */}
@@ -387,7 +407,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
           <h2 className="titulo-arbol">{t('arbol.titulo')}</h2>
           <Arbol idioma={idioma} alElegir={irA} />
         </aside>
-        {cortesAbierto && <PanelCortes />}
+        {(cortesAbierto || movil) && <PanelCortes abierto={cortesAbierto} movil={movil} />}
         <main
           className="centro"
           onPointerDown={() => {
