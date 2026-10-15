@@ -21,6 +21,8 @@ interface VentanaCortes {
 // Copias de los ayudantes de atlas.spec.ts: este archivo no los comparte para que cada prueba sea independiente.
 async function abrir(page: Page, ruta: string) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
+  // El navegador de la prueba no tiene GPU y da pocos cuadros por segundo: sin esto el vigilante (R8.2) apagaría el relleno que se mira.
+  await page.addInitScript(() => Object.assign(window, { __sinVigilante: true }));
   await page.goto(ruta);
   await expect(page.getByTestId('piezas')).toHaveText(/287 (piezas|pieces)/, { timeout: 150_000 });
 }
