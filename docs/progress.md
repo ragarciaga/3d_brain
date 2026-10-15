@@ -12,7 +12,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 ## Current state
 - Revisión docente dentro de la web (PR #31): todo se ve como lo verá el público y el docente suma
-  los botones. Guía ("Cómo revisar", se abre sola la primera vez, con el botón de registro), "Qué
+  los botones. Guía ("Cómo revisar", se abre sola la primera vez), "Qué
   revisar" con prioridad (24 dudas abiertas en 31 fichas, vago, grupos del lanzamiento, resto),
   dudas dentro de cada ficha con su campo `duda.N`, sinónimos visibles y revisables, nombres con su
   etiqueta, descripción de los grupos sin pasar el mouse y 5 marcadores del encéfalo con posición

@@ -231,6 +231,8 @@
     "parteConfirmada": "confirmada",
     "loEnvie": "Sí, lo envié",
     "confirmaAyuda": "Después de pulsar Enviar en el formulario de Google, vuelve aquí y pulsa \"Sí, lo envié\". Hasta entonces esas respuestas siguen sin enviar.",
+    "confirmaAyudaCanal": "Después de pulsar Enviar en el formulario de Google, vuelve aquí y pulsa \"Sí, lo envié\". Esas respuestas seguirán contando como sin enviar hasta que el guardado automático las confirme, cuando vuelva la conexión: es normal y no tienes que enviarlas otra vez.",
+    "registrarme": "Registrarme (una sola vez)",
     "sinPendientes": "No te quedan fichas por revisar.",
     "nombrePendiente": "nombre pendiente",
     "trazadoTitulo": "Recorrido trazado: {{nombre}}",
@@ -269,10 +271,10 @@
       "marcadores": "Los marcadores son estructuras sin malla 3D. Si la posición es aproximada o falta, usa \"Proponer posición\" y toca el punto en el modelo.",
       "trazos": "Los ramos del vago vienen como trazos sin nombre. En \"Qué revisar\", la sección \"Trazos del vago\" abre el primero pendiente; elige qué ramo es (o confirma la propuesta de la auditoría), deja un comentario si quieres y sigue con \"Siguiente trazo\". También puedes tocar un trazo en el modelo.",
       "recorridos": "Los laríngeos recurrentes y el vago izquierdo bajo el tórax no están en el modelo escaneado: se trazaron y se ven punteados. En su ficha, \"Recorrido trazado\" te pide juzgarlos.",
-      "vagoCasilla": "Los trazos y los recorridos trazados del vago solo aparecen si marcas \"También puedo revisar el recorrido del nervio vago en cuello y tórax\": al dar tu autorización o, cuando quieras, en Acciones.",
-      "enviar": "Cuando quieras, pulsa \"Enviar revisión\" y luego \"Enviar todo\": se abre un solo formulario ya lleno con todo lo que no has enviado (en partes solo si es muy largo). Pulsa Enviar al final del formulario y vuelve para pulsar \"Sí, lo envié\". Puedes enviar cuantas veces quieras.",
-      "privacidad": "Antes de la primera revisión, regístrate una sola vez: nombre como quieres que aparezca, rol y autorización (Ley 1581 de 2012). Tu nombre solo aparece en las fichas que valides.",
-      "registrarme": "Registrarme (una sola vez)"
+      "vagoCasilla": "Los trazos y los recorridos trazados del vago solo aparecen si marcas \"También puedo revisar el recorrido del nervio vago en cuello y tórax\": al dar tu autorización o, cuando quieras, en esa misma casilla de la barra de revisión (en el celular, dentro de \"Acciones\").",
+      "guardado": "No tienes que enviar nada: cada respuesta se guarda sola en la hoja del editor unos segundos después de marcarla, y la barra de revisión dice \"Guardado ✓\" cuando ya quedó guardada. Si dice \"Sin conexión: se guardará cuando vuelva\", no hagas nada: tus respuestas siguen en este equipo y se guardan solas cuando vuelva la conexión.",
+      "otroEquipo": "Puedes seguir en otro equipo: abre el mismo enlace en el computador, la tableta o el celular y verás lo que ya respondiste.",
+      "privacidad": "La primera vez que vayas a guardar una respuesta, el atlas te pide una sola vez tu autorización de tratamiento de datos (Ley 1581 de 2012) y si también puedes revisar el nervio vago. No te pedimos nombre ni correo, y las fichas solo dicen \"Revisado por un docente universitario\", sin ningún dato tuyo. Las propuestas y los comentarios que escribas pueden publicarse con tu alias (nunca con tu nombre) en los issues públicos del proyecto: no escribas nada que te identifique."
     },
     "autorizacion": {
       "titulo": "Autorización de tratamiento de datos",

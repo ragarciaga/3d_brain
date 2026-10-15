@@ -231,6 +231,8 @@
     "parteConfirmada": "confirmed",
     "loEnvie": "Yes, I sent it",
     "confirmaAyuda": "After pressing Submit in the Google form, come back here and press \"Yes, I sent it\". Until then those answers stay unsent.",
+    "confirmaAyudaCanal": "After pressing Submit in the Google form, come back here and press \"Yes, I sent it\". Those answers will still count as not sent until automatic saving confirms them once the connection is back: that is normal and you do not need to send them again.",
+    "registrarme": "Register (once)",
     "sinPendientes": "No cards left to review.",
     "nombrePendiente": "name pending",
     "trazadoTitulo": "Traced course: {{nombre}}",
@@ -269,10 +271,10 @@
       "marcadores": "Markers are structures without a 3D mesh. If the position is approximate or missing, use \"Propose position\" and tap the point on the model.",
       "trazos": "The vagus branches come as unnamed strands. In \"What to review\", the \"Vagus strands\" section opens the first pending one; choose which branch it is (or confirm the audit's proposal), leave a comment if you like and continue with \"Next strand\". You can also tap a strand on the model.",
       "recorridos": "The recurrent laryngeal nerves and the left vagus below the thorax are not in the scanned model: they were traced and appear dotted. In their entry, \"Traced course\" asks for your judgement.",
-      "vagoCasilla": "The vagus strands and traced courses only appear if you tick \"I can also review the course of the vagus nerve in the neck and thorax\": when you give your authorization or, whenever you like, in Actions.",
-      "enviar": "Whenever you want, press \"Send review\" and then \"Send all\": a single prefilled form opens with everything you have not sent yet (in parts only if it is very long). Press Submit at the end of the form and come back to press \"Yes, I sent it\". You can send as many times as you like.",
-      "privacidad": "Before your first review, register once: the name you want shown, your role and your consent (Colombian Law 1581 of 2012). Your name only appears on the entries you validate.",
-      "registrarme": "Register (once)"
+      "vagoCasilla": "The vagus strands and traced courses only appear if you tick \"I can also review the course of the vagus nerve in the neck and thorax\": when you give your authorization or, whenever you like, in that same checkbox on the review bar (on a phone, inside \"Actions\").",
+      "guardado": "You do not have to send anything: each answer is saved automatically to the editor's sheet a few seconds after you mark it, and the review bar says \"Saved ✓\" once it is saved. If it says \"No connection: it will be saved when the connection is back\", do nothing: your answers stay on this device and are saved automatically when the connection returns.",
+      "otroEquipo": "You can continue on another device: open the same link on a computer, tablet or phone and you will see what you have already answered.",
+      "privacidad": "The first time an answer is about to be saved, the atlas asks once for your authorization to process your data (Colombian Law 1581 of 2012) and whether you can also review the vagus nerve. We do not ask for your name or email, and the entries only say \"Reviewed by a university teacher\", without any of your data. The proposals and comments you write may be published under your alias (never your name) in the project's public issues, so do not write anything that identifies you."
     },
     "autorizacion": {
       "titulo": "Data processing authorization",

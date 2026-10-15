@@ -2,6 +2,13 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { clavesFaltantes, diferencias } from '../scripts/lib/i18n.ts';
 
+// Lo que la guía "Cómo revisar" no puede decir en ningún modo (R10.3): registro, pasos de envío, el formulario ni el respaldo.
+// "formulario" y "form" van como palabra completa para no atrapar "información", "formato" ni "information".
+const PROHIBIDO_EN_LA_GUIA = {
+  es: /regist|\bformulario\b|respaldo|enviar revisión|enviar todo|sí, lo envié/i,
+  en: /regist|\bform\b|backup|send review|send all|yes, i sent it/i,
+} as const;
+
 describe('textos de los botones de revisión', () => {
   const en = JSON.parse(readFileSync('src/i18n/en.json', 'utf8')) as { revision: Record<string, string> };
   it('"Correct" y la acción de corregir no se confunden en inglés', () => {
@@ -43,12 +50,80 @@ describe('textos de los botones de revisión', () => {
       expect(revision.guia.responder).toContain(revision.marcarTodo);
     });
 
-    it(`la guía (${idioma}) nombra "Enviar todo" y "Sí, lo envié" tal como aparecen`, () => {
+    it(`la guía (${idioma}) ya no tiene el paso de envío`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       expect(revision.enviarTodo).toBeTruthy();
       expect(revision.loEnvie).toBeTruthy();
-      expect(revision.guia.enviar).toContain(revision.enviarTodo);
-      expect(revision.guia.enviar).toContain(revision.loEnvie);
+      expect(Object.hasOwn(revision.guia, 'intro')).toBe(true);
+      expect(Object.hasOwn(revision.guia, 'enviar')).toBe(false);
+      for (const [clave, valor] of Object.entries(revision.guia)) {
+        expect(valor, clave).not.toContain(revision.enviarTodo);
+        expect(valor, clave).not.toContain(revision.loEnvie);
+        expect(valor, clave).not.toContain(revision.enviar);
+      }
+    });
+
+    it(`la guía (${idioma}) no menciona registro, envío, formulario ni respaldo`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      // La guía tiene que existir de verdad: un objeto vacío pasaría todos los filtros de abajo.
+      for (const clave of ['intro', 'guardado', 'otroEquipo', 'privacidad']) {
+        expect(revision.guia[clave]?.trim(), clave).toBeTruthy();
+      }
+      const botones = [revision.enviar, revision.enviarTodo, revision.loEnvie, revision.abrirFormulario, revision.enviarPorFormulario];
+      for (const [clave, valor] of Object.entries(revision.guia)) {
+        expect(valor, clave).not.toMatch(PROHIBIDO_EN_LA_GUIA[idioma]);
+        for (const boton of botones) expect(valor, `${clave} contiene "${boton}"`).not.toContain(boton);
+      }
+    });
+
+    it(`registrarme vive fuera de la guía con el mismo texto (${idioma})`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(Object.hasOwn(revision.guia, 'registrarme')).toBe(false);
+      expect(revision.registrarme).toBe(idioma === 'es' ? 'Registrarme (una sola vez)' : 'Register (once)');
+    });
+
+    it(`la guía (${idioma}) dice Guardado, Sin conexión y que se sigue en otro equipo con el mismo enlace`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      const { guardado, otroEquipo } = revision.guia;
+      expect(revision.guardado.listo).toBe(idioma === 'es' ? 'Guardado ✓' : 'Saved ✓');
+      expect(guardado).toContain(revision.guardado.listo);
+      expect(guardado).toContain(revision.guardado.sinConexion);
+      if (idioma === 'es') {
+        expect(guardado).toContain('Guardado');
+        expect(otroEquipo).toContain('otro equipo');
+        expect(otroEquipo).toContain('mismo enlace');
+      } else {
+        expect(guardado).toContain('Saved');
+        expect(otroEquipo).toContain('another device');
+        expect(otroEquipo).toContain('same link');
+      }
+    });
+
+    it(`la privacidad de la guía (${idioma}) no promete el nombre y nombra la etiqueta de la ficha`, () => {
+      const root = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { ficha: Record<string, string>; revision: Revision };
+      const { privacidad } = root.revision.guia;
+      expect(root.ficha.revisadoDocente).toBeTruthy();
+      expect(privacidad).toContain(root.ficha.revisadoDocente);
+      expect(privacidad).toContain('1581');
+      // Las propuestas y los comentarios se publican con el alias en los issues públicos: la guía lo avisa.
+      expect(privacidad).toContain(idioma === 'es' ? 'issues públicos' : 'public issues');
+      expect(privacidad).toContain('alias');
+      expect(privacidad).not.toMatch(idioma === 'es' ? /tu nombre (solo )?aparece/i : /your name (only )?appears/i);
+    });
+
+    it(`vagoCasilla (${idioma}) nombra la casilla y Acciones tal como aparecen`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision & { autorizacion: Record<string, string> } };
+      expect(revision.autorizacion.vago).toBeTruthy();
+      expect(revision.acciones).toBeTruthy();
+      expect(revision.guia.vagoCasilla).toContain(revision.autorizacion.vago);
+      expect(revision.guia.vagoCasilla).toContain(revision.acciones);
+      if (idioma === 'es') expect(revision.guia.vagoCasilla).toContain('solo aparecen si marcas');
+    });
+
+    it(`confirmaAyudaCanal (${idioma}) nombra el botón y dice que no hay que enviar otra vez`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      expect(revision.confirmaAyudaCanal).toContain(revision.loEnvie);
+      expect(revision.confirmaAyudaCanal).toContain(idioma === 'es' ? 'no tienes que enviarlas otra vez' : 'you do not need to send them again');
     });
 
     it(`el aviso local (${idioma}) dice que las respuestas se guardan solo en este navegador y no invita a descargar`, () => {
@@ -119,6 +194,19 @@ describe('textos de los botones de revisión', () => {
       expect(revision.respaldoExplica?.trim()).toBeTruthy();
     });
   }
+});
+
+describe('filtros de palabra de la guía', () => {
+  it('no confunden información, formato ni information, y sí atrapan formulario y form', () => {
+    expect('información formato').not.toMatch(PROHIBIDO_EN_LA_GUIA.es);
+    expect('information format').not.toMatch(PROHIBIDO_EN_LA_GUIA.en);
+    expect('el formulario').toMatch(PROHIBIDO_EN_LA_GUIA.es);
+    expect('the form').toMatch(PROHIBIDO_EN_LA_GUIA.en);
+    expect('Registrarme').toMatch(PROHIBIDO_EN_LA_GUIA.es);
+    expect('Register').toMatch(PROHIBIDO_EN_LA_GUIA.en);
+    expect('un respaldo').toMatch(PROHIBIDO_EN_LA_GUIA.es);
+    expect('a backup').toMatch(PROHIBIDO_EN_LA_GUIA.en);
+  });
 });
 
 describe('check:i18n', () => {
