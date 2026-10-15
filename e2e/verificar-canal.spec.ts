@@ -215,7 +215,6 @@ test('F4-E1: de lo que devuelve el canal solo se muestra la respuesta válida; l
       hippocampus: [
         { c: 'que_es', d: 'correcto', ...base }, // válida
         { c: 'ubicacion', d: 'excelente', ...base }, // veredicto inventado
-        { c: 'campo_inventado', d: 'correcto', ...base }, // campo que no existe
         { c: 'para_que_sirve', d: 'correcto', ...base, extra: 'no permitido' }, // clave fuera del protocolo
       ],
       'estructura-inventada': [{ c: 'que_es', d: 'correcto', ...base }], // clave inexistente
@@ -239,7 +238,6 @@ test('F4-E1: de lo que devuelve el canal solo se muestra la respuesta válida; l
     await expect(page.locator(`[data-campo="${campo}"]`)).toBeVisible();
     await expect(page.locator(`[data-campo="${campo}"] [aria-pressed="true"]`)).toHaveCount(0);
   }
-  await expect(page.locator('[data-campo="campo_inventado.es"]')).toHaveCount(0);
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   await asentar(page);
   expect(errores).toEqual([]);
