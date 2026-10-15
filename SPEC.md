@@ -76,7 +76,7 @@ Ya existen atlas 3D abiertos y gratuitos, como Z-Anatomy y los atlas de Open Ana
 - **Señal de éxito:** en el Android de gama baja, un estudiante fragmenta, abre fichas de 10 piezas (incluido el vago) y reensambla, a 30 cuadros por segundo o más.
 - **Orden de construcción:** esqueleto, pipeline de la fase 0, F1 + F2, F4 + F5 + F9 + marcadores, F24, F6 + F7, F3 + F10 + F11.
 
-**Fase 1, hito 2: lanzamiento público.** F8 (con prototipo de relleno por stencil primero) y F12. Meta de contenido: 40 fichas verificadas en ambos idiomas, empezando por sistema límbico, ganglios basales, diencéfalo, tronco encefálico y nervio vago. El resto de estructuras se ve y se puede buscar, pero su ficha dice "En preparación". Antes de lanzar se deciden nombre, dominio y analítica (sección 15), y toda ruta trazada del vago que siga en revisión se aprueba o se retira (F25, ADR 0009).
+**Fase 1, hito 2: lanzamiento público.** F8 (relleno con las caras traseras de las mallas cerradas y contorno en las abiertas, ADR 0011) y F12. Meta de contenido: 40 fichas verificadas en ambos idiomas, empezando por sistema límbico, ganglios basales, diencéfalo, tronco encefálico y nervio vago. El resto de estructuras se ve y se puede buscar, pero su ficha dice "En preparación". Antes de lanzar se decide la analítica (sección 15; nombre y dominio ya están decididos), y toda ruta trazada del vago que siga en revisión se aprueba o se retira (F25, ADR 0009).
 
 **Fase 2, estudio activo.** F13 a F20: notas personales, circuitos y recorridos, quiz con repaso espaciado, rompecabezas, casos clásicos, etiquetas 3D, modo liviano e indexación en buscadores. Incluye las tareas para completar geometría faltante (sección 8).
 
@@ -176,7 +176,7 @@ Límite real: solo se puede fragmentar hasta el nivel de detalle que trae el mod
 
 **Criterio:** un corte coronal a la altura del tálamo muestra rellenos y con nombre el tálamo, los ventrículos laterales y el núcleo caudado.
 
-**Dato de la fase 0:** las piezas subcorticales y los ventrículos son mallas cerradas, aptas para el relleno por stencil. Los giros corticales tienen entre 2 y 11 bordes abiertos, así que el relleno puede filtrarse en la corteza. El prototipo inicial decide si se corrige o se lanza sin relleno.
+**Dato de la fase 0:** las piezas subcorticales y los ventrículos son mallas cerradas, aptas para el relleno. Los giros corticales tienen entre 2 y 11 bordes abiertos, así que el relleno puede filtrarse en la corteza. Decidido (ADR 0011): las mallas cerradas se rellenan con sus caras traseras y las abiertas muestran el contorno del corte.
 
 ### Idioma, compartir y confianza (fase 1)
 
@@ -749,12 +749,12 @@ para que la hoja no las tape. No hay riel.
 9. Canal de revisión docente: Apps Script en la cuenta del editor que guarda en su hoja de Google, con el formulario como respaldo (14 de octubre de 2026, ADR 0012, spec 03).
 11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25. Ampliado el mismo día (ADR 0010): también se traza el tramo torácico de los dos troncos, porque el escaneado es un espejo.
 10. Sin "modo ambos idiomas" (13 de octubre de 2026): el editor lo quitó porque recargaba la interfaz. Lo bilingüe queda en la búsqueda cruzada, el nombre latino siempre visible y un selector de idioma claro.
+4. Dominio propio: `brain.maysasp.com` (15 de octubre de 2026, ADR 0014). DNS en Cloudflare y hosting en GitHub Pages.
 3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.
 
 **Abiertas**
 
 2. ¿Qué docentes pueden revisar neuroanatomía, psicología y traducción? Sin revisores no hay fichas verificadas ni lanzamiento. Se necesitan para el piloto (hito 1).
-4. Dominio propio. Antes del hito 2.
 5. ¿Analítica sin cookies, sí o no? Antes del hito 2.
 7. ¿Qué circuito se construye primero en la fase 2? Propuesto: Papez, por su peso en psicología.
 
