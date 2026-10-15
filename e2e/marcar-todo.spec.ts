@@ -1,6 +1,9 @@
 // Revisión docente: botones de veredicto de 44 px en celular y "Marcar todo como correcto" (#66).
 // Helpers propios para no depender de atlas.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 async function abrir(page: Page, ruta: string) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));

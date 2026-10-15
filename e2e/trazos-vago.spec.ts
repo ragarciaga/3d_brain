@@ -2,6 +2,9 @@
 // con "Siguiente trazo", comentario y propuesta de la auditoría. Helpers propios, como revision-dialogos.spec.ts.
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 interface RespuestaTrazo {
   veredicto: string;

@@ -1,6 +1,9 @@
 // Modo revisión: código recordado y almacenamiento persistente (#60). Helpers propios para no depender de
 // atlas.spec.ts.
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
 
