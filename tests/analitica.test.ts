@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import config from '../vite.config.ts';
 
 const raiz = resolve('.');
-const TOKEN = '393b091d66f04f2fbcaac4aaddd18567';
+const TOKEN = '393b091d66f04f2fbcaac4aaddd18567'; // gitleaks:allow
 const SCRIPT = 'https://static.cloudflareinsights.com/beacon.min.js';
 const HTML_FALSO = '<!doctype html>\n<html>\n  <head>\n    <title>prueba</title>\n  </head>\n  <body><div id="root"></div></body>\n</html>\n';
 

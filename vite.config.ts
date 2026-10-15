@@ -29,7 +29,7 @@ export const CARGADOR_BEACON = [
   '  var s = document.createElement("script");',
   '  s.type = "module";',
   '  s.src = "https://static.cloudflareinsights.com/beacon.min.js";',
-  '  s.setAttribute("data-cf-beacon", \'{"token": "393b091d66f04f2fbcaac4aaddd18567", "spa": false}\');',
+  '  s.setAttribute("data-cf-beacon", \'{"token": "393b091d66f04f2fbcaac4aaddd18567", "spa": false}\');', // gitleaks:allow
   '  document.head.appendChild(s);',
   '})();',
 ].join('\n      ');
