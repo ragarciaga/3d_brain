@@ -1,14 +1,17 @@
 // Recortes del visor. Dos usos de los planos de three, sin tocar jamás la geometría ni la posición de una pieza:
 // el revelado progresivo del recorrido del vago (F14), con su plano propio, y los planos de corte del encéfalo (F8),
-// con el fantasma opcional del lado oculto y el toque que descarta lo que quedó oculto (`raycastCorte`).
+// con el fantasma opcional del lado oculto, el relleno de la cara del corte con las caras traseras de las mallas
+// cerradas (ADR 0011) y el toque que descarta lo que quedó oculto (`raycastCorte`).
 // Todo lo que se prueba vive aquí, sin montar el Canvas; `Visor.tsx` solo lo usa.
 import * as THREE from 'three';
 import { acceleratedRaycast } from 'three-mesh-bvh';
-import { esFragmentable, origenDe } from '../data/atlas';
+import cerradasJson from '../config/mallas-cerradas.json';
+import { esFragmentable, esMallaDeToque, origenDe } from '../data/atlas';
 import {
   EJE,
   esEncefalo,
   hayCortes,
+  piezasCruzadas,
   piezasEncefalo,
   planoDe,
   PLANOS,
@@ -17,6 +20,9 @@ import {
   type Rango,
 } from '../lib/cortes';
 import type { Caja } from '../lib/inventario';
+
+/** Mallas del encéfalo cerradas (sin bordes abiertos): solo ellas se rellenan, porque su cara trasera tapa el hueco. */
+export const MALLAS_CERRADAS: ReadonlySet<string> = new Set(cerradasJson as string[]);
 
 /** Constante del plano que no recorta nada (el modelo está entre 1 y 2 m de altura). */
 export const SIN_RECORTE = 100;
@@ -152,6 +158,52 @@ export function crearMallaFantasma(geometria: THREE.BufferGeometry, matriz: THRE
   return malla;
 }
 
+export type EstadoRelleno = Omit<EstadoFantasma, 'fantasmaCorte'>;
+
+/**
+ * Si la pieza lleva relleno del corte: es del encéfalo, hay cortes activos, se ve (ni oculta, ni fuera del aislamiento,
+ * ni aproximada con solo escaneada) y algún plano activo cruza su caja (cruce estricto). Mismo filtro que el fantasma.
+ */
+export function piezaConRelleno(pieza: string, s: EstadoRelleno): boolean {
+  if (!hayCortes(s.cortes) || !esEncefalo(pieza)) return false;
+  if (s.ocultas.has(pieza)) return false;
+  if (s.aislar && !s.aislar.piezas.has(pieza)) return false;
+  if (origenDe(pieza) === 'aproximada' && s.soloEscaneada) return false;
+  return piezasCruzadas(s.cajas, [pieza], s.cortes, rangoActual(s.cajas)).length > 0;
+}
+
+/** De las mallas de una pieza, las que se rellenan: cerradas y que no son el tubo del toque. Conserva el orden. */
+export function mallasRellenables(nombres: readonly string[], cerradas: ReadonlySet<string> = MALLAS_CERRADAS): string[] {
+  return nombres.filter((n) => !esMallaDeToque(n) && cerradas.has(n));
+}
+
+/** Mallas de `pieza` que llevan relleno ahora (vacío sin planos activos). `nombres` son las mallas de la pieza. */
+export function mallasDeRelleno(
+  pieza: string,
+  nombres: readonly string[],
+  s: EstadoRelleno,
+  cerradas: ReadonlySet<string> = MALLAS_CERRADAS,
+): string[] {
+  return piezaConRelleno(pieza, s) ? mallasRellenables(nombres, cerradas) : [];
+}
+
+/**
+ * Hermana de una malla cerrada que pinta su cara trasera con el color de la pieza: donde el plano abre el sólido se ve
+ * el interior de la pared del fondo, que llena el hueco (ADR 0011). Comparte la geometría (nunca se libera) y se toca
+ * como la pieza: lleva su `nombreMalla`.
+ */
+export function crearMallaRelleno(geometria: THREE.BufferGeometry, matriz: THREE.Matrix4, color: THREE.ColorRepresentation, nombreMalla: string): THREE.Mesh {
+  const material = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide, clippingPlanes: PLANOS_CORTE });
+  const malla = new THREE.Mesh(geometria, material);
+  malla.matrixAutoUpdate = false;
+  malla.matrix.copy(matriz);
+  // Sin padre que la actualice cada cuadro, la matriz del mundo se calcula una vez.
+  malla.matrixWorldNeedsUpdate = true;
+  malla.raycast = raycastCorte;
+  malla.userData = { nombreMalla, relleno: true };
+  return malla;
+}
+
 export interface CandidataCorte {
   pieza: string;
   malla: THREE.Mesh;
@@ -159,17 +211,22 @@ export interface CandidataCorte {
   cortada: boolean;
 }
 
-const CELDAS = 16;
+// Fina a propósito: la sección de una pieza delgada (un ventrículo) mide pocos píxeles y una grilla gruesa cae en su borde.
+const CELDAS = 40;
 
 /**
- * Un punto (NDC) cuyo primer impacto visible es una cara trasera de `objetivo`: se ve por el hueco que deja el corte,
- * sobre la cara del corte. Prefiere una celda con sus 4 vecinas iguales. Null si ninguna celda sirve.
+ * Un punto (NDC) sobre `objetivo` según `lado`. Elige la celda válida más lejos de una inválida o del borde. Null si ninguna celda sirve.
+ * - `'corte'` (por defecto): el primer impacto visible es una cara trasera de `objetivo`: se ve por el hueco que deja
+ *   el corte, sobre la cara del corte.
+ * - `'oculto'`: el rayo cruza `objetivo` solo del lado oculto de los planos: ningún impacto de ninguna candidata es
+ *   visible y al menos uno es de `objetivo`. Es un clic que no debe tocar nada.
  */
 export function puntoDeCorte(
   objetivo: string,
   candidatas: readonly CandidataCorte[],
   camara: THREE.Camera,
   planos: readonly THREE.Plane[] = PLANOS_CORTE,
+  lado: 'corte' | 'oculto' = 'corte',
 ): { x: number; y: number } | null {
   camara.updateMatrixWorld();
   const cajas = candidatas.map((c) => {
@@ -194,6 +251,9 @@ export function puntoDeCorte(
     raycaster.setFromCamera(new THREE.Vector2(nx, ny), camara);
     const rayo = raycaster.ray;
     let mejor = { d: Infinity, ok: false };
+    // Lado oculto: basta un impacto visible, de cualquier candidata, para invalidar la celda.
+    let hayVisible = false;
+    let hayOculto = false;
     candidatas.forEach((c, i) => {
       const arbol = c.malla.geometry.boundsTree;
       if (!arbol || !rayo.intersectsBox(cajas[i]!)) return;
@@ -201,6 +261,11 @@ export function puntoDeCorte(
       rayoLocal.copy(rayo).applyMatrix4(mundo.clone().invert());
       for (const hit of arbol.raycast(rayoLocal, THREE.DoubleSide)) {
         const punto = hit.point.clone().applyMatrix4(mundo);
+        if (lado === 'oculto') {
+          if (c.cortada && !seVeConRecorte(punto, planos)) hayOculto ||= c.pieza === objetivo;
+          else hayVisible = true;
+          continue;
+        }
         const d = punto.distanceTo(rayo.origin);
         if (d >= mejor.d || (c.cortada && !seVeConRecorte(punto, planos))) continue;
         // Cara trasera: la normal local mira en el sentido del rayo (al revés si la matriz está espejada).
@@ -208,20 +273,34 @@ export function puntoDeCorte(
         mejor = { d, ok: c.pieza === objetivo && trasera };
       }
     });
-    return mejor.ok;
+    return lado === 'oculto' ? hayOculto && !hayVisible : mejor.ok;
   };
 
   const centro = (i: number, a: number, b: number) => a + ((i + 0.5) / CELDAS) * (b - a);
   const celdas = Array.from({ length: CELDAS }, (_, i) => Array.from({ length: CELDAS }, (_, j) => cuenta(centro(i, min.x, max.x), centro(j, min.y, max.y))));
   const ok = (i: number, j: number) => celdas[i]?.[j] === true;
-  let primera: { x: number; y: number } | null = null;
+  // Margen de una celda válida: cuántas celdas (distancia de ajedrez) hasta la primera inválida o el borde de la grilla.
+  // Se elige la de mayor margen (la primera en recorrer la grilla si empatan): un punto en el medio de la región aguanta
+  // un desfase de pocos píxeles de la cámara o del puntero, uno pegado al borde no.
+  const margen = (i: number, j: number) => {
+    for (let r = 1; r <= CELDAS; r++) {
+      // Solo el anillo de radio r: lo de adentro ya se revisó con radios menores.
+      for (let a = -r; a <= r; a++) {
+        if (!ok(i + a, j - r) || !ok(i + a, j + r)) return r;
+      }
+      for (let b = -r + 1; b <= r - 1; b++) {
+        if (!ok(i - r, j + b) || !ok(i + r, j + b)) return r;
+      }
+    }
+    return CELDAS;
+  };
+  let mejorCelda: { x: number; y: number; margen: number } | null = null;
   for (let i = 0; i < CELDAS; i++) {
     for (let j = 0; j < CELDAS; j++) {
       if (!ok(i, j)) continue;
-      const punto = { x: centro(i, min.x, max.x), y: centro(j, min.y, max.y) };
-      if (ok(i - 1, j) && ok(i + 1, j) && ok(i, j - 1) && ok(i, j + 1)) return punto;
-      primera ??= punto;
+      const m = margen(i, j);
+      if (!mejorCelda || m > mejorCelda.margen) mejorCelda = { x: centro(i, min.x, max.x), y: centro(j, min.y, max.y), margen: m };
     }
   }
-  return primera;
+  return mejorCelda && { x: mejorCelda.x, y: mejorCelda.y };
 }
