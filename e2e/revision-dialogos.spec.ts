@@ -153,14 +153,52 @@ for (const alto of [844, 568]) {
       await page.getByTestId('acciones-revision').getByRole('button', { name: nombre }).click();
     }
 
+    /**
+     * Lleva a la vista cada control del diálogo (fuera del pie) con el desplazamiento nativo y comprueba que el pie
+     * fijo no lo tapa (#151). `movidos` cuenta los controles que obligaron a desplazar el diálogo. Se usa
+     * `scrollIntoView` y no `scrollIntoViewIfNeeded`: este no desplaza un control que ya está dentro del área aunque el pie lo tape.
+     */
+    async function controlesSinTapar(dialogo: Locator): Promise<{ tapados: string[]; movidos: number }> {
+      return dialogo.evaluate((el) => {
+        const tapados: string[] = [];
+        let movidos = 0;
+        const controles = Array.from(el.querySelectorAll<HTMLElement>('button, a[href], summary, input, select, textarea'));
+        for (const control of controles) {
+          if (control.closest('.dialogo-pie')) continue;
+          if (!control.checkVisibility()) continue;
+          const detalles = control.closest('details');
+          if (detalles && !detalles.open && control.parentElement !== detalles) continue;
+          el.scrollTop = 0;
+          control.scrollIntoView({ block: 'nearest' });
+          if (el.scrollTop > 0) movidos++;
+          const rectangulos = control.getClientRects();
+          const r = rectangulos[rectangulos.length - 1]!;
+          const x = r.left + r.width / 2;
+          const sinTapar = [r.top + 1, r.top + r.height / 2, r.bottom - 1].every((y) => {
+            const encima = document.elementFromPoint(x, y);
+            return encima !== null && (encima === control || control.contains(encima));
+          });
+          if (!sinTapar) tapados.push((control.textContent ?? '').trim().slice(0, 40));
+        }
+        el.scrollTop = 0;
+        return { tapados, movidos };
+      });
+    }
+
     test('el final de cada diálogo se ve y no lo tapa nada', async ({ page }) => {
       await entrar(page, 'MOVIL01');
+      expect((await controlesSinTapar(guia(page))).tapados).toEqual([]);
       await cierreVisible(page, guia(page));
 
       await accion(page, /Qué revisar/);
+      const qr = await controlesSinTapar(queRevisar(page));
+      expect(qr.tapados).toEqual([]);
+      // A 568 la lista no cabe: así la prueba no pasa sin desplazar nada.
+      if (alto === 568) expect(qr.movidos).toBeGreaterThan(0);
       await cierreVisible(page, queRevisar(page));
 
       await accion(page, 'Enviar revisión');
+      expect((await controlesSinTapar(enviarDialogo(page))).tapados).toEqual([]);
       await cierreVisible(page, enviarDialogo(page));
     });
   });
@@ -297,13 +335,13 @@ test('lo que se envía lleva solo las respuestas completas de la ficha', async (
 });
 
 test('envío: abrir una parte no la marca enviada hasta confirmar (#58)', async ({ page }) => {
+  // #151: medido el 2026-10-15 con WebGL por software y 3 workers, la prueba completa tardó de 139 a 238 s.
+  // Partirla no deja margen: cada mitad repite unos 60 s de preparación (entrar, tres respuestas en dos fichas).
+  test.setTimeout(360_000);
   // El formulario se abre en otra pestaña: se responde con una página vacía para no salir a internet.
   await page.context().route('https://docs.google.com/**', (ruta) =>
     ruta.fulfill({ status: 200, contentType: 'text/html', body: '<p>formulario</p>' }),
   );
-  const cerrarExtras = async () => {
-    for (const otra of page.context().pages()) if (otra !== page) await otra.close();
-  };
   const dialogo = () => enviarDialogo(page);
   const abrirEnvio = async () => {
     await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
@@ -333,12 +371,14 @@ test('envío: abrir una parte no la marca enviada hasta confirmar (#58)', async 
   expect(Object.keys(carga.e).sort()).toEqual(['hippocampus', 'thalamus']);
 
   // Abrir la parte no la marca enviada.
+  const pestana1 = page.waitForEvent('popup');
   await parte().getByRole('link', { name: 'Abrir formulario' }).click();
+  await (await pestana1).close();
+  expect(page.context().pages()).toHaveLength(1);
   await expect(parte()).toHaveAttribute('data-estado', 'abierta');
   await expect(parte()).toContainText('abierta');
   await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('3 respuestas sin enviar');
   await expect(parte().getByRole('button', { name: 'Sí, lo envié' })).toBeVisible();
-  await cerrarExtras();
 
   // Ni siquiera después de recargar: lo abierto no se guarda.
   await page.reload();
@@ -349,8 +389,10 @@ test('envío: abrir una parte no la marca enviada hasta confirmar (#58)', async 
 
   // Solo "Sí, lo envié" confirma.
   await dialogo().getByRole('button', { name: 'Enviar todo' }).click();
+  const pestana2 = page.waitForEvent('popup');
   await parte().getByRole('link', { name: 'Abrir formulario' }).click();
-  await cerrarExtras();
+  await (await pestana2).close();
+  expect(page.context().pages()).toHaveLength(1);
   await parte().getByRole('button', { name: 'Sí, lo envié' }).click();
   await expect(parte()).toHaveAttribute('data-estado', 'confirmada');
   await expect(parte()).toContainText('confirmada');
