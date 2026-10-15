@@ -397,6 +397,9 @@ test('autorización: con la casilla del vago manda vago true y si autorizar fall
   await expect(guia).not.toContainText(/regístrate/i);
   await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(0);
   await expect(guia.getByRole('link')).toHaveCount(0);
+  // R10.3: con canal la guía dice que todo se guarda solo y que se sigue en otro equipo con el mismo enlace.
+  await expect(guia).toContainText('Guardado ✓');
+  await expect(guia).toContainText('mismo enlace');
 
   // T7: ya autorizada, la respuesta pendiente se guarda sola.
   await expect.poll(() => peticionesDe(canal, 'guardar').length).toBeGreaterThan(0);
@@ -505,12 +508,13 @@ test('formulario de respaldo: sin urlCanal el formulario es el único camino, si
   await expect(barra(page).getByRole('checkbox')).toHaveCount(0);
   await expect(page.getByTestId('casilla-vago')).toHaveCount(0);
 
-  // Control de R2.6: sin canal la guía queda como siempre, con el aviso de registro y su enlace.
+  // R10.3: sin canal la guía tampoco habla de registro ni lo enlaza; el enlace vive en el diálogo de envío.
   await barra(page).getByRole('button', { name: 'Cómo revisar' }).click();
-  await expect(page.getByTestId('como-revisar')).toContainText('regístrate');
+  await expect(page.getByTestId('como-revisar')).not.toContainText(/regístrate/i);
+  await expect(page.getByTestId('como-revisar')).not.toContainText('mismo enlace');
   await expect(page.getByTestId('como-revisar')).toContainText('Trazos del vago');
   await expect(page.getByTestId('como-revisar')).not.toContainText('solo aparecen si marcas');
-  await expect(page.getByTestId('como-revisar').getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(1);
+  await expect(page.getByTestId('como-revisar').getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(0);
   await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
   await expect(page.getByTestId('como-revisar')).toHaveCount(0);
 
@@ -523,6 +527,7 @@ test('formulario de respaldo: sin urlCanal el formulario es el único camino, si
   await envio.getByRole('button', { name: 'Enviar todo' }).click();
   const abrirForm = envio.getByRole('link', { name: 'Abrir formulario' });
   await expect(abrirForm).toBeVisible();
+  await expect(envio).not.toContainText('no tienes que enviarlas otra vez');
   expect((await abrirForm.getAttribute('href'))?.startsWith(configRevision.urlFormulario)).toBe(true);
   await expect(page.getByRole('button', { name: 'Enviar por formulario' })).toHaveCount(0);
   await envio.getByRole('button', { name: 'Cerrar' }).click();
@@ -844,6 +849,8 @@ test('formulario de respaldo: con el canal caído no aparece a los 9 min, aparec
   await expect(abrirForm).toBeVisible();
   const href = (await abrirForm.getAttribute('href'))!;
   expect(href.startsWith(configRevision.urlFormulario)).toBe(true);
+  // Con canal, después de "Sí, lo envié" las respuestas siguen sin enviar hasta que el canal las confirme: el diálogo lo dice.
+  await expect(dialogo).toContainText('no tienes que enviarlas otra vez');
   expect(cargaDelEnlace(href)).toEqual({
     v: 2,
     r: 'RES01',
