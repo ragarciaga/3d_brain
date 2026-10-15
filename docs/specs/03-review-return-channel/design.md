@@ -67,7 +67,7 @@ Workflow, porque el camino es fijo y conocido: guardar, confirmar, reintentar, l
 // src/lib/canal.ts (R1.3, R2.3, R3.1, R4.1, R6.6)
 type RespuestaCanal =
   | { ok: true; recibidas?: string[]; respuestas?: unknown; autorizacion?: { version: string; vago: boolean } | null }
-  | { ok: false; error: 'codigo_no_activo' | 'demasiado_grande' | 'formato' | 'demasiadas_peticiones' | 'interno' };
+  | { ok: false; error: 'codigo_no_activo' | 'demasiado_grande' | 'formato' | 'demasiadas_peticiones' | 'sin_autorizacion' | 'interno' };
 
 leer(codigo: string): Promise<{ respuestas: Respuesta[]; autorizacion: Autorizacion | null }>; // GET ?accion=leer&r=
 guardar(codigo: string, respuestas: Respuesta[]): Promise<Set<string>>;                       // POST {accion:'guardar', carga v:2}; devuelve "clave|fecha" confirmadas
@@ -94,6 +94,7 @@ El cuerpo va como `text/plain` para que el navegador no haga petición previa (p
 | `demasiadas_peticiones` | por lote | Pendientes; sin aviso extra | Espera 60 s | R6.3 |
 | `formato` o `demasiado_grande` | por respuesta | Se parte el lote; la respuesta que sigue fallando sola queda pendiente y va al respaldo por formulario | No se reintenta esa respuesta | R6.2, R7.1 |
 | `codigo_no_activo` | fatal para el canal | Aviso R1.3; respuestas quedan en el equipo | No | R1.3 |
+| `sin_autorizacion` (guardar sin autorización vigente en la hoja) | fatal hasta autorizar | Autorización a null, vuelve el diálogo, las respuestas quedan pendientes | No; la cola sigue al aceptar | R2.1, R2.4 |
 | 10 min sin confirmación con pendientes | sesión | Aviso con "Enviar por formulario" | La cola sigue intentando | R7.1 |
 | `urlCanal` vacía | sesión | Flujo de formulario de hoy | No aplica | R7.2 |
 | Respuesta del canal no válida al leer | por respuesta | Se descarta esa respuesta, se registra en consola | No | R6.6 |
@@ -103,7 +104,7 @@ El cuerpo va como `text/plain` para que el navegador no haga petición previa (p
 - **Recarga:** las pendientes viven en IndexedDB; al abrir con el código, la cola arranca sola. (R3.5)
 
 ## Security considerations
-- **Autorización por código:** el código es privado y actúa como llave; el script lo compara con el padrón en cada petición (lectura y escritura). Cada código solo lee sus respuestas. (R4.3, R6.1)
+- **Autorización por código:** el código es privado y actúa como llave; el script lo compara con el padrón en cada petición (lectura y escritura). Cada código solo lee sus respuestas. `guardar` exige además que la última fila del código en `Autorizaciones` tenga la versión vigente (S1, #157). (R4.3, R6.1)
 - **Validación de entrada:** el script valida tamaño (64 KB), ritmo (120 por minuto por código, con `CacheService`) y la forma `v:2` con las mismas reglas de `respuestaValida`. La app valida lo que lee con `respuestaValida`. Una prueba carga `apps-script/Codigo.js` en Node y le pasa los mismos casos hostiles de `tests/revisiones.test.ts`, para que las dos validaciones no se separen. (R6.2, R6.3, R6.6)
 - **Inyección en la hoja:** la carga se escribe como texto plano (formato `@`), y el código ya validado con `REVISOR_VALIDO` no puede empezar con `=`, `+`, `-` ni `@`. (R6.4)
 - **Secretos:** ninguno. La URL del script es pública por diseño (va en el bundle); sin el código de un docente no sirve. El padrón y los códigos solo viven en la hoja y en `pipeline/revisores.local.json` (ignorado por git). (R6.5)

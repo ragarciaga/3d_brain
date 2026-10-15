@@ -114,6 +114,38 @@ Para actualizar el script sin cambiar la URL, edita la implementación existente
 Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. No crees una
 implementación nueva: cambiaría la URL y habría que volver a pasarla.
 
+### Actualización: guardar exige la autorización (#157)
+
+Desde #157, `guardar` en `apps-script/Codigo.js` solo escribe en `Respuestas` si la última fila del
+código en `Autorizaciones` tiene la versión vigente de la autorización (Ley 1581). Si no, responde
+`sin_autorizacion` y no escribe nada. Hasta que vuelvas a desplegar el script, la hoja sigue
+aceptando respuestas sin esa comprobación. Hay que volver a desplegar `Codigo.js` como "Nueva versión"
+de la implementación existente: la URL `/exec` no cambia. En este orden:
+
+1. Primero espera a que el PR de #157 esté fusionado y a que termine el workflow `pages`, para que la
+   web ya publicada entienda `sin_autorizacion`. La app vieja lo tomaría por un error interno y
+   reintentaría con esperas cada vez más largas.
+2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script con el mismo bloque
+   PowerShell del paso 4 (`Get-Content -Raw -Encoding UTF8 apps-script\Codigo.js | Set-Clipboard`).
+3. En Apps Script, selecciona todo `Código.gs`, pega y pulsa Guardar.
+4. Implementar, Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. Nunca
+   "Nueva implementación".
+5. Comprueba que la URL de la aplicación web que muestra Google es la misma que ya está en
+   `src/config/revision.ts`. Si cambió, no la pegues en ningún issue: avísalo por chat.
+6. Comprueba que funciona. Repite la prueba rápida del paso 7 con el código de prueba:
+   1. Márcalo `sí` en `Padrón`.
+   2. Abre la app con su enlace, responde un campo, acepta el diálogo y espera "Guardado ✓". En
+      `Acciones`, cambia la casilla del vago: así `Autorizaciones` queda con dos filas del código
+      (una por cada aceptación y por cada cambio de esa casilla).
+   3. Borra todas sus filas en `Autorizaciones`.
+   4. Responde otro campo: el diálogo debe volver a salir y `Respuestas` no debe ganar ninguna fila
+      hasta que aceptes.
+   5. Al terminar, limpia como dice el paso 7.
+
+Si cambias `VERSION_AUTORIZACION` en `src/config/revision.ts`, cambia la constante igual en
+`apps-script/Codigo.js` (una prueba falla si difieren) y vuelve a desplegar el script como nueva
+versión apenas se publique la app. Si no, el docente acepta y el diálogo vuelve a salir, una y otra vez.
+
 ## 2. Cuidar el padrón
 
 `Padrón` decide qué códigos pueden escribir. La hoja del canal no se comparte con nadie: quien tenga
@@ -300,7 +332,8 @@ pasos, con el alias del docente:
    esas filas.
 3. Si pide borrarlos, haz todo esto, en este orden:
    1. Pon `no` en su fila de `Padrón` (o bórrala). Así el código deja de escribir.
-   2. Borra sus filas de `Respuestas` y de `Autorizaciones`.
+   2. Borra todas sus filas de `Respuestas` y de `Autorizaciones` (en `Autorizaciones` hay una por
+      cada aceptación y por cada cambio de la casilla del vago).
    3. Borra su nombre del documento privado de enlaces.
    4. Borra sus filas del formulario de registro y del formulario de revisión.
    5. Quita sus propuestas y comentarios de los issues de importación. Esos issues son públicos y
@@ -349,3 +382,8 @@ pasos, con el alias del docente:
    fichas, es un cambio en `src/data/` que apruebas tú. La copia local de su navegador se borra
    borrando los datos del sitio en ese navegador.
 5. Anota la fecha en que le respondiste.
+
+Si un docente retira la autorización pero sigue revisando, borra todas sus filas de `Autorizaciones` y
+deja su código activo en `Padrón`: la app le vuelve a pedir la autorización antes de guardar y el script
+rechaza sus `guardar` hasta que acepte. Borrar solo la última fila no basta, porque la anterior sigue
+valiendo. En una supresión, en cambio, el paso 3.1 (`no` en `Padrón`) es obligatorio y va primero.

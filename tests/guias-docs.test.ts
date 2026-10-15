@@ -91,4 +91,22 @@ describe('docs/revision-docente.md', () => {
     expect(texto).toContain('Win+V');
     expect(texto).toContain('Set-Clipboard -Value $null');
   });
+
+  it('explica cómo volver a desplegar el script como Nueva versión para que guardar exija la autorización (#157)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^###\s.*autorización/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    const seccion = lineas.slice(inicio, fin === -1 ? undefined : fin).join('\n');
+    expect(seccion).toMatch(/Nueva\s+versión/);
+    expect(seccion).toMatch(/Nunca\s+"Nueva\s+implementación"/);
+    expect(seccion).toMatch(/URL\s+`\/exec`\s+no\s+cambia/);
+    expect(seccion).toContain('sin_autorizacion');
+    expect(seccion).toContain('VERSION_AUTORIZACION');
+    // El orden: primero la app publicada, después el script, y al final la comprobación.
+    expect(seccion).toMatch(/workflow\s+`pages`/);
+    expect(seccion).toMatch(/antes\s+de\s+mandar\s+los\s+enlaces/);
+    expect(seccion).toMatch(/borra\s+todas\s+sus\s+filas\s+en\s+`Autorizaciones`/i);
+    expect(texto).toMatch(/Borrar\s+solo\s+la\s+última\s+fila\s+no\s+basta/);
+  });
 });

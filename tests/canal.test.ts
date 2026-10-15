@@ -111,7 +111,7 @@ const ACCIONES: [string, () => Promise<unknown>][] = [
 ];
 
 describe('errores del contrato', () => {
-  const codigos: TipoErrorCanal[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'interno'];
+  const codigos: TipoErrorCanal[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'sin_autorizacion', 'interno'];
   const casos = ACCIONES.flatMap(([n, f]) => codigos.map((c) => [n, f, c] as const));
   it.each(casos)('%s: {ok:false, error:%s} lanza ErrorCanal con ese tipo', async (_n, hacer, codigo) => {
     responder({ ok: false, error: codigo });

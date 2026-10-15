@@ -5,11 +5,13 @@
 //
 // Contrato (lo cumple src/lib/canal.ts):
 // - GET ?accion=leer&r=<código>: {ok, respuestas: {v: 2, r, e}, autorizacion: {version, vago} | null}.
-// - POST (cuerpo text/plain con JSON) {accion: 'guardar', carga}: {ok, recibidas: [...]}.
+// - POST (cuerpo text/plain con JSON) {accion: 'guardar', carga}: {ok, recibidas: [...]}. Exige que la
+//   última fila del código en `Autorizaciones` tenga la versión VERSION_AUTORIZACION (S1, #157).
 // - POST {accion: 'autorizar', r, version, vago}: {ok}.
 // - Un error siempre es {ok: false, error} con error en codigo_no_activo, demasiado_grande, formato,
-//   demasiadas_peticiones o interno. Nunca lleva el mensaje de una excepción.
-// Orden de las comprobaciones: tamaño, JSON, acción, código en el padrón, ritmo, forma de la carga.
+//   demasiadas_peticiones, sin_autorizacion o interno. Nunca lleva el mensaje de una excepción.
+// Orden de las comprobaciones: tamaño, JSON, acción, código en el padrón, ritmo, autorización (solo
+// guardar), forma de la carga.
 /* global SpreadsheetApp, CacheService, LockService, ContentService */
 /* exported doGet, doPost */
 
@@ -22,6 +24,9 @@ const CAMPO_VALIDO = /^([a-z_]+(\.\d+)?|trazo:[^\r\n`|<>]{1,120})$/;
 const VERSION_VALIDA = /^(\d+\.\d+\.\d+|sin-ficha)$/;
 const ID_VALIDO = /^[a-z0-9-]+$/;
 const VERSION_AUTORIZACION_VALIDA = /^[A-Za-z0-9._-]{1,40}$/;
+// Copia de VERSION_AUTORIZACION de src/config/revision.ts: se cambian juntas, y una prueba de
+// tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones.
+const VERSION_AUTORIZACION = '1';
 const MAX_TEXTO_LARGO = 4000;
 const MAX_TEXTO_CORTO = 200;
 const MAX_FECHA = 40;
@@ -216,6 +221,8 @@ function clavesRecibidas(e) {
 }
 
 function accionGuardar(codigo, carga) {
+  const aut = autorizacionDe(codigo);
+  if (!aut || aut.version !== VERSION_AUTORIZACION) return fallo('sin_autorizacion');
   const limpia = validarCarga(carga);
   if (!limpia || limpia.r !== codigo) return fallo('formato');
   const texto = JSON.stringify({ v: 2, r: codigo, e: limpia.e });
