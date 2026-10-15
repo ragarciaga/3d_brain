@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -100,7 +100,10 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   guardado al abrir y retirar el respaldo por archivo). Séptima corrida (cycle-032bd1e-wqnz):
   fusionados #137 (03-T9, formulario de respaldo cuando el canal falla) y #138 (03-T11, "Revisado
   por un docente universitario" sin datos personales); 03-T10 (filtrar trazos según la casilla)
-  planificado en #96.
+  planificado en #96. Octava corrida (cycle-75748b5-tfkd): fusionado #140 (03-T10, filtro del vago
+  según la casilla); #141 (03-T12, guías del docente y del editor) con las revisiones aprobadas y en
+  espera de tu prueba local del montaje del Apps Script (#98, R10.2); 01-T6 (relleno del corte,
+  #38) en revisión.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
@@ -146,9 +149,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T9 y T11 en main; T10 planificado (#96). Falta que el editor corra la
+1. Canal de retorno (spec 03): T1 a T11 en main; T12 en PR #141 (espera tu prueba local, #98). Falta que el editor corra la
    prueba de `probar-canal.html` (T1, #87) con su Apps Script, revise el texto legal de la
-   autorización (plan en #92) y monte `Codigo.js`; después siguen T10, T12 y T13 (T13 necesita la URL del
+   autorización (plan en #92) y monte `Codigo.js`; después siguen T12 y T13 (T13 necesita la URL del
    script). No mandar el enlace a docentes antes de T13: sin canal ya no hay respaldo por archivo.
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
@@ -167,7 +170,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 |---|---:|---:|---:|
 | i83 |  |  | 0.0 |
 | i120 |  |  | 0.0 |
-| T6 |  |  | 0.0 |
+| T10 |  |  | 0.0 |
 | T4 | 7.2 |  | 7.2 |
 | T1 | 5.8 |  | 5.8 |
 | T3 | 5.8 | 5.1 | 10.9 |
@@ -178,6 +181,8 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 | T7 |  |  | 0.0 |
 | T8 |  |  | 0.0 |
 | T9 |  |  | 0.0 |
+| T12 | 8.5 |  | 8.5 |
+| T6 | 9.5 |  | 9.5 |
 
 Minutes per phase.
 Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement, T9/implement.
