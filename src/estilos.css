@@ -362,6 +362,10 @@ a {
   color: var(--texto-suave);
 }
 
+.panel-medicion dt.medicion-parte {
+  padding-left: 0.8rem;
+}
+
 .panel-medicion dd {
   margin: 0;
   font-variant-numeric: tabular-nums;

@@ -89,4 +89,13 @@ test('con ?medir=1, el informe cuenta la descarga de la precarga y una preparaci
   expect(Math.abs(inicio - Math.round(conCuerpo!.startTime))).toBeLessThanOrEqual(1);
   // La preparación no incluye la espera por el código (+1 ms por el redondeo de cada cifra).
   expect(preparar).toBeLessThanOrEqual(primerCuadro - codigo + 1);
+  // Las tres partes del desglose suman la preparación (±2 ms por el redondeo de cada cifra).
+  const leer = numero(/Leer el modelo \(parseo y decodificación\): (\d+) ms/);
+  const indice = numero(/Índice de toque \(árboles BVH\): (\d+) ms/);
+  const armar = numero(/Armar las piezas y sus cajas: (\d+) ms/);
+  expect(Math.abs(leer + indice + armar - preparar)).toBeLessThanOrEqual(2);
+  // Construir los árboles BVH de cientos de mallas toma mucho más que 50 ms: un valor menor diría
+  // que la marca quedó antes de construirlos (solo el recorrido de la escena tarda unos 20 ms).
+  expect(indice).toBeGreaterThan(50);
+  expect(copiado).toContain('Cuadros por segundo (de 1 a 10 s tras el primer cuadro)');
 });
