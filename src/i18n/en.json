@@ -337,7 +337,8 @@
     "titulo": "Panels",
     "estructuras": "Structures",
     "grupos": "Groups",
-    "buscar": "Search"
+    "buscar": "Search",
+    "cortes": "Slices"
   },
   "medicion": {
     "titulo": "Load measurement",
@@ -388,6 +389,29 @@
     "salir": "Leave the tour"
   },
   "cortes": {
+    "titulo": "Cutting planes",
+    "aviso": "The model comes from a single body, not from MRI scans: slices help you get oriented but do not replace a neuroimaging atlas.",
+    "sinModelo": "Slices are available once the 3D model has loaded.",
+    "rellenoApagado": "Your device stayed below 30 frames per second with slices on, so the fill was turned off and only the outline is shown.",
+    "plano": {
+      "sagital": "Sagittal",
+      "coronal": "Coronal",
+      "axial": "Axial"
+    },
+    "posicion": {
+      "sagital": "Sagittal plane position",
+      "coronal": "Coronal plane position",
+      "axial": "Axial plane position"
+    },
+    "invertir": "Invert",
+    "invertirPlano": {
+      "sagital": "Invert the sagittal plane",
+      "coronal": "Invert the coronal plane",
+      "axial": "Invert the axial plane"
+    },
+    "fantasma": "Ghost",
+    "fantasmaAyuda": "Shows the side removed by the cut, faintly.",
+    "quitar": "Remove slices",
     "etiqueta": {
       "izquierda": "{{mm}} mm to the left",
       "derecha": "{{mm}} mm to the right",

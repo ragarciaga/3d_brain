@@ -23,8 +23,8 @@ Abre http://localhost:3000. Requiere Node.js 22.18 o superior (recomendado 24 LT
 
 ## Qué trae
 
-- Modo estudio: el cerebro a pantalla completa; un riel abre el árbol, los grupos de estudio y la
-  búsqueda (Ctrl+K) solo cuando se piden.
+- Modo estudio: el cerebro a pantalla completa; un riel abre el árbol, los grupos de estudio, los
+  planos de corte (sagital, coronal y axial) y la búsqueda (Ctrl+K) solo cuando se piden.
 - Búsqueda bilingüe (español, inglés, latín y sinónimos, tolerante a tildes y errores).
 - Ficha por estructura a la izquierda: qué es, función, ubicación, relaciones, relevancia en
   psicología con nivel de evidencia, recursos, búsquedas de artículos científicos y fuentes.

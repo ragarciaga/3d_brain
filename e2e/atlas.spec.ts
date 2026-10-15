@@ -513,6 +513,9 @@ test('modo revisión: el docente marca campos y el contador sube', async ({ page
   await (await campoBusqueda(page)).fill('tálamo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/talamo$/);
+  // La URL cambia antes que la ficha (react-router actualiza la ubicación en una transición de React). Con la ficha del
+  // hipocampo aún en pantalla, "Corregir" caería en su campo `que_es.es`, que ya está marcado, y lo desmarcaría.
+  await expect(page.locator('#ficha-titulo')).toHaveText('Tálamo');
   await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Corregir' }).click();
   await expect(page.locator('[data-campo="que_es.es"]').getByRole('textbox', { name: 'Cambio propuesto' })).toHaveValue('');
   await expect(page.getByTestId('total-respuestas')).toHaveText('3 respuestas');
