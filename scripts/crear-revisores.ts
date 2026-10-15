@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { agregarRevisores, errorDePadron, type Padron } from './lib/revisiones.ts';
 
 const n = Number(process.argv[2]);
-const base = process.argv[3] ?? 'https://ragarciaga.github.io/3d_brain';
+const base = process.argv[3] ?? 'https://brain.maysasp.com';
 if (!Number.isInteger(n) || n < 1 || n > 100) {
   console.error('Uso: node scripts/crear-revisores.ts <cuántos, de 1 a 100> [base del sitio]');
   process.exit(2);

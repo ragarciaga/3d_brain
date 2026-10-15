@@ -30,7 +30,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   arco aórtico y el bronquio derecho, así que el ADR 0010 decide trazar también el tramo torácico de
   los dos lados y no publicar el escaneado de ese tramo. `pipeline/anclajes-vago.json` entra con esa
   implementación (con el modelo actual, la prueba de asimetrías falla, como debe).
-- Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
+- Publicado: https://brain.maysasp.com/ (español en `/es`, inglés en `/en`). Cada merge
   a `main` se publica solo con el workflow `pages`.
 - Nombre y marca: **Maysa Brain**, con logo propio (`public/marca/`) y paleta de Maysa; modo claro y
   oscuro con botón.
