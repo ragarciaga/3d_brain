@@ -1,0 +1,612 @@
+# Reglas que ubican cada marcador del atlas (spec 04, ADR 0013). Las lee pipeline/ubicar-marcadores.py.
+# Una regla por marcador. No hay coordenadas escritas a mano: cada punto sale de medir mallas del modelo
+# (Z-Anatomy, commit fijado) con una de siete operaciones. Cada regla cita sus fuentes por clave, y cada
+# clave debe estar en la sección "Referencias" de docs/research/marcadores/fuentes.md; si no, el marcador
+# queda sin ubicar. Lo que es deducción propia y no algo que la fuente dice se marca "(derivado)" en
+# `metodo`: son interpretaciones de rangos que el editor aprueba en el PR de datos.
+#
+# Ejes (glTF): Y arriba, +X a la izquierda del cuerpo, +Z anterior, metros.
+# Direcciones: superior, inferior, anterior, ventral, posterior, dorsal, izquierda, derecha, y
+# lateral/medial, que dependen del lado (l o r) de la regla.
+#
+# Claves de una regla:
+#   lado        medio | ambos | l | r. Con ambos se calcula un punto por lado.
+#   operacion   extremo | centro | polo | en_curva | superficie | plano_medio | entre
+#   fuentes     claves de fuentes.md, las mismas de la fila del marcador en su tabla
+#   metodo      {es, en}: la regla en palabras, con "(derivado)" donde corresponda
+#   ancla       opcional: pieza o estructura del árbol con la que el marcador sigue la fragmentación
+#   desacuerdo  opcional {es, en}: cuando las fuentes no coinciden
+#   desplazar   opcional {hacia, mm}: mueve el punto unos milímetros, después de calcularlo
+#   por_lado    opcional (solo con ambos): {l, r} con lo que cambia en cada lado respecto de la regla base
+# {lado} se cambia por l o r en los nombres de malla, y {Lado} por Left o Right.
+#
+# Operaciones y sus parámetros:
+#   extremo      malla, hacia; de: linea (usa la línea central de una curva); tramo; limite
+#   centro       malla; tramo; limite
+#   polo         malla, hacia (lista de direcciones); tramo; limite
+#   en_curva     curva y uno de: desde (referencia, con distancia_mm que puede ser negativa; positiva
+#                es hacia abajo), altura (referencia: se usa su altura) o cerca_de {malla}; destino {malla, max_mm}
+#   superficie   malla, cerca_de (referencia o {malla}); cara; tolerancia_mm (3 por defecto); tramo; limite
+#   plano_medio  mallas (izquierda y derecha), altura (referencia), profundidad (medio, anterior, posterior, ventral, dorsal)
+#   entre        a y b (referencias), o mallas (punto medio del par más cercano); fraccion; limite (solo con mallas)
+#   tramo        {hacia, desde, hasta}: fracciones de 0 a 1 del largo de la malla, empezando en el extremo hacia
+#   limite       {hacia, de}: solo lo que queda del lado de `hacia` respecto del punto `de`
+
+# Puntos que varias reglas comparten (solo anclas YAML; el ubicador no las lee por sí mismas).
+referencias:
+  ijv_superior: &ijv_superior
+    operacion: extremo
+    malla: "Internal jugular vein.{lado}"
+    hacia: superior
+    de: linea
+  prominencia: &prominencia
+    operacion: extremo
+    malla: Thyroid cartilage
+    hacia: anterior
+  asa_r: &asa_r
+    operacion: superficie
+    malla: Right subclavian artery
+    cerca_de: { malla: "Vagus nerve (X).r" }
+    cara: inferior
+  asa_l: &asa_l
+    operacion: superficie
+    malla: Aortic arch
+    cerca_de: { malla: Node of ligamentum arteriosum }
+    cara: inferior
+  cardias: &cardias
+    operacion: extremo
+    malla: Oesophagus
+    hacia: inferior
+    de: linea
+  hiato: &hiato
+    operacion: en_curva
+    curva: Oesophagus
+    cerca_de: { malla: Diaphragm }
+
+marcadores:
+  m-jugular-foramen:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    desde: *ijv_superior
+    distancia_mm: 0
+    fuentes: [Lee2017, Freitas2020, OpenStax20.5, Constanzo2020]
+    metodo:
+      es: >-
+        Punto de la curva del vago de cada lado más cercano al extremo superior de la vena yugular interna
+        del mismo lado. La vena empieza en el foramen yugular, por donde el vago sale del cráneo junto a
+        los nervios IX y XI.
+      en: >-
+        Point of each side's vagus curve nearest the top end of the internal jugular vein on that side. The
+        vein begins at the jugular foramen, where the vagus leaves the skull together with cranial nerves
+        IX and XI.
+
+  m-superior-ganglion-of-vagus-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    desde: *ijv_superior
+    distancia_mm: -2.5
+    fuentes: [Lee2017, Kim2022, Libreros2024]
+    metodo:
+      es: >-
+        Sobre la curva del vago, 2,5 mm por encima del punto del foramen yugular (derivado: punto medio del
+        rango de 0 a 5 mm sobre el extremo de la vena, a partir del tamaño del ganglio, de unos 4 mm,
+        pequeño y esférico dentro del foramen).
+      en: >-
+        On the vagus curve, 2.5 mm above the jugular foramen point (derived: midpoint of the 0 to 5 mm range
+        above the top of the vein, from the size of the ganglion, about 4 mm, small and spherical inside the
+        foramen).
+
+  m-inferior-ganglion-of-vagus-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    desde: *ijv_superior
+    distancia_mm: 12.5
+    fuentes: [Lee2017, Kim2022]
+    metodo:
+      es: >-
+        Sobre la curva del vago, 12,5 mm por debajo del punto del foramen yugular (derivado: punto medio del
+        rango de 1 a 1,5 cm, a partir de la longitud del ganglio, de unos 2,5 cm que arrancan en la salida
+        del foramen). Queda por encima del origen del laríngeo superior.
+      en: >-
+        On the vagus curve, 12.5 mm below the jugular foramen point (derived: midpoint of the 1 to 1.5 cm
+        range, from the length of the ganglion, about 2.5 cm starting at the exit of the foramen). It stays
+        above the origin of the superior laryngeal nerve.
+
+  m-auricular-branch-of-vagus-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    desde: *ijv_superior
+    distancia_mm: -2.5
+    fuentes: [Constanzo2020, Libreros2024]
+    metodo:
+      es: >-
+        El ramo nace del ganglio superior y va hacia el conducto auditivo externo, pero no hay malla de oído
+        ni de hueso temporal: el punto es su origen, el ganglio superior, 2,5 mm por encima del foramen
+        yugular (derivado, igual que en el ganglio superior). Queda en el mismo sitio que ese marcador.
+      en: >-
+        The branch arises from the superior ganglion and runs toward the external auditory canal, but the
+        model has no ear or temporal bone mesh: the point is its origin, the superior ganglion, 2.5 mm above
+        the jugular foramen (derived, as for the superior ganglion). It sits at the same place as that
+        marker.
+
+  m-pharyngeal-branch-of-vagus-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    desde: *ijv_superior
+    distancia_mm: 26
+    destino: { malla: Laryngopharynx, max_mm: 5 }
+    fuentes: [Mansour2021, Bahadir2026, Lee2017]
+    metodo:
+      es: >-
+        Sobre la curva del vago, 26 mm por debajo del punto del foramen yugular (mediana de 2,6 cm, rango
+        intercuartílico de 2,0 a 3,5 cm). Si la pared de la laringofaringe queda a 5 mm o menos de ese punto, el marcador se
+        acerca a ella (derivado: el modelo no trae el constrictor medio de la faringe, que queda por encima
+        de la laringofaringe, y el umbral de 5 mm es el del diseño).
+      en: >-
+        On the vagus curve, 26 mm below the jugular foramen point (median 2.6 cm, interquartile range 2.0 to
+        3.5 cm). If the wall of the laryngopharynx is 5 mm or less from that point, the marker moves onto it (derived:
+        the model has no middle constrictor of the pharynx, which lies above the laryngopharynx, and the 5 mm
+        threshold comes from the design).
+
+  m-superior-laryngeal-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    desde: *ijv_superior
+    distancia_mm: 38
+    destino: { malla: Thyroid cartilage, max_mm: 5 }
+    fuentes: [Lee2017, Vrapciu2025, Bahadir2026]
+    metodo:
+      es: >-
+        Sobre la curva del vago, 38 mm por debajo del punto del foramen yugular (mediana de 3,8 cm, rango
+        intercuartílico de 3,3 a 4,8 cm). Si el cartílago tiroides queda a 5 mm o menos de ese punto, el marcador se acerca a él,
+        porque el nervio va hacia el borde superior posterior del cartílago, por donde su rama interna
+        atraviesa la membrana tirohioidea (derivado: el umbral de 5 mm es el del diseño).
+      en: >-
+        On the vagus curve, 38 mm below the jugular foramen point (median 3.8 cm, interquartile range 3.3 to
+        4.8 cm). If the thyroid cartilage is 5 mm or less from that point, the marker moves onto it, because the nerve heads
+        for the upper posterior border of the cartilage, where its internal branch pierces the thyrohyoid
+        membrane (derived: the 5 mm threshold comes from the design).
+
+  m-superior-cervical-cardiac-branches-of-vagus-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    por_lado:
+      l:
+        altura: { operacion: entre, a: *prominencia, b: *asa_l }
+      r:
+        altura: { operacion: entre, a: *prominencia, b: *asa_r }
+    fuentes: [Zandstra2021, Bahadir2026]
+    metodo:
+      es: >-
+        Sobre la curva del vago, a la altura media entre la prominencia laríngea (punto más anterior del
+        cartílago tiroides) y el asa del laríngeo recurrente de ese lado (derivado: punto medio del tramo entre
+        la prominencia laríngea y el origen del recurrente, por encima de la arteria subclavia; las fuentes
+        dicen que los ramos cardíacos del cuello quedan casi todos entre la prominencia laríngea y la clavícula,
+        y que el superior sale por encima del origen del recurrente, pero el punto medio y esa combinación de
+        límites son deducción propia).
+      en: >-
+        On the vagus curve, at the height halfway between the laryngeal prominence (most anterior point of
+        the thyroid cartilage) and the loop of the recurrent laryngeal nerve on that side (derived: midpoint of
+        the stretch between the laryngeal prominence and the origin of the recurrent nerve, above the
+        subclavian artery; the sources say the cardiac branches of the neck lie almost all between the
+        laryngeal prominence and the clavicle, and that the superior one leaves above the origin of the
+        recurrent nerve, but the midpoint and that combination of limits are our own deduction).
+
+  m-inferior-cervical-cardiac-branches-of-vagus-nerve:
+    lado: ambos
+    operacion: superficie
+    por_lado:
+      r: *asa_r
+      l: *asa_l
+    fuentes: [Zandstra2021]
+    metodo:
+      es: >-
+        Por definición son los ramos cardíacos que salen del laríngeo recurrente, en cualquier punto de su
+        recorrido. Va junto al asa del recurrente, bajo la arteria subclavia derecha o bajo el arco aórtico
+        (derivado: la fuente no da altura; mismo punto que el asa del recurrente, por eso coincide con el
+        marcador del recurrente).
+      en: >-
+        By definition these are the cardiac branches that leave the recurrent laryngeal nerve, at any point of
+        its course. It sits beside the loop of the recurrent nerve, under the right subclavian artery or under
+        the aortic arch (derived: the source gives no height; same point as the loop of the recurrent nerve,
+        so it coincides with the recurrent laryngeal marker).
+
+  m-recurrent-laryngeal-nerve:
+    lado: ambos
+    operacion: superficie
+    por_lado:
+      r: *asa_r
+      l: *asa_l
+    fuentes: [Lee2017, White2023, Bahadir2026]
+    metodo:
+      es: >-
+        Punto más bajo del asa del nervio. El derecho rodea por debajo la arteria subclavia derecha. El
+        izquierdo nace en la cara inferior del arco aórtico, junto al ligamento arterioso, y lo rodea. Z-Anatomy
+        no trae el ligamento, así que `Node of ligamentum arteriosum` es el sustituto del ligamento arterioso.
+        (derivado: el punto más bajo del asa se calcula como el punto de la arteria subclavia derecha más
+        cercano al vago derecho, o del arco aórtico más cercano al sustituto del ligamento, y desde ahí el
+        vértice más bajo sobre un rayo hacia abajo; la fuente solo describe el recorrido del asa). La fuente
+        dice que el izquierdo nace inmediatamente lateral al ligamento arterioso; esta regla no aplica ese
+        "lateral": toma el punto del arco más cercano al sustituto, sin desplazarlo hacia el lado.
+      en: >-
+        Lowest point of the nerve's loop. The right one hooks under the right subclavian artery. The left
+        one arises from the underside of the aortic arch, next to the arterial ligament, and hooks around it.
+        Z-Anatomy does not include the ligament, so `Node of ligamentum arteriosum` stands in for the arterial
+        ligament. (derived: the lowest point of the loop is computed as the point of the right subclavian
+        artery nearest the right vagus, or of the aortic arch nearest the stand-in for the ligament, and from
+        there the lowest vertex along a downward ray; the source only describes the course of the loop). The
+        source says the left one arises immediately lateral to the arterial ligament; this rule does not apply
+        that "lateral": it takes the point of the arch nearest the stand-in, without moving it sideways.
+
+  m-thoracic-cardiac-branches-of-vagus-nerve:
+    lado: ambos
+    operacion: en_curva
+    curva: "Vagus nerve (X).{lado}"
+    por_lado:
+      l:
+        altura:
+          operacion: entre
+          a: *asa_l
+          b: { operacion: extremo, malla: "{Lado} main bronchus", hacia: superior }
+      r:
+        altura:
+          operacion: entre
+          a: *asa_r
+          b: { operacion: extremo, malla: "{Lado} main bronchus", hacia: superior }
+    fuentes: [Zandstra2021, Liu2022, Bahadir2026]
+    metodo:
+      es: >-
+        Sobre el tronco del vago escaneado del modelo, a la altura media entre el asa del recurrente y el
+        borde superior del bronquio principal de ese lado (derivado: punto medio del tramo entre el origen del
+        recurrente, bajo el cual sale el ramo según la fuente, y el bronquio; el límite en el bronquio y el
+        punto medio son elección de la regla). Ojo: ese tramo del modelo es un espejo
+        (ADR 0010), por lo que se vuelve a ubicar cuando se publique el vago torácico trazado.
+      en: >-
+        On the scanned vagus trunk of the model, at the height halfway between the loop of the recurrent nerve
+        and the upper border of the main bronchus on that side (derived: midpoint of the stretch between the
+        origin of the recurrent nerve, below which the branch leaves according to the source, and the bronchus;
+        the limit at the bronchus and the midpoint are choices of the rule). Note: that stretch of the
+        model is a mirror image (ADR 0010), so it is placed again once the traced thoracic vagus is published.
+
+  m-bronchial-branches-of-vagus-nerve:
+    lado: ambos
+    operacion: superficie
+    malla: "{Lado} main bronchus"
+    cerca_de:
+      operacion: centro
+      malla: "{Lado} main bronchus"
+      tramo: { hacia: lateral, desde: 0, hasta: 0.25 }
+    cara: posterior
+    fuentes: [Huang2024, White2023]
+    metodo:
+      es: >-
+        Ninguna fuente leída usa el término ramos bronquiales; se ubica como el plexo pulmonar, que es lo que
+        describen: cara posterior del bronquio principal de cada lado, en la entrada al hilio, que se toma
+        como el 25 % lateral del bronquio (derivado). Queda en el mismo punto que el plexo pulmonar y pide una
+        fuente que nombre estos ramos.
+      en: >-
+        No source read uses the term bronchial branches; it is placed like the pulmonary plexus, which is what
+        they describe: posterior surface of the main bronchus on each side, at the entrance to the hilum, taken
+        as the lateral 25 % of the bronchus (derived). It sits at the same point as the pulmonary plexus and
+        needs a source that names these branches.
+
+  m-pulmonary-plexus:
+    lado: ambos
+    operacion: superficie
+    malla: "{Lado} main bronchus"
+    cerca_de:
+      operacion: centro
+      malla: "{Lado} main bronchus"
+      tramo: { hacia: lateral, desde: 0, hasta: 0.25 }
+    cara: posterior
+    fuentes: [White2023, Huang2024, Liu2022, Bahadir2026]
+    metodo:
+      es: >-
+        Cara posterior del bronquio principal de cada lado, en la entrada al hilio, que se toma como el 25 %
+        lateral del bronquio (derivado). Los dos vagos pasan por detrás de los bronquios y forman o alimentan
+        el plexo en el hilio.
+      en: >-
+        Posterior surface of the main bronchus on each side, at the entrance to the hilum, taken as the lateral
+        25 % of the bronchus (derived). Both vagus nerves pass behind the bronchi and form or feed the plexus
+        at the hilum.
+
+  m-oesophageal-plexus:
+    lado: medio
+    operacion: superficie
+    malla: Oesophagus
+    cerca_de:
+      operacion: en_curva
+      curva: Oesophagus
+      altura:
+        operacion: entre
+        a: { operacion: extremo, malla: [Left main bronchus, Right main bronchus], hacia: inferior }
+        b: *hiato
+    cara: anterior
+    fuentes: [Triantafyllou2026, White2023, Bahadir2026, In2026]
+    metodo:
+      es: >-
+        Sobre la superficie del esófago, a la altura media entre el extremo inferior de los bronquios
+        principales y el hiato esofágico (derivado: punto medio del tramo bajo los bronquios; la cara anterior
+        se elige solo para dejar el punto a la vista; el hiato es el punto de la línea central del esófago más
+        cercano al diafragma).
+      en: >-
+        On the surface of the oesophagus, at the height halfway between the lower end of the main bronchi and
+        the oesophageal hiatus (derived: midpoint of the stretch below the bronchi; the anterior side is chosen
+        only to leave the point visible; the hiatus is the point of the oesophagus centerline nearest the
+        diaphragm).
+    desacuerdo:
+      es: >-
+        Triantafyllou 2026 empieza el plexo a la altura de la tráquea distal y el esófago proximal, mientras
+        que White 2023 y Bahadir 2026 lo ponen bajo los bronquios y como el grupo de ramos más distal. La regla
+        usa el tramo bajo los bronquios, que es donde coinciden.
+      en: >-
+        Triantafyllou 2026 starts the plexus at the level of the distal trachea and proximal oesophagus, while
+        White 2023 and Bahadir 2026 place it below the bronchi and as the most distal group of branches. The
+        rule uses the stretch below the bronchi, where they agree.
+
+  m-anterior-vagal-trunk:
+    lado: medio
+    operacion: superficie
+    malla: Oesophagus
+    cerca_de: *hiato
+    cara: anterior
+    fuentes: [McMahon2026, Guo2024, In2026]
+    metodo:
+      es: >-
+        Cara anterior del esófago a la altura del diafragma, donde cruza el hiato (derivado: el hiato es el
+        punto de la línea central del esófago más cercano a la malla del diafragma). Viene del vago izquierdo,
+        que baja por la cara ventral del esófago.
+      en: >-
+        Anterior surface of the oesophagus at the height of the diaphragm, where it crosses the hiatus
+        (derived: the hiatus is the point of the oesophagus centerline nearest the diaphragm mesh). It comes
+        from the left vagus nerve, which runs down the ventral side of the oesophagus.
+
+  m-posterior-vagal-trunk:
+    lado: medio
+    operacion: superficie
+    malla: Oesophagus
+    cerca_de: *hiato
+    cara: posterior
+    fuentes: [McMahon2026, Guo2024, In2026]
+    metodo:
+      es: >-
+        Cara posterior del esófago a la altura del diafragma, donde cruza el hiato (derivado: el hiato es el
+        punto de la línea central del esófago más cercano a la malla del diafragma). Viene del vago derecho,
+        que pasa a la cara dorsal del esófago.
+      en: >-
+        Posterior surface of the oesophagus at the height of the diaphragm, where it crosses the hiatus
+        (derived: the hiatus is the point of the oesophagus centerline nearest the diaphragm mesh). It comes
+        from the right vagus nerve, which moves onto the dorsal side of the oesophagus.
+
+  m-anterior-gastric-branches-of-anterior-vagal-trunk:
+    lado: medio
+    operacion: superficie
+    malla: Stomach
+    cerca_de: *cardias
+    cara: anterior
+    fuentes: [Guo2024, Smyth2025]
+    metodo:
+      es: >-
+        Cara anterior del estómago junto al cardias, donde el tronco se divide; los ramos siguen la curvatura
+        menor (derivado: la cara anterior sale de que el tronco es ventral; el cardias se toma como el extremo
+        inferior de la línea central del esófago).
+      en: >-
+        Anterior surface of the stomach next to the cardia, where the trunk divides; the branches follow the
+        lesser curvature (derived: the anterior side follows from the trunk being ventral; the cardia is taken
+        as the lower end of the oesophagus centerline).
+
+  m-posterior-gastric-branches-of-posterior-vagal-trunk:
+    lado: medio
+    operacion: superficie
+    malla: Stomach
+    cerca_de: *cardias
+    cara: posterior
+    fuentes: [Guo2024, Smyth2025]
+    metodo:
+      es: >-
+        Cara posterior del estómago junto al cardias, donde el tronco se divide; los ramos siguen la curvatura
+        menor (derivado: la cara posterior sale de que el tronco es dorsal; el cardias se toma como el extremo
+        inferior de la línea central del esófago).
+      en: >-
+        Posterior surface of the stomach next to the cardia, where the trunk divides; the branches follow the
+        lesser curvature (derived: the posterior side follows from the trunk being dorsal; the cardia is taken
+        as the lower end of the oesophagus centerline).
+
+  m-hepatic-branches-of-anterior-vagal-trunk:
+    lado: medio
+    operacion: entre
+    a: *cardias
+    b:
+      operacion: superficie
+      malla: Liver
+      cerca_de: *cardias
+    fuentes: [Zhang2026, Guo2024, Chen2025, Kong2019]
+    metodo:
+      es: >-
+        Punto medio entre el cardias y el punto del hígado más cercano a él (derivado: representa el trayecto
+        por el omento menor hasta el hilio hepático; la fuente da el recorrido en palabras y no una posición,
+        y el cardias se toma como el extremo inferior de la línea central del esófago).
+      en: >-
+        Midpoint between the cardia and the point of the liver nearest to it (derived: it stands for the path
+        through the lesser omentum to the hepatic hilum; the source gives the path in words and not a position,
+        and the cardia is taken as the lower end of the oesophagus centerline).
+
+  m-coeliac-branches-of-posterior-vagal-trunk:
+    lado: medio
+    operacion: superficie
+    malla: Thoracic aorta
+    cerca_de:
+      operacion: extremo
+      malla: Thoracic aorta
+      hacia: inferior
+      de: linea
+    cara: anterior
+    fuentes: [Guo2024, Kong2019, McMahon2026]
+    metodo:
+      es: >-
+        Regla aproximada: cara anterior de la aorta torácica en su extremo inferior, justo por debajo del
+        hiato, a la altura del tronco celíaco (derivado: el modelo no trae la arteria gástrica izquierda ni el
+        tronco celíaco, y la aorta torácica termina en el hiato).
+      en: >-
+        Approximate rule: anterior surface of the thoracic aorta at its lower end, just below the hiatus, at
+        the level of the coeliac trunk (derived: the model has neither the left gastric artery nor the
+        coeliac trunk, and the thoracic aorta ends at the hiatus).
+    desacuerdo:
+      es: >-
+        Guo 2024 da al ramo celíaco como rama del tronco posterior, mientras que McMahon 2026 dice que el
+        tronco posterior solo aporta algo más al plexo celíaco.
+      en: >-
+        Guo 2024 treats the coeliac branch as a branch of the posterior trunk, while McMahon 2026 says the
+        posterior trunk only contributes somewhat more to the coeliac plexus.
+
+  m-caerulean-nucleus:
+    lado: ambos
+    operacion: superficie
+    malla: Fourth ventricle
+    cerca_de:
+      operacion: centro
+      malla: Fourth ventricle
+      tramo: { hacia: superior, desde: 0, hasta: 0.5 }
+    cara: lateral
+    desplazar: { hacia: ventral, mm: 1.5 }
+    ancla: pons
+    fuentes: [Galgani2023, Reyes2025, Galgani2025]
+    metodo:
+      es: >-
+        En la mitad rostral del cuarto ventrículo, junto a su pared lateral de cada lado, y 1,5 mm ventral
+        (derivado: la fuente solo dice que el núcleo queda justo debajo del piso del cuarto ventrículo y cerca
+        de su pared lateral; los milímetros, punto medio de un rango de 1 a 2 mm, son deducción propia y no una
+        medida de la fuente; la mitad rostral es la mitad superior de la malla). Un punto por lado.
+      en: >-
+        In the rostral half of the fourth ventricle, next to its lateral wall on each side, and 1.5 mm ventral
+        (derived: the source only says the nucleus lies just below the floor of the fourth ventricle and near
+        its lateral wall; the millimeters, the midpoint of a 1 to 2 mm range, are our own deduction and not a
+        measurement from the source; the rostral half is the upper half of the mesh). One point per side.
+
+  m-raphe-nuclei-of-medulla-oblongata:
+    lado: medio
+    operacion: plano_medio
+    mallas: [Medulla oblongata.l, Medulla oblongata.r]
+    altura: { operacion: centro, malla: [Olive.l, Olive.r] }
+    profundidad: medio
+    ancla: medulla-oblongata
+    fuentes: [Agostinelli2023]
+    metodo:
+      es: >-
+        Plano medio entre las dos mitades del bulbo, a la altura del centro de las olivas inferiores, y a
+        medio camino entre la cara ventral y la dorsal (derivado: la profundidad media, porque los núcleos del
+        rafe son un continuo sin bordes claros).
+      en: >-
+        Midline plane between the two halves of the medulla, at the height of the center of the inferior
+        olives, and halfway between the ventral and dorsal surfaces (derived: the middle depth, because the
+        raphe nuclei are a continuum without clear borders).
+
+  m-area-postrema:
+    lado: medio
+    operacion: plano_medio
+    mallas: [Medulla oblongata.l, Medulla oblongata.r]
+    altura: { operacion: extremo, malla: Fourth ventricle, hacia: inferior }
+    profundidad: dorsal
+    ancla: medulla-oblongata
+    fuentes: [LaraGarcia2025, Agostinelli2023]
+    metodo:
+      es: >-
+        En la línea media, a la altura del punto más caudal del cuarto ventrículo (el óbex), sobre la cara
+        dorsal del bulbo, donde el área postrema toca el ángulo caudal del piso del ventrículo.
+      en: >-
+        On the midline, at the height of the most caudal point of the fourth ventricle (the obex), on the
+        dorsal surface of the medulla, where the area postrema meets the caudal angle of the ventricle floor.
+
+  m-periaqueductal-grey:
+    lado: medio
+    operacion: centro
+    malla: Aqueduct of midbrain
+    ancla: aqueduct-of-midbrain
+    fuentes: [Truong2020, Agostinelli2023]
+    metodo:
+      es: >-
+        Centro del acueducto del mesencéfalo, que la sustancia gris periacueductal rodea (derivado: la fuente
+        solo dice que la sustancia gris rodea el acueducto; un desplazamiento de unos milímetros hacia dorsal
+        sería deducción propia y no se aplica).
+      en: >-
+        Center of the aqueduct of the midbrain, which the periaqueductal grey surrounds (derived: the source
+        only says the grey matter surrounds the aqueduct; a shift of a few millimeters dorsally would be our
+        own deduction and it is not applied).
+
+  m-anterior-nuclei-of-thalamus:
+    lado: ambos
+    operacion: polo
+    malla: "Thalamus.{lado}"
+    hacia: [anterior, superior]
+    ancla: thalamus
+    fuentes: [Grodd2020, Sitnikov2018, Yu2021]
+    metodo:
+      es: >-
+        Polo anterosuperior de cada tálamo (derivado: la fuente ubica el grupo anterior en el tercio rostral,
+        dentro del tubérculo anterior, y el polo es la aproximación a ese rincón). Un punto por lado.
+      en: >-
+        Anterosuperior pole of each thalamus (derived: the source places the anterior group in the rostral
+        third, inside the anterior tubercle, and the pole approximates that corner). One point per side.
+
+  m-nucleus-accumbens:
+    lado: ambos
+    operacion: superficie
+    malla: ["Caudate nucleus.{lado}", "Putamen.{lado}"]
+    cerca_de:
+      operacion: entre
+      mallas: ["Caudate nucleus.{lado}", "Putamen.{lado}"]
+      limite:
+        hacia: anterior
+        de: { operacion: extremo, malla: Anterior commissure, hacia: posterior }
+    cara: inferior
+    ancla: caudate-nucleus
+    fuentes: [Birbilis2021]
+    metodo:
+      es: >-
+        Bajo el sitio donde el caudado y el putamen se acercan, por delante del extremo posterior de la
+        comisura anterior (derivado: el límite caudal se toma en ese extremo, que es el que da la fuente; la
+        cara inferior se elige porque el núcleo queda ventral). Un punto por lado.
+      en: >-
+        Below the place where the caudate and the putamen come closest, in front of the posterior end of the
+        anterior commissure (derived: the caudal limit is taken at that end, which is the one the source gives;
+        the inferior side is chosen because the nucleus lies ventral). One point per side.
+
+  m-wernicke-area:
+    lado: l
+    operacion: superficie
+    malla: "Superior temporal gyrus (Lateral part).l"
+    cerca_de:
+      operacion: centro
+      malla: "Temporal plane.l"
+      tramo: { hacia: posterior, desde: 0, hasta: 0.33333 }
+    ancla: superior-temporal-gyrus-lateral-part-l
+    fuentes: [Barba2026, Binder2015, Matchin2022, Tremblay2016, Mesulam2015]
+    metodo:
+      es: >-
+        Solo hemisferio izquierdo, en la definición clásica: tercio posterior de la parte lateral de la
+        circunvolución temporal superior, junto al plano temporal (derivado: "tercio posterior" como 0,33333 del
+        largo del plano temporal hacia atrás; es la regla mínima común a las fuentes).
+      en: >-
+        Left hemisphere only, in the classical definition: posterior third of the lateral part of the superior
+        temporal gyrus, next to the temporal plane (derived: "posterior third" as 0.33333 of the length of the
+        temporal plane going backward; it is the minimal rule common to the sources).
+    desacuerdo:
+      es: >-
+        No hay una definición anatómica única. La clásica (Barba 2026) es la parte posterior de la circunvolución
+        temporal superior izquierda. Binder 2015 propone las circunvoluciones del borde inferior posterior de la
+        cisura de Silvio izquierda. Matchin 2022 propone la parte media de la temporal superior y del surco
+        temporal superior medio y posterior. Mesulam 2015 dice que la ubicación sigue en discusión. Tremblay y
+        Dick 2016 sostienen que no hay una definición consistente y proponen dejar el término.
+      en: >-
+        There is no single anatomical definition. The classical one (Barba 2026) is the posterior part of the
+        left superior temporal gyrus. Binder 2015 proposes the gyri along the posterior lower border of the left
+        Sylvian fissure. Matchin 2022 proposes the middle part of the superior temporal gyrus and of the middle
+        and posterior superior temporal sulcus. Mesulam 2015 says the location is still under discussion.
+        Tremblay and Dick 2016 argue that there is no consistent definition and propose dropping the term.
