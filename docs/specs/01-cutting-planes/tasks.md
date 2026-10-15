@@ -95,7 +95,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/components/recorte.ts, src/components/ContornoCorte.tsx, src/components/Visor.tsx, tests/cortes-visor.test.ts
 - Verify: `npm test -- tests/cortes-visor.test.ts` con casos nuevos que fallan antes de la tarea: (a) `segmentosDeCorte` da los segmentos plano-malla correctos sobre una geometría abierta mínima con el BVH; (b) con relleno encendido, `piezasConContorno` cubre solo las piezas abiertas cruzadas; (c) con `rellenoApagado`, cubre todas las piezas cruzadas y la función de T6 que decide qué se rellena devuelve vacío; (d) `alErrorShaderRelleno` llama `apagarRelleno` y deja el resultado de (c), sin llamadas a `console.error`; (e) `alMuestraFps` con 10 muestras seguidas bajo 30 y cortes activos llama `apagarRelleno` una sola vez, y sin cortes no lo llama; (f) sin cortes no se monta `ContornoCorte` y al quitarlos se llama `dispose` en sus geometrías. `Visor.tsx` conecta `renderer.debug.onShaderError` y `MedidorCuadros` con esas funciones. R3.3 `[manual]` (reason: resultado visual en la GPU, sin oráculo automático fiable) con capturas en #9
 - Issue: #39
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Se nombran los dos disparadores del apagado, el cableado del vigilante y la limpieza. El aviso en el panel (R8.2) queda en T8.

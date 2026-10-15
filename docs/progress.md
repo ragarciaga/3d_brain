@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -149,21 +149,21 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T12 en main (T12 en PR #141). El editor montó `Codigo.js` en la
-   hoja privada y la URL `/exec` ya está (solo por chat). Falta T13 (#99, plan aprobado en el issue):
-   poner la URL real en la app. No mandar el enlace a docentes antes de T13.
+1. Canal de retorno (spec 03): T1 a T13 en main; la app habla con el Apps Script del editor desde #153.
+   Falta la prueba del editor en el sitio publicado (D5 de #99, con el código de prueba privado) antes de
+   mandar el mensaje a los docentes, y la verificación de la función completa (`/rb-verify` del spec 03).
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
    un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 bloqueada
    (#102, una devolución más recomendada).
 3. Revisión docente: cuando 1 y 2 estén en main, mandar el mensaje a los 10 docentes.
 4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. T1, T2 y T3 en main (PR #112, #119 y #124); T4 en PR #127, espera la prueba de Blender del editor (#49). Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
-5. Carga (#6, medición hecha; tareas #83 a #85): pedir el modelo desde el inicio, junto con el
+5. Carga (#6, medición hecha; tareas #83 a #85, #85 en PR #154: el panel desglosa "Preparar el modelo"): pedir el modelo desde el inicio, junto con el
    código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
    "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; siguen #84 y #85.
 6. Sitio: dominio propio `https://brain.maysasp.com` (PR #146, ADR 0014; HTTPS forzado). Analítica
-   sin cookies de Cloudflare Web Analytics en revisión (ADR 0015, no se carga en modo revisión).
-7. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1 a T6 (T6 en PR #143); T7 (contorno) en revisión, T8 en PR #145 (espera a T7), después T9. Después F12 y fichas verificadas. Issue de control: #1.
+   sin cookies de Cloudflare Web Analytics en #150, esperando tu decisión sobre gitleaks (ADR 0015; no se carga en modo revisión).
+7. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1 a T7 (T7 en PR #148, que también arregló el árbol de toque de 24 mallas gemelas); T8 en PR #145 (arreglo de CI en curso), después T9. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
@@ -193,6 +193,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 | T12 | 8.5 |  | 8.5 |
 | T6 |  |  | 0.0 |
 | T8 |  |  | 0.0 |
+| T7 |  |  | 0.0 |
 
 Minutes per phase.
 Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement, T9/implement.
