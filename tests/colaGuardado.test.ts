@@ -109,6 +109,15 @@ describe('reintentos (R3.4)', () => {
     expect(r.estado.confirmadas).toEqual({});
   });
 
+  it('sin_autorizacion no espera, no cuenta como fallo ni deja inactivo y el lote sigue por enviar', () => {
+    const antes: EstadoCola = { ...estadoInicial({ [kB]: b.fecha }), fallos: 2, tope: 7, rechazadas: { x: 'y' }, ultimaConfirmacion: T0 - 5 };
+    const r = trasEnvio(antes, [a], falla('sin_autorizacion'), T0);
+    expect(r.espera).toBeNull();
+    expect(r.estado).toEqual({ ...antes, fallos: 0 });
+    expect(r.estado.inactivo).toBe(false);
+    expect(porEnviar([a], r.estado.confirmadas, r.estado.rechazadas)).toEqual([a]);
+  });
+
   it('no muta el estado de entrada', () => {
     const antes = estadoInicial({ [kB]: b.fecha });
     const copia = structuredClone(antes);

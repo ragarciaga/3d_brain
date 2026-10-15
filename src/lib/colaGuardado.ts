@@ -150,6 +150,10 @@ export function trasEnvio(
     }
     case 'codigo_no_activo':
       return { estado: { ...base, inactivo: true }, espera: null };
+    case 'sin_autorizacion':
+      // El canal respondió, así que no es falta de red: no cuenta como fallo ni se reintenta. El panel deja la
+      // autorización en null y la cola sigue sola cuando el docente vuelve a autorizar.
+      return { estado: { ...base, fallos: 0 }, espera: null };
   }
 }
 

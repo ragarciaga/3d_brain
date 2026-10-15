@@ -222,6 +222,13 @@ export default function PanelRevision({
             setConfirmadas((c) => confirmarRecibidas(c, lote, recibidas));
             if (lote.some((r) => recibidas.has(claveConfirmacion(r)))) setRespaldo((r) => ({ ...r, vencida: false, ronda: r.ronda + 1 }));
           }
+          if (!resultado.ok && resultado.error === 'sin_autorizacion') {
+            // La hoja ya no tiene la autorización (por ejemplo, el editor la borró por una supresión): se deja en
+            // null, vuelve el diálogo con `pedirAutorizacion` y la cola sigue sola cuando `listo` vuelva a ser true.
+            noAntesDe.current = 0;
+            if (useAtlas.getState().revisor === revisor) useAtlas.getState().setAutorizacion(null);
+            return;
+          }
           if (estado.inactivo) {
             useAtlas.getState().setLecturaCanal('inactivo');
             return;

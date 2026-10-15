@@ -11,7 +11,8 @@
 // - GET `?accion=leer&r=<código>`. Responde
 //   `{ok:true, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, autorizacion:{version, vago} | null}`.
 // - Un error siempre responde `{ok:false, error}` con `error` en `codigo_no_activo`, `demasiado_grande`,
-//   `formato`, `demasiadas_peticiones` o `interno`.
+//   `formato`, `demasiadas_peticiones`, `sin_autorizacion` o `interno`. `guardar` responde
+//   `sin_autorizacion` si el código no tiene registrada en la hoja la autorización de la versión vigente.
 //
 // Red caída, tiempo agotado (10 s), HTTP que no es 2xx y cuerpo que no es JSON valen `red`.
 import { configRevision, VERSION_AUTORIZACION } from '../config/revision';
@@ -23,9 +24,23 @@ export interface Autorizacion {
   vago: boolean;
 }
 
-export type TipoErrorCanal = 'codigo_no_activo' | 'demasiado_grande' | 'formato' | 'demasiadas_peticiones' | 'interno' | 'red';
+export type TipoErrorCanal =
+  | 'codigo_no_activo'
+  | 'demasiado_grande'
+  | 'formato'
+  | 'demasiadas_peticiones'
+  | 'sin_autorizacion'
+  | 'interno'
+  | 'red';
 
-const ERRORES_DEL_CONTRATO: readonly unknown[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'interno'];
+const ERRORES_DEL_CONTRATO: readonly unknown[] = [
+  'codigo_no_activo',
+  'demasiado_grande',
+  'formato',
+  'demasiadas_peticiones',
+  'sin_autorizacion',
+  'interno',
+];
 
 /** Error del canal con su tipo traducido del contrato. */
 export class ErrorCanal extends Error {

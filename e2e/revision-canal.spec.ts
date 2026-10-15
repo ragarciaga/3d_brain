@@ -114,9 +114,10 @@ interface CanalSimulado {
   autorizar: 'ok' | 'red' | 'interno' | 'inactivo';
   /**
    * `otra_fecha` confirma cada respuesta con una fecha distinta de la enviada; `red` aborta la petición; `formato`
-   * rechaza el lote como el script ante una carga que no cumple `v:2`.
+   * rechaza el lote como el script ante una carga que no cumple `v:2`; `inactivo` responde `codigo_no_activo`;
+   * `sin_autorizacion` responde como el script cuando la hoja no tiene la autorización vigente del código (S1, #157).
    */
-  guardar: 'ok' | 'red' | 'otra_fecha' | 'formato' | 'inactivo';
+  guardar: 'ok' | 'red' | 'otra_fecha' | 'formato' | 'inactivo' | 'sin_autorizacion';
   /** Si existe, la respuesta de `leer` espera a que se resuelva (para probar lo que pasa mientras la lectura está pendiente). */
   retenerLeer: Promise<void> | null;
   /** Si existe, `autorizar` espera a que se resuelva antes de responder (para mirar la página con la petición en vuelo). */
@@ -179,6 +180,7 @@ async function simularCanal(
       if (accion === 'guardar') {
         if (canal.guardar === 'red') return route.abort('failed');
         if (canal.guardar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
+        if (canal.guardar === 'sin_autorizacion') return json({ ok: false, error: 'sin_autorizacion' });
         if (canal.guardar === 'formato') return json({ ok: false, error: 'formato' });
         return json({ ok: true, recibidas: clavesRecibidas(cuerpo['carga'], canal.guardar === 'otra_fecha' ? '2000-01-01T00:00:00.000Z' : undefined) });
       }
@@ -724,6 +726,58 @@ test('guardado: código no activo al autorizar o al leer', async ({ page, contex
   const claves = Object.keys((await revisionGuardada(page, 'GUA03'))?.respuestas ?? {});
   expect(claves).toContain('hippocampus|que_es|es');
   expect(claves).toContain('hippocampus|ubicacion|es');
+});
+
+test('guardado: sin_autorizacion al guardar vuelve a pedir la autorización, no reintenta solo y al aceptar guarda', async ({ page, context }) => {
+  // Fase 1: el editor borró la fila de `Autorizaciones` a mitad de sesión, con `leer` ya hecha.
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false }, guardar: 'sin_autorizacion' });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'AUT06');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(dialogoAut(page)).toHaveCount(0);
+
+  await correcto(page, 'que_es.es').click();
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(1);
+  await expect(dialogoAut(page)).toBeVisible();
+  expect(await autorizacionDelStore(page)).toBeNull();
+  await expect.poll(() => autorizacionGuardada(page, 'AUT06')).toBeNull();
+
+  // Sin autorización no sale otro `guardar` y el estado de guardado queda vacío (se lee una sola vez, ya asentado).
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(1);
+  expect(await estadoGuardado(page).textContent()).toBe('');
+  expect(Object.keys((await revisionGuardada(page, 'AUT06'))?.confirmadas ?? {})).not.toContain('hippocampus|que_es|es');
+
+  // Al aceptar sale `autorizar` con la versión vigente y la cola sigue sola.
+  canal.guardar = 'ok';
+  await casillaAcepto(page).check();
+  await continuar(page).click();
+  await expect(dialogoAut(page)).toHaveCount(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+  expect(peticionesDe(canal, 'autorizar')[0]!.cuerpo).toEqual({ accion: 'autorizar', r: 'AUT06', version: VERSION_AUTORIZACION, vago: false });
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(2);
+  await expect.poll(() => autorizacionGuardada(page, 'AUT06')).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+
+  // Fase 2, el caso de S1: `leer` falla y la autorización en caché hace que la app guarde; el script responde
+  // `sin_autorizacion` y la app deja de confiar en la copia local.
+  canal.leer = 'red';
+  canal.guardar = 'sin_autorizacion';
+  await page.reload();
+  await expect(barra(page)).toContainText('AUT06');
+  await expect.poll(() => lecturaDelStore(page)).toBe('fallida');
+  expect(await autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: false });
+  await expect(dialogoAut(page)).toHaveCount(0);
+  const n = peticionesDe(canal, 'guardar').length;
+
+  await correcto(page, 'ubicacion.es').click();
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(n + 1);
+  await expect(dialogoAut(page)).toBeVisible();
+  expect(await autorizacionDelStore(page)).toBeNull();
+  await expect.poll(() => autorizacionGuardada(page, 'AUT06')).toBeNull();
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(n + 1);
+  expect(await estadoGuardado(page).textContent()).toBe('');
 });
 
 // Traer lo guardado al abrir (T8). `leer` devuelve respuestas del canal; se fusionan con lo local y quedan guardadas.
