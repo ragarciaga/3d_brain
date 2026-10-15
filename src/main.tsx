@@ -43,6 +43,8 @@ if (import.meta.env.DEV) {
       fantasmas(): string[];
       cajasMundo(): Record<string, number[]>;
       rellenos(pieza?: string): number;
+      contornos(pieza?: string): number;
+      geometrias(): number;
     };
     __puntoCorte(pieza: string, lado?: 'corte' | 'oculto'): { x: number; y: number } | null;
   };
@@ -55,6 +57,8 @@ if (import.meta.env.DEV) {
     fantasmas: () => cortesVisor.fantasmas?.() ?? [],
     cajasMundo: () => cortesVisor.cajasMundo?.() ?? {},
     rellenos: (p) => cortesVisor.rellenos?.(p) ?? 0,
+    contornos: (p) => cortesVisor.contornos?.(p) ?? 0,
+    geometrias: () => cortesVisor.geometrias?.() ?? 0,
   };
   w.__puntoCorte = (p, lado) => cortesVisor.puntoCorte?.(p, lado) ?? null;
   // Costura del canal: `addInitScript` deja `__urlCanalInicial` antes de la primera carga ('' anula el canal);
