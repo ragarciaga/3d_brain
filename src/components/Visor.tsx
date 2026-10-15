@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
-import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
+import { acceleratedRaycast } from 'three-mesh-bvh';
 import {
   esFragmentable,
   origenDe,
@@ -33,8 +33,9 @@ import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
 import { punteado } from './acabados';
-import { esEncefalo, hayCortes } from '../lib/cortes';
-import { actualizarPlanos, crearMallaFantasma, crearMallaRelleno, mallasRellenables, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
+import { esEncefalo, hayCortes, type EstadoCuadros } from '../lib/cortes';
+import ContornoCorte from './ContornoCorte';
+import { actualizarPlanos, alCuadro, configurarRenderer, construirBvh, crearMallaFantasma, crearMallaRelleno, mallasRellenables, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
 import { useDensidadAdaptativa } from './useDensidadAdaptativa';
 
@@ -66,7 +67,14 @@ export const camaraActual: {
   objetivoEnPantalla: (() => { x: number; y: number }) | null;
   /** Dónde está (`actual`, con su desplazamiento) y dónde va (`casa`) una pieza, en px del lienzo; para pruebas. */
   piezaEnPantalla: ((pieza: string) => { casa: Punto2; actual: Punto2 } | null) | null;
-} = { leer: null, objetivoEnPantalla: null, piezaEnPantalla: null };
+  /**
+   * Distancia entre la cámara que dibuja (la que usan también los rayos del toque) y la pose a la que va (la de `leer`);
+   * 0 al llegar. `leer` da la pose de destino, que no dice si la cámara ya llegó; para pruebas.
+   */
+  desfase: (() => number) | null;
+  /** Cuántos pedidos de cámara (`pedirCamara`) ha aplicado el visor; para pruebas: indica que el pedido ya empezó a moverla. */
+  pedidosAplicados: number;
+} = { leer: null, objetivoEnPantalla: null, piezaEnPantalla: null, desfase: null, pedidosAplicados: 0 };
 
 /** Nombre de la tarjeta gráfica, si el navegador lo informa (Safari suele decir solo "Apple GPU"). */
 function nombreGpu(ctx: WebGLRenderingContext | WebGL2RenderingContext): string {
@@ -253,6 +261,7 @@ function centroLocal(mallas: MallaCargada[]): THREE.Vector3 {
 function Modelo({ idioma }: { idioma: Idioma }) {
   const gltf = useGLTF(URL_MODELO);
   const setCentros = useAtlas((s) => s.setCentros);
+  const conCortes = useAtlas((s) => hayCortes(s.cortes));
 
   const porPieza = useMemo(() => {
     gltf.scene.updateMatrixWorld(true);
@@ -264,7 +273,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       const pieza = piezaDeMalla(nombre);
       if (!pieza) return;
       // Árbol de intersección para tocar rápido aun con un millón de triángulos.
-      if (!mesh.geometry.boundsTree) mesh.geometry.boundsTree = new MeshBVH(mesh.geometry);
+      if (!mesh.geometry.boundsTree) mesh.geometry.boundsTree = construirBvh(mesh.geometry);
       const l = res.get(pieza) ?? [];
       l.push({
         nombre,
@@ -311,6 +320,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
         <Pieza key={id} id={id} mallas={mallas} idioma={idioma} />
       ))}
       <FantasmaCorte porPieza={porPieza} />
+      {conCortes && <ContornoCorte porPieza={porPieza} />}
     </>
   );
 }
@@ -537,6 +547,14 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
       const { width, height } = obtener().size;
       return { x: ((p.x + 1) / 2) * width, y: ((1 - p.y) / 2) * height };
     };
+    camaraActual.desfase = () => {
+      const c = controles.current;
+      if (!c) return Infinity;
+      const destino = c.getPosition(new THREE.Vector3(), true);
+      const mira = c.getTarget(new THREE.Vector3(), true).sub(destino).normalize();
+      const cam = obtener().camera;
+      return Math.max(cam.position.distanceTo(destino), cam.getWorldDirection(new THREE.Vector3()).distanceTo(mira));
+    };
     camaraActual.piezaEnPantalla = (pieza) => {
       const caja = cajasPiezas.get(pieza);
       if (!caja) return null;
@@ -549,6 +567,7 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
       camaraActual.leer = null;
       camaraActual.objetivoEnPantalla = null;
       camaraActual.piezaEnPantalla = null;
+      camaraActual.desfase = null;
     };
   }, [obtener]);
 
@@ -591,6 +610,7 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
 
   useEffect(() => {
     if (!pedido || !cargado) return;
+    camaraActual.pedidosAplicados += 1;
     if (pedido.camara && pedido.camara.length === 6) {
       const [a, b, c, d, e, f] = pedido.camara as [number, number, number, number, number, number];
       void controles.current?.setLookAt(a, b, c, d, e, f, !reducirMovimiento());
@@ -662,7 +682,11 @@ export const cortesVisor: {
    * `lado` 'corte' (por defecto): sobre la cara del corte; 'oculto': donde el rayo cruza la pieza solo del lado oculto.
    */
   puntoCorte: ((pieza: string, lado?: 'corte' | 'oculto') => { x: number; y: number } | null) | null;
-} = { planosDe: null, fantasmas: null, cajasMundo: null, rellenos: null, puntoCorte: null };
+  /** Líneas de contorno con segmentos en la escena (todas, visibles o no); con `pieza`, solo las de esa pieza. */
+  contornos: ((pieza?: string) => number) | null;
+  /** Geometrías vivas en la GPU del renderer (`gl.info.memory.geometries`): detecta lo que no se libera al desmontar. */
+  geometrias: (() => number) | null;
+} = { planosDe: null, fantasmas: null, cajasMundo: null, rellenos: null, puntoCorte: null, contornos: null, geometrias: null };
 
 const seVeEnMundo = (o: THREE.Object3D) => {
   for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
@@ -713,6 +737,16 @@ function AyudasCortes() {
       });
       return n;
     };
+    cortesVisor.contornos = (pieza) => {
+      let n = 0;
+      obtener().scene.traverse((o) => {
+        if (o.userData.contorno !== true) return;
+        if (pieza !== undefined && o.userData.pieza !== pieza) return;
+        if (((o as THREE.LineSegments).geometry.attributes.position?.count ?? 0) > 0) n++;
+      });
+      return n;
+    };
+    cortesVisor.geometrias = () => obtener().gl.info.memory.geometries;
     cortesVisor.puntoCorte = (pieza, lado = 'corte') => {
       if (!hayCortes(useAtlas.getState().cortes)) return null;
       const { camera, gl } = obtener();
@@ -730,6 +764,8 @@ function AyudasCortes() {
       cortesVisor.cajasMundo = null;
       cortesVisor.rellenos = null;
       cortesVisor.puntoCorte = null;
+      cortesVisor.contornos = null;
+      cortesVisor.geometrias = null;
     };
   }, [obtener]);
   return null;
@@ -746,20 +782,17 @@ const maximoVago = (cajas: Record<string, [Vec3, Vec3]>) => Math.max(...alturasV
 function MedidorCuadros() {
   const acumulado = useRef({ cuadros: 0, tiempo: 0 });
   const marcado = useRef(false);
+  // Vigilante de R8.2: con cortes y 10 muestras seguidas bajo 30 fps apaga el relleno, una sola vez.
+  const vigilante = useRef<EstadoCuadros>({ bajas: 0, apagado: false });
   useFrame((_, dt) => {
     // Primer cuadro dibujado con el modelo ya cargado (medición de carga, issue 6).
     if (!marcado.current && useAtlas.getState().cargado) {
       marcado.current = true;
       performance.mark(MARCA_PRIMER_CUADRO);
     }
-    const a = acumulado.current;
-    a.cuadros += 1;
-    a.tiempo += dt;
-    if (a.tiempo >= 0.5) {
-      useMetricas.getState().setFps(Math.round(a.cuadros / a.tiempo));
-      a.cuadros = 0;
-      a.tiempo = 0;
-    }
+    // Solo E2E (DEV): sin GPU el navegador da pocos cuadros por segundo y apagaría el relleno que la prueba mira.
+    const sinVigilante = import.meta.env.DEV && (window as unknown as { __sinVigilante?: boolean }).__sinVigilante === true;
+    alCuadro(acumulado.current, dt, vigilante.current, useAtlas.getState(), (fps) => useMetricas.getState().setFps(fps), sinVigilante);
   });
   return null;
 }
@@ -807,7 +840,7 @@ export default function Visor({ idioma, vistaInicial, camaraInicial }: { idioma:
           dpr={dpr}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
-            gl.localClippingEnabled = true; // recorrido del vago y planos de corte (F8)
+            configurarRenderer(gl, () => useAtlas.getState()); // recortes locales y shader que no compila (R3.4)
             useMetricas.getState().setGpu(nombreGpu(gl.getContext()));
           }}
           onPointerMissed={(e) => {

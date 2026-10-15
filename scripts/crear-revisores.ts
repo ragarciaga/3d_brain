@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { agregarRevisores, errorDePadron, type Padron } from './lib/revisiones.ts';
 
 const n = Number(process.argv[2]);
-const base = process.argv[3] ?? 'https://ragarciaga.github.io/3d_brain';
+const base = process.argv[3] ?? 'https://brain.maysasp.com';
 if (!Number.isInteger(n) || n < 1 || n > 100) {
   console.error('Uso: node scripts/crear-revisores.ts <cuántos, de 1 a 100> [base del sitio]');
   process.exit(2);
@@ -29,8 +29,9 @@ const filas = Object.entries(padron)
 const md = [
   '# Enlaces de revisión por docente (privado, no subir)',
   '',
-  'Escribe el nombre de cada docente en la última columna cuando le mandes su enlace. Su código',
-  'también va en el formulario de registro. En los issues públicos solo aparece el alias.',
+  'Escribe el nombre de cada docente en la última columna cuando le mandes su enlace. Agrega cada',
+  'código nuevo a la pestaña `Padrón` de la hoja del canal (activo: sí); ver docs/revision-docente.md.',
+  'En los issues públicos solo aparece el alias.',
   '',
   '| Alias | Código | Enlace personal | Docente |',
   '|---|---|---|---|',

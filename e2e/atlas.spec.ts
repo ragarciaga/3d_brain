@@ -1170,10 +1170,11 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
 test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y la duda está en la ficha, con avance por ficha (F24)', async ({ page }) => {
   await abrir(page, '/es/revision?r=GUIA01');
   await modeloCargado(page);
-  // La primera vez, la guía se abre sola, con el enlace al registro.
+  // La primera vez, la guía se abre sola, sin enlaces al registro ni a formularios.
   const guia = page.getByTestId('como-revisar');
   await expect(guia).toBeVisible();
-  await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', /docs\.google\.com\/forms/);
+  await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(0);
+  await expect(guia.locator('a[href*="docs.google.com/forms"]')).toHaveCount(0);
   await guia.getByRole('button', { name: 'Cerrar' }).click();
   await expect(guia).toHaveCount(0);
   // "Qué revisar": primero las dudas abiertas.

@@ -9,7 +9,7 @@ fuente, nivel de evidencia y revisión docente visible, y se vuelve a armar sin 
 Estado: hito 1, piloto con docentes. Las 236 fichas están escritas con fuentes verificadas y
 siguen en borrador hasta que las revisen docentes. Hito 2 en construcción: planos de corte (F8).
 
-**Sitio:** https://ragarciaga.github.io/3d_brain/ · **Todos los enlaces del proyecto:**
+**Sitio:** https://brain.maysasp.com/ · **Todos los enlaces del proyecto:**
 [docs/enlaces.md](docs/enlaces.md)
 
 ## Correrlo en local
