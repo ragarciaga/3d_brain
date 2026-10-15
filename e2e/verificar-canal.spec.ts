@@ -36,9 +36,6 @@ const conCanal = (context: BrowserContext) =>
 const saltarGuia = (context: BrowserContext, codigo: string) =>
   context.addInitScript((c) => localStorage.setItem(`atlas:guia-vista:${c}`, '1'), codigo);
 
-/** Deja pasar un frame y una macrotarea, para que los efectos de React ya hayan corrido antes de una aserción negativa. */
-const asentar = (page: Page) => page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => setTimeout(() => r(), 0))));
-
 interface Peticion {
   accion: string | null;
   cuerpo: Record<string, unknown> | null;
@@ -135,17 +132,26 @@ test('F2-E2: cerrar el diálogo sin aceptar (Escape o Cerrar) deja la respuesta 
   page,
   context,
 }) => {
+  // Reloj simulado: las aserciones negativas se leen una sola vez, después de pasar el tope de 3 s de R3.1. Leídas antes,
+  // una app que enviara `guardar` tras cerrar el diálogo pasaría igual. Tampoco se usa rAF: el reloj pausado lo congela.
+  await page.clock.install();
   const canal = await simularCanal(page, { autorizacion: null });
   await conCanal(context);
   await entrarDirecto(page, context, 'VER01');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  const ahora = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(ahora + 1000);
+  const pasarElTope = async () => {
+    await page.clock.fastForward(ESPERA_CANAL_MS + 1000);
+    await page.waitForTimeout(500); // tiempo real: deja llegar al simulador y pintar lo que hubiera disparado el salto
+  };
 
   // Escape: el diálogo se cierra, la respuesta sigue en la ficha y en IndexedDB, y no sale nada.
-  await correcto(page, 'que_es.es').click();
+  await correcto(page, 'que_es.es').click({ force: true });
   await expect(dialogoAut(page)).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialogoAut(page)).toHaveCount(0);
-  await asentar(page);
+  await pasarElTope();
   await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   await expect.poll(async () => Object.keys((await revisionGuardada(page, 'VER01'))?.respuestas ?? {})).toContain('hippocampus|que_es|es');
@@ -156,11 +162,11 @@ test('F2-E2: cerrar el diálogo sin aceptar (Escape o Cerrar) deja la respuesta 
   expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
 
   // Cerrar: igual con el botón del diálogo, en el siguiente cambio.
-  await correcto(page, 'ubicacion.es').click();
+  await correcto(page, 'ubicacion.es').click({ force: true });
   await expect(dialogoAut(page)).toBeVisible();
-  await dialogoAut(page).getByRole('button', { name: 'Cerrar' }).click();
+  await dialogoAut(page).getByRole('button', { name: 'Cerrar' }).click({ force: true });
   await expect(dialogoAut(page)).toHaveCount(0);
-  await asentar(page);
+  await pasarElTope();
   await expect(page.getByTestId('total-respuestas')).toHaveText('2 respuestas');
   await expect.poll(async () => Object.keys((await revisionGuardada(page, 'VER01'))?.respuestas ?? {}).sort()).toEqual([
     'hippocampus|que_es|es',
@@ -206,6 +212,8 @@ const VERSION_HIPOCAMPO = (JSON.parse(readFileSync('src/data/estructuras.json', 
 const FECHA_CANAL = '2026-01-01T10:00:00.000Z';
 
 test('F4-E1: de lo que devuelve el canal solo se muestra la respuesta válida; la malformada ni se ve ni rompe la página', async ({ page, context }) => {
+  // Reloj simulado sin pausar: al final se pasa el tope de 3 s de R3.1 para leer una sola vez que no salió ningún `guardar`.
+  await page.clock.install();
   const errores: string[] = [];
   page.on('pageerror', (e) => errores.push(e.message));
   const base = { i: 'es', s: VERSION_HIPOCAMPO, f: FECHA_CANAL };
@@ -239,7 +247,8 @@ test('F4-E1: de lo que devuelve el canal solo se muestra la respuesta válida; l
     await expect(page.locator(`[data-campo="${campo}"] [aria-pressed="true"]`)).toHaveCount(0);
   }
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
-  await asentar(page);
+  await page.clock.fastForward(ESPERA_CANAL_MS + 1000);
+  await page.waitForTimeout(500); // tiempo real: deja llegar al simulador lo que hubiera disparado el salto
   expect(errores).toEqual([]);
   // Lo válido ya lo tiene el canal y lo malformado no se reenvía como si fuera del docente.
   expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
@@ -258,6 +267,10 @@ for (const [lang, ficha, licencia] of [
       const texto = await page.locator('body').innerText();
       expect(texto, `texto de ${vista}`).not.toMatch(ALIAS);
       expect(texto, `texto de ${vista}`).not.toMatch(REVISOR_CON_NOMBRE);
+      // `innerText` no ve title, aria-label ni alt: también se mira el HTML del cuerpo.
+      const html = await page.locator('body').evaluate((el) => el.outerHTML);
+      expect(html, `HTML de ${vista}`).not.toMatch(ALIAS);
+      expect(html, `HTML de ${vista}`).not.toMatch(REVISOR_CON_NOMBRE);
     };
 
     await page.goto(`/${lang}`);
