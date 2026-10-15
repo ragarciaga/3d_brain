@@ -1502,6 +1502,8 @@ a {
 .dialogo-revision {
   max-height: 70vh;
   overflow: auto;
+  /* El pie fijo (.dialogo-pie, sticky al fondo) tapaba el control que se llevaba a la vista abajo; el relleno reserva su alto para el foco con teclado y para Playwright (#151). */
+  scroll-padding-bottom: 3.5rem;
 }
 
 .seccion-revision summary {
