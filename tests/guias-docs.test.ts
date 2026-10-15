@@ -84,7 +84,10 @@ describe('docs/revision-docente.md', () => {
     expect(texto).toContain('no se comparte con nadie');
     expect(texto).toContain('Regla del editor, no una protección');
     expect(texto).not.toContain('pero el editor la pasa solo por chat');
-    expect(texto).toContain('PRUEBA99');
+    // La prueba rápida usa un código aleatorio propio: uno fijo y publicado dejaría escribir en la hoja a cualquiera.
+    expect(texto).not.toContain('PRUEBA99');
+    expect(texto).toContain('`scripts/crear-revisores.ts`');
+    expect(texto).toMatch(/código\s+de\s+prueba\s+aleatorio/);
     expect(texto).toContain('Win+V');
     expect(texto).toContain('Set-Clipboard -Value $null');
   });

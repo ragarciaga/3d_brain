@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { configRevision } from '../src/config/revision';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 async function abrir(page: Page, ruta: string, conAviso = false) {
   if (!conAviso) await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
@@ -242,7 +245,14 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   await expect(page.getByTestId('medicion-modelo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-codigo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-primer-cuadro')).toHaveText(/\d+ ms/);
-  await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
+  // El desglose de "Preparar el modelo" sale con las tres partes.
+  await expect(page.getByTestId('medicion-leer')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-armar')).toHaveText(/\d+ ms/);
+  // "Lo más lento" solo sale si el cerebro tardó más de 3 s en verse.
+  const primerCuadro = Number(/(\d+) ms/.exec((await page.getByTestId('medicion-primer-cuadro').textContent()) ?? '')![1]);
+  if (primerCuadro > 3000) await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
+  else expect(await page.getByTestId('medicion-cuello').count()).toBe(0);
   // Sigue al navegar dentro de la app.
   await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
@@ -253,6 +263,8 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   const copiado = await page.evaluate(() => navigator.clipboard.readText());
   expect(copiado).toContain('Maysa Brain, medición de carga');
   expect(copiado).toMatch(/Modelo 3D: empezó a los \d+ ms/);
+  expect(copiado).toMatch(/Leer el modelo \(parseo y decodificación\): \d+ ms/);
+  expect(copiado).toMatch(/Índice de toque \(árboles BVH\): \d+ ms/);
   // Cerrar lo quita también al recargar.
   await panel.getByRole('button', { name: 'Cerrar' }).click();
   await expect(panel).toHaveCount(0);
