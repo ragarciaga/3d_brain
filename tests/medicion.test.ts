@@ -21,9 +21,9 @@ const recurso = (name: string, startTime: number, responseEnd: number, transferS
 
 const datos = {
   recursos: [
-    recurso('https://ragarciaga.github.io/3d_brain/assets/index-abc.js', 50, 900, 680_000, 2_560_000),
-    recurso('https://ragarciaga.github.io/3d_brain/assets/index-abc.css', 50, 120, 4_400),
-    recurso('https://ragarciaga.github.io/3d_brain/modelos/atlas.glb', 1_000, 4_000, 6_845_332),
+    recurso('https://brain.maysasp.com/assets/index-abc.js', 50, 900, 680_000, 2_560_000),
+    recurso('https://brain.maysasp.com/assets/index-abc.css', 50, 120, 4_400),
+    recurso('https://brain.maysasp.com/modelos/atlas.glb', 1_000, 4_000, 6_845_332),
   ],
   marcas: { [MARCA_INICIO_APP]: 950, [MARCA_MODELO_LISTO]: 4_600, [MARCA_PRIMER_CUADRO]: 4_700 },
 };

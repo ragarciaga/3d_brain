@@ -609,31 +609,25 @@ export default function PanelRevision({
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
             {t('revision.comoRevisar')}
           </h2>
-          {/* Con el canal configurado ya no existen el registro previo (nombre, rol; R2.6) ni el paso de envío por
-              formulario (R3.7) en la guía: la respuesta se guarda sola. El formulario de respaldo (R7.1) sale del botón
-              de la barra a los 10 min sin confirmación, no de la guía. La reescritura completa de la guía es de T12. */}
+          {/* La guía no menciona registro, envío ni respaldo en ningún modo (R10.3). El registro y el envío sin canal
+              se explican en el diálogo de envío (vista 'enviar'), y el respaldo por formulario (R7.1), que sale del
+              botón de la barra a los 10 min sin confirmación, en su propio diálogo. Con canal, la guía dice que todo
+              se guarda solo y que se sigue en otro equipo con el mismo enlace. */}
           {(
             [
               'intro',
               'responder',
+              ...(conCanal ? (['guardado', 'otroEquipo'] as const) : []),
               'idiomas',
               'dudas',
               'nombres',
               'marcadores',
               // Sin la casilla del vago (con canal) esas secciones no existen: la guía explica cómo activarla (R5).
               ...(vago ? (['trazos', 'recorridos'] as const) : (['vagoCasilla'] as const)),
-              ...(conCanal ? [] : (['enviar', 'privacidad'] as const)),
-            ] as const
+              ...(conCanal ? (['privacidad'] as const) : []),            ] as const
           ).map((k) => (
             <p key={k}>{t(`revision.guia.${k}`)}</p>
           ))}
-          {!canalConfigurado() && (
-            <p>
-              <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer" className="boton-primario enlace-boton">
-                {t('revision.guia.registrarme')}
-              </a>
-            </p>
-          )}
           <div className="dialogo-pie">
             <button type="button" onClick={() => cerrar(true)}>
               {t('comun.cerrar')}
@@ -653,7 +647,7 @@ export default function PanelRevision({
               <p>{t('revision.consentimiento')}</p>
               <p>
                 <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
-                  {t('revision.guia.registrarme')}
+                  {t('revision.registrarme')}
                 </a>
               </p>
             </>
@@ -689,7 +683,7 @@ export default function PanelRevision({
           </button>
           {envio && envio.partes.length > 0 && (
             <div>
-              <p>{t('revision.confirmaAyuda')}</p>
+              <p>{conCanal ? t('revision.confirmaAyudaCanal') : t('revision.confirmaAyuda')}</p>
               {envio.partes.length > 1 && <p>{t('revision.largaExplica')}</p>}
               <ul data-testid="partes-envio">
                 {envio.partes.map((parte, i) => {

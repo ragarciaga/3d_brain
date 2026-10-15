@@ -25,8 +25,9 @@ alcance, `SPEC.md`; para las reglas que siguen los agentes, `AGENTS.md`.
 Una sola vez: en GitHub, Settings > Pages > Build and deployment > Source: "GitHub Actions".
 
 Después, cada merge a `main` publica solo (workflow `pages`). Para publicar a mano: Actions >
-pages > Run workflow. El sitio queda en https://ragarciaga.github.io/3d_brain/ (español en
-`/3d_brain/es`, inglés en `/3d_brain/en`).
+pages > Run workflow. El sitio queda en https://brain.maysasp.com/ (español en
+`/es`, inglés en `/en`). El dominio es `brain.maysasp.com` (docs/adr/0014-dominio-propio.md); el
+enlace viejo de github.io redirige solo al nuevo.
 
 Si el workflow falla en "configure-pages" con "Not Found", Pages no está activado.
 
@@ -61,7 +62,7 @@ Abre http://localhost:3000. El número de cuadros por segundo aparece arriba a l
 Abre el sitio con `?medir=1` al final de la dirección, en cada equipo (iPad, celular, PC):
 
 ```
-https://ragarciaga.github.io/3d_brain/es?medir=1
+https://brain.maysasp.com/es?medir=1
 ```
 
 Aparece un panel con el equipo, la densidad de píxeles del visor, la tarjeta gráfica, cuánto tardó
@@ -73,8 +74,8 @@ esa pestaña; "Cerrar" lo quita. No envía nada a ningún servidor.
 Para comparar el mismo equipo con distinta densidad de píxeles, agrega `dpr=<n>` a la dirección:
 
 ```
-https://ragarciaga.github.io/3d_brain/es?medir=1&dpr=1
-https://ragarciaga.github.io/3d_brain/es?medir=1&dpr=1.5
+https://brain.maysasp.com/es?medir=1&dpr=1
+https://brain.maysasp.com/es?medir=1&dpr=1.5
 ```
 
 Se aceptan valores de 0.5 a 3, con punto decimal; cualquier otro valor se ignora y queda el modo
