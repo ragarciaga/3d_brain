@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { dudas, esFragmentable, estructuras, origenDe, grupos, marcadorPorId, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
+import { hayCortes } from '../lib/cortes';
 import { campoTrazado } from '../lib/rutas';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
@@ -338,6 +339,9 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
   const conContexto = useAtlas((st) => estadoAislar(st.aislar, 'contexto', piezas));
   const separado = useAtlas((st) => estadoSeparar(st.separadas, st.devueltas, piezas));
   const oculto = useAtlas((st) => estadoOcultar(st.ocultas, piezas));
+  // Con cortes no se separa (el store ya lo ignora): el botón queda deshabilitado y se dice por qué.
+  const conCortes = useAtlas((st) => hayCortes(st.cortes));
+  const idNota = useId();
   if (!piezas.length) {
     return (
       <div className="acciones">
@@ -377,6 +381,8 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
         <button
           type="button"
           {...propsPulsado(separado)}
+          disabled={conCortes}
+          aria-describedby={conCortes ? idNota : undefined}
           onClick={() => {
             if (accionAlPulsar(separado) === 'desactivar') s().devolver(piezas);
             else s().separar(piezas);
@@ -387,6 +393,11 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
         >
           {t('acciones.separar')}
         </button>
+      )}
+      {!nervio && conCortes && (
+        <p id={idNota} className="cortes-bloqueados acciones-nota" data-testid="separar-bloqueado">
+          {t('cortes.bloqueados')}
+        </p>
       )}
       {/* Segundo toque: las vuelve a mostrar. */}
       <button type="button" {...propsPulsado(oculto)} onClick={() => s().alternarVisibles(piezas, accionAlPulsar(oculto) === 'desactivar')}>

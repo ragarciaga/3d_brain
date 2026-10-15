@@ -412,6 +412,7 @@
     "fantasma": "Ghost",
     "fantasmaAyuda": "Shows the side removed by the cut, faintly.",
     "quitar": "Remove slices",
+    "bloqueados": "Disabled while slices are active",
     "etiqueta": {
       "izquierda": "{{mm}} mm to the left",
       "derecha": "{{mm}} mm to the right",

@@ -1,7 +1,8 @@
 // Fragmentar (F6) y reensamblar (F7).
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { nodos } from '../data/atlas';
+import { hayCortes } from '../lib/cortes';
 import type { Nivel } from '../lib/explosion';
 import { hayFiltros, piezasDeEncuadre, piezasVisibles, useAtlas } from '../store/useAtlas';
 
@@ -13,6 +14,9 @@ export default function BarraFragmentar() {
   const explosion = useAtlas((s) => s.explosion);
   const nivel = useAtlas((s) => s.nivel);
   const filtrado = useAtlas((s) => hayFiltros(s));
+  // Con cortes la explosión y el inventario no están disponibles (el store ya ignora `setExplosion`).
+  const conCortes = useAtlas((s) => hayCortes(s.cortes));
+  const idNota = useId();
   const st = useAtlas.getState;
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,6 +78,8 @@ export default function BarraFragmentar() {
           aria-label={t('fragmentar.explosion')}
           aria-valuetext={`${pct} %`}
           aria-orientation="vertical"
+          disabled={conCortes}
+          aria-describedby={conCortes ? idNota : undefined}
           onChange={(e) => {
             st().setExplosion(Number(e.target.value) / 100);
             pedirEncuadre();
@@ -85,6 +91,8 @@ export default function BarraFragmentar() {
       <button
         type="button"
         className="dock-reensamblar"
+        disabled={conCortes}
+        aria-describedby={conCortes ? idNota : undefined}
         onClick={() => {
           st().reensamblarTodo();
           pedirEncuadre();
@@ -94,6 +102,11 @@ export default function BarraFragmentar() {
       >
         <span aria-hidden="true">⟲</span> {t('fragmentar.reensamblar')}
       </button>
+      {conCortes && (
+        <p id={idNota} className="cortes-bloqueados" data-testid="explosion-bloqueada">
+          {t('cortes.bloqueados')}
+        </p>
+      )}
       {filtrado && (
         <button type="button" className="dock-mostrar" onClick={() => st().mostrarTodo()} data-testid="mostrar-todo">
           {t('acciones.mostrarTodo')}

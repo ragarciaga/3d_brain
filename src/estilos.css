@@ -189,6 +189,16 @@ a {
   place-items: center;
 }
 
+/* Igual para "Cortes": en pantallas anchas está en el riel. */
+.boton-cortes {
+  display: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+  place-items: center;
+}
+
 /* Recorrido guiado del vago (F14): abajo a la derecha del visor, junto a la brújula; en celular, abajo a lo ancho. */
 .recorrido {
   position: fixed;
@@ -599,6 +609,31 @@ a {
   color: var(--texto-suave);
 }
 
+/* Con cortes la explosión, el inventario y Separar no están disponibles: se ven apagados y con su motivo. */
+.dock input:disabled,
+.dock button:disabled,
+.acciones button:disabled,
+.boton-cortes:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cortes-bloqueados {
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+.dock .cortes-bloqueados {
+  font-size: 0.6rem;
+  text-align: center;
+  margin: 0;
+}
+
+.acciones-nota {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .centro {
   grid-area: centro;
 }
@@ -651,7 +686,9 @@ a {
   margin-top: 1rem !important;
 }
 
-/* Panel de cortes (escritorio): flota en la misma columna del cajón del riel; los dos se excluyen. */
+/* Panel de cortes. Escritorio: flota en la columna de los cajones del riel (los dos se excluyen); con la
+   ficha abierta ocupa su propia columna entre el riel y la ficha. Celular: cajón inferior (ver el bloque
+   de celular al final). */
 .panel-cortes {
   position: absolute;
   z-index: 20;
@@ -667,6 +704,20 @@ a {
   border-radius: var(--radio-tarjeta);
   padding: 0.8rem;
   box-shadow: var(--sombra);
+}
+
+/* Solo escritorio: la regla (0,3,0) ganaría a `.con-ficha .cuerpo` de celular, por eso va en el media query. */
+@media (min-width: 901px) {
+  .con-ficha.cortes-abierto .cuerpo {
+    grid-template-columns: 4.5rem min(85vw, 320px) minmax(320px, 400px) 1fr;
+    grid-template-areas: 'riel cortes ficha centro';
+  }
+
+  .con-ficha.cortes-abierto .panel-cortes {
+    grid-area: cortes;
+    left: 0;
+    width: 100%;
+  }
 }
 
 .panel-cortes h2 {
@@ -1786,6 +1837,37 @@ body:has(.pagina-texto) {
     grid-template-columns: repeat(3, 1.75rem);
     grid-template-rows: repeat(3, 1.75rem);
     padding: 0.25rem;
+  }
+
+  /* Cortes: el botón del encabezado abre un cajón inferior (queda montado; cerrado está inert y oculto). */
+  .boton-cortes {
+    display: grid;
+  }
+
+  .panel-cortes {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 30%;
+    border-radius: var(--radio-tarjeta) var(--radio-tarjeta) 0 0;
+    transform: translateY(110%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0s linear 0.2s;
+  }
+
+  .cortes-abierto .panel-cortes {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.2s ease, visibility 0s;
+  }
+
+  /* Con el cajón abierto la hoja de la ficha se acorta y queda encima de él (z-index 20 del cajón sobre 15). */
+  .cortes-abierto .ficha {
+    bottom: 30%;
+    max-height: 15%;
+    border-radius: var(--radio-tarjeta);
   }
 }
 

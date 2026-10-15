@@ -412,6 +412,7 @@
     "fantasma": "Fantasma",
     "fantasmaAyuda": "Muestra tenue el lado que quitó el corte.",
     "quitar": "Quitar cortes",
+    "bloqueados": "Se desactivan mientras haya cortes",
     "etiqueta": {
       "izquierda": "{{mm}} mm a la izquierda",
       "derecha": "{{mm}} mm a la derecha",
