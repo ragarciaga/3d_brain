@@ -13,16 +13,40 @@ describe('esCampoDeTexto', () => {
 });
 
 describe('accionEscape', () => {
-  const base = { confirmandoSalida: false, dialogoRevision: false, menuAbierto: false, ubicando: false, aislado: false, enCampo: false };
+  const base = {
+    confirmandoSalida: false,
+    dialogoRevision: false,
+    menuAbierto: false,
+    cortesAbierto: false,
+    ubicando: false,
+    aislado: false,
+    enCampo: false,
+  };
   it('con un diálogo de revisión abierto, Escape lo cierra', () =>
     expect(accionEscape({ ...base, dialogoRevision: true })).toBe('cerrar-revision'));
   it('sin confirmación de salida, el diálogo de revisión va antes que cualquier otra acción', () =>
     expect(
-      accionEscape({ confirmandoSalida: false, dialogoRevision: true, menuAbierto: true, ubicando: true, aislado: true, enCampo: true }),
+      accionEscape({
+        confirmandoSalida: false,
+        dialogoRevision: true,
+        menuAbierto: true,
+        cortesAbierto: true,
+        ubicando: true,
+        aislado: true,
+        enCampo: true,
+      }),
     ).toBe('cerrar-revision'));
   it('con la confirmación de salida abierta, Escape la cancela antes que todo', () =>
     expect(
-      accionEscape({ confirmandoSalida: true, dialogoRevision: true, menuAbierto: true, ubicando: true, aislado: true, enCampo: false }),
+      accionEscape({
+        confirmandoSalida: true,
+        dialogoRevision: true,
+        menuAbierto: true,
+        cortesAbierto: true,
+        ubicando: true,
+        aislado: true,
+        enCampo: false,
+      }),
     ).toBe('cancelar-salida'));
   it('la confirmación va antes que un diálogo de revisión abierto', () =>
     expect(accionEscape({ ...base, confirmandoSalida: true, dialogoRevision: true })).toBe('cancelar-salida'));
@@ -38,5 +62,21 @@ describe('accionEscape', () => {
     expect(accionEscape({ ...base, aislado: true, ubicando: true })).toBe('cancelar-ubicar'));
   it('con el cajón abierto lo cierra primero, aunque el foco esté en un campo del cajón', () =>
     expect(accionEscape({ ...base, menuAbierto: true, aislado: true, ubicando: true, enCampo: true })).toBe('cerrar-menu'));
+  it('con el panel de cortes abierto y nada más, Escape lo cierra', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true })).toBe('cerrar-cortes'));
+  it('el panel de cortes se cierra antes de salir del aislamiento', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true, aislado: true })).toBe('cerrar-cortes'));
+  it('el panel de cortes se cierra aunque el foco esté en su deslizador (un campo)', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true, aislado: true, enCampo: true })).toBe('cerrar-cortes'));
+  it('el panel de cortes se cierra antes de cancelar la propuesta de posición', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true, ubicando: true })).toBe('cerrar-cortes'));
+  it('con el cajón y el panel de cortes abiertos, el cajón va primero', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true, menuAbierto: true })).toBe('cerrar-menu'));
+  it('con un diálogo de revisión y el panel de cortes abiertos, el diálogo va primero', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true, dialogoRevision: true })).toBe('cerrar-revision'));
+  it('con la confirmación de salida y el panel de cortes abiertos, la confirmación va primero', () =>
+    expect(accionEscape({ ...base, cortesAbierto: true, confirmandoSalida: true })).toBe('cancelar-salida'));
+  it('sin el panel de cortes, el aislamiento se sale como antes', () =>
+    expect(accionEscape({ ...base, cortesAbierto: false, aislado: true })).toBe('salir-aislar'));
   it('sin nada que hacer no hace nada', () => expect(accionEscape(base)).toBeNull());
 });

@@ -588,6 +588,13 @@ a {
   color: var(--menta);
 }
 
+.riel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: none;
+  color: var(--texto-suave);
+}
+
 .centro {
   grid-area: centro;
 }
@@ -638,6 +645,69 @@ a {
 
 .titulo-arbol {
   margin-top: 1rem !important;
+}
+
+/* Panel de cortes (escritorio): flota en la misma columna del cajón del riel; los dos se excluyen. */
+.panel-cortes {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  left: 4.8rem;
+  width: min(85vw, 320px);
+  max-height: 100%;
+  overflow: auto;
+  display: grid;
+  gap: 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  padding: 0.8rem;
+  box-shadow: var(--sombra);
+}
+
+.panel-cortes h2 {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  margin: 0.4rem 0 0;
+}
+
+.cortes-aviso,
+.cortes-relleno {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radio);
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+  font-size: 0.85rem;
+}
+
+.cortes-ayuda {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+.fila-corte {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+}
+
+.fila-corte input[type='range'] {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.corte-etiqueta {
+  grid-column: 1 / -1;
+  min-height: 1.1em;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-suave);
 }
 
 .grupos-lista {

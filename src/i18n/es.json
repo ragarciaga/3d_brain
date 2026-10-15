@@ -335,7 +335,8 @@
     "titulo": "Paneles",
     "estructuras": "Estructuras",
     "grupos": "Grupos",
-    "buscar": "Buscar"
+    "buscar": "Buscar",
+    "cortes": "Cortes"
   },
   "medicion": {
     "titulo": "Medición de carga",
@@ -383,6 +384,29 @@
     "salir": "Salir del recorrido"
   },
   "cortes": {
+    "titulo": "Planos de corte",
+    "aviso": "El modelo viene de un solo cuerpo y no de resonancias: los cortes te orientan, pero no reemplazan un atlas de neuroimagen.",
+    "sinModelo": "Los cortes se activan cuando el modelo 3D termina de cargar.",
+    "rellenoApagado": "Tu equipo no alcanzó 30 cuadros por segundo con los cortes, así que apagamos el relleno y dejamos solo el contorno.",
+    "plano": {
+      "sagital": "Sagital",
+      "coronal": "Coronal",
+      "axial": "Axial"
+    },
+    "posicion": {
+      "sagital": "Posición del plano sagital",
+      "coronal": "Posición del plano coronal",
+      "axial": "Posición del plano axial"
+    },
+    "invertir": "Invertir",
+    "invertirPlano": {
+      "sagital": "Invertir el plano sagital",
+      "coronal": "Invertir el plano coronal",
+      "axial": "Invertir el plano axial"
+    },
+    "fantasma": "Fantasma",
+    "fantasmaAyuda": "Muestra tenue el lado que quitó el corte.",
+    "quitar": "Quitar cortes",
     "etiqueta": {
       "izquierda": "{{mm}} mm a la izquierda",
       "derecha": "{{mm}} mm a la derecha",

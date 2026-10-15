@@ -26,7 +26,8 @@ import PanelRevision from './PanelRevision';
 import { useMovil } from './useMovil';
 import Visor, { camaraActual } from './Visor';
 import Vistas, { Metricas } from './Vistas';
-import { IconoArbol, IconoBuscar, IconoCompartir, IconoGrupos } from './Iconos';
+import { IconoArbol, IconoBuscar, IconoCompartir, IconoCortes, IconoGrupos } from './Iconos';
+import PanelCortes from './PanelCortes';
 
 export default function Pagina({ slug, revision = false }: { slug?: string; revision?: boolean }) {
   const { lang } = useParams();
@@ -44,6 +45,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const [menu, setMenu] = useState(false);
   const [seccion, setSeccion] = useState<'grupos' | 'arbol'>('arbol'); // qué muestra el cajón del riel
   const [paleta, setPaleta] = useState(false); // paleta de búsqueda (riel, lupa o Ctrl+K)
+  const [cortesAbierto, setCortesAbierto] = useState(false); // panel de cortes (riel, escritorio)
+  const botonCortes = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
@@ -108,8 +111,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       return;
     }
     setSeccion(x);
+    setCortesAbierto(false); // el panel de cortes y el cajón comparten columna: uno cierra al otro
     setMenu(true);
     setTimeout(() => panel.current?.querySelector(x === 'grupos' ? '.grupos' : '.titulo-arbol')?.scrollIntoView({ block: 'start' }), 0);
+  };
+
+  const alternarCortes = () => {
+    if (!cortesAbierto) setMenu(false);
+    setCortesAbierto(!cortesAbierto);
   };
 
   // Estado inicial desde la URL compartida.
@@ -218,6 +227,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
         confirmandoSalida: confirmarSalida,
         dialogoRevision: s.dialogoRevision,
         menuAbierto: menu,
+        cortesAbierto,
         ubicando: !!s.ubicando,
         aislado: !!s.aislar,
         enCampo: esCampoDeTexto(e.target as HTMLElement | null),
@@ -227,6 +237,9 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       else if (accion === 'cerrar-menu') {
         setMenu(false);
         botonMenu.current?.focus();
+      } else if (accion === 'cerrar-cortes') {
+        setCortesAbierto(false);
+        botonCortes.current?.focus();
       } else if (accion === 'cancelar-ubicar') s.setUbicando(null);
       else if (accion === 'salir-aislar') s.salirAislar();
     };
@@ -238,7 +251,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       window.removeEventListener('atlas:elegir', alElegir);
       window.removeEventListener('keydown', alTeclear);
     };
-  }, [irA, menu, confirmarSalida, cancelarSalida]);
+  }, [irA, menu, cortesAbierto, confirmarSalida, cancelarSalida]);
 
   const compartir = useCallback(async () => {
     const s = useAtlas.getState();
@@ -355,12 +368,26 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
             <IconoBuscar />
             <span>{t('riel.buscar')}</span>
           </button>
+          <button
+            ref={botonCortes}
+            type="button"
+            className={cortesAbierto ? 'activo' : undefined}
+            aria-expanded={cortesAbierto}
+            aria-controls="panel-cortes"
+            disabled={!cargado}
+            title={cargado ? undefined : t('cortes.sinModelo')}
+            onClick={alternarCortes}
+          >
+            <IconoCortes />
+            <span>{t('riel.cortes')}</span>
+          </button>
         </nav>
         <aside id="panel-izq" ref={panel} className="panel-izq" inert={!menu}>
           <GruposEstudio idioma={idioma} alElegir={alElegirGrupo} />
           <h2 className="titulo-arbol">{t('arbol.titulo')}</h2>
           <Arbol idioma={idioma} alElegir={irA} />
         </aside>
+        {cortesAbierto && <PanelCortes />}
         <main
           className="centro"
           onPointerDown={() => {
