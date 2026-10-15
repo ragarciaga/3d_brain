@@ -22,9 +22,10 @@ import {
   type Plano,
 } from '../lib/cortes';
 import { VERSION_AUTORIZACION } from '../config/revision';
-import { autorizar, ErrorCanal, type Autorizacion } from '../lib/canal';
+import { autorizar, canalConfigurado, ErrorCanal, type Autorizacion } from '../lib/canal';
 import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
+import { vagoRevisable } from '../lib/prioridad';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
 import type { RutaTrazada } from '../lib/rutas';
 import { fusionarRespuestas, piezasQueSiguen } from '../lib/respaldo';
@@ -189,6 +190,11 @@ interface Estado {
 /** Si hay algo que "Mostrar todo" deshacer: piezas ocultas, aislamiento o un grupo de estudio activo. */
 export function hayFiltros(s: Pick<Estado, 'ocultas' | 'aislar' | 'grupoActivo'>): boolean {
   return s.ocultas.size > 0 || !!s.aislar || !!s.grupoActivo;
+}
+
+/** Selector del filtro del vago (spec 03, R5) para `useAtlas(vagoVisible)`: usa la autorización confirmada por el canal. */
+export function vagoVisible(s: Pick<Estado, 'autorizacion'>): boolean {
+  return vagoRevisable(canalConfigurado(), s.autorizacion);
 }
 
 export function piezasVisibles(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] {
@@ -391,7 +397,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   setAutorizacion: (a) => set({ autorizacion: a }),
   setLecturaCanal: (l) => set({ lecturaCanal: l }),
-  // El diálogo de autorización la usa al aceptar; T10 la usará para cambiar `vago` desde Acciones.
+  // La usan el diálogo de autorización al aceptar y la casilla del vago del menú Acciones (spec 03, R5.3).
   cambiarAutorizacion: async (vago) => {
     const codigo = get().revisor;
     if (!codigo) throw new ErrorCanal('red');

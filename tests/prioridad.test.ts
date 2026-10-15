@@ -2,9 +2,9 @@
 // lo que más necesita el criterio del docente.
 import { describe, expect, it } from 'vitest';
 import { dudas, estructuras, marcadores } from '../src/data/atlas';
-import { avanceDeFicha, avanceGlobal, camposDeFicha, entradasBajo, ordenDeRevision } from '../src/lib/prioridad';
+import { avanceDeFicha, avanceGlobal, camposDeFicha, entradasBajo, ordenDeRevision, vagoRevisable } from '../src/lib/prioridad';
 import { claveRespuesta } from '../src/lib/revision';
-import type { RutaTrazada } from '../src/lib/rutas';
+import { campoTrazado, type RutaTrazada } from '../src/lib/rutas';
 
 const conFicha = Object.keys(estructuras).filter((id) => estructuras[id]!.ficha);
 const sinSinonimosEs = Object.keys(estructuras).find(
@@ -199,6 +199,72 @@ describe('campos y avance de una ficha', () => {
       k('gracile-lobule', 'nombre', 'es'),
     ]);
     expect(avanceDeFicha(id, ajenas, 'es').hechos).toBe(0);
+  });
+});
+
+describe('filtro del vago (spec 03, R5)', () => {
+  const RLN = 'm-recurrent-laryngeal-nerve';
+  const rutas = [ruta('laringeo_recurrente_derecho', RLN), ruta('vago_toracico_derecho', 'vagus-nerve-x')];
+  const activo = vagoRevisable(true, { vago: false });
+  const sinFiltro = [
+    ['con canal y vago encendido', vagoRevisable(true, { vago: true })],
+    ['sin canal y sin autorización', vagoRevisable(false, null)],
+    ['sin canal y vago apagado', vagoRevisable(false, { vago: false })],
+  ] as const;
+
+  it('vagoRevisable: con canal solo la casilla marcada abre el filtro; sin canal siempre', () => {
+    expect(vagoRevisable(true, { vago: false })).toBe(false);
+    expect(vagoRevisable(true, null)).toBe(false);
+    expect(vagoRevisable(true, { vago: true })).toBe(true);
+    expect(vagoRevisable(false, null)).toBe(true);
+    expect(vagoRevisable(false, { vago: false })).toBe(true);
+  });
+
+  it('con el filtro activo, ordenDeRevision no trae la sección vago y las fichas del vago quedan en resto', () => {
+    expect(activo).toBe(false);
+    const orden = ordenDeRevision(new Set(), 'es', rutas, activo);
+    expect(orden.map((s) => s.seccion)).toEqual(['dudas', 'grupos', 'resto']);
+    const todos = orden.flatMap((s) => s.ids);
+    expect(new Set(todos).size).toBe(todos.length);
+    expect([...todos].sort()).toEqual([...conFicha].sort());
+    const resto = orden.find((s) => s.seccion === 'resto')!.ids;
+    expect(resto).toContain(RLN);
+    const marcadoresVago = marcadores.filter((x) => x.padre === 'g-vagus-nerve-x' && estructuras[x.id]?.ficha && !dudas[x.id]);
+    expect(marcadoresVago.length).toBeGreaterThan(0);
+    for (const m of marcadoresVago) expect(resto, m.id).toContain(m.id);
+  });
+
+  it('con el filtro activo, camposDeFicha y avanceDeFicha no cuentan las rutas trazadas', () => {
+    const sin = camposDeFicha(RLN, 'es');
+    const con = camposDeFicha(RLN, 'es', rutas);
+    expect(con.length).toBe(sin.length + 1);
+    expect(con).toContain(k(RLN, campoTrazado(rutas[0]!)));
+    const filtrados = camposDeFicha(RLN, 'es', rutas, activo);
+    expect(filtrados).toEqual(sin);
+    for (const clave of filtrados) expect(clave).not.toMatch(/\|trazado_/);
+    expect(camposDeFicha('vagus-nerve-x', 'es', rutas, activo).some((c) => /\|trazado_/.test(c))).toBe(false);
+    expect(avanceDeFicha(RLN, new Set(), 'es', rutas, activo)).toEqual({ hechos: 0, total: sin.length });
+    expect(avanceDeFicha(RLN, new Set(), 'es', rutas).total).toBe(con.length);
+  });
+
+  it('con el filtro activo, una ficha del vago completa sin sus rutas sale de la lista y cuenta en el avance global', () => {
+    const resp = todas(RLN, 'es');
+    const ids = (vago: boolean) => ordenDeRevision(resp, 'es', rutas, vago).flatMap((s) => s.ids);
+    expect(ids(activo)).not.toContain(RLN);
+    expect(ids(true)).toContain(RLN);
+    expect(avanceGlobal(resp, 'es', rutas, activo).completas).toBe(1);
+    expect(avanceGlobal(resp, 'es', rutas, true).completas).toBe(0);
+  });
+
+  it.each(sinFiltro)('%s: todo igual que hoy', (_nombre, vago) => {
+    expect(vago).toBe(true);
+    const orden = ordenDeRevision(new Set(), 'es', rutas, vago);
+    expect(orden).toEqual(ordenDeRevision(new Set(), 'es', rutas));
+    expect(orden.map((s) => s.seccion)).toContain('vago');
+    expect(camposDeFicha(RLN, 'es', rutas, vago)).toEqual(camposDeFicha(RLN, 'es', rutas));
+    expect(camposDeFicha(RLN, 'es', rutas, vago)).toContain(k(RLN, campoTrazado(rutas[0]!)));
+    expect(avanceDeFicha(RLN, new Set(), 'es', rutas, vago)).toEqual(avanceDeFicha(RLN, new Set(), 'es', rutas));
+    expect(avanceGlobal(todas(RLN, 'es', rutas), 'es', rutas, vago)).toEqual(avanceGlobal(todas(RLN, 'es', rutas), 'es', rutas));
   });
 });
 

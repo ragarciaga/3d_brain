@@ -1,7 +1,8 @@
 // Orden de revisión docente (F24): el tiempo de un docente es poco, así que primero va lo que más
 // necesita su criterio. 1) fichas con una duda abierta para él, 2) el nervio vago (recorridos trazados
 // y ramos sin ubicar; los trazos tienen su propia sección, ver src/lib/trazos.ts), 3) los grupos que pide
-// el lanzamiento, en su orden, 4) todo lo demás.
+// el lanzamiento, en su orden, 4) todo lo demás. La sección 2 y la de trazos solo existen con la casilla del
+// vago (o sin canal), ver `vagoRevisable`.
 import { dudas, estructuras, grupos, marcadores, nodos, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { claveRespuesta } from './revision';
@@ -29,6 +30,15 @@ export function entradasBajo(id: string): string[] {
 type RutasDeFicha = Pick<RutaTrazada, 'id' | 'entrada'>[];
 
 /**
+ * Filtro del vago (spec 03, R5): con canal, los trazos y las rutas trazadas solo se revisan con la casilla del
+ * vago marcada; sin canal (R7.2) no hay filtro. `autorizacion` es la confirmada por el canal, nunca la que va
+ * en vuelo.
+ */
+export function vagoRevisable(conCanal: boolean, autorizacion: { vago: boolean } | null): boolean {
+  return !conCanal || autorizacion?.vago === true;
+}
+
+/**
  * Claves de respuesta (`claveRespuesta`) de los controles de tres botones que `Ficha.tsx` dibuja para una
  * entrada en modo revisión, en el idioma activo y en el mismo orden. Es `[]` si la entrada no tiene ficha.
  * No entran la posición de un marcador ni los trazos del vago, que no son controles de tres botones.
@@ -36,8 +46,10 @@ type RutasDeFicha = Pick<RutaTrazada, 'id' | 'entrada'>[];
  * va aquí; si no, el avance y la lista "Qué revisar" cuentan campos que la ficha no muestra.
  * Esta misma lista decide qué campos responde "Marcar todo como correcto" (Ficha.tsx): si falta un campo,
  * el docente cree haber respondido toda la ficha.
+ * Con `vago` en `false` (filtro del vago activo, ver `vagoRevisable`) no entran los campos de rutas trazadas,
+ * igual que en `Ficha.tsx`, que entonces no dibuja su control.
  */
-export function camposDeFicha(id: string, idioma: Idioma, rutas: RutasDeFicha = []): string[] {
+export function camposDeFicha(id: string, idioma: Idioma, rutas: RutasDeFicha = [], vago = true): string[] {
   const e = estructuras[id];
   const f = e?.ficha;
   if (!e || !f) return [];
@@ -49,7 +61,7 @@ export function camposDeFicha(id: string, idioma: Idioma, rutas: RutasDeFicha = 
     c('latin'),
     ...(['es', 'en'] as const).filter((i) => e.sinonimos[i].length).map((i) => c('sinonimos', i)),
     ...(piezasDeEntrada(id).length > 0 ? [c('pieza')] : []),
-    ...rutas.filter((r) => r.entrada === id).map((r) => c(campoTrazado(r))),
+    ...(vago ? rutas.filter((r) => r.entrada === id) : []).map((r) => c(campoTrazado(r))),
     c('que_es', idioma),
     c('para_que_sirve', idioma),
     c('ubicacion', idioma),
@@ -61,8 +73,14 @@ export function camposDeFicha(id: string, idioma: Idioma, rutas: RutasDeFicha = 
 }
 
 /** Campos respondidos de una ficha y total de campos revisables. `respondidas`: claves de `claveRespuesta`. */
-export function avanceDeFicha(id: string, respondidas: Set<string>, idioma: Idioma, rutas: RutasDeFicha = []): { hechos: number; total: number } {
-  const campos = camposDeFicha(id, idioma, rutas);
+export function avanceDeFicha(
+  id: string,
+  respondidas: Set<string>,
+  idioma: Idioma,
+  rutas: RutasDeFicha = [],
+  vago = true,
+): { hechos: number; total: number } {
+  const campos = camposDeFicha(id, idioma, rutas, vago);
   return { hechos: campos.filter((k) => respondidas.has(k)).length, total: campos.length };
 }
 
@@ -70,13 +88,18 @@ export function avanceDeFicha(id: string, respondidas: Set<string>, idioma: Idio
 const completa = (a: { hechos: number; total: number }) => a.total > 0 && a.hechos === a.total;
 
 /** Fichas completas sobre todas las entradas con ficha, en el idioma activo. */
-export function avanceGlobal(respondidas: Set<string>, idioma: Idioma, rutas: RutasDeFicha = []): { completas: number; total: number } {
+export function avanceGlobal(
+  respondidas: Set<string>,
+  idioma: Idioma,
+  rutas: RutasDeFicha = [],
+  vago = true,
+): { completas: number; total: number } {
   let completas = 0;
   let total = 0;
   for (const id of Object.keys(estructuras)) {
     if (!estructuras[id]?.ficha) continue;
     total++;
-    if (completa(avanceDeFicha(id, respondidas, idioma, rutas))) completas++;
+    if (completa(avanceDeFicha(id, respondidas, idioma, rutas, vago))) completas++;
   }
   return { completas, total };
 }
@@ -85,25 +108,32 @@ export function avanceGlobal(respondidas: Set<string>, idioma: Idioma, rutas: Ru
  * Lo que falta por revisar, por secciones y sin repetir. Una ficha sigue en la lista mientras le falte algún
  * campo en el idioma activo y sale cuando los tiene todos. En cada sección, las empezadas (con algún campo
  * respondido) van primero, cada grupo en su orden de prioridad previo. `respondidas`: claves de `claveRespuesta`.
+ * Con `vago` en `false` (filtro del vago activo, ver `vagoRevisable`) no hay sección `vago` y las fichas de
+ * ramos del vago caen donde les toque (`resto`), sin campos de rutas trazadas.
  */
-export function ordenDeRevision(respondidas: Set<string>, idioma: Idioma, rutas: RutasDeFicha = []): { seccion: Seccion; ids: string[] }[] {
+export function ordenDeRevision(
+  respondidas: Set<string>,
+  idioma: Idioma,
+  rutas: RutasDeFicha = [],
+  vago = true,
+): { seccion: Seccion; ids: string[] }[] {
   const extrasVago = rutas.map((r) => r.entrada);
   const usadas = new Set<string>();
   const tomar = (ids: string[]) => {
     const r: string[] = [];
     for (const id of ids) {
       if (!estructuras[id]?.ficha || usadas.has(id)) continue;
-      const a = avanceDeFicha(id, respondidas, idioma, rutas);
+      const a = avanceDeFicha(id, respondidas, idioma, rutas, vago);
       if (completa(a)) continue;
       usadas.add(id);
       r.push(id);
     }
-    const empezada = (id: string) => avanceDeFicha(id, respondidas, idioma, rutas).hechos > 0;
+    const empezada = (id: string) => avanceDeFicha(id, respondidas, idioma, rutas, vago).hechos > 0;
     return [...r.filter(empezada), ...r.filter((id) => !empezada(id))];
   };
   const secciones: { seccion: Seccion; ids: string[] }[] = [
     { seccion: 'dudas', ids: tomar(Object.keys(dudas)) },
-    { seccion: 'vago', ids: tomar([...extrasVago, ...entradasBajo('g-vagus-nerve-x')]) },
+    ...(vago ? [{ seccion: 'vago' as const, ids: tomar([...extrasVago, ...entradasBajo('g-vagus-nerve-x')]) }] : []),
     {
       seccion: 'grupos',
       ids: tomar(

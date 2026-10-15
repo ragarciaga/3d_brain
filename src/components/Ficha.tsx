@@ -17,7 +17,7 @@ import {
   type Veredicto,
 } from '../lib/revision';
 import { camposDeFicha } from '../lib/prioridad';
-import { useAtlas } from '../store/useAtlas';
+import { useAtlas, vagoVisible } from '../store/useAtlas';
 import { colorDePieza } from './colores';
 import RevisionTrazo from './RevisionTrazo';
 import { CONSULTA_MOVIL } from './useMovil';
@@ -172,6 +172,7 @@ function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idiom
 function MarcarTodo({ id, idioma, version }: { id: string; idioma: Idioma; version: string }) {
   const { t } = useTranslation();
   const rutas = useAtlas((s) => s.rutas);
+  const vago = useAtlas(vagoVisible);
   const respuestas = useAtlas((s) => s.respuestas);
   const [confirmando, setConfirmando] = useState(false);
   const [hechos, setHechos] = useState<number | null>(null);
@@ -188,14 +189,14 @@ function MarcarTodo({ id, idioma, version }: { id: string; idioma: Idioma; versi
     else if (destino === 'estado') refEstado.current?.focus();
   }, [confirmando, hechos]);
 
-  const campos = camposDeFicha(id, idioma, rutas);
+  const campos = camposDeFicha(id, idioma, rutas, vago);
   // La fecha real se pone al confirmar; aquí solo importa cuántas faltan.
   const pendientes = pendientesComoCorrectas(campos, respuestas, version, '');
   const incompletas = campos.filter((k) => respuestas[k] && !respuestaCompleta(respuestas[k])).length;
 
   const confirmar = () => {
     const vigente = useAtlas.getState();
-    const nuevas = pendientesComoCorrectas(camposDeFicha(id, idioma, vigente.rutas), vigente.respuestas, version, new Date().toISOString());
+    const nuevas = pendientesComoCorrectas(camposDeFicha(id, idioma, vigente.rutas, vagoVisible(vigente)), vigente.respuestas, version, new Date().toISOString());
     for (const r of nuevas) vigente.responder(r);
     siguienteFoco.current = 'estado';
     setHechos(nuevas.length);
@@ -450,6 +451,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const revisor = useAtlas((s) => s.revisor);
   const ubicando = useAtlas((s) => s.ubicando);
   const rutas = useAtlas((s) => s.rutas);
+  // Filtro del vago (spec 03, R5): sin la casilla (con canal) no se muestran el control de trazo ni el de rutas trazadas.
+  const vago = useAtlas(vagoVisible);
   const enfocar = useAtlas((s) => s.enfocarFicha);
   const respuestas = useAtlas((s) => s.respuestas);
   const piezaPropuesta = useAtlas((s) => s.piezaPropuesta);
@@ -566,7 +569,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </span>
       </div>
       <GruposDeLaEntrada id={id} idioma={idioma} />
-      {revisor && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} idioma={idioma} />}
+      {revisor && vago && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} idioma={idioma} />}
       {revisor && f && <MarcarTodo key={`${id}|${idioma}`} id={id} idioma={idioma} version={version} />}
       {revisor && dudas[id] && (
         <section className="ficha-campo ficha-dudas" data-testid="dudas">
@@ -600,8 +603,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         <section key={r.id} className="ficha-campo revision-ruta" data-testid={`ruta-${campoTrazado(r)}`}>
           <h3>{t('revision.trazadoTitulo', { nombre: r.nombre[idioma] })}</h3>
           <p className="recurso-nota">{t(`revision.trazadoEstado_${r.revision.estado}`)}</p>
-          {revisor && <p>{t('revision.trazadoAyuda')}</p>}
-          {rev(campoTrazado(r))}
+          {revisor && vago && <p>{t('revision.trazadoAyuda')}</p>}
+          {vago && rev(campoTrazado(r))}
         </section>
       ))}
 
