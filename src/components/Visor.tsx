@@ -34,7 +34,7 @@ import { colorDePieza } from './colores';
 import { useMetricas } from './metricas';
 import { punteado } from './acabados';
 import { esEncefalo, hayCortes } from '../lib/cortes';
-import { actualizarPlanos, crearMallaFantasma, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
+import { actualizarPlanos, crearMallaFantasma, crearMallaRelleno, mallasRellenables, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
 import { useDensidadAdaptativa } from './useDensidadAdaptativa';
 
@@ -113,6 +113,8 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const revisando = useAtlas((s) => !!s.revisor);
   const shift = useAtlas((s) => s.shift);
   const conCortes = useAtlas((s) => hayCortes(s.cortes));
+  // Booleano, nunca un arreglo: en zustand 5 un selector que devuelve un arreglo nuevo entra en bucle.
+  const conRelleno = useAtlas((s) => piezaConRelleno(id, s));
   const [encima, setEncima] = useState(false);
 
   // Planos de la pieza: los de corte (encéfalo), el del recorrido (vago) o ninguno (órganos y sin cortes).
@@ -227,6 +229,8 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
           </mesh>
         );
       })}
+      {/* Hijo del grupo: el cursor y el toque del relleno burbujean a los manejadores de arriba (etiqueta, selección, ficha). */}
+      {conRelleno && <RellenoDePieza mallas={mallas} color={color} tocable={seleccionable} />}
       {encima && (
         <Html position={centroLocal(mallas)} center style={{ pointerEvents: 'none' }} zIndexRange={[20, 0]}>
           <div className="etiqueta-3d">{nombrePieza(id, idioma, t)}</div>
@@ -347,6 +351,23 @@ function FantasmaDePieza({ id, mallas }: { id: string; mallas: MallaCargada[] })
     <>
       {copias.map((c) => (
         <primitive key={c.uuid} object={c} />
+      ))}
+    </>
+  );
+}
+
+/** Relleno de la cara del corte (ADR 0011): la cara trasera de cada malla cerrada de la pieza, con el color de la pieza. */
+function RellenoDePieza({ mallas, color, tocable }: { mallas: MallaCargada[]; color: string; tocable: boolean }) {
+  const copias = useMemo(() => {
+    const rellenables = new Set(mallasRellenables(mallas.map((m) => m.nombre)));
+    return mallas.filter((m) => rellenables.has(m.nombre)).map((m) => crearMallaRelleno(m.geometria, m.matriz, color, m.nombre));
+  }, [mallas, color]);
+  // Solo el material: la geometría es la de la pieza y se comparte.
+  useEffect(() => () => copias.forEach((c) => (c.material as THREE.Material).dispose()), [copias]);
+  return (
+    <>
+      {copias.map((c) => (
+        <primitive key={c.uuid} object={c} raycast={tocable ? raycastCorte : raycastNulo} />
       ))}
     </>
   );
@@ -634,9 +655,14 @@ export const cortesVisor: {
   planosDe: ((pieza: string) => number) | null;
   fantasmas: (() => string[]) | null;
   cajasMundo: (() => Record<string, number[]>) | null;
-  /** Punto en px CSS del viewport (listo para `page.mouse`), distinto de los px del lienzo de `piezaEnPantalla`. */
-  puntoCorte: ((pieza: string) => { x: number; y: number } | null) | null;
-} = { planosDe: null, fantasmas: null, cajasMundo: null, puntoCorte: null };
+  /** Mallas de relleno en la escena (todas, visibles o no); con `pieza`, solo las de esa pieza. */
+  rellenos: ((pieza?: string) => number) | null;
+  /**
+   * Punto en px CSS del viewport (listo para `page.mouse`), distinto de los px del lienzo de `piezaEnPantalla`.
+   * `lado` 'corte' (por defecto): sobre la cara del corte; 'oculto': donde el rayo cruza la pieza solo del lado oculto.
+   */
+  puntoCorte: ((pieza: string, lado?: 'corte' | 'oculto') => { x: number; y: number } | null) | null;
+} = { planosDe: null, fantasmas: null, cajasMundo: null, rellenos: null, puntoCorte: null };
 
 const seVeEnMundo = (o: THREE.Object3D) => {
   for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
@@ -646,12 +672,13 @@ const seVeEnMundo = (o: THREE.Object3D) => {
 function AyudasCortes() {
   const obtener = useThree((s) => s.get);
   useEffect(() => {
-    // Solo mallas de pieza (con `nombreMalla`): quedan fuera los fantasmas y las esferas de los marcadores.
+    // Solo mallas de pieza (con `nombreMalla`): quedan fuera los fantasmas, los rellenos (`userData.relleno`, que llevan
+    // el `nombreMalla` de su pieza) y las esferas de los marcadores.
     const mallasDePieza = () => {
       const res: { malla: THREE.Mesh; pieza: string; toque: boolean }[] = [];
       obtener().scene.traverse((o) => {
         const nombreMalla = o.userData.nombreMalla as string | undefined;
-        const pieza = nombreMalla && !o.userData.fantasmaCorte ? piezaDeMalla(nombreMalla) : undefined;
+        const pieza = nombreMalla && !o.userData.fantasmaCorte && !o.userData.relleno ? piezaDeMalla(nombreMalla) : undefined;
         if ((o as THREE.Mesh).isMesh && pieza) res.push({ malla: o as THREE.Mesh, pieza, toque: esMallaDeToque(nombreMalla!) });
       });
       return res;
@@ -678,13 +705,21 @@ function AyudasCortes() {
       }
       return Object.fromEntries(Object.entries(res).map(([p, c]) => [p, [...c.min.toArray(), ...c.max.toArray(), vertices[p]!]]));
     };
-    cortesVisor.puntoCorte = (pieza) => {
+    cortesVisor.rellenos = (pieza) => {
+      let n = 0;
+      obtener().scene.traverse((o) => {
+        if (o.userData.relleno !== true) return;
+        if (pieza === undefined || piezaDeMalla(o.userData.nombreMalla as string) === pieza) n++;
+      });
+      return n;
+    };
+    cortesVisor.puntoCorte = (pieza, lado = 'corte') => {
       if (!hayCortes(useAtlas.getState().cortes)) return null;
       const { camera, gl } = obtener();
       const candidatas: CandidataCorte[] = mallasDePieza()
         .filter((x) => !x.toque && seVeEnMundo(x.malla) && x.malla.raycast !== raycastNulo)
         .map((x) => ({ pieza: x.pieza, malla: x.malla, cortada: esEncefalo(x.pieza) }));
-      const ndc = puntoDeCorte(pieza, candidatas, camera);
+      const ndc = puntoDeCorte(pieza, candidatas, camera, PLANOS_CORTE, lado);
       if (!ndc) return null;
       const r = gl.domElement.getBoundingClientRect();
       return { x: r.left + ((ndc.x + 1) / 2) * r.width, y: r.top + ((1 - ndc.y) / 2) * r.height };
@@ -693,6 +728,7 @@ function AyudasCortes() {
       cortesVisor.planosDe = null;
       cortesVisor.fantasmas = null;
       cortesVisor.cajasMundo = null;
+      cortesVisor.rellenos = null;
       cortesVisor.puntoCorte = null;
     };
   }, [obtener]);

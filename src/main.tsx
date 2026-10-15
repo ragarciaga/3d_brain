@@ -42,8 +42,9 @@ if (import.meta.env.DEV) {
       planosDe(pieza: string): number;
       fantasmas(): string[];
       cajasMundo(): Record<string, number[]>;
+      rellenos(pieza?: string): number;
     };
-    __puntoCorte(pieza: string): { x: number; y: number } | null;
+    __puntoCorte(pieza: string, lado?: 'corte' | 'oculto'): { x: number; y: number } | null;
   };
   w.__atlas = useAtlas;
   w.__camara = camaraActual;
@@ -53,8 +54,9 @@ if (import.meta.env.DEV) {
     planosDe: (p) => cortesVisor.planosDe?.(p) ?? 0,
     fantasmas: () => cortesVisor.fantasmas?.() ?? [],
     cajasMundo: () => cortesVisor.cajasMundo?.() ?? {},
+    rellenos: (p) => cortesVisor.rellenos?.(p) ?? 0,
   };
-  w.__puntoCorte = (p) => cortesVisor.puntoCorte?.(p) ?? null;
+  w.__puntoCorte = (p, lado) => cortesVisor.puntoCorte?.(p, lado) ?? null;
   // Costura del canal: `addInitScript` deja `__urlCanalInicial` antes de la primera carga ('' anula el canal);
   // `__fijarUrlCanal` la cambia después. Nunca se lee de la URL de la página ni del almacenamiento.
   w.__fijarUrlCanal = (url) => {
