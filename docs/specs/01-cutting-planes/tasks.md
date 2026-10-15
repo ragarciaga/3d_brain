@@ -53,7 +53,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/components/recorte.ts, src/components/Visor.tsx, src/main.tsx, tests/cortes-visor.test.ts, e2e/cortes-visor.spec.ts
 - Verify: `npm test -- tests/cortes-visor.test.ts` con casos que fallan antes de la tarea: (a) los planos por pieza son `PLANOS_CORTE` solo para piezas del encéfalo con cortes activos, nunca para el vago ni los órganos (R2.1); (b) sin planos activos son `null` y no se monta ninguna malla extra (R8.3); (c) la opacidad del fantasma es 0,25 o menos y, con un solo plano activo, el fantasma muestra solo el lado oculto de ese plano (R5.2); (d) el fantasma usa `raycast` nulo (R5.3); (e) `raycastCorte` descarta un impacto del lado oculto de cualquier plano activo y conserva uno del lado visible, con uno, dos y tres planos (R4.3). `npm run test:e2e -- e2e/cortes-visor.spec.ts`: (1) con un plano activo, `__cortes.planosDe` da 3 para una pieza visible del encéfalo, 1 para el vago (el plano del recorrido) y 0 para un órgano de referencia; sin cortes, 0 para la pieza del encéfalo (R1.4, R2.1, R8.3); (2) con el fantasma activo, `__cortes.fantasmas()` incluye una pieza cruzada visible y no incluye una oculta ni una fuera del aislamiento (R2.6); (3) con cortes activos se inicia el recorrido del vago y los cortes siguen mientras el nervio se revela parada por parada (R9.1); (4) al quitar los cortes cada pieza queda en la posición de antes (R2.5); `npm run test:e2e -- e2e/atlas.spec.ts` sigue en verde
 - Issue: #36
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. La lógica probada sale de `Visor.tsx` a `recorte.ts`; se nombran los casos; se depende de T1 de forma explícita. Nota: el fantasma de aislar con contexto ya existe; el nuevo se llama `fantasmaCorte` en el código.
@@ -67,7 +67,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/lib/enlaces.ts, tests/enlaces.test.ts, src/components/Pagina.tsx, e2e/cortes-enlace.spec.ts
 - Verify: `npm test -- tests/enlaces.test.ts`: `serializar` emite `corte=coronal:12,axial:-8:inv` en orden sagital, coronal, axial y no emite `corte` sin planos activos (R7.1); `entradasDeCortes(cortes)` convierte el estado del store en entradas solo de planos activos (R7.1); `leer` y `validarCortes(entradas, rango)` ignoran solo la entrada mal escrita, la repetida (gana la primera) y la de fuera de rango (R7.3); un enlace sin `corte` se lee y se genera igual que hoy; con el store real, `aplicarCortesEnlace(entradas)` con `explosion=40` previa deja `explosion=0`, `separadas={}` y los planos en sus posiciones, y aplicarla dos veces deja el mismo estado (R7.4). `npm run test:e2e -- e2e/cortes-enlace.spec.ts`: abrir `?corte=coronal:12,axial:-8:inv` deja coronal y axial activos en 12 y -8 (axial invertido) según `window.__atlas.getState().cortes` una vez cargado el modelo (R7.2); un enlace con una entrada inválida y otra válida aplica solo la válida; con `corte=` y `explosion=40` la explosión queda en 0; con cortes activos, "Compartir" produce una URL con `corte=` y los mismos planos (R7.1)
 - Issue: #37
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. `validarCortes` queda en `enlaces.ts`; R7.4 se prueba con el store real; se nombran los casos.
