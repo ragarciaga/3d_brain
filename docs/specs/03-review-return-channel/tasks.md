@@ -187,7 +187,7 @@ Spec: docs/specs/03-review-return-channel/  |  Status: approved  |  Converged: 2
 - Files: src/config/revision.ts, tests/config-revision.test.ts, e2e/atlas.spec.ts, e2e/revision-dialogos.spec.ts, e2e/trazos-vago.spec.ts, e2e/respaldo.spec.ts, e2e/marcar-todo.spec.ts
 - Verify: `npm test -- tests/config-revision.test.ts`: `urlCanal` cumple `/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/` (falla mientras esté vacía, que es como la deja T4); `npm run typecheck` y `npm test` en verde; `npm run test:e2e -- e2e/revision-canal.spec.ts e2e/revision-dialogos.spec.ts e2e/atlas.spec.ts e2e/trazos-vago.spec.ts e2e/respaldo.spec.ts e2e/marcar-todo.spec.ts` en verde con la URL real puesta: cada spec del modo sin canal anula `urlCanal` con la costura de T6 antes de la primera carga (`addInitScript` en un `beforeEach`), los de `revision-canal.spec.ts` la fijan y simulan con `page.route`, y todos llevan un `page.route('https://script.google.com/**')` que hace fallar la prueba si sale alguna petición real; `[manual]` el editor, ya publicado el cambio y en una ventana de incógnito con un código de prueba del padrón, marca una respuesta, ve "Guardado ✓" y encuentra la fila en la pestaña Respuestas, y abre el mismo enlace en otro equipo y la ve respondida (razón: la nube no alcanza `script.google.com`, proxy 403)
 - Issue: #99
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: nueva, por la nota de los revisores de T4 y T6: nadie llenaba la URL real, y es un cambio de nivel C (host nuevo) que necesita al editor.
