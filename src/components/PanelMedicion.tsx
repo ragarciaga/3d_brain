@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  acumularFluidez,
+  cargaLenta,
   cuelloDeBotella,
+  FLUIDEZ_HASTA_MS,
   informe,
   MARCA_PRIMER_CUADRO,
   resumirCarga,
   resumirFluidez,
   type Equipo,
+  type EstadoFluidez,
   type Fluidez,
   type Recurso,
   type ResumenCarga,
@@ -16,8 +20,6 @@ import {
 import { useMetricas } from './metricas';
 
 const CLAVE = 'atlas:medir';
-/** Ventana para medir la fluidez después del primer cuadro. */
-const VENTANA_FLUIDEZ_MS = 10_000;
 
 function activoAlInicio(): boolean {
   try {
@@ -57,6 +59,7 @@ function leerDatos(): { resumen: ResumenCarga; primerCuadro: number | null } {
     responseEnd: r.responseEnd,
     transferSize: r.transferSize,
     decodedBodySize: r.decodedBodySize,
+    encodedBodySize: r.encodedBodySize,
   }));
   const marcas: Record<string, number> = {};
   for (const m of performance.getEntriesByType('mark')) marcas[m.name] = m.startTime;
@@ -77,16 +80,18 @@ export default function PanelMedicion() {
   // Tiempos de carga: se leen cada medio segundo hasta tener el primer cuadro y la ventana de fluidez.
   useEffect(() => {
     if (!activo) return;
+    // Cada lectura de cuadros por segundo es una muestra; cuenta solo si su intervalo (de la lectura
+    // anterior a esta) cae entero entre 1 y 10 s después del primer cuadro.
+    const estado: EstadoFluidez = { anterior: performance.now(), muestras: muestras.current };
     const quitarFps = useMetricas.subscribe((s, antes) => {
-      if (s.fps === antes.fps) return;
       const primero = performance.getEntriesByName(MARCA_PRIMER_CUADRO)[0]?.startTime;
-      if (primero !== undefined && performance.now() - primero <= VENTANA_FLUIDEZ_MS) muestras.current.push(s.fps);
+      acumularFluidez(estado, s, antes, performance.now(), primero);
     });
     const id = setInterval(() => {
       const { resumen: r, primerCuadro } = leerDatos();
       setResumen(r);
       if (primerCuadro !== null) setFluidez(resumirFluidez(muestras.current));
-      if (primerCuadro !== null && performance.now() - primerCuadro > VENTANA_FLUIDEZ_MS) clearInterval(id);
+      if (primerCuadro !== null && performance.now() - primerCuadro > FLUIDEZ_HASTA_MS) clearInterval(id);
     }, 500);
     return () => {
       clearInterval(id);
@@ -95,7 +100,7 @@ export default function PanelMedicion() {
   }, [activo]);
 
   if (!activo) return null;
-  const cuello = resumen ? cuelloDeBotella(resumen) : null;
+  const cuello = resumen && cargaLenta(resumen) ? cuelloDeBotella(resumen) : null;
   const ms = (n: number | null | undefined) => (n === null || n === undefined ? t('medicion.esperando') : `${n} ms`);
   const eq = equipo(gpu, densidad, densidadFija);
   const copiar = async () => {
@@ -137,7 +142,13 @@ export default function PanelMedicion() {
           {resumen?.modeloDesdeCache ? `· ${t('medicion.desdeCache')}` : resumen?.modeloKB ? `· ${resumen.modeloKB} KB` : ''}
         </dd>
         <dt>{t('medicion.preparar')}</dt>
-        <dd>{ms(resumen?.procesamientoMs)}</dd>
+        <dd data-testid="medicion-preparar">{ms(resumen?.procesamientoMs)}</dd>
+        <dt className="medicion-parte">{t('medicion.leerModelo')}</dt>
+        <dd data-testid="medicion-leer">{ms(resumen?.leerModeloMs)}</dd>
+        <dt className="medicion-parte">{t('medicion.indiceToque')}</dt>
+        <dd data-testid="medicion-indice">{ms(resumen?.indiceToqueMs)}</dd>
+        <dt className="medicion-parte">{t('medicion.armarPiezas')}</dt>
+        <dd data-testid="medicion-armar">{ms(resumen?.armarPiezasMs)}</dd>
         <dt>{t('medicion.primerCuadro')}</dt>
         <dd data-testid="medicion-primer-cuadro">{ms(resumen?.primerCuadroMs)}</dd>
         <dt>{t('medicion.fluidez')}</dt>

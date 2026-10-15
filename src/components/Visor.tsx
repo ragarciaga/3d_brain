@@ -22,7 +22,7 @@ import {
 import type { Idioma, Marcador } from '../data/tipos';
 import { acercar, CERO, promedio, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
-import { MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
+import { MARCA_INDICE_TOQUE, MARCA_MODELO_LEIDO, MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombre, nombrePieza } from '../lib/nombres';
@@ -31,7 +31,7 @@ import { nivelDeParada, paradasVago } from '../lib/recorrido';
 import { fueraDeSitio, objetivo, piezasDeEncuadre, piezasSeleccionadas, piezasVisibles, useAtlas } from '../store/useAtlas';
 import BarreraVisor from './BarreraVisor';
 import { colorDePieza } from './colores';
-import { useMetricas } from './metricas';
+import { marcarUnaVez, useMetricas } from './metricas';
 import { punteado } from './acabados';
 import { esEncefalo, hayCortes, type EstadoCuadros } from '../lib/cortes';
 import ContornoCorte from './ContornoCorte';
@@ -264,6 +264,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
   const conCortes = useAtlas((s) => hayCortes(s.cortes));
 
   const porPieza = useMemo(() => {
+    marcarUnaVez(MARCA_MODELO_LEIDO);
     gltf.scene.updateMatrixWorld(true);
     const res = new Map<string, MallaCargada[]>();
     gltf.scene.traverse((o) => {
@@ -284,6 +285,7 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       });
       res.set(pieza, l);
     });
+    marcarUnaVez(MARCA_INDICE_TOQUE);
     return res;
   }, [gltf]);
 
