@@ -1,11 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
-// En GitHub Pages el sitio vive en /3d_brain/; en local y en las pruebas, en la raíz.
-const base = process.env.GITHUB_PAGES === 'true' ? '/3d_brain/' : '/';
-
+// El sitio vive en la raíz del dominio propio (brain.maysasp.com, docs/adr/0014-dominio-propio.md), igual
+// que en local y en las pruebas. El workflow de Pages aún pasa GITHUB_PAGES=true; ya no cambia la base.
 export default defineConfig({
-  base,
+  base: '/',
   plugins: [react()],
   // El README y las pruebas E2E esperan http://localhost:3000; `--port` en la línea de comandos lo reemplaza.
   server: { port: 3000 },

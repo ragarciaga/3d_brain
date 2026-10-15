@@ -11,7 +11,7 @@ Hola, [nombre]. Gracias por ayudarnos a revisar Maysa Brain, un atlas 3D gratuit
 nervio vago para estudiantes de psicología y ciencias de la salud.
 
 Tu enlace personal (no lo compartas: es la llave de tu revisión):
-https://ragarciaga.github.io/3d_brain/es/revision?r=TU_CODIGO
+https://brain.maysasp.com/es/revision?r=TU_CODIGO
 
 Al abrirlo verás una guía corta. La primera vez que marques una respuesta, el atlas te pide una sola
 vez tu autorización, sin nombre ni correo. Todo se guarda solo y no hay que enviar nada. Para seguir

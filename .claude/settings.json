@@ -134,7 +134,8 @@
       "Bash(node --test*)",
       "mcp__playwright",
       "Edit",
-      "Write"
+      "Write",
+      "Bash(git merge -s ours --no-edit origin/rb/bookkeeping-*)"
     ],
     "deny": [
       "Read(./.env*)",
