@@ -1,12 +1,14 @@
 // Recortes del visor. Dos usos de los planos de three, sin tocar jamás la geometría ni la posición de una pieza:
 // el revelado progresivo del recorrido del vago (F14), con su plano propio, y los planos de corte del encéfalo (F8),
 // con el fantasma opcional del lado oculto, el relleno de la cara del corte con las caras traseras de las mallas
-// cerradas (ADR 0011) y el toque que descarta lo que quedó oculto (`raycastCorte`).
+// cerradas (ADR 0011), el contorno del corte (líneas calculadas con el BVH, sin relleno: en las mallas abiertas, y en
+// todas las cortadas cuando el relleno se apaga por lentitud o por un shader que no compila) y el toque que descarta
+// lo que quedó oculto (`raycastCorte`).
 // Todo lo que se prueba vive aquí, sin montar el Canvas; `Visor.tsx` solo lo usa.
 import * as THREE from 'three';
-import { acceleratedRaycast } from 'three-mesh-bvh';
+import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
 import cerradasJson from '../config/mallas-cerradas.json';
-import { esFragmentable, esMallaDeToque, origenDe } from '../data/atlas';
+import { esFragmentable, esMallaDeToque, nodos, origenDe } from '../data/atlas';
 import {
   EJE,
   esEncefalo,
@@ -16,7 +18,9 @@ import {
   planoDe,
   PLANOS,
   rangoCerebro,
+  vigilarCuadros,
   type Cortes,
+  type EstadoCuadros,
   type Rango,
 } from '../lib/cortes';
 import type { Caja } from '../lib/inventario';
@@ -32,6 +36,17 @@ export const planoRecorrido = new THREE.Plane(new THREE.Vector3(0, 1, 0), SIN_RE
 
 /** Plano del recorrido del vago (F14): el vago lo lleva siempre; los planos de corte nunca. */
 export const PLANOS_RECORRIDO = [planoRecorrido];
+
+/**
+ * Árbol de intersección de una geometría (el que usan el toque y el contorno del corte). `MeshBVH` reordena el índice de
+ * la geometría en sitio, y en el GLB varias mallas comparten el mismo índice (los núcleos del tronco, de topología
+ * idéntica): sin una copia propia, cada árbol nuevo desordena el índice de los anteriores y esos árboles dejan de
+ * encontrar triángulos. Por eso la geometría recibe su propio índice antes de construir el árbol.
+ */
+export function construirBvh(geometria: THREE.BufferGeometry): MeshBVH {
+  if (geometria.index) geometria.setIndex(geometria.index.clone());
+  return new MeshBVH(geometria);
+}
 
 /** Un `raycast` que nunca da impactos (piezas ocultas, órganos y fantasmas). */
 export const raycastNulo = () => null;
@@ -158,13 +173,17 @@ export function crearMallaFantasma(geometria: THREE.BufferGeometry, matriz: THRE
   return malla;
 }
 
-export type EstadoRelleno = Omit<EstadoFantasma, 'fantasmaCorte'>;
+type EstadoCortada = Omit<EstadoFantasma, 'fantasmaCorte'>;
+
+/** `rellenoApagado`: el relleno se apagó en este equipo (R8.2, R3.4); todas las piezas cortadas pasan a contorno. */
+export type EstadoRelleno = EstadoCortada & { rellenoApagado: boolean };
 
 /**
- * Si la pieza lleva relleno del corte: es del encéfalo, hay cortes activos, se ve (ni oculta, ni fuera del aislamiento,
- * ni aproximada con solo escaneada) y algún plano activo cruza su caja (cruce estricto). Mismo filtro que el fantasma.
+ * Pieza cortada y visible: es del encéfalo, hay cortes activos, se ve (ni oculta, ni fuera del aislamiento, ni
+ * aproximada con solo escaneada) y algún plano activo cruza su caja (cruce estricto). Mismo filtro que el fantasma.
+ * Es la base del relleno y del contorno.
  */
-export function piezaConRelleno(pieza: string, s: EstadoRelleno): boolean {
+function piezaCortadaVisible(pieza: string, s: EstadoCortada): boolean {
   if (!hayCortes(s.cortes) || !esEncefalo(pieza)) return false;
   if (s.ocultas.has(pieza)) return false;
   if (s.aislar && !s.aislar.piezas.has(pieza)) return false;
@@ -172,12 +191,20 @@ export function piezaConRelleno(pieza: string, s: EstadoRelleno): boolean {
   return piezasCruzadas(s.cajas, [pieza], s.cortes, rangoActual(s.cajas)).length > 0;
 }
 
+/**
+ * Si la pieza lleva relleno del corte: está cortada y visible (ver `piezaCortadaVisible`) y el relleno no se apagó.
+ * Con el relleno apagado nunca lleva: pasa a contorno.
+ */
+export function piezaConRelleno(pieza: string, s: EstadoRelleno): boolean {
+  return !s.rellenoApagado && piezaCortadaVisible(pieza, s);
+}
+
 /** De las mallas de una pieza, las que se rellenan: cerradas y que no son el tubo del toque. Conserva el orden. */
 export function mallasRellenables(nombres: readonly string[], cerradas: ReadonlySet<string> = MALLAS_CERRADAS): string[] {
   return nombres.filter((n) => !esMallaDeToque(n) && cerradas.has(n));
 }
 
-/** Mallas de `pieza` que llevan relleno ahora (vacío sin planos activos). `nombres` son las mallas de la pieza. */
+/** Mallas de `pieza` que llevan relleno ahora (vacío sin planos activos o con el relleno apagado). `nombres` son las mallas de la pieza. */
 export function mallasDeRelleno(
   pieza: string,
   nombres: readonly string[],
@@ -202,6 +229,193 @@ export function crearMallaRelleno(geometria: THREE.BufferGeometry, matriz: THREE
   malla.raycast = raycastCorte;
   malla.userData = { nombreMalla, relleno: true };
   return malla;
+}
+
+/**
+ * Planos activos como `THREE.Plane` nuevos, en el orden de `PLANOS` y con la convención de `PLANOS_CORTE` (se ve donde
+ * normal·p + constante >= 0). Salen del estado y no de `PLANOS_CORTE`: el orden de los `useFrame` no está fijado.
+ */
+export function planosActivos(cortes: Cortes, rango: Rango): THREE.Plane[] {
+  return PLANOS.filter((p) => cortes[p].activo).map((p) => {
+    const { normal, constante } = planoDe(p, cortes[p], rango);
+    return new THREE.Plane(new THREE.Vector3(normal[0], normal[1], normal[2]), constante);
+  });
+}
+
+const _cruce = new THREE.Vector3();
+
+/** Recorta el segmento p-q (en sitio) contra todos los planos menos `omitir`; false si no queda nada del lado visible. */
+function recortarSegmento(p: THREE.Vector3, q: THREE.Vector3, planos: readonly THREE.Plane[], omitir: number): boolean {
+  for (let j = 0; j < planos.length; j++) {
+    if (j === omitir) continue;
+    const dp = planos[j]!.distanceToPoint(p);
+    const dq = planos[j]!.distanceToPoint(q);
+    const pFuera = dp < 0;
+    const qFuera = dq < 0;
+    if (pFuera && qFuera) return false;
+    if (pFuera || qFuera) {
+      _cruce.lerpVectors(p, q, dp / (dp - dq));
+      (pFuera ? p : q).copy(_cruce);
+    }
+  }
+  return true;
+}
+
+/**
+ * Segmentos donde los planos cortan la geometría, ya recortados al lado visible de los demás planos (el contorno del
+ * corte, sin relleno). Posiciones en el espacio local de la geometría, 6 floats por segmento: se dibujan con la misma
+ * `matriz`. Usa el BVH de la geometría (un `shapecast` por plano); sin BVH o sin planos devuelve vacío y nunca construye
+ * uno (esto corre dentro de un cuadro). Un vértice sobre el plano cuenta del lado visible (`d >= 0`, como `seVeConRecorte`).
+ */
+export function segmentosDeCorte(geometria: THREE.BufferGeometry, matriz: THREE.Matrix4, planos: readonly THREE.Plane[]): Float32Array {
+  const arbol = geometria.boundsTree;
+  if (!arbol || !planos.length) return new Float32Array(0);
+  const inversa = matriz.clone().invert();
+  const locales = planos.map((p) => p.clone().applyMatrix4(inversa));
+  const salida: number[] = [];
+  const p = new THREE.Vector3();
+  const q = new THREE.Vector3();
+  locales.forEach((plano, i) => {
+    arbol.shapecast({
+      intersectsBounds: (caja) => plano.intersectsBox(caja),
+      // El triángulo es de un pool: se lee en el momento. `false` sigue el recorrido.
+      intersectsTriangle: (tri) => {
+        const da = plano.distanceToPoint(tri.a);
+        const db = plano.distanceToPoint(tri.b);
+        const dc = plano.distanceToPoint(tri.c);
+        let n = 0;
+        const arista = (u: THREE.Vector3, v: THREE.Vector3, du: number, dv: number) => {
+          if (du < 0 === (dv < 0)) return;
+          (n === 0 ? p : q).lerpVectors(u, v, du / (du - dv));
+          n++;
+        };
+        arista(tri.a, tri.b, da, db);
+        arista(tri.b, tri.c, db, dc);
+        arista(tri.c, tri.a, dc, da);
+        if (n === 2 && p.distanceToSquared(q) > 0 && recortarSegmento(p, q, locales, i)) {
+          salida.push(p.x, p.y, p.z, q.x, q.y, q.z);
+        }
+        return false;
+      },
+    });
+  });
+  return new Float32Array(salida);
+}
+
+/** Piezas del encéfalo que llevan contorno: cortadas y visibles, y abiertas (o todas, si el relleno se apagó). En el orden de `piezasEncefalo`. */
+export function piezasConContorno(s: EstadoRelleno, cerradas: ReadonlySet<string> = MALLAS_CERRADAS): string[] {
+  return piezasEncefalo.filter(
+    (p) => piezaCortadaVisible(p, s) && (s.rellenoApagado || !cerradas.has(nodos[p]?.malla ?? '')),
+  );
+}
+
+/** De las mallas de una pieza, las que llevan contorno: sin el tubo del toque, y solo las abiertas con el relleno encendido. */
+export function mallasDeContorno(nombres: readonly string[], rellenoApagado: boolean, cerradas: ReadonlySet<string> = MALLAS_CERRADAS): string[] {
+  return nombres.filter((n) => !esMallaDeToque(n) && (rellenoApagado || !cerradas.has(n)));
+}
+
+export interface MallaParaContorno {
+  nombre: string;
+  geometria: THREE.BufferGeometry;
+  matriz: THREE.Matrix4;
+}
+
+/**
+ * Líneas del contorno de una malla, vacías hasta el primer `refrescarContorno`. Sin `clippingPlanes`: el recorte se hace
+ * en CPU contra los otros planos. Nunca se toca (el umbral de línea de three, 1 unidad, taparía todos los toques) y no
+ * lleva `nombreMalla`, así que no cuenta como malla de pieza.
+ */
+export function crearLineaContorno(matriz: THREE.Matrix4, color: THREE.ColorRepresentation, pieza: string): THREE.LineSegments {
+  const geometria = new THREE.BufferGeometry();
+  geometria.setAttribute('position', new THREE.Float32BufferAttribute(0, 3));
+  const linea = new THREE.LineSegments(geometria, new THREE.LineBasicMaterial({ color }));
+  linea.matrixAutoUpdate = false;
+  linea.matrix.copy(matriz);
+  // Sin padre que la actualice cada cuadro, la matriz del mundo se calcula una vez.
+  linea.matrixWorldNeedsUpdate = true;
+  linea.raycast = raycastNulo;
+  linea.userData = { contorno: true, pieza };
+  return linea;
+}
+
+/**
+ * Recalcula las líneas solo si cambió la referencia de `cortes` o de `rango` desde la última vez. Reemplaza la
+ * geometría de la línea (libera la anterior) y devuelve true; false si no había nada que hacer. Muta `linea`.
+ */
+export function refrescarContorno(linea: THREE.LineSegments, geometria: THREE.BufferGeometry, cortes: Cortes, rango: Rango): boolean {
+  if (linea.userData.cortes === cortes && linea.userData.rango === rango) return false;
+  const nueva = new THREE.BufferGeometry();
+  nueva.setAttribute('position', new THREE.Float32BufferAttribute(segmentosDeCorte(geometria, linea.matrix, planosActivos(cortes, rango)), 3));
+  const anterior = linea.geometry;
+  linea.geometry = nueva;
+  anterior.dispose();
+  linea.userData.cortes = cortes;
+  linea.userData.rango = rango;
+  return true;
+}
+
+/** Libera la geometría y el material de cada línea (la geometría de la pieza no se toca: es compartida). */
+export function liberarContornos(lineas: readonly THREE.LineSegments[]): void {
+  for (const l of lineas) {
+    l.geometry.dispose();
+    (l.material as THREE.Material).dispose();
+  }
+}
+
+/**
+ * Un shader no compiló (`renderer.debug.onShaderError`): se apaga el relleno y las piezas pasan a contorno. No escribe
+ * en consola; al asignarse, three deja de llamar a su propio `console.error`. No sabe qué material falló: apaga siempre.
+ */
+export function alErrorShaderRelleno(estado: { apagarRelleno(): void }): void {
+  estado.apagarRelleno();
+}
+
+/** Una muestra de cuadros por segundo: si el vigilante dice que ya van 5 s bajo el umbral con cortes, apaga el relleno (R8.2). */
+export function alMuestraFps(vigilante: EstadoCuadros, fps: number, estado: { cortes: Cortes; apagarRelleno(): void }): void {
+  if (vigilarCuadros(vigilante, fps, hayCortes(estado.cortes))) estado.apagarRelleno();
+}
+
+export interface AcumuladoCuadros {
+  cuadros: number;
+  tiempo: number;
+}
+
+/**
+ * Un cuadro dibujado: acumula y, cada 0,5 s, calcula los cuadros por segundo, los publica con `publicar` y se los da al
+ * vigilante (R8.2), salvo con `sinVigilante` (solo E2E en DEV). Muta `acumulado` y `vigilante`.
+ */
+export function alCuadro(
+  acumulado: AcumuladoCuadros,
+  dt: number,
+  vigilante: EstadoCuadros,
+  estado: { cortes: Cortes; apagarRelleno(): void },
+  publicar: (fps: number) => void,
+  sinVigilante = false,
+): void {
+  acumulado.cuadros += 1;
+  acumulado.tiempo += dt;
+  if (acumulado.tiempo < 0.5) return;
+  const fps = Math.round(acumulado.cuadros / acumulado.tiempo);
+  publicar(fps);
+  if (!sinVigilante) alMuestraFps(vigilante, fps, estado);
+  acumulado.cuadros = 0;
+  acumulado.tiempo = 0;
+}
+
+/** El renderer que se asigna en `onCreated`: solo lo que `configurarRenderer` toca. */
+export interface RendererConfigurable {
+  localClippingEnabled: boolean;
+  debug: { onShaderError: THREE.WebGLDebug['onShaderError'] };
+}
+
+/**
+ * Configura el renderer: recortes locales (recorrido del vago y planos de corte, F8) y el manejador de shaders que no
+ * compilan (R3.4), que apaga el relleno. `estado` se lee al fallar, no al configurar. Con un manejador propio three no
+ * escribe su `console.error`.
+ */
+export function configurarRenderer(gl: RendererConfigurable, estado: () => { apagarRelleno(): void }): void {
+  gl.localClippingEnabled = true;
+  gl.debug.onShaderError = () => alErrorShaderRelleno(estado());
 }
 
 export interface CandidataCorte {

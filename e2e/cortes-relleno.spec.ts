@@ -7,19 +7,24 @@ type Estado = Record<string, (...a: unknown[]) => void> & {
 };
 interface VentanaRelleno {
   __atlas: { getState(): Estado };
-  __cortes: { planosDe(p: string): number; rellenos(p?: string): number };
+  __cortes: { planosDe(p: string): number; rellenos(p?: string): number; contornos(p?: string): number; geometrias(): number };
   __puntoCorte(p: string, lado?: 'corte' | 'oculto'): { x: number; y: number } | null;
-  __camara: { leer: (() => number[]) | null };
+  __camara: { leer: (() => number[]) | null; desfase: (() => number) | null; pedidosAplicados: number };
 }
 
 // Copias de los ayudantes de cortes-visor.spec.ts: este archivo no los comparte para que cada prueba sea independiente.
 async function abrir(page: Page, ruta: string) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
+  // El navegador de la prueba no tiene GPU y da pocos cuadros por segundo: sin esto el vigilante (R8.2) apagaría el relleno que se mira.
+  await page.addInitScript(() => Object.assign(window, { __sinVigilante: true }));
   await page.goto(ruta);
   await expect(page.getByTestId('piezas')).toHaveText(/287 (piezas|pieces)/, { timeout: 150_000 });
 }
 
 const leerCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__camara.leer?.() ?? []);
+/** Cuánto le falta a la cámara real para llegar a su destino. `leer` da el destino, que no cambia mientras la cámara se mueve. */
+const desfaseCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__camara.desfase?.() ?? Infinity);
+const pedidosAplicados = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__camara.pedidosAplicados);
 async function camaraQuieta(page: Page) {
   await expect
     .poll(
@@ -32,10 +37,15 @@ async function camaraQuieta(page: Page) {
       { timeout: 30_000 },
     )
     .toBeLessThan(1e-4);
+  // Con pocos cuadros por segundo el destino ya es el final pero la cámara que dibuja y que usan los rayos sigue en camino:
+  // un punto calculado así queda sobre otra pieza.
+  await expect.poll(() => desfaseCamara(page)).toBeLessThan(1e-4);
 }
 
 const planosDe = (page: Page, pieza: string) => page.evaluate((p) => (window as unknown as VentanaRelleno).__cortes.planosDe(p), pieza);
 const rellenos = (page: Page, pieza?: string) => page.evaluate((p) => (window as unknown as VentanaRelleno).__cortes.rellenos(p), pieza);
+const contornos = (page: Page, pieza?: string) => page.evaluate((p) => (window as unknown as VentanaRelleno).__cortes.contornos(p), pieza);
+const geometrias = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__cortes.geometrias());
 const puntoCorte = (page: Page, pieza: string, lado?: 'corte' | 'oculto') =>
   page.evaluate(([p, l]) => (window as unknown as VentanaRelleno).__puntoCorte(p as string, l as 'corte' | 'oculto' | undefined), [pieza, lado] as const);
 const seleccion = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__atlas.getState().seleccion);
@@ -45,7 +55,10 @@ const accion = (page: Page, nombre: string, ...args: unknown[]) =>
 
 /** Mira la pieza de frente y devuelve el punto de pantalla de su cara del corte. */
 async function apuntar(page: Page, pieza: string, lado?: 'corte' | 'oculto') {
+  const antes = await pedidosAplicados(page);
   await accion(page, 'pedirCamara', { vista: lado === 'oculto' ? 'lateral-izq' : 'anterior', encuadrar: [pieza] });
+  // El visor aplica el pedido en el siguiente render: antes de eso el destino que se lee es el del pedido anterior.
+  await expect.poll(() => pedidosAplicados(page)).toBeGreaterThan(antes);
   await camaraQuieta(page);
   let p: { x: number; y: number } | null = null;
   await expect.poll(async () => (p = await puntoCorte(page, pieza, lado)) !== null).toBe(true);
@@ -122,5 +135,43 @@ test('relleno del corte: cara sólida de las mallas cerradas, con nombre y ficha
   await test.step('(6) al quitar los cortes no queda ninguna malla de relleno (R8.3)', async () => {
     await accion(page, 'quitarCortes');
     await expect.poll(() => rellenos(page)).toBe(0);
+    await expect.poll(() => contornos(page)).toBe(0);
+  });
+
+  let baseGeometrias = 0;
+  await test.step('(7) contorno en las abiertas y, con el relleno apagado, en todas las cortadas, sin errores en consola (R3.3, R3.4, D2)', async () => {
+    baseGeometrias = await geometrias(page);
+    const errores: string[] = [];
+    page.on('pageerror', (e) => errores.push(`pageerror: ${e.message}`));
+    page.on('console', (m) => m.type() === 'error' && errores.push(`console: ${m.text()}`));
+    await accion(page, 'setCorte', 'coronal', { activo: true, mm });
+    await expect.poll(() => contornos(page, abierta)).toBeGreaterThan(0);
+    await expect.poll(() => rellenos(page, 'thalamus-l')).toBeGreaterThan(0);
+    // Con el relleno encendido, una pieza cerrada no lleva contorno (lectura única: es un estado que dura hasta apagar).
+    expect(await contornos(page, 'thalamus-l')).toBe(0);
+    await accion(page, 'apagarRelleno');
+    // Lo que vio el auditor de T6: antes de T7 el relleno seguía montado después de apagarlo.
+    await expect.poll(() => rellenos(page)).toBe(0);
+    await expect.poll(() => contornos(page, 'thalamus-l')).toBeGreaterThan(0);
+    expect(await contornos(page, abierta)).toBeGreaterThan(0);
+    // Toda pieza que el plano cruza (por su caja) lleva contorno al apagar el relleno, también las que el plano roza por un borde.
+    await expect
+      .poll(async () => {
+        const sin: string[] = [];
+        for (const p of encefalo) if (cajas[p] && cruza(p) && (await contornos(page, p)) === 0) sin.push(p);
+        return sin;
+      })
+      .toEqual([]);
+    // Las líneas ya se dibujaron: hay geometrías nuevas en la GPU (sin esto el chequeo de (8) sería vacío).
+    await expect.poll(() => geometrias(page)).toBeGreaterThan(baseGeometrias);
+    expect(errores).toEqual([]);
+  });
+
+  await test.step('(8) al quitar los cortes no queda ningún contorno (D1)', async () => {
+    await accion(page, 'quitarCortes');
+    await expect.poll(() => contornos(page)).toBe(0);
+    expect(await rellenos(page)).toBe(0);
+    // Un objeto desmontado sale de la escena aunque no se libere: se mira la memoria de la GPU (R8.3, limpieza de design.md).
+    await expect.poll(() => geometrias(page)).toBe(baseGeometrias);
   });
 });
