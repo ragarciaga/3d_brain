@@ -81,7 +81,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/components/recorte.ts, src/components/Visor.tsx, src/main.tsx, tests/cortes-visor.test.ts, e2e/cortes-relleno.spec.ts
 - Verify: `npm test -- tests/cortes-visor.test.ts` con casos que fallan antes de la tarea: la función pura de `recorte.ts` que decide qué mallas se rellenan devuelve vacío sin planos activos (R8.3) y excluye piezas ocultas, fuera del aislamiento, mallas abiertas (fuera de `src/config/mallas-cerradas.json`), `#toque`, vago y órganos (R2.6). `npm run test:e2e -- e2e/cortes-relleno.spec.ts`: con un corte coronal en el tálamo, `__cortes.rellenos()` es mayor que 0; el tálamo, los ventrículos laterales y el núcleo caudado muestran su nombre al pasar el cursor en `__puntoCorte(pieza)` (R3.5, R4.1); tocar la cara abre la ficha de esa pieza (R4.2); tocar `__puntoCorte(pieza, 'oculto')` no selecciona nada; al quitar los cortes `__cortes.rellenos()` es 0 (R8.3); `npm run test:e2e -- e2e/atlas.spec.ts` sigue en verde; R3.1 `[manual]` (reason: el relleno se ve en la GPU; se revisa en los equipos de referencia y con capturas del prototipo) con capturas en #9
 - Issue: #38
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Se agregan la prueba unitaria de qué se rellena (R2.6, R8.3) y las tres piezas del criterio de F8 en el E2E.
