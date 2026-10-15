@@ -51,3 +51,26 @@ Ruta: de vuelta al e2e-writer (ronda 1 de 2).
 - El modo revisión de todas las pruebas depende de la costura de desarrollo `__urlCanalInicial`; es intencional (`e2e/canal-real.ts`).
 - `e2e/revision-canal.spec.ts` usa esperas fijas negativas (por ejemplo `ESPERA_CANAL_MS + 1000`) con comentario; la referencia de e2e las desaconseja. Queda como seguimiento.
 - Observación del e2e-writer: una respuesta del canal con un campo inventado pero con formato válido se acepta y cuenta (R6.6 usa las reglas del importador, que solo validan el formato). No se ve en ninguna ficha. Queda como pregunta para el spec.
+
+## Corrida 2: 2026-10-15
+- Commit: 8ab17ba  |  Rama: rb/verify-review-return-channel
+- Resultado: 5/5 pasan, 0 fallan, 0 inestables (`e2e/verificar-canal.spec.ts`, 2,1 min, un proceso)
+- Entorno: igual que la corrida 1.
+
+| Caso | Prueba | Resultado | Clase | Criterio |
+|---|---|---|---|---|
+| F2-E2 | e2e/verificar-canal.spec.ts:131 | pasa | | R2.2 |
+| F3-E2 | e2e/verificar-canal.spec.ts:181 | pasa | | R3.1, R3.4, R3.7 |
+| F4-E1 | e2e/verificar-canal.spec.ts:214 | pasa | | R4.1, R6.6 |
+| F7-E1 (es) | e2e/verificar-canal.spec.ts:265 | pasa | | R9.2 |
+| F7-E1 (en) | e2e/verificar-canal.spec.ts:265 | pasa | | R9.2 |
+
+### Fallas
+Ninguna.
+
+### Aserciones débiles encontradas
+- F7-E1: revisa el `body` (texto y atributos) pero no el `<head>` (`<title>`, `meta`), y no tiene un control positivo. Opcional, queda como seguimiento.
+- F2-E2: después del avance del reloj no vuelve a afirmar que el diálogo siga cerrado (lo cubre en parte `revision-dialogos.spec.ts`). Menor.
+
+### Cambios desde la corrida anterior
+- El e2e-writer endureció las cuatro aserciones de la corrida 1: F2-E2 y F4-E1 leen las cuentas de peticiones después de avanzar el reloj más allá de la espera de 3 s, y F7-E1 revisa también `body.outerHTML`. Cada una se comprobó fallando con la condición rota.
