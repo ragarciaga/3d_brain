@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { configRevision } from '../src/config/revision';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 async function abrir(page: Page, ruta: string, conAviso = false) {
   if (!conAviso) await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
