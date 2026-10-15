@@ -58,7 +58,7 @@ Script, Implementar, Gestionar implementaciones, Archivar.
 |---|---|
 | Hoja del canal | Se crea en el Drive de Maysa Digital con los pasos de la sección 1. Tiene tres pestañas: `Respuestas`, `Autorizaciones` y `Padrón` |
 | Script del canal | `apps-script/Codigo.js`, pegado en la hoja del canal (sección 1) |
-| `urlCanal` | Vacía en `src/config/revision.ts` hasta que se publique el script (T13, #99). Mientras esté vacía, la app usa el formulario |
+| `urlCanal` | Llena en `src/config/revision.ts` desde T13 (#99) con la URL `/exec` del script. Si se vacía, la app vuelve al formulario como único camino |
 | Formulario de revisión (respaldo) | "Revisión del atlas Maysa Brain", Drive de Maysa Digital, conectado en `src/config/revision.ts` |
 | Formulario de registro (se retira con el canal) | "Registro de revisores del atlas Maysa Brain", Drive de Maysa Digital. Enlace para docentes: https://docs.google.com/forms/d/e/1FAIpQLSdy6h0gI-nrX6s_ZMGq9PSsSTYxhSd0e7ZVDx4p0_QvgHrJ2A/viewform |
 | Códigos de revisor | 10 creados (alias D01 a D10). Padrón y enlaces en la carpeta privada "Maysa Brain (privado)" del Drive de Maysa Digital; nunca en el repositorio |
@@ -96,15 +96,19 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    "Aplicación web", Ejecutar como "Yo" y Quién tiene acceso "Cualquier usuario". Pulsa Implementar y
    autoriza los permisos. Si Google avisa que la app no está verificada, pulsa Configuración
    avanzada e Ir a (nombre del proyecto): es tu propio script.
-6. Copia la "URL de la aplicación web". Termina en `/exec`. Esa URL no es secreta: con T13 quedará
+6. Copia la "URL de la aplicación web". Termina en `/exec`. Esa URL no es secreta: desde T13 está
    publicada dentro de la app, y cualquiera podrá verla. Regla del editor, no una protección: la
    URL se pasa solo por chat a la sesión que construye T13, y nunca en un issue, un PR ni un
    comentario.
 7. Prueba rápida, en el navegador, con una fila de prueba y no con el código de un docente real.
-   En `Padrón`, agrega una fila inventada: un código de prueba que no se parezca a los reales
-   (por ejemplo `PRUEBA99`), alias `D99` y Activo `sí`. Abre `<URL>?accion=leer&r=PRUEBA99`: debe
-   devolver `{"ok":true,...}`. Cambia Activo a `no` (o borra la fila) y vuelve a abrirla: debe
-   devolver `{"ok":false,"error":"codigo_no_activo"}`. Déjala en `no` o bórrala al terminar.
+   En `Padrón`, agrega una fila inventada: un código de prueba aleatorio de 8 caracteres, generado
+   como lo hace `scripts/crear-revisores.ts` y que no se parezca a los reales, alias `D99` y Activo
+   `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
+   cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
+   un PR. Abre `<URL>?accion=leer&r=<código de prueba>`: debe devolver `{"ok":true,...}`. Cambia
+   Activo a `no` (o borra la fila) y vuelve a abrirla: debe devolver
+   `{"ok":false,"error":"codigo_no_activo"}`. Al terminar, borra las filas de ese código en
+   `Respuestas` y `Autorizaciones` y déjalo en `no` en `Padrón`, para que no llegue al importador.
 
 Para actualizar el script sin cambiar la URL, edita la implementación existente: Implementar,
 Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. No crees una

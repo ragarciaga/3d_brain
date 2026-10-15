@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140)
+Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -149,10 +149,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T11 en main; T12 en PR #141 (espera tu prueba local, #98). Falta que el editor corra la
-   prueba de `probar-canal.html` (T1, #87) con su Apps Script, revise el texto legal de la
-   autorización (plan en #92) y monte `Codigo.js`; después siguen T12 y T13 (T13 necesita la URL del
-   script). No mandar el enlace a docentes antes de T13: sin canal ya no hay respaldo por archivo.
+1. Canal de retorno (spec 03): T1 a T12 en main (T12 en PR #141). El editor montó `Codigo.js` en la
+   hoja privada y la URL `/exec` ya está (solo por chat). Falta T13 (#99, plan aprobado en el issue):
+   poner la URL real en la app. No mandar el enlace a docentes antes de T13.
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
    un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 bloqueada
@@ -162,27 +161,38 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 5. Carga (#6, medición hecha; tareas #83 a #85): pedir el modelo desde el inicio, junto con el
    código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
    "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; siguen #84 y #85.
-6. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
+6. Sitio: dominio propio `https://brain.maysasp.com` (PR #146, ADR 0014; HTTPS forzado). Analítica
+   sin cookies de Cloudflare Web Analytics en revisión (ADR 0015, no se carga en modo revisión).
+7. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1 a T6 (T6 en PR #143); T7 (contorno) en revisión, T8 en PR #145 (espera a T7), después T9. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Timing
 <!-- rb:timing:start -->
 | Task | plan | implement | Total |
 |---|---:|---:|---:|
-| i83 |  |  | 0.0 |
-| i120 |  |  | 0.0 |
-| T10 |  |  | 0.0 |
-| T4 | 7.2 |  | 7.2 |
-| T1 | 5.8 |  | 5.8 |
 | T3 | 5.8 | 5.1 | 10.9 |
+| T1 | 5.8 |  | 5.8 |
+| T1 |  |  | 0.0 |
+| T1 |  |  | 0.0 |
+| T4 | 7.2 |  | 7.2 |
 | T5 | 2.8 | 14.2 | 17.0 |
-| T11 | 4.9 |  | 4.9 |
 | T2 | 17.1 |  | 17.1 |
-| i84 |  |  | 0.0 |
-| T7 |  |  | 0.0 |
-| T8 |  |  | 0.0 |
-| T9 |  |  | 0.0 |
-| T12 | 8.5 |  | 8.5 |
+| i83 |  |  | 0.0 |
+| T2 |  |  | 0.0 |
+| i120 |  |  | 0.0 |
+| T4 |  |  | 0.0 |
+| T3 |  |  | 0.0 |
 | T6 | 9.5 |  | 9.5 |
+| T4 |  |  | 0.0 |
+| T5 |  |  | 0.0 |
+| i84 |  |  | 0.0 |
+| T7 | 9.3 |  | 9.3 |
+| T8 | 8.5 |  | 8.5 |
+| T9 |  |  | 0.0 |
+| T11 | 4.9 |  | 4.9 |
+| T10 |  |  | 0.0 |
+| T12 | 8.5 |  | 8.5 |
+| T6 |  |  | 0.0 |
+| T8 |  |  | 0.0 |
 
 Minutes per phase.
 Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement, T9/implement.
