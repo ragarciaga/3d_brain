@@ -6,6 +6,7 @@ import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
 import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, siguienteEspera } from '../src/lib/colaGuardado';
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 import { leerRutas } from '../src/lib/rutas';
+import { protegerCanalReal } from './canal-real';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
 
@@ -23,6 +24,8 @@ const guardado = (page: Page) => page.evaluate(() => localStorage.getItem('atlas
 const asentar = (page: Page) => page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => setTimeout(() => r(), 0))));
 
 const SCRIPT = encodeURIComponent('<script>');
+
+protegerCanalReal();
 
 test.beforeEach(async ({ context }) => {
   await prepararContexto(context);

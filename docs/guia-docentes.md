@@ -23,9 +23,10 @@ Funciona en computador, tableta y celular; para revisar con calma, mejor computa
 ---
 
 Notas para el editor:
-- No mandes este mensaje hasta que el canal esté montado y publicado (`urlCanal` llena en
-  `src/config/revision.ts`, T13, #99): mientras esté vacía, la app usa el formulario y el docente
-  vería pasos que este mensaje no explica. Los pasos de montaje están en `docs/revision-docente.md`.
+- El canal está conectado desde T13 (#99): `urlCanal` está llena en `src/config/revision.ts`. Manda
+  este mensaje solo cuando el sitio publicado ya tenga ese cambio y la prueba en ventana de incógnito,
+  con un código de prueba, haya dado "Guardado ✓": si el canal no responde, el docente vería pasos
+  que este mensaje no explica. Los pasos de montaje están en `docs/revision-docente.md`.
 - Los códigos y enlaces de cada docente están en la carpeta privada del Drive, nunca aquí.
 - Cada código debe estar activo (`sí`) en la pestaña `Padrón` de la hoja del canal; si no, la app le
   dice al docente que escriba al editor.
