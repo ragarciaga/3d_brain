@@ -33,6 +33,7 @@ export default function Licencia() {
       <h2>{t('licencia.avisosTitulo')}</h2>
       <p>{t('aviso.educativo')}</p>
       <p>{t('aviso.unCuerpo')}</p>
+      <p>{t('licencia.analitica')}</p>
       <p>
         <Link to={`/${lang}`}>{t('licencia.volver')}</Link>
       </p>
