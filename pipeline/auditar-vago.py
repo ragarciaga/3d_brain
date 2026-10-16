@@ -2,24 +2,37 @@
 28 trazos del vago, y propone un nombre para cada trazo con la evidencia geométrica. No escribe
 geometría ni toca src/data: los nombres son propuestas que un docente confirma con F24.
 
+Las reglas de cada trazo (raicilla, faríngeo, laríngeo superior, ramos abdominales, tronco) y la escritura de
+trazos-medidos.json viven en pipeline/reglas_vago.py, que no usa bpy y se prueba sin Blender
+(pipeline/pruebas/probar_auditar.py). Aquí solo se lee el modelo.
+
 Salidas:
 - pipeline/anclajes-vago.json: anclajes y trazos medidos, en coordenadas glTF (Y arriba, metros).
   Lo leen pipeline/generar-ramas-vago.py y la prueba de asimetrías (tests/asimetrias.test.ts).
+- pipeline/salida/trazos-medidos.json: por trazo, su altura, largo, las dos piezas más cercanas a cada extremo,
+  la regla que se cumple, el ramo propuesto con su confianza y la fuente. Lo leerá scripts/aplicar-trazos.ts (spec 04, T6).
 - pipeline/salida/auditoria-vago.md: tabla para revisar (anclaje presente o ausente, y cada trazo).
 
 Uso: python pipeline/auditar-vago.py  (o blender -b --python pipeline/auditar-vago.py)
 """
 import json
 import math
+import sys
+from pathlib import Path
 
 import bpy  # noqa: F401  (Blender como módulo)
 
-from comun import RAIZ, abrir_blend, asegurar_carpeta
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from comun import RAIZ, abrir_blend, asegurar_carpeta  # noqa: E402
+import reglas_vago  # noqa: E402
 
-# Anclajes que nombran las rutas de pipeline/rutas-vago.yaml, con el nombre exacto de Z-Anatomy.
+# Anclajes de las rutas de pipeline/rutas-vago.yaml y piezas que exigen las reglas de reglas_vago.py
+# (PIEZAS_SUPERFICIE y PIEZAS_LINEA), con el nombre exacto de Z-Anatomy.
 ANCLAJES = [
     "Medulla oblongata.l",
     "Medulla oblongata.r",
+    "Olive.l",
+    "Olive.r",
     "Internal jugular vein.l",
     "Internal jugular vein.r",
     "Laryngopharynx",
@@ -43,6 +56,7 @@ ANCLAJES = [
     "Right main bronchus",
     "Diaphragm",
     "Stomach",
+    "Liver",
 ]
 VAGO = ("Vagus nerve (X).l", "Vagus nerve (X).r")
 GROSOR_CORTE = 0.005  # cortes horizontales de 5 mm para las mallas (perfil de tráquea, esófago, etc.)
@@ -105,10 +119,6 @@ def arbol_kd(puntos):
     return arbol
 
 
-def extremo_inferior(pts):
-    return min(pts, key=lambda p: p[1])
-
-
 def caja(pts):
     return [[min(p[i] for p in pts) for i in range(3)], [max(p[i] for p in pts) for i in range(3)]]
 
@@ -120,10 +130,6 @@ def cortes(pts):
         k = math.floor(p[1] / GROSOR_CORTE)
         por_franja.setdefault(k, []).append(p)
     return [{"y": round((k + 0.5) * GROSOR_CORTE, 4), "caja": caja(v)} for k, v in sorted(por_franja.items())]
-
-
-def distancia(a, b):
-    return math.dist(a, b)
 
 
 def main():
@@ -139,7 +145,7 @@ def main():
             ausentes.append(nombre)
             continue
         superficie = medir_malla(o, dg)  # con bisel y modificadores: la superficie real
-        superficies[nombre] = arbol_kd(superficie)
+        superficies[nombre] = superficie  # lista de vértices: las reglas miden contra ella
         datos = {"tipo": o.type, "caja": caja(superficie), "cortes": cortes(superficie)}
         if o.type == "CURVE":
             centro = linea_central(o, dg, col)
@@ -160,73 +166,20 @@ def main():
     with open(RAIZ / "anclajes-vago.json", "w", encoding="utf-8") as f:
         json.dump(salida, f, ensure_ascii=False, indent=0, sort_keys=True)
         f.write("\n")
-    cercanos = {n: sorted((arbol.find(extremo_inferior(t["puntos"]))[2], k) for k, arbol in superficies.items())
-                for n, t in trazos.items()}
-    escribir_informe(anclas, ausentes, trazos, cercanos)
     print(f"{len(anclas)} anclajes medidos, {len(ausentes)} ausentes, {len(trazos)} trazos del vago")
-    if ausentes:
-        raise SystemExit(f"Faltan anclajes (las rutas que los usan no se pueden trazar): {ausentes}")
-
-
-def centro_caja(c):
-    return [(c[0][i] + c[1][i]) / 2 for i in range(3)]
-
-
-CERCA_ESTOMAGO = 0.015  # extremo a menos de 15 mm de la superficie del estómago
-
-
-def candidato(nombre, t, anclas, cercanos):
-    """Propuesta de nombre para un trazo, con la regla que la produjo. Nunca es definitiva.
-    cercanos: (distancia del extremo inferior a la superficie de cada anclaje, anclaje), de menor a mayor.
-    Se mide contra la superficie y no contra el centro de la caja: con órganos grandes (diafragma,
-    estómago) el centro de la caja no dice qué toca el trazo."""
-    pts = t["puntos"]
-    largo = sum(distancia(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
-    alto = max(p[1] for p in pts)
-    bulbo = [a for k, a in anclas.items() if k.startswith("Medulla oblongata")]
-    if bulbo and largo < 0.02 and alto >= min(a["caja"][0][1] for a in bulbo):
-        return "raicilla (sale del bulbo)", "corto y a la altura del bulbo"
-    if largo > 0.2:
-        return "tronco del vago", "el trazo más largo del lado"
-    extremo = extremo_inferior(pts)
-    d = {k: v for v, k in cercanos}
-    esofago = anclas.get("Oesophagus", {}).get("puntos")
-    if esofago and "Stomach" in d:
-        cardias = min(p[1] for p in esofago)  # final de la línea central del esófago
-        if extremo[1] < cardias and d["Stomach"] < CERCA_ESTOMAGO:
-            return ("candidato: ramo abdominal (gástrico, hepático o celíaco)",
-                    f"termina {(cardias - extremo[1]) * 1000:.0f} mm debajo del final del esófago, "
-                    f"a {d['Stomach'] * 1000:.0f} mm de la superficie del estómago")
-    k = cercanos[0][1]
-    regla = f"extremo inferior a {cercanos[0][0] * 1000:.0f} mm de la superficie de {k}"
-    if k in ("Laryngopharynx",):
-        return "candidato: ramo faríngeo", regla
-    if k in ("Thyroid cartilage", "Cricoid cartilage"):
-        return "candidato: nervio laríngeo superior", regla
-    if k == "Stomach":
-        return "candidato: ramo abdominal (gástrico, hepático o celíaco)", regla
-    return "sin candidato", regla
-
-
-def escribir_informe(anclas, ausentes, trazos, cercanos):
     asegurar_carpeta(RAIZ / "salida")
-    lineas = ["# Auditoría del vago (ADR 0009)", "", "Propuestas para revisión docente: ningún nombre es definitivo.", "",
-              "## Anclajes", "", "| Anclaje | Estado | Tipo |", "|---|---|---|"]
-    for n in ANCLAJES:
-        lineas.append(f"| {n} | {'presente' if n in anclas else 'AUSENTE'} | {anclas.get(n, {}).get('tipo', '')} |")
-    lineas += ["", "## Trazos", "",
-               "Altura en mm sobre el origen del modelo (Y arriba). Cercanos: distancia del extremo inferior a la "
-               "superficie de los dos anclajes más próximos.", "",
-               "| Trazo | Altura (mm) | Largo (mm) | Cercanos | Propuesta | Por qué |", "|---|---|---|---|---|---|"]
-    for n, t in trazos.items():
-        pts = t["puntos"]
-        largo = sum(distancia(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
-        prop, regla = candidato(n, t, anclas, cercanos[n])
-        cerca = ", ".join(f"{k} {v * 1000:.0f} mm" for v, k in cercanos[n][:2])
-        lineas.append(f"| {n} | {max(p[1] for p in pts) * 1000:.0f} a {min(p[1] for p in pts) * 1000:.0f} "
-                      f"| {largo * 1000:.0f} | {cerca} | {prop} | {regla} |")
+    if ausentes:
+        # Sin todos los anclajes no se pueden aplicar las reglas: se deja el informe de anclajes y se detiene.
+        escribir_informe(reglas_vago.informe(ANCLAJES, anclas, ausentes, None))
+        raise SystemExit(f"Faltan anclajes (las rutas y las reglas de los trazos que los usan no se pueden aplicar): {ausentes}")
+    medidos = reglas_vago.medir_trazos(anclas, trazos, superficies)
+    reglas_vago.escribir_trazos_medidos(medidos, RAIZ / "salida" / "trazos-medidos.json")
+    escribir_informe(reglas_vago.informe(ANCLAJES, anclas, ausentes, medidos))
+
+
+def escribir_informe(texto):
     with open(RAIZ / "salida" / "auditoria-vago.md", "w", encoding="utf-8") as f:
-        f.write("\n".join(lineas) + "\n")
+        f.write(texto)
 
 
 if __name__ == "__main__":
