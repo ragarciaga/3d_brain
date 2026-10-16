@@ -1,8 +1,12 @@
 // Autorización de tratamiento de datos del modo revisión (F24, ADR 0012, Ley 1581 de 2012).
 // Modal: no pide nombre ni correo, solo una casilla obligatoria y la opcional del vago. Si registrar la
 // autorización falla, sigue abierto con el aviso; nada cambia hasta que el canal confirma.
+// El enlace al aviso de privacidad (#168) abre otra pestaña, para no salir del modo revisión.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link, useParams } from 'react-router';
+import type { Idioma } from '../data/tipos';
+import { rutaPrivacidad } from '../lib/paginas';
 
 export default function DialogoAutorizacion({
   alAceptar,
@@ -15,6 +19,8 @@ export default function DialogoAutorizacion({
   vagoInicial?: boolean;
 }) {
   const { t } = useTranslation();
+  const { lang } = useParams();
+  const idioma: Idioma = lang === 'en' ? 'en' : 'es';
   const [acepto, setAcepto] = useState(false);
   const [vago, setVago] = useState(vagoInicial);
   const [enviando, setEnviando] = useState(false);
@@ -59,6 +65,11 @@ export default function DialogoAutorizacion({
           {t('revision.autorizacion.titulo')}
         </h2>
         <p id="autorizacion-texto">{t('revision.autorizacion.texto')}</p>
+        <p>
+          <Link to={rutaPrivacidad(idioma)} target="_blank" rel="noopener noreferrer">
+            {t('privacidad.leer')}
+          </Link>
+        </p>
         <p>
           <label>
             <input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.currentTarget.checked)} />{' '}

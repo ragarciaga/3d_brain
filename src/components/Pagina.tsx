@@ -6,7 +6,8 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { aplicarCortesEnlace, entradasDeCortes, leer, serializar } from '../lib/enlaces';
-import { olvidarRevisor, pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
+import { rutaPrivacidad } from '../lib/paginas';
+import { olvidarRevisor,pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
 import { REVISOR_VALIDO } from '../lib/revision';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
 import { useAtlas } from '../store/useAtlas';
@@ -432,7 +433,8 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       </div>
       <footer className="pie">
         <span>{t('aviso.educativo')}</span>{' '}
-        <Link to={`/${idioma}/licencia`}>{t('licencia.enlace')}</Link>
+        <Link to={`/${idioma}/licencia`}>{t('licencia.enlace')}</Link>{' '}
+        <Link to={rutaPrivacidad(idioma)}>{t('privacidad.enlace')}</Link>
       </footer>
       {paleta && (
         <div className="paleta-fondo" onMouseDown={(e) => e.target === e.currentTarget && setPaleta(false)}>
