@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
 import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, siguienteEspera } from '../src/lib/colaGuardado';
+import { claveGuiaVista, claveRevisionIdb } from '../src/lib/huella';
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 import { leerRutas } from '../src/lib/rutas';
 import { protegerCanalReal } from './canal-real';
@@ -98,7 +99,7 @@ const conCanal = (context: BrowserContext, url: string) =>
 
 /** Con la guía ya vista no se abre sola y no tapa los controles. */
 const saltarGuia = (context: BrowserContext, codigo: string) =>
-  context.addInitScript((c) => localStorage.setItem(`atlas:guia-vista:${c}`, '1'), codigo);
+  context.addInitScript((c) => localStorage.setItem(c, '1'), claveGuiaVista(codigo));
 
 interface PeticionCanal {
   metodo: string;
@@ -215,12 +216,12 @@ const autorizacionGuardada = (page: Page, codigo: string) =>
         abrirDb.onsuccess = () => {
           const db = abrirDb.result;
           if (!db.objectStoreNames.contains('keyval')) return resolver(undefined);
-          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(c);
           pedido.onsuccess = () => resolver(pedido.result?.autorizacion);
           pedido.onerror = () => resolver(undefined);
         };
       }),
-    codigo,
+    claveRevisionIdb(codigo),
   );
 
 interface RevisionGuardada {
@@ -238,12 +239,12 @@ const revisionGuardada = (page: Page, codigo: string) =>
         abrirDb.onsuccess = () => {
           const db = abrirDb.result;
           if (!db.objectStoreNames.contains('keyval')) return resolver(undefined);
-          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(c);
           pedido.onsuccess = () => resolver(pedido.result);
           pedido.onerror = () => resolver(undefined);
         };
       }),
-    codigo,
+    claveRevisionIdb(codigo),
   );
 
 /** Fecha de una respuesta en el store (undefined si no está). */
@@ -712,13 +713,13 @@ test('guardado: sin conexión queda pendiente, al recargar se guarda sola y un c
 
   // Si falla la lectura de IndexedDB de otro código, las respuestas en memoria son del anterior: no salen con el nuevo.
   canal.guardar = 'ok';
-  await page.evaluate(() => {
+  await page.evaluate((rota) => {
     const original = IDBObjectStore.prototype.get;
     IDBObjectStore.prototype.get = function (this: IDBObjectStore, clave: IDBValidKey | IDBKeyRange) {
-      if (clave === 'revision:GUA04') throw new Error('lectura de prueba rota');
+      if (clave === rota) throw new Error('lectura de prueba rota');
       return original.call(this, clave);
     };
-  });
+  }, claveRevisionIdb('GUA04'));
   const antes = peticionesDe(canal, 'guardar').length;
   await page.evaluate(() => (window as unknown as { __atlas: { getState: () => { setRevisor: (c: string) => void } } }).__atlas.getState().setRevisor('GUA04'));
   await expect(barra(page)).toContainText('GUA04');
@@ -747,22 +748,22 @@ test('guardado: código no activo al autorizar o al leer', async ({ page, contex
   // R1.3 por `leer`: sin diálogo y sin `guardar`, y las respuestas siguen en IndexedDB. Caso real: el docente ya tenía
   // una autorización vigente guardada en este navegador y después le desactivaron el código; solo `inactivo` frena el envío.
   await page.evaluate(
-    (version) =>
+    ([version, clave]) =>
       new Promise<void>((resolver, rechazar) => {
         const abrirDb = indexedDB.open('keyval-store');
         abrirDb.onerror = () => rechazar(abrirDb.error);
         abrirDb.onsuccess = () => {
           const almacen = abrirDb.result.transaction('keyval', 'readwrite').objectStore('keyval');
-          const pedido = almacen.get('revision:GUA03');
+          const pedido = almacen.get(clave!);
           pedido.onsuccess = () => {
-            const poner = almacen.put({ ...pedido.result, autorizacion: { version, vago: false } }, 'revision:GUA03');
+            const poner = almacen.put({ ...pedido.result, autorizacion: { version, vago: false } }, clave!);
             poner.onsuccess = () => resolver();
             poner.onerror = () => rechazar(poner.error);
           };
           pedido.onerror = () => rechazar(pedido.error);
         };
       }),
-    VERSION_AUTORIZACION,
+    [VERSION_AUTORIZACION, claveRevisionIdb('GUA03')],
   );
   expect(await autorizacionGuardada(page, 'GUA03')).toEqual({ version: VERSION_AUTORIZACION, vago: false });
   canal.leer = 'inactivo';
@@ -1401,7 +1402,7 @@ test('autorización: con una copia local de otra versión y la lectura fallida n
 
   // La copia de IndexedDB pasa a una autorización de otra versión (vago true, para que una fuga se note).
   await page.evaluate(
-    (a) =>
+    ([a, clave]) =>
       new Promise<void>((resolver, rechazar) => {
         const abrirDb = indexedDB.open('keyval-store');
         abrirDb.onerror = () => rechazar(abrirDb.error);
@@ -1409,13 +1410,13 @@ test('autorización: con una copia local de otra versión y la lectura fallida n
           const db = abrirDb.result;
           const tx = db.transaction('keyval', 'readwrite');
           const almacen = tx.objectStore('keyval');
-          const pedido = almacen.get('revision:VAG05');
-          pedido.onsuccess = () => almacen.put({ ...pedido.result, autorizacion: a }, 'revision:VAG05');
+          const pedido = almacen.get(clave as string);
+          pedido.onsuccess = () => almacen.put({ ...pedido.result, autorizacion: a }, clave as string);
           tx.oncomplete = () => resolver();
           tx.onerror = () => rechazar(tx.error);
         };
       }),
-    { version: `${VERSION_AUTORIZACION}-anterior`, vago: true },
+    [{ version: `${VERSION_AUTORIZACION}-anterior`, vago: true }, claveRevisionIdb('VAG05')] as const,
   );
   expect(await autorizacionGuardada(page, 'VAG05')).toEqual({ version: `${VERSION_AUTORIZACION}-anterior`, vago: true });
 

@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { VERSION_AUTORIZACION } from '../src/config/revision';
 import { ESPERA_CANAL_MS } from '../src/lib/colaGuardado';
+import { claveGuiaVista, claveRevisionIdb } from '../src/lib/huella';
 import { protegerCanalReal } from './canal-real';
 import { pausarReloj } from './reloj';
 
@@ -35,7 +36,7 @@ const conCanal = (context: BrowserContext) =>
 
 /** Con la guía ya vista no se abre sola y no tapa los controles. */
 const saltarGuia = (context: BrowserContext, codigo: string) =>
-  context.addInitScript((c) => localStorage.setItem(`atlas:guia-vista:${c}`, '1'), codigo);
+  context.addInitScript((c) => localStorage.setItem(c, '1'), claveGuiaVista(codigo));
 
 interface Peticion {
   accion: string | null;
@@ -103,12 +104,12 @@ const revisionGuardada = (page: Page, codigo: string) =>
         abrirDb.onsuccess = () => {
           const db = abrirDb.result;
           if (!db.objectStoreNames.contains('keyval')) return resolver(undefined);
-          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(c);
           pedido.onsuccess = () => resolver(pedido.result);
           pedido.onerror = () => resolver(undefined);
         };
       }),
-    codigo,
+    claveRevisionIdb(codigo),
   );
 
 /** Entra directo a la ficha del hipocampo con el código ya recordado, sin guía ni búsqueda. */

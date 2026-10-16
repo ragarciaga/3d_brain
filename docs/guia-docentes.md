@@ -18,6 +18,12 @@ vez tu autorización, sin nombre ni correo. Todo se guarda solo y no hay que env
 en otro equipo, abre el mismo enlace. El botón "Qué revisar" te muestra por dónde empezar: primero las
 preguntas que más necesitan tu criterio.
 
+Si usas un computador compartido, al terminar sal con "Salir del modo revisión" marcando "Borrar también de
+este equipo". Eso no borra tu enlace del historial del navegador (incluidas las páginas del formulario de
+Google), ni los archivos de revisión que hayas descargado en Descargas, ni el portapapeles: bórralos tú y
+vacía el portapapeles o copia otra cosa. Una ventana privada sirve para revisar, pero tampoco borra las
+descargas ni el portapapeles.
+
 Funciona en computador, tableta y celular; para revisar con calma, mejor computador o tableta.
 
 ---
