@@ -597,7 +597,7 @@ TypeScript se fija en 6.0.3 porque typescript-eslint aún no soporta la 7. Decis
 
 ### Planos de corte
 
-- Recorte con los planos de corte nativos de three.js (`clippingPlanes`), solo en las piezas del encéfalo. Siempre van 3 planos en los materiales y los inactivos quedan lejos, para no recompilar shaders.
+- Recorte con los planos de corte nativos de three.js (`clippingPlanes`), solo en las piezas del encéfalo. Cada pieza se clasifica por su caja frente a los planos activos (#177): las que un plano cruza llevan siempre los 3 planos (los inactivos quedan lejos, para no recompilar shaders), las enteras del lado visible van sin planos y las enteras del lado oculto no se dibujan. El cambio entre 0 y 3 planos reutiliza programas que ya están compilados.
 - Relleno de la superficie cortada con las caras traseras de cada malla cerrada en el color plano de la pieza (191 mallas cerradas medidas en el GLB); en las 62 abiertas, contorno con los segmentos plano-malla calculados con el BVH (ADR 0011). Antes se proponía stencil buffer: cuesta unas 3,6 veces más dibujos y exige cambiar el contexto WebGL.
 - Detalle: `docs/specs/01-cutting-planes/`. Empieza con el prototipo de #9 (capturas y cuadros por segundo); si el relleno no da 30 cuadros por segundo en un equipo, se apaga ahí y queda el contorno.
 

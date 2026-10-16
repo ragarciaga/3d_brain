@@ -36,8 +36,8 @@ flowchart LR
 | Estado de cortes | code | `cortes`, `fantasmaCorte`, `rellenoApagado`; acciones `setCorte`, `quitarCortes`, `setFantasmaCorte`, `apagarRelleno`; guardas en `setExplosion` y `separar` | `src/store/useAtlas.ts` | R1.3, R1.6, R1.8, R2.2, R2.3, R2.4, R5.1, R8.2 |
 | Lógica de cortes | code | Funciones puras: rango del cerebro, plano three desde el estado, lado oculto, etiqueta en mm con dirección, piezas cruzadas por un plano, `vigilarCuadros` | `src/lib/cortes.ts` | R1.2, R1.4, R1.5, R1.7, R2.1, R4.3, R8.2 |
 | Planos compartidos | code | `PLANOS_CORTE`: tres `THREE.Plane` mutados en sitio; los inactivos quedan lejos (no recortan) para no recompilar shaders al prender o apagar uno | `src/components/recorte.ts` | R1.4, R8.1, R8.3 |
-| Materiales del encéfalo | code | `clippingPlanes={hayCortes && esEncefalo ? PLANOS_CORTE : null}`; el vago conserva `PLANOS_RECORRIDO` | `src/components/Visor.tsx` (Pieza) | R2.1, R2.5, R2.6, R8.3, R9.1 |
-| RellenoCorte | code | Por pieza cerrada, visible y cruzada por algún plano: una malla hermana con la misma geometría, `side: BackSide`, `MeshBasicMaterial` del color de la pieza y los mismos planos | `src/components/Visor.tsx` | R3.1, R3.2, R3.5 |
+| Materiales del encéfalo | code | Por pieza, según `ladoDeCorte` (caja en reposo frente a los planos activos, #177): cruzada, `PLANOS_CORTE`; entera del lado visible, sin planos; entera del lado oculto, no se dibuja ni se toca (conserva `PLANOS_CORTE`); sin cortes, sin planos. El vago conserva `PLANOS_RECORRIDO` | `src/components/Visor.tsx` (Pieza) | R2.1, R2.5, R2.6, R8.3, R9.1 |
+| RellenoCorte | code | Por pieza cerrada, visible, cruzada por algún plano y que ningún plano activo deje entera del lado oculto (#177): una malla hermana con la misma geometría, `side: BackSide`, `MeshBasicMaterial` del color de la pieza y los mismos planos | `src/components/Visor.tsx` | R3.1, R3.2, R3.5 |
 | ContornoCorte | code | Para las mallas abiertas (o para todas si el relleno está apagado): `boundsTree.shapecast` con cada plano activo arma los segmentos de intersección en un `LineSegments` del color de la pieza; se recalcula una vez por cuadro como máximo mientras se arrastra | `src/components/ContornoCorte.tsx` | R3.3, R3.4 |
 | FantasmaCorte | code | Si el fantasma está activo: copia de cada pieza cruzada, con los planos negados y `clipIntersection: true` (dibuja solo el lado oculto), opacidad 0,2, sin escribir profundidad y con `raycast` nulo | `src/components/Visor.tsx` | R5.2, R5.3 |
 | raycastCorte | code | Envuelve `acceleratedRaycast` y descarta impactos cuyo punto queda del lado oculto de algún plano activo. Un rayo que entra por la cara del corte pega en la cara trasera de esa pieza, que sí es visible: así se toca el relleno | `src/components/Visor.tsx` | R4.1, R4.2, R4.3 |
@@ -162,7 +162,7 @@ Paid services this feature needs: none.
 | Tapas geométricas exactas (triangular la sección de cada pieza en cada movimiento) | Mucho cálculo por cuadro con 191 piezas y falla con las mallas abiertas |
 | Cortar con explosión activa | No corresponde a ningún corte anatómico (decisión 1) |
 | Cortar todo el modelo | Rango de 1,5 m y nada que ver en el cerebro con un corte torácico (decisión 3) |
-| Prender y apagar planos cambiando cuántos recibe cada material | Cada cambio recompila los shaders de 253 materiales; se usan siempre 3 planos y los inactivos se dejan lejos |
+| Prender y apagar planos cambiando cuántos recibe cada material | Cada cambio recompila los shaders de 253 materiales; las piezas cruzadas usan siempre 3 planos y los inactivos se dejan lejos. Desde #177 las piezas enteras alternan entre 0 y 3 planos: no recompila, porque three guarda las dos variantes del programa una vez compiladas |
 
 ## Open questions
 - BLOCKING: none.
