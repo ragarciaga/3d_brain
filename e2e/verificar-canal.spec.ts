@@ -11,6 +11,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { VERSION_AUTORIZACION } from '../src/config/revision';
 import { ESPERA_CANAL_MS } from '../src/lib/colaGuardado';
 import { protegerCanalReal } from './canal-real';
+import { pausarReloj } from './reloj';
 
 protegerCanalReal();
 
@@ -139,8 +140,7 @@ test('F2-E2: cerrar el diálogo sin aceptar (Escape o Cerrar) deja la respuesta 
   await conCanal(context);
   await entrarDirecto(page, context, 'VER01');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
   const pasarElTope = async () => {
     await page.clock.fastForward(ESPERA_CANAL_MS + 1000);
     await page.waitForTimeout(500); // tiempo real: deja llegar al simulador y pintar lo que hubiera disparado el salto
@@ -187,8 +187,7 @@ test('F3-E2: sin conexión el panel avisa, la respuesta sigue pendiente y no apa
   await conCanal(context);
   await entrarDirecto(page, context, 'VER02');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // R3.1: el tope de la spec es de 3 s; el simulador no ve nada antes del cambio y sí a los 3 s (valor escrito aquí, no el de la app).
   expect(ESPERA_CANAL_MS).toBe(3000);
