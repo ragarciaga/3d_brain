@@ -100,6 +100,33 @@ cuadros de antes y de después del ajuste, por eso las comparaciones se hacen co
 Mide dos veces en cada equipo: la primera vez (el modelo se descarga) y recargando la página (el
 modelo sale de la memoria del navegador). Si quieres una medición limpia, abre una pestaña privada.
 
+### Medir los cortes (issue 42)
+
+Los cortes son lo que más le cuesta al equipo, así que se miden aparte, con los tres planos ya
+activos desde la dirección (no hace falta activarlos a mano dentro de la ventana de 10 s del panel):
+
+```
+https://brain.maysasp.com/es?medir=1&corte=sagital:0,coronal:0,axial:0
+```
+
+En cada equipo de referencia (HP con Iris Xe, iPhone 12 Pro Max y el Android de gama baja), copia
+los resultados con "Copiar resultados" y pégalos en el chat o en el issue, junto con una captura del
+panel de cortes. Mide también sin cortes (`?medir=1` solo), para separar lo que cuestan los cortes
+de lo que cuesta el modelo. Se cumple si el promedio da 30 cuadros/s o más con los tres planos.
+
+Resultado del 16 de octubre de 2026:
+
+| Equipo | Con los tres cortes | Sin cortes | Cerebro visible |
+|---|---|---|---|
+| HP, Edge 155, Iris Xe, densidad 1 | 60 (mínimo 51) | sin medir | 3,1 s |
+| iPhone, Safari 26, densidad 2, 4G | 58 (mínimo 56) | sin medir | 5,6 s |
+| Android 10 (Tecno), Chrome 154, PowerVR GE8300, 2 GB, densidad 1 | 3 (mínimo 1) | 25 (mínimo 10) | 7,8 a 11,3 s |
+
+El HP y el iPhone cumplen. El Android de gama baja no: con cortes va a 3 cuadros/s aunque el relleno
+se apague solo. Lo sigue el issue 177 (diagnóstico de los cortes en gama baja) y el 178 (el índice de
+toque se arma después de ver el cerebro). El modo liviano (F19) queda diferido por decisión del
+editor (ver docs/v2.md): sin cortes el mismo equipo va a 25 cuadros/s, que se usa bien para estudiar.
+
 ## Trabajar con Claude Code y Rockbuilt
 
 Desde una sesión de Claude Code en este repositorio:
