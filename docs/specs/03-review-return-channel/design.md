@@ -33,9 +33,9 @@ flowchart LR
 | Diálogo de autorización | code | Casilla obligatoria, casilla del vago, versión del texto | `src/components/DialogoAutorizacion.tsx` (nuevo) | R2.1, R2.2, R2.4, R2.5, R2.6 |
 | Filtro del vago | code | Quitar la sección `vago`, los trazos y los campos de rutas trazadas | `src/lib/prioridad.ts`, `src/components/SeccionTrazos.tsx`, `PanelRevision.tsx` | R5.1, R5.2, R5.3 |
 | Panel de revisión | code | "Guardado ✓", "Sin conexión...", sin pasos de envío, sin botones de respaldo, menú Acciones con la casilla del vago | `src/components/PanelRevision.tsx` | R3.2, R3.7, R4.4, R5.3, R7.1, R7.2 |
-| Apps Script | code | `doPost` (leer, guardar, autorizar) y `doGet` (solo la lectura de compatibilidad, #162): padrón, tamaño, ritmo, formato, escritura con bloqueo | `apps-script/Codigo.js` (nuevo, sin datos) | R2.3, R4.3, R6.1 a R6.5 |
+| Apps Script | code | `doPost` (leer, guardar, autorizar) y `doGet` (responde siempre `formato`, sin leer, #169): padrón, tamaño, ritmo, formato, escritura con bloqueo | `apps-script/Codigo.js` (nuevo, sin datos) | R2.3, R4.3, R6.1 a R6.5 |
 | Formulario de respaldo | code | El flujo actual de partes (`partesEnvio`) queda detrás de la condición de R7 | `src/lib/revision.ts`, `PanelRevision.tsx` | R7.1, R7.2 |
-| Importador | code | Leer el CSV de la pestaña Respuestas; ignorar las otras pestañas | `scripts/importar-revisiones.ts`, `scripts/lib/revisiones.ts` | R8.1, R8.2 |
+| Importador | code | Leer el CSV de la pestaña Respuestas y, con `--autorizaciones`, el de la pestaña Autorizaciones para la casilla del vago (#163); ignorar las filas de otras pestañas que traiga el CSV de respuestas | `scripts/importar-revisiones.ts`, `scripts/lib/revisiones.ts` | R8.1, R8.2 |
 | Ficha | code | "Revisado por un docente universitario" y fecha; nunca `revisado_por` | `src/components/Ficha.tsx` | R9.1, R9.2 |
 | Prueba de datos | code | `revisado_por` en `src/data/` y en rutas: `null` o un alias `D\d{2}` | `tests/datos.test.ts` | R9.3 |
 
@@ -80,9 +80,9 @@ ofrecerRespaldo(ultimaConfirmacion: number | null, ahora: number, hayPendientes:
 ```
 | Endpoint | Entrada | Salida | Errores | Sirve |
 |---|---|---|---|---|
-| `POST <urlCanal>` `{accion:'leer', r}` (el GET `?accion=leer&r=` sigue respondiendo por compatibilidad, #162) | código | `{ok, respuestas (v:2 de ese código, la última por clave), autorizacion}` | `codigo_no_activo`, `demasiadas_peticiones` | R1.3, R2.4, R4.1, R4.3 |
+| `POST <urlCanal>` `{accion:'leer', r}` (el GET ya no lee, #169) | código | `{ok, respuestas (v:2 de ese código, la última por clave), autorizacion}` | `codigo_no_activo`, `demasiadas_peticiones` | R1.3, R2.4, R4.1, R4.3 |
 | `POST <urlCanal>` `{accion:'guardar', carga}` (cuerpo `text/plain`) | carga `v:2` con `f` | `{ok, recibidas:["est|campo|idioma|fecha", ...]}` | todos | R3.1, R3.3, R6.1 a R6.4 |
-| `POST <urlCanal>` `{accion:'autorizar', r, version, vago}` | código, versión, vago | `{ok}` | `codigo_no_activo`, `formato`, `demasiadas_peticiones` | R2.3, R5.3 |
+| `POST <urlCanal>` `{accion:'autorizar', r, version, vago}` | código, versión, vago | `{ok}` | `codigo_no_activo`, `formato` (también con una versión distinta de la vigente, #169), `demasiadas_peticiones` | R2.3, R5.3 |
 
 El cuerpo va como `text/plain` para que el navegador no haga petición previa (preflight); el script responde con `ContentService` en JSON. (R3.1)
 
@@ -92,7 +92,7 @@ El cuerpo va como `text/plain` para que el navegador no haga petición previa (p
 | Sin red o tiempo agotado (10 s) | por lote | Respuestas siguen pendientes; aviso "Sin conexión" | 2 s, 4 s, 8 s... tope 5 min, sin límite de intentos | R3.4 |
 | Script responde `interno` | por lote | Igual que sin red | Igual | R3.4 |
 | `demasiadas_peticiones` | por lote | Pendientes; sin aviso extra | Espera 60 s | R6.3 |
-| `formato` o `demasiado_grande` | por respuesta | Se parte el lote; la respuesta que sigue fallando sola queda pendiente y va al respaldo por formulario | No se reintenta esa respuesta | R6.2, R7.1 |
+| `formato` o `demasiado_grande` (también `formato` por las respuestas del vago de un código sin la casilla, #166) | por respuesta | Se parte el lote; la respuesta que sigue fallando sola queda pendiente y va al respaldo por formulario | No se reintenta esa respuesta | R6.2, R7.1 |
 | `codigo_no_activo` | fatal para el canal | Aviso R1.3; respuestas quedan en el equipo | No | R1.3 |
 | `sin_autorizacion` (guardar sin autorización vigente en la hoja) | fatal hasta autorizar | Autorización a null, vuelve el diálogo, las respuestas quedan pendientes | No; la cola sigue al aceptar | R2.1, R2.4 |
 | 10 min sin confirmación con pendientes | sesión | Aviso con "Enviar por formulario" | La cola sigue intentando | R7.1 |
@@ -105,7 +105,7 @@ El cuerpo va como `text/plain` para que el navegador no haga petición previa (p
 
 ## Security considerations
 - **Autorización por código:** el código es privado y actúa como llave; en cada petición (lectura y escritura) el script lo compara con una copia del padrón que guarda unos 60 s (S3, #162). Cada código solo lee sus respuestas. `guardar` exige además que la última fila del código en `Autorizaciones` tenga la versión vigente (S1, #157). (R4.3, R6.1)
-- **Validación de entrada:** el script valida tamaño (64 KB), ritmo (120 por minuto por código, con `CacheService`) y la forma `v:2` con las mismas reglas de `respuestaValida`. La app valida lo que lee con `respuestaValida`. Una prueba carga `apps-script/Codigo.js` en Node y le pasa los mismos casos hostiles de `tests/revisiones.test.ts`, para que las dos validaciones no se separen. (R6.2, R6.3, R6.6)
+- **Validación de entrada:** el script valida tamaño (64 KB), ritmo (120 por minuto por código, con `CacheService`) y la forma `v:2` con las mismas reglas de `respuestaValida`. `guardar` rechaza con `formato` la carga que trae respuestas del vago (`esRespuestaDelVago`) de un código cuya última autorización no marca la casilla del vago (S2, #166). La app valida lo que lee con `respuestaValida`. Una prueba carga `apps-script/Codigo.js` en Node y le pasa los mismos casos hostiles de `tests/revisiones.test.ts`, para que las dos validaciones no se separen. (R6.2, R6.3, R6.6)
 - **Inyección en la hoja:** la carga se escribe como texto plano (formato `@`), y el código ya validado con `REVISOR_VALIDO` no puede empezar con `=`, `+`, `-` ni `@`. (R6.4)
 - **Secretos:** ninguno. La URL del script es pública por diseño (va en el bundle); sin el código de un docente no sirve. El padrón y los códigos solo viven en la hoja y en `pipeline/revisores.local.json` (ignorado por git). (R6.5)
 - **Datos personales:** la app solo envía el código y las respuestas; nunca nombre ni correo. La autorización guarda código, fecha, versión del texto y la casilla del vago. Nada de esto llega al repositorio. (R2.3, R2.6, R9.2, R9.3)
