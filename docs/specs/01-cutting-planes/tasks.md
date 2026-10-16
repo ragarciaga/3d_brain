@@ -109,7 +109,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/components/PanelCortes.tsx, src/components/Pagina.tsx, src/components/Iconos.tsx, src/estilos.css, src/lib/teclado.ts, tests/teclado.test.ts, src/i18n/es.json, src/i18n/en.json, e2e/cortes-panel.spec.ts
 - Verify: `npm test -- tests/teclado.test.ts` (con el panel de cortes abierto, Escape cierra el panel antes de salir del aislamiento, también con el foco en un deslizador); `npm run test:e2e -- e2e/cortes-panel.spec.ts`: (1) el botón "Cortes" del riel abre y cierra el panel, con tres filas (interruptor y deslizador en cada una), "Invertir", "Fantasma" y "Quitar cortes" (R1.1, R6.1); (2) la etiqueta en mm con dirección cambia al mover el deslizador (R1.5); (3) las flechas mueven 1 mm y `aria-valuetext` anuncia el valor (R1.9); (4) "Quitar cortes" apaga los tres interruptores y deja el cerebro entero (R1.8); (5) el aviso del cuerpo único se ve con el panel abierto (R6.4); (6) Escape cierra el panel, los cortes siguen y una pieza aislada sigue aislada (R6.5); (7) con el modelo sin cargar o WebGL fallido, el botón "Cortes" queda deshabilitado (R6.6); (8) con `rellenoApagado` en true (vía `window.__atlas`), el panel muestra una vez el aviso de relleno apagado (R8.2); (9) siguen en verde los E2E existentes de Escape en la paleta y "si el modelo no carga..."; `npm run check:i18n` (R6.7)
 - Issue: #40
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Escape pasa por `teclado.ts`; se nombran los casos; el aviso de relleno apagado (R8.2) entra aquí; depende de T5 para no chocar en `Pagina.tsx`.
@@ -123,7 +123,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: src/components/PanelCortes.tsx, src/components/Pagina.tsx, src/components/BarraFragmentar.tsx, src/components/Ficha.tsx, src/estilos.css, src/i18n/es.json, src/i18n/en.json, e2e/cortes-movil.spec.ts
 - Verify: `npm run test:e2e -- e2e/cortes-movil.spec.ts`; `npm run check:i18n`. Casos: (1) en celular (390 x 844), sin riel, el botón de cortes del encabezado, junto a la lupa, abre un cajón inferior; cerrado está `inert`; abierto recibe el foco; Escape lo cierra conservando los cortes; con el cajón y la ficha abiertos, las cajas del cajón, `.dock`, la brújula y la ficha no se intersecan y el cajón cabe en la pantalla (R6.2, R6.3); (2) en celular, con el modelo sin cargar, el botón de cortes está deshabilitado (R6.6); (3) en escritorio, con el panel abierto, su caja no se interseca con `.dock`, la brújula ni la ficha (R6.3); (4) en escritorio y en celular, con un plano activo, el deslizador de explosión, "Reensamblar" y "Separar" están `disabled` y se ve "Se desactivan mientras haya cortes"; con "Quitar cortes" se habilitan de nuevo y el texto desaparece (R2.3)
 - Issue: #41
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Se agregan el caso de escritorio de R6.3, la reactivación de R2.3, check:i18n y el botón deshabilitado en celular (R6.6).
