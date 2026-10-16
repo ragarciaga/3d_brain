@@ -12,7 +12,12 @@ type Estado = Record<string, (...a: unknown[]) => void> & {
 };
 interface VentanaCortes {
   __atlas: { getState(): Estado };
-  __cortes: { planosDe(p: string): number; fantasmas(): string[]; cajasMundo(): Record<string, number[]> };
+  __cortes: {
+    planosDe(p: string): number;
+    fantasmas(): string[];
+    cajasMundo(): Record<string, number[]>;
+    recortePorVertices(): Record<string, { dibujada: boolean; planos: number; vertices: number; ocultos: number }>;
+  };
   __puntoCorte(p: string): { x: number; y: number } | null;
   __recorte: () => number | null;
   __camara: { leer: (() => number[]) | null };
@@ -44,6 +49,7 @@ async function camaraQuieta(page: Page) {
 
 const planosDe = (page: Page, pieza: string) => page.evaluate((p) => (window as unknown as VentanaCortes).__cortes.planosDe(p), pieza);
 const fantasmas = (page: Page) => page.evaluate(() => (window as unknown as VentanaCortes).__cortes.fantasmas());
+const recortePorVertices = (page: Page) => page.evaluate(() => (window as unknown as VentanaCortes).__cortes.recortePorVertices());
 const puntoCorte = (page: Page, pieza: string) => page.evaluate((p) => (window as unknown as VentanaCortes).__puntoCorte(p), pieza);
 /** Llama una acción del store (solo pruebas, con `window.__atlas` de DEV). */
 const accion = (page: Page, nombre: string, ...args: unknown[]) =>
@@ -101,10 +107,17 @@ test('cortes en el visor: planos solo en el encéfalo, fantasma con ocultas y ai
   const previo = await instantanea(page);
   expect(Object.keys(antes)).toHaveLength(287);
   expect(cruza('thalamus-l') && cruza('thalamus-r')).toBe(true);
+  const plano = centroZ + mm / 1000;
+  const enteraOculta = encefalo.find((p) => p !== 'thalamus-r' && cajas[p] && cajas[p]![0][2]! > plano)!;
+  const enteraVisible = encefalo.find((p) => cajas[p] && cajas[p]![1][2]! < plano)!;
+  expect([enteraOculta, enteraVisible]).not.toContain(undefined);
 
-  await test.step('(3) un plano: 3 planos en el encéfalo, 1 en el vago, 0 en el órgano, y nada se mueve (R1.4, R2.1, R2.5)', async () => {
+  await test.step('(3) un plano: 3 planos en la cruzada, 0 en la entera visible, la entera oculta sin dibujar, 1 en el vago, 0 en el órgano, y nada se mueve (R1.4, R2.1, R2.5)', async () => {
     await accion(page, 'setCorte', 'coronal', { activo: true, mm });
     await expect.poll(() => planosDe(page, 'thalamus-l')).toBe(3);
+    await expect.poll(() => planosDe(page, enteraVisible)).toBe(0);
+    await expect.poll(async () => (await recortePorVertices(page))[enteraOculta]?.dibujada).toBe(false);
+    expect((await recortePorVertices(page))['thalamus-l']!.dibujada).toBe(true);
     expect(await planosDe(page, 'vagus-nerve-x-r')).toBe(1);
     expect(await planosDe(page, 'stomach')).toBe(0);
     expect(await cajasMundo(page)).toEqual(antes);
@@ -113,10 +126,6 @@ test('cortes en el visor: planos solo en el encéfalo, fantasma con ocultas y ai
   await test.step('(4) fantasma: entra lo visible, cruzado o entero del lado oculto; no lo oculto, lo entero del lado visible ni lo que queda fuera del aislamiento (R2.6, R5.2)', async () => {
     await expect.poll(() => fantasmas(page)).toContain('thalamus-l');
     expect(await fantasmas(page)).not.toContain('thalamus-r');
-    const plano = centroZ + mm / 1000;
-    const enteraOculta = encefalo.find((p) => p !== 'thalamus-r' && cajas[p] && cajas[p]![0][2]! > plano)!;
-    const enteraVisible = encefalo.find((p) => cajas[p] && cajas[p]![1][2]! < plano)!;
-    expect([enteraOculta, enteraVisible]).not.toContain(undefined);
     await expect.poll(() => fantasmas(page)).toContain(enteraOculta);
     expect(await fantasmas(page)).not.toContain(enteraVisible);
     await accion(page, 'alternarVisibles', ['thalamus-r'], true);
@@ -162,8 +171,15 @@ test('cortes en el visor: planos solo en el encéfalo, fantasma con ocultas y ai
 test('con un corte activo el recorrido del vago revela el nervio parada por parada y el corte sigue (R9.1)', async ({ page }) => {
   test.setTimeout(240_000);
   await abrir(page, '/es/nervio-vago-x');
+  const cajas = await page.evaluate(() => (window as unknown as VentanaCortes).__atlas.getState().cajas);
+  // Oráculo independiente: con el coronal en 0 (centro Z del encéfalo) una pieza que el plano cruza lleva 3 planos;
+  // el tálamo izquierdo puede quedar entero de un lado y llevar 0.
+  const zs = piezasBajo('g-brain').flatMap((p) => (cajas[p] ? [cajas[p]![0][2]!, cajas[p]![1][2]!] : []));
+  const centroZ = (Math.min(...zs) + Math.max(...zs)) / 2;
+  const enElCorte = piezasBajo('g-brain').find((p) => cajas[p] && cajas[p]![0][2]! < centroZ && centroZ < cajas[p]![1][2]!)!;
+  expect(enElCorte).toBeDefined();
   await accion(page, 'setCorte', 'coronal', { activo: true });
-  await expect.poll(() => planosDe(page, 'thalamus-l')).toBe(3);
+  await expect.poll(() => planosDe(page, enElCorte)).toBe(3);
   await page.getByTestId('iniciar-recorrido').click();
   const panel = page.getByTestId('recorrido');
   const altura = () => page.evaluate(() => (window as unknown as VentanaCortes).__recorte());
@@ -191,8 +207,75 @@ test('con un corte activo el recorrido del vago revela el nervio parada por para
     niveles.push(await esperarEstable());
     const cortes = await page.evaluate(() => (window as unknown as VentanaCortes).__atlas.getState().cortes);
     expect(cortes['coronal']!.activo, `parada ${n}`).toBe(true);
-    expect(await planosDe(page, 'thalamus-l'), `parada ${n}`).toBe(3);
+    expect(await planosDe(page, enElCorte), `parada ${n}`).toBe(3);
     expect(await planosDe(page, 'vagus-nerve-x-r'), `parada ${n}`).toBe(1);
   }
   for (let i = 1; i < niveles.length; i++) expect(niveles[i]!).toBeLessThan(niveles[i - 1]!);
+});
+
+test('recorte por caja (#177): lo que no se dibuja estaba entero del lado oculto, lo que va sin planos entero del lado visible, y el fantasma sigue', async ({ page }) => {
+  test.setTimeout(240_000);
+  await abrir(page, '/es');
+  const cajas = await page.evaluate(() => (window as unknown as VentanaCortes).__atlas.getState().cajas);
+  const conCaja = piezasBajo('g-brain').filter((p) => cajas[p]);
+  const antes = await cajasMundo(page);
+
+  // Vacío si todo cumple. La equivalencia por vértices es exacta: un fragmento es combinación convexa de los vértices de su
+  // triángulo, así que un semiespacio que contiene o excluye todos los vértices contiene o excluye todos sus fragmentos.
+  const revisar = async () => {
+    const r = await recortePorVertices(page);
+    const piezas = Object.entries(r);
+    const malas: string[] = [];
+    for (const [p, v] of piezas) {
+      if (!v.dibujada && v.ocultos !== v.vertices) malas.push(`${p}: no se dibuja y tiene ${v.vertices - v.ocultos} de ${v.vertices} vértices visibles`);
+      if (v.dibujada && v.planos === 0 && v.ocultos !== 0) malas.push(`${p}: sin planos y tiene ${v.ocultos} vértices ocultos`);
+      if (v.dibujada && v.planos !== 0 && v.planos !== 3) malas.push(`${p}: lleva ${v.planos} planos`);
+    }
+    const sinDibujar = piezas.filter(([, v]) => !v.dibujada).length;
+    const sinPlanos = piezas.filter(([, v]) => v.dibujada && v.planos === 0).length;
+    const conPlanos = piezas.filter(([, v]) => v.dibujada && v.planos === 3).length;
+    if (!sinDibujar || !sinPlanos || !conPlanos) malas.push(`falta una clase: sin dibujar ${sinDibujar}, sin planos ${sinPlanos}, con 3 planos ${conPlanos}`);
+    return malas.slice(0, 5).join(' | ');
+  };
+
+  await test.step('(1) sin cortes toda pieza del encéfalo se dibuja sin planos', async () => {
+    await expect
+      .poll(async () => {
+        const r = await recortePorVertices(page);
+        return Object.keys(r).length === conCaja.length && Object.values(r).every((v) => v.dibujada && v.planos === 0);
+      })
+      .toBe(true);
+  });
+
+  await test.step('(2) solo el sagital en 0: lo que no se dibuja está entero del lado oculto y lo que va sin planos entero del visible', async () => {
+    await accion(page, 'setCorte', 'sagital', { activo: true, mm: 0 });
+    await expect.poll(revisar, { timeout: 30_000 }).toBe('');
+  });
+
+  await test.step('(3) sagital, coronal y axial en 0 (el caso del issue): las mismas aserciones', async () => {
+    await accion(page, 'setCorte', 'coronal', { activo: true, mm: 0 });
+    await accion(page, 'setCorte', 'axial', { activo: true, mm: 0 });
+    await expect.poll(revisar, { timeout: 30_000 }).toBe('');
+  });
+
+  await test.step('(4) con el fantasma activo, el fantasma incluye piezas que no se dibujan (R5.2)', async () => {
+    await accion(page, 'setFantasmaCorte', true);
+    await expect
+      .poll(async () => {
+        const r = await recortePorVertices(page);
+        return (await fantasmas(page)).some((p) => r[p] && !r[p].dibujada);
+      })
+      .toBe(true);
+  });
+
+  await test.step('(5) al quitar los cortes todo se dibuja sin planos y ninguna caja cambia (R8.3, R2.5)', async () => {
+    await accion(page, 'quitarCortes');
+    await expect
+      .poll(async () => {
+        const r = await recortePorVertices(page);
+        return Object.keys(r).length === conCaja.length && Object.values(r).every((v) => v.dibujada && v.planos === 0);
+      })
+      .toBe(true);
+    expect(await cajasMundo(page)).toEqual(antes);
+  });
 });
