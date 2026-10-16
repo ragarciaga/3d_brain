@@ -8,8 +8,10 @@
 //     script escribe en la hoja. El código del revisor va dentro de la carga. Responde
 //     `{ok:true, recibidas:[<estructura|campo|idioma|fecha>, ...]}`.
 //   - `{accion:'autorizar', r:<código>, version, vago}`. Responde `{ok:true}`.
-// - GET `?accion=leer&r=<código>`. Responde
-//   `{ok:true, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, autorizacion:{version, vago} | null}`.
+//   - `{accion:'leer', r:<código>}`. Responde
+//     `{ok:true, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, autorizacion:{version, vago} | null}`.
+// - Ninguna petición lleva el código ni una query en la URL (S4, #162). El script aún responde el GET
+//   `?accion=leer&r=<código>` por compatibilidad, pero este cliente no lo usa.
 // - Un error siempre responde `{ok:false, error}` con `error` en `codigo_no_activo`, `demasiado_grande`,
 //   `formato`, `demasiadas_peticiones`, `sin_autorizacion` o `interno`. `guardar` responde
 //   `sin_autorizacion` si el código no tiene registrada en la hoja la autorización de la versión vigente.
@@ -66,28 +68,20 @@ export function cuerpoGuardar(codigo: string, respuestas: Respuesta[]): string {
   return JSON.stringify({ accion: 'guardar', carga: cargaRevisionV2(codigo, respuestas) });
 }
 
-interface Peticion {
-  metodo: 'GET' | 'POST';
-  params?: Record<string, string>;
-  cuerpo?: string;
-}
-
-/** Hace la petición y devuelve la respuesta con `ok: true`; todo lo demás lanza `ErrorCanal`. */
-async function pedir(p: Peticion): Promise<Record<string, unknown>> {
+/** Hace el POST con el cuerpo JSON y devuelve la respuesta con `ok: true`; todo lo demás lanza `ErrorCanal`. */
+async function pedir(cuerpo: string): Promise<Record<string, unknown>> {
   if (!configRevision.urlCanal) throw new ErrorCanal('red');
   let datos: unknown;
   const control = new AbortController();
   // No se usa AbortSignal.timeout: los relojes simulados de Vitest no lo controlan.
   const temporizador = setTimeout(() => control.abort(), TIEMPO_CANAL_MS);
   try {
-    const url = new URL(configRevision.urlCanal);
-    for (const [k, v] of Object.entries(p.params ?? {})) url.searchParams.set(k, v);
-    const init: RequestInit = { method: p.metodo, signal: control.signal };
-    if (p.metodo === 'POST') {
-      init.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
-      init.body = p.cuerpo ?? '';
-    }
-    const res = await fetch(url, init);
+    const res = await fetch(new URL(configRevision.urlCanal), {
+      method: 'POST',
+      signal: control.signal,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: cuerpo,
+    });
     if (!res.ok) throw new ErrorCanal('red');
     datos = JSON.parse(await res.text());
   } catch {
@@ -160,7 +154,7 @@ export async function leer(
   codigo: string,
   idOk: (id: unknown) => boolean,
 ): Promise<{ respuestas: Respuesta[]; autorizacion: Autorizacion | null }> {
-  const res = await pedir({ metodo: 'GET', params: { accion: 'leer', r: codigo } });
+  const res = await pedir(JSON.stringify({ accion: 'leer', r: codigo }));
   const { respuestas, descartadas } = respuestasDelCanal(res['respuestas'], codigo, idOk);
   // Solo el número: nunca el código ni el contenido.
   if (descartadas > 0) console.warn(`Canal: ${descartadas} respuesta(s) descartada(s) por no ser válidas`);
@@ -169,12 +163,12 @@ export async function leer(
 
 /** Envía las respuestas y devuelve las claves de confirmación (`estructura|campo|idioma|fecha`) que el canal recibió. */
 export async function guardar(codigo: string, respuestas: Respuesta[]): Promise<Set<string>> {
-  const res = await pedir({ metodo: 'POST', cuerpo: cuerpoGuardar(codigo, respuestas) });
+  const res = await pedir(cuerpoGuardar(codigo, respuestas));
   const recibidas = res['recibidas'];
   return new Set(Array.isArray(recibidas) ? recibidas.filter((x): x is string => typeof x === 'string') : []);
 }
 
 /** Registra la autorización de tratamiento de datos del código (Ley 1581 de 2012). */
 export async function autorizar(codigo: string, a: Autorizacion): Promise<void> {
-  await pedir({ metodo: 'POST', cuerpo: JSON.stringify({ accion: 'autorizar', r: codigo, version: a.version, vago: a.vago }) });
+  await pedir(JSON.stringify({ accion: 'autorizar', r: codigo, version: a.version, vago: a.vago }));
 }

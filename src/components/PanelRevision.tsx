@@ -299,6 +299,10 @@ export default function PanelRevision({
     autorizacion === null &&
     hayPorGuardar &&
     descartadaCon !== respuestas;
+  // La casilla del vago de "Acciones" sin autorización vigente en memoria no llama a `autorizar`: abre este mismo
+  // diálogo, con la casilla del vago del diálogo marcada como la pidió el docente (#162). `null` = no se abrió desde ahí.
+  const [vagoPorAutorizar, setVagoPorAutorizar] = useState<boolean | null>(null);
+  const mostrarAutorizacion = pedirAutorizacion || vagoPorAutorizar !== null;
 
   // La primera vez que un docente entra con su código, la guía se abre sola.
   const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
@@ -312,9 +316,9 @@ export default function PanelRevision({
 
   // Escape (Pagina) cierra el diálogo; solo la confirmación de salida va antes.
   useEffect(() => {
-    useAtlas.getState().setDialogoRevision(vista !== null || pedirAutorizacion);
+    useAtlas.getState().setDialogoRevision(vista !== null || mostrarAutorizacion);
     return () => useAtlas.getState().setDialogoRevision(false);
-  }, [vista, pedirAutorizacion]);
+  }, [vista, mostrarAutorizacion]);
 
   const cerrar = useCallback(
     (devolverFoco: boolean) => {
@@ -329,12 +333,19 @@ export default function PanelRevision({
     [revisor, vista, movil],
   );
 
+  // Cierra la autorización sin aceptar: suelta la petición de la casilla del vago y, si el diálogo era el de
+  // las respuestas por guardar, lo descarta hasta el siguiente cambio de respuestas.
+  const cerrarAutorizacion = useCallback(() => {
+    setVagoPorAutorizar(null);
+    if (pedirAutorizacion) setDescartadaCon(respuestas);
+  }, [pedirAutorizacion, respuestas]);
+
   useEffect(() => {
     // La autorización es modal y va primero: Escape la cierra sin aceptar (el foco lo devuelve el diálogo al desmontarse).
-    const alCerrar = () => (pedirAutorizacion ? setDescartadaCon(respuestas) : cerrar(true));
+    const alCerrar = () => (mostrarAutorizacion ? cerrarAutorizacion() : cerrar(true));
     window.addEventListener('atlas:cerrar-revision', alCerrar);
     return () => window.removeEventListener('atlas:cerrar-revision', alCerrar);
-  }, [cerrar, pedirAutorizacion, respuestas]);
+  }, [cerrar, cerrarAutorizacion, mostrarAutorizacion]);
 
   if (!revisor) return null;
   const abrir = (v: Vista) => {
@@ -406,6 +417,11 @@ export default function PanelRevision({
   // deshabilitada; si falla, vuelve al confirmado. Con `codigo_no_activo` el store ya marca `inactivo`: el estado de
   // guardado lo dice y la casilla desaparece.
   const cambiarVago = async (nuevo: boolean) => {
+    // Sin autorización de la versión vigente en memoria no se manda `autorizar` desde aquí: se pide aceptar el texto vigente.
+    if (autorizacionVigente(useAtlas.getState().autorizacion) === null) {
+      setVagoPorAutorizar(nuevo);
+      return;
+    }
     setCambiandoVago(nuevo);
     setErrorVago(false);
     try {
@@ -415,6 +431,12 @@ export default function PanelRevision({
     } finally {
       if (vivo.current) setCambiandoVago(null);
     }
+  };
+
+  // Si el canal rechaza, `cambiarAutorizacion` lanza y el diálogo muestra el aviso y sigue abierto.
+  const aceptarAutorizacion = async (vagoElegido: boolean) => {
+    await useAtlas.getState().cambiarAutorizacion(vagoElegido);
+    setVagoPorAutorizar(null);
   };
 
   const copiarODescargar = async (carga: string, archivo: string) => {
@@ -741,8 +763,12 @@ export default function PanelRevision({
           </div>
         </div>
       )}
-      {pedirAutorizacion && (
-        <DialogoAutorizacion alAceptar={(vago) => useAtlas.getState().cambiarAutorizacion(vago)} alCerrar={() => setDescartadaCon(respuestas)} />
+      {mostrarAutorizacion && (
+        <DialogoAutorizacion
+          vagoInicial={vagoPorAutorizar ?? false}
+          alAceptar={aceptarAutorizacion}
+          alCerrar={cerrarAutorizacion}
+        />
       )}
     </div>
   );

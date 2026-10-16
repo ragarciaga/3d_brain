@@ -160,17 +160,20 @@ async function simularCanal(
       const url = new URL(pedido.url());
       const json = (cuerpo: unknown) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(cuerpo) });
       if (pedido.method() === 'GET') {
-        const accion = url.searchParams.get('accion');
-        canal.peticiones.push({ metodo: 'GET', accion, url: pedido.url(), cuerpo: null, t: Date.now() });
-        if (accion !== 'leer' || canal.leer === 'red') return route.abort('failed');
-        if (canal.retenerLeer) await canal.retenerLeer;
-        if (canal.demoraLeer) await new Promise((r) => setTimeout(r, canal.demoraLeer));
-        if (canal.leer === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
-        return json({ ok: true, respuestas: { v: 2, r: url.searchParams.get('r'), e: canal.respuestas }, autorizacion: canal.autorizacion });
+        // La app ya no lee por GET (S4, #162): se anota para que las pruebas lo vean y se aborta.
+        canal.peticiones.push({ metodo: 'GET', accion: url.searchParams.get('accion'), url: pedido.url(), cuerpo: null, t: Date.now() });
+        return route.abort('failed');
       }
       const cuerpo = JSON.parse(pedido.postData() ?? '{}') as Record<string, unknown>;
       const accion = typeof cuerpo['accion'] === 'string' ? cuerpo['accion'] : null;
       canal.peticiones.push({ metodo: pedido.method(), accion, url: pedido.url(), cuerpo, t: Date.now() });
+      if (accion === 'leer') {
+        if (canal.leer === 'red') return route.abort('failed');
+        if (canal.retenerLeer) await canal.retenerLeer;
+        if (canal.demoraLeer) await new Promise((r) => setTimeout(r, canal.demoraLeer));
+        if (canal.leer === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
+        return json({ ok: true, respuestas: { v: 2, r: cuerpo['r'], e: canal.respuestas }, autorizacion: canal.autorizacion });
+      }
       if (accion === 'autorizar') {
         if (canal.retenerAutorizar) await canal.retenerAutorizar;
         if (canal.autorizar === 'red') return route.abort('failed');
@@ -306,7 +309,12 @@ test('autorización: casilla obligatoria, Escape con foco de vuelta y sin campos
   await entrarEnRevision(page, context, 'AUT01');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
   expect(peticionesDe(canal, 'leer').length).toBeGreaterThan(0);
-  expect(peticionesDe(canal, 'leer').every((p) => new URL(p.url).searchParams.get('r') === 'AUT01')).toBe(true);
+  // S4 (#162): cada lectura es un POST con el código en el cuerpo y la URL sin query.
+  for (const p of peticionesDe(canal, 'leer')) {
+    expect(p.metodo).toBe('POST');
+    expect(p.cuerpo).toEqual({ accion: 'leer', r: 'AUT01' });
+    expect(new URL(p.url).search).toBe('');
+  }
 
   // R2.1 y (c): al marcar la primera respuesta completa aparece el diálogo y su título toma el foco.
   await correcto(page, 'que_es.es').click();
@@ -358,6 +366,15 @@ test('autorización: casilla obligatoria, Escape con foco de vuelta y sin campos
   await expect(page.getByTestId('total-respuestas')).toHaveText('3 respuestas');
   await expect(dialogoAut(page)).toHaveCount(0);
   expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+
+  // S4 (#162): con `guardar` ya visto, ninguna petición del canal (leer, autorizar, guardar) tiene query, lleva el código en la URL ni es un GET.
+  await expect.poll(() => peticionesDe(canal, 'guardar').length, { timeout: 15_000 }).toBeGreaterThan(0);
+  expect(canal.peticiones.length).toBeGreaterThanOrEqual(3);
+  for (const p of canal.peticiones) {
+    expect(p.metodo).toBe('POST');
+    expect(new URL(p.url).search).toBe('');
+    expect(p.url).not.toContain('AUT01');
+  }
 });
 
 test('autorización: con la casilla del vago manda vago true y si autorizar falla el diálogo sigue abierto', async ({ page, context }) => {
@@ -1277,5 +1294,111 @@ test('vago: en otro equipo, con vago true en el canal, los trazos y recorridos a
   await cerrarGuia(page);
 
   await asentar(page);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+});
+
+const TEXTO_AUTORIZACION_ES = (JSON.parse(readFileSync('src/i18n/es.json', 'utf8')) as { revision: { autorizacion: { texto: string } } }).revision.autorizacion.texto;
+
+test('vago: con una autorización de otra versión en memoria, la casilla muestra el diálogo con el texto vigente y no autoriza sin aceptar (#162)', async ({
+  page,
+  context,
+}) => {
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: false } });
+  await conCanal(context, URL_CANAL);
+  await rutasSinteticas(page);
+  await entrarDirectoEn(page, context, 'VAG04', '/es/nervio-laringeo-recurrente');
+  await inyectarVago(page);
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(casillaAcciones(page)).toBeVisible();
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+
+  // Con la versión vigente, `leer` nunca deja en memoria otra; la costura de desarrollo modela una copia de otra versión.
+  const vieja = { version: `${VERSION_AUTORIZACION}-anterior`, vago: false };
+  await page.evaluate(
+    (a) => (window as unknown as { __atlas: { getState: () => { setAutorizacion(x: unknown): void } } }).__atlas.getState().setAutorizacion(a),
+    vieja,
+  );
+  expect(await autorizacionDelStore(page)).toEqual(vieja);
+
+  // Tocar la casilla abre el diálogo con el texto vigente, con la casilla del vago ya marcada y sin la obligatoria.
+  await casillaAcciones(page).click();
+  await expect(dialogoAut(page)).toBeVisible();
+  await expect(dialogoAut(page).locator('#autorizacion-texto')).toHaveText(TEXTO_AUTORIZACION_ES);
+  await expect(casillaVago(page)).toBeChecked();
+  await expect(casillaAcepto(page)).not.toBeChecked();
+  await expect(continuar(page)).toBeDisabled();
+
+  // Sin aceptar no sale `autorizar`, la casilla de Acciones sigue sin marcar y el store conserva lo que había.
+  await asentar(page);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+  expect(await page.getByTestId('casilla-vago').getByRole('checkbox').isChecked()).toBe(false);
+  expect(await autorizacionDelStore(page)).toEqual(vieja);
+
+  // Escape lo cierra sin aceptar.
+  await page.keyboard.press('Escape');
+  await expect(dialogoAut(page)).toHaveCount(0);
+  await asentar(page);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+  expect(await autorizacionDelStore(page)).toEqual(vieja);
+
+  // Otro toque y aceptar: sale `autorizar` con la versión vigente y el valor pedido.
+  await casillaAcciones(page).click();
+  await expect(dialogoAut(page)).toBeVisible();
+  await expect(casillaVago(page)).toBeChecked();
+  await casillaAcepto(page).check();
+  await continuar(page).click();
+  await expect(dialogoAut(page)).toHaveCount(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+  expect(peticionesDe(canal, 'autorizar')[0]!.cuerpo).toEqual({ accion: 'autorizar', r: 'VAG04', version: VERSION_AUTORIZACION, vago: true });
+  await expect.poll(() => autorizacionDelStore(page)).toEqual({ version: VERSION_AUTORIZACION, vago: true });
+  await expect(casillaAcciones(page)).toBeChecked();
+});
+
+test('autorización: con una copia local de otra versión y la lectura fallida no hay casilla del vago ni autorizar, y al responder sale el diálogo vigente (#162)', async ({
+  page,
+  context,
+}) => {
+  const canal = await simularCanal(page, { autorizacion: { version: VERSION_AUTORIZACION, vago: true } });
+  await conCanal(context, URL_CANAL);
+  await rutasSinteticas(page);
+  await entrarDirectoEn(page, context, 'VAG05', '/es/nervio-laringeo-recurrente');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect.poll(() => autorizacionGuardada(page, 'VAG05')).toEqual({ version: VERSION_AUTORIZACION, vago: true });
+
+  // La copia de IndexedDB pasa a una autorización de otra versión (vago true, para que una fuga se note).
+  await page.evaluate(
+    (a) =>
+      new Promise<void>((resolver, rechazar) => {
+        const abrirDb = indexedDB.open('keyval-store');
+        abrirDb.onerror = () => rechazar(abrirDb.error);
+        abrirDb.onsuccess = () => {
+          const db = abrirDb.result;
+          const tx = db.transaction('keyval', 'readwrite');
+          const almacen = tx.objectStore('keyval');
+          const pedido = almacen.get('revision:VAG05');
+          pedido.onsuccess = () => almacen.put({ ...pedido.result, autorizacion: a }, 'revision:VAG05');
+          tx.oncomplete = () => resolver();
+          tx.onerror = () => rechazar(tx.error);
+        };
+      }),
+    { version: `${VERSION_AUTORIZACION}-anterior`, vago: true },
+  );
+  expect(await autorizacionGuardada(page, 'VAG05')).toEqual({ version: `${VERSION_AUTORIZACION}-anterior`, vago: true });
+
+  canal.leer = 'red';
+  const lecturas = peticionesDe(canal, 'leer').length;
+  await page.reload();
+  await expect(barra(page)).toContainText('VAG05');
+  await expect.poll(() => lecturaDelStore(page)).toBe('fallida');
+  expect(peticionesDe(canal, 'leer').length).toBeGreaterThan(lecturas);
+  await asentar(page);
+  expect(await autorizacionDelStore(page)).toBeNull();
+  expect(await page.getByTestId('casilla-vago').count()).toBe(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+
+  // Al responder un campo vuelve a pedirse la autorización, con el texto vigente.
+  await correcto(page, 'que_es.es').click();
+  await expect(dialogoAut(page)).toBeVisible();
+  await expect(dialogoAut(page).locator('#autorizacion-texto')).toHaveText(TEXTO_AUTORIZACION_ES);
   expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
 });

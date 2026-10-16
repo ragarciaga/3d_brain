@@ -36,14 +36,16 @@ const autorizarCuerpo = (codigo: string, extra: Record<string, unknown> = {}) =>
 const idForma = (id: unknown) => typeof id === 'string' && /^[a-z0-9-]+$/.test(id);
 const isoDe = (env: Entorno) => new Date(env.reloj.ahora).toISOString();
 
-type Accion = 'guardar' | 'autorizar' | 'leer';
+/** `leer` es el POST de la app y `leerGet` el GET que el script sigue aceptando por compatibilidad (#162). */
+type Accion = 'guardar' | 'autorizar' | 'leer' | 'leerGet';
 /** Una petición de cada acción con un código dado. */
 function pedir(env: Entorno, accion: Accion, codigo: string) {
   if (accion === 'guardar') return env.post(guardarCuerpo(codigo, [resp()]));
   if (accion === 'autorizar') return env.post(autorizarCuerpo(codigo));
+  if (accion === 'leer') return env.postLeer(codigo);
   return env.get({ accion: 'leer', r: codigo });
 }
-const ACCIONES: Accion[] = ['guardar', 'autorizar', 'leer'];
+const ACCIONES: Accion[] = ['guardar', 'autorizar', 'leer', 'leerGet'];
 
 describe('(a) código fuera del padrón, inactivo o inválido (R6.1)', () => {
   const codigos = [
@@ -85,6 +87,8 @@ describe('(a) código fuera del padrón, inactivo o inválido (R6.1)', () => {
     env.hojas.Padrón.filas[0] = [CODIGO_ACTIVO, 'D01', 'sí'];
     expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: false, error: 'codigo_no_activo' });
     env.hojas.Padrón.filas.push([CODIGO_ACTIVO, 'D01', 'sí']);
+    // El padrón se guarda 60 s en la caché (S3, #162): la fila nueva cuenta al vencer.
+    env.reloj.avanzar(61000);
     expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['ok']).toBe(true);
   });
 
@@ -163,7 +167,6 @@ describe('(b) tamaño y formato (R6.2)', () => {
     ['una acción desconocida', JSON.stringify({ accion: 'borrar', r: CODIGO_ACTIVO })],
     ['una acción ausente', JSON.stringify({ r: CODIGO_ACTIVO, carga: cargaRevisionV2(CODIGO_ACTIVO, [resp()]) })],
     ['una acción que no es texto', JSON.stringify({ accion: ['guardar'], r: CODIGO_ACTIVO })],
-    ['la acción leer por POST', JSON.stringify({ accion: 'leer', r: CODIGO_ACTIVO })],
     ['una carga que es un objeto', JSON.stringify({ accion: 'guardar', carga: JSON.parse(cargaRevisionV2(CODIGO_ACTIVO, [resp()])) })],
     ['una carga que no es JSON', JSON.stringify({ accion: 'guardar', carga: 'no es json' })],
     ['una carga que es un arreglo', JSON.stringify({ accion: 'guardar', carga: '[1]' })],
@@ -194,7 +197,8 @@ describe('(b) tamaño y formato (R6.2)', () => {
     env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]));
     env.get({ accion: 'leer', r: CODIGO_ACTIVO });
     env.get({ accion: 'leer', r: CODIGO_AUSENTE });
-    expect(env.salidas).toHaveLength(4);
+    env.postLeer(CODIGO_ACTIVO);
+    expect(env.salidas).toHaveLength(5);
     for (const s of env.salidas) {
       expect(s.mime).toBe(MIME_JSON);
       expect(() => JSON.parse(s.contenido)).not.toThrow();
@@ -281,10 +285,11 @@ describe('(c) ritmo por código (R6.3)', () => {
     expect(pedir(env, accion, CODIGO_ACTIVO)['ok']).toBe(true);
   });
 
-  it('el ritmo se comparte entre las tres acciones del mismo código', () => {
+  it('el ritmo se comparte entre las cuatro acciones del mismo código', () => {
     const env = crearEntorno();
-    for (let i = 0; i < 40; i++) for (const a of ACCIONES) pedir(env, a, CODIGO_ACTIVO);
+    for (let i = 0; i < 30; i++) for (const a of ACCIONES) pedir(env, a, CODIGO_ACTIVO);
     expect(pedir(env, 'leer', CODIGO_ACTIVO)).toEqual({ ok: false, error: 'demasiadas_peticiones' });
+    expect(pedir(env, 'leerGet', CODIGO_ACTIVO)).toEqual({ ok: false, error: 'demasiadas_peticiones' });
   });
 
   it('un código inactivo no gasta el ritmo ni lo cuenta', () => {
@@ -303,10 +308,12 @@ describe('(c) ritmo por código (R6.3)', () => {
     expect(pedir(env, 'leer', CODIGO_ACTIVO)['ok']).toBe(true);
   });
 
-  it('el contador se guarda en el caché solo 60 s', () => {
+  it('el contador y el padrón se guardan en el caché solo 60 s', () => {
     const env = crearEntorno();
     pedir(env, 'guardar', CODIGO_ACTIVO);
-    expect(env.vidas).toEqual([60]);
+    expect(env.puts.map((p) => p.clave.split('|')[0]).sort()).toEqual(['padron', 'ritmo']);
+    expect(env.puts.every((p) => p.segundos === 60)).toBe(true);
+    expect(env.vidas).toEqual([60, 60]);
   });
 });
 
@@ -442,7 +449,11 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
   const el = (extra: Record<string, unknown> = {}) => ({ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: '2026-10-14T09:00:00.000Z', ...extra });
   const fila = (b: string, carga: string, c = 'hippocampus'): Celda[] => ['2026-10-14T10:00:00.000Z', b, c, carga];
 
-  it('solo las respuestas de ese código, una por clave (la última) y sin duplicados', () => {
+  type Via = 'POST' | 'GET';
+  const VIAS: Via[] = ['POST', 'GET'];
+  const leerPor = (env: Entorno, via: Via, codigo: string) => (via === 'POST' ? env.postLeer(codigo) : env.get({ accion: 'leer', r: codigo }));
+
+  it.each(VIAS)('solo las respuestas de ese código, una por clave (la última) y sin duplicados (%s)', (via) => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(
       fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el({ p: 'secreto de otro' })], 'm-periaqueductal-grey': [el({ c: 'nombre' })] })),
@@ -454,7 +465,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
       fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el({ c: 'otra' })] })),
     );
     const antes = JSON.stringify(env.hojas.Respuestas.filas);
-    const res = env.get({ accion: 'leer', r: CODIGO_ACTIVO });
+    const res = leerPor(env, via, CODIGO_ACTIVO);
     expect(res['ok']).toBe(true);
     expect(res['respuestas']).toEqual({
       v: 2,
@@ -500,22 +511,22 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
     expect((env.get({ accion: 'leer', r: CODIGO_ACTIVO })['respuestas'] as { e: object }).e).toEqual({ hippocampus: [el()] });
   });
 
-  it('la última autorización de ese código manda y la de otro código no cuenta', () => {
+  it.each(VIAS)('la última autorización de ese código manda y la de otro código no cuenta (%s)', (via) => {
     const env = crearEntorno();
     env.hojas.Autorizaciones.filas.push(
       [CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', '0', 'sí'],
       [CODIGO_ACTIVO, '2026-10-14T09:30:00.000Z', '1', 'no'],
       [OTRO_ACTIVO, '2026-10-14T09:45:00.000Z', '2', 'sí'],
     );
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['autorizacion']).toEqual({ version: '1', vago: false });
-    expect(env.get({ accion: 'leer', r: OTRO_ACTIVO })['autorizacion']).toEqual({ version: '2', vago: true });
+    expect(leerPor(env, via, CODIGO_ACTIVO)['autorizacion']).toEqual({ version: '1', vago: false });
+    expect(leerPor(env, via, OTRO_ACTIVO)['autorizacion']).toEqual({ version: '2', vago: true });
   });
 
-  it('un código sin filas recibe respuestas vacías y autorizacion null', () => {
+  it.each(VIAS)('un código sin filas recibe respuestas vacías y autorizacion null (%s)', (via) => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el()] })));
     env.hojas.Autorizaciones.filas.push([OTRO_ACTIVO, '2026-10-14T09:00:00.000Z', '1', 'sí']);
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
+    expect(leerPor(env, via, CODIGO_ACTIVO)).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
   });
 
   it('autorizar y luego leer devuelve la autorización escrita', () => {
@@ -696,6 +707,205 @@ describe('(i) guardar exige la autorización vigente (S1, #157)', () => {
       expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
       expect(env.post(autorizarCuerpo(CODIGO_ACTIVO))).toEqual({ ok: true });
     });
+  });
+});
+
+describe('(j) leer por POST (S4, #162)', () => {
+  const rellenar = (cuerpo: string, bytes: number) => cuerpo + ' '.repeat(bytes - Buffer.byteLength(cuerpo, 'utf8'));
+  const leerCuerpo = (extra: Record<string, unknown> = {}) => JSON.stringify({ accion: 'leer', r: CODIGO_ACTIVO, ...extra });
+  const carga = (r: string) => JSON.stringify({ v: 2, r, e: { hippocampus: [{ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: '2026-10-14T09:00:00.000Z' }] } });
+
+  it('POST y GET dan la misma respuesta con las hojas pobladas', () => {
+    const env = crearEntorno();
+    env.hojas.Respuestas.filas.push(
+      ['2026-10-14T10:00:00.000Z', OTRO_ACTIVO, 'hippocampus', carga(OTRO_ACTIVO)],
+      ['2026-10-14T10:00:01.000Z', CODIGO_ACTIVO, 'hippocampus', carga(CODIGO_ACTIVO)],
+    );
+    env.hojas.Autorizaciones.filas.push(
+      [CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', VERSION_AUTORIZACION, 'sí'],
+      [OTRO_ACTIVO, '2026-10-14T09:10:00.000Z', '1', 'no'],
+    );
+    const porPost = env.postLeer(CODIGO_ACTIVO);
+    const porGet = env.get({ accion: 'leer', r: CODIGO_ACTIVO });
+    expect(porPost['ok']).toBe(true);
+    expect(porPost).toEqual(porGet);
+    expect(porPost['autorizacion']).toEqual({ version: VERSION_AUTORIZACION, vago: true });
+    expect(JSON.stringify(porPost['respuestas'])).toContain('ubicacion');
+    expect(JSON.stringify(porPost)).not.toContain(OTRO_ACTIVO);
+  });
+
+  it.each([
+    ['sin r', JSON.stringify({ accion: 'leer' })],
+    ['con r numérico', JSON.stringify({ accion: 'leer', r: 7 })],
+    ['con r nulo', JSON.stringify({ accion: 'leer', r: null })],
+    ['con r de otra forma', JSON.stringify({ accion: 'leer', r: ['x'] })],
+  ])('un POST leer %s da codigo_no_activo', (_n, cuerpo) => {
+    const env = crearEntorno();
+    expect(env.post(cuerpo)).toEqual({ ok: false, error: 'codigo_no_activo' });
+  });
+
+  it('un POST leer de 65536 bytes pasa y de 65537 da demasiado_grande, aunque el código no esté activo', () => {
+    const env = crearEntorno();
+    expect(env.post(rellenar(leerCuerpo(), 65536))['ok']).toBe(true);
+    expect(env.post(rellenar(leerCuerpo(), 65537))).toEqual({ ok: false, error: 'demasiado_grande' });
+    expect(env.post(rellenar(leerCuerpo({ r: CODIGO_INACTIVO }), 65537))).toEqual({ ok: false, error: 'demasiado_grande' });
+  });
+
+  it('el orden es tamaño, JSON, acción, código en el padrón y ritmo', () => {
+    const env = crearEntorno();
+    expect(env.post('{"accion":"leer"')).toEqual({ ok: false, error: 'formato' });
+    expect(env.post(JSON.stringify({ accion: 'leerr', r: CODIGO_ACTIVO }))).toEqual({ ok: false, error: 'formato' });
+    expect(env.post(leerCuerpo({ r: CODIGO_INACTIVO }))).toEqual({ ok: false, error: 'codigo_no_activo' });
+    for (let i = 1; i <= 120; i++) expect(env.post(leerCuerpo())['ok']).toBe(true);
+    expect(env.post(leerCuerpo())).toEqual({ ok: false, error: 'demasiadas_peticiones' });
+    // Ya sin ritmo, un código inactivo sigue dando codigo_no_activo (el padrón va antes que el ritmo).
+    expect(env.post(leerCuerpo({ r: CODIGO_INACTIVO }))).toEqual({ ok: false, error: 'codigo_no_activo' });
+  });
+
+  it('no toma el bloqueo ni escribe', () => {
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
+    const antes = conteoFilas(env);
+    expect(env.postLeer(CODIGO_ACTIVO)['ok']).toBe(true);
+    expect(env.candado.esperas).toEqual([]);
+    expect(env.candado.liberaciones).toBe(0);
+    expect(env.hojas.Respuestas.llamadasSetValues + env.hojas.Autorizaciones.llamadasSetValues + env.hojas.Padrón.llamadasSetValues).toBe(0);
+    expect(env.flushes()).toBe(0);
+    expect(conteoFilas(env)).toEqual(antes);
+  });
+
+  it('si falta una pestaña de lectura, el POST leer da interno sin el mensaje de la excepción', () => {
+    for (const sinPestana of ['Respuestas', 'Autorizaciones'] as const) {
+      const res = crearEntorno({ sinPestana }).postLeer(CODIGO_ACTIVO);
+      expect(res).toEqual({ ok: false, error: 'interno' });
+    }
+  });
+});
+
+describe('(k) caché del padrón (S3, #162)', () => {
+  const lecturasPadron = (env: Entorno) => env.hojas.Padrón.lecturas;
+  const leer = (env: Entorno, codigo = CODIGO_ACTIVO) => env.postLeer(codigo);
+
+  it('ninguna, una o muchas peticiones del mismo minuto leen el padrón una sola vez', () => {
+    const env = crearEntorno();
+    expect(lecturasPadron(env)).toBe(0);
+    expect(leer(env)['ok']).toBe(true);
+    expect(lecturasPadron(env)).toBe(1);
+    expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { version: VERSION_AUTORIZACION }))).toEqual({ ok: true });
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))['ok']).toBe(true);
+    expect(leer(env)['ok']).toBe(true);
+    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['ok']).toBe(true);
+    expect(lecturasPadron(env)).toBe(1);
+  });
+
+  it('50 códigos inventados con formato válido dan codigo_no_activo con una lectura, un put y ninguna escritura', () => {
+    const env = crearEntorno();
+    const antes = conteoFilas(env);
+    for (let i = 0; i < 50; i++) expect(leer(env, `INVENTADO${i}`)).toEqual({ ok: false, error: 'codigo_no_activo' });
+    expect(lecturasPadron(env)).toBe(1);
+    expect(env.puts.map((p) => p.clave)).toEqual(['padron']);
+    expect(conteoFilas(env)).toEqual(antes);
+    expect(env.hojas.Respuestas.llamadasSetValues + env.hojas.Autorizaciones.llamadasSetValues).toBe(0);
+  });
+
+  it('a los 30 s sigue en una lectura y a los 61 s la petición siguiente lee otra vez', () => {
+    const env = crearEntorno();
+    leer(env);
+    env.reloj.avanzar(30000);
+    leer(env);
+    expect(lecturasPadron(env)).toBe(1);
+    env.reloj.avanzar(31000);
+    leer(env);
+    expect(lecturasPadron(env)).toBe(2);
+  });
+
+  it('un código pasado a no sigue valiendo dentro de la ventana y a los 61 s da codigo_no_activo', () => {
+    const env = crearEntorno();
+    expect(leer(env)['ok']).toBe(true);
+    env.hojas.Padrón.filas[1]![2] = 'no';
+    env.reloj.avanzar(30000);
+    expect(leer(env)['ok']).toBe(true);
+    env.reloj.avanzar(31000);
+    expect(leer(env)).toEqual({ ok: false, error: 'codigo_no_activo' });
+  });
+
+  it('un código nuevo con sí da codigo_no_activo dentro de la ventana y ok a los 61 s', () => {
+    const env = crearEntorno();
+    expect(leer(env)['ok']).toBe(true);
+    env.hojas.Padrón.filas.push([CODIGO_AUSENTE, 'D09', 'sí']);
+    expect(leer(env, CODIGO_AUSENTE)).toEqual({ ok: false, error: 'codigo_no_activo' });
+    env.reloj.avanzar(61000);
+    expect(leer(env, CODIGO_AUSENTE)['ok']).toBe(true);
+  });
+
+  it('si el put del padrón falla, cada petición responde bien y lee la hoja', () => {
+    const env = crearEntorno({ putFalla: (clave) => clave === 'padron' });
+    for (let i = 1; i <= 5; i++) {
+      expect(leer(env)['ok']).toBe(true);
+      expect(lecturasPadron(env)).toBe(i);
+    }
+    expect(env.puts.some((p) => p.clave === 'padron')).toBe(false);
+    expect(leer(env, CODIGO_AUSENTE)).toEqual({ ok: false, error: 'codigo_no_activo' });
+  });
+
+  it.each(['no json', '{"a":1}', '[1,2]', '{"a":1,"length":1}', '"texto"', 'null'])('un valor sembrado %j en la clave del padrón se ignora y se lee la hoja', (malo) => {
+    const env = crearEntorno();
+    env.sembrarCache('padron', malo, 60);
+    expect(leer(env)['ok']).toBe(true);
+    expect(lecturasPadron(env)).toBe(1);
+    expect(leer(env, CODIGO_AUSENTE)).toEqual({ ok: false, error: 'codigo_no_activo' });
+  });
+
+  it('un valor sembrado válido se usa sin leer la hoja', () => {
+    const env = crearEntorno({ padron: [] });
+    env.sembrarCache('padron', JSON.stringify([CODIGO_ACTIVO]), 60);
+    expect(leer(env)['ok']).toBe(true);
+    expect(leer(env, OTRO_ACTIVO)).toEqual({ ok: false, error: 'codigo_no_activo' });
+    expect(lecturasPadron(env)).toBe(0);
+  });
+
+  it('sin la pestaña Padrón la respuesta es interno y no queda ningún put del padrón', () => {
+    const env = crearEntorno({ sinPestana: 'Padrón' });
+    expect(leer(env)).toEqual({ ok: false, error: 'interno' });
+    expect(env.puts.some((p) => p.clave === 'padron')).toBe(false);
+  });
+
+  it.each(['constructor', '__proto__', 'toString', 'hasOwnProperty', 'length'])('el código %s da codigo_no_activo también con la caché llena', (codigo) => {
+    const env = crearEntorno();
+    expect(leer(env)['ok']).toBe(true);
+    expect(env.puts.some((p) => p.clave === 'padron')).toBe(true);
+    for (const a of ACCIONES) expect(pedir(env, a, codigo)).toEqual({ ok: false, error: 'codigo_no_activo' });
+  });
+
+  it('ninguna salida contiene otro código ni un alias del padrón', () => {
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
+    for (const a of ACCIONES) pedir(env, a, CODIGO_ACTIVO);
+    for (const c of [CODIGO_AUSENTE, CODIGO_INACTIVO, 'constructor']) for (const a of ACCIONES) pedir(env, a, c);
+    env.post('no json');
+    for (let i = 0; i < 130; i++) env.postLeer(CODIGO_ACTIVO); // pasa del ritmo: salen demasiadas_peticiones
+    const roto = crearEntorno({ sinPestana: 'Respuestas' });
+    roto.postLeer(CODIGO_ACTIVO);
+    for (const s of [...env.salidas, ...roto.salidas]) {
+      for (const otro of [OTRO_ACTIVO, CODIGO_GUION, CODIGO_INACTIVO, CODIGO_AUSENTE]) expect(s.contenido).not.toContain(otro);
+      expect(s.contenido).not.toMatch(/\bD0\d\b/);
+    }
+    expect(env.salidas.some((s) => s.contenido.includes('demasiadas_peticiones'))).toBe(true);
+    expect(roto.salidas.some((s) => s.contenido.includes('interno'))).toBe(true);
+  });
+});
+
+describe('(l) versión de la autorización (A2, #162)', () => {
+  it('la constante del script es la de la app y es la 2', () => {
+    const delScript = /const VERSION_AUTORIZACION = '([^']+)';/.exec(readFileSync(RUTA_SCRIPT, 'utf8'))?.[1];
+    expect(delScript).toBe(VERSION_AUTORIZACION);
+    expect(VERSION_AUTORIZACION).toBe('2');
+  });
+
+  it('una fila de la versión 1 ya no deja guardar y la de la versión 2 sí', () => {
+    const env = crearEntorno();
+    env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', '1', 'no']);
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'sin_autorizacion' });
+    env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:01:00.000Z', '2', 'no']);
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))['ok']).toBe(true);
   });
 });
 
