@@ -16,13 +16,19 @@ python3.13 -m venv .venv-pipeline
 python pipeline/descargar.py          # Z-Anatomy (commit fijado) y TA2.csv en pipeline/.cache/, con SHA-256 verificado
 python pipeline/listar.py             # inventario completo: pipeline/salida/estructuras.txt
 python pipeline/mapear.py             # pipeline/mapeo.csv, src/data/arbol.json, siembra estructuras.json
+python pipeline/auditar-vago.py       # pipeline/anclajes-vago.json (ver "Vago", más abajo)
+python pipeline/generar-ramas-vago.py # public/modelos/rutas-vago.json, con las bandas que extraer.py corta
 python pipeline/extraer.py            # pipeline/salida/atlas-crudo.glb y pipeline/cajas.json
 node scripts/comprimir-modelo.ts      # public/modelos/atlas.glb (meshopt, sin simplificar)
 node scripts/mallas-cerradas.ts       # src/config/mallas-cerradas.json (mallas del encéfalo sin bordes abiertos, F8)
-npm run check:modelo                  # 0,1 mm de tolerancia por pieza y presupuesto de 15 MB
+npm run check:modelo                  # 0,1 mm de tolerancia por pieza, presupuesto de 15 MB y ningún vértice del tronco del vago dentro de su banda
 ```
 
 Con `.venv-pipeline/bin/python` en lugar de `python` si usas el entorno de arriba.
+
+`extraer.py` se detiene, antes de abrir el .blend y sin exportar nada, si falta
+`public/modelos/rutas-vago.json` o la banda `reemplaza` de algún lado del vago (ADR 0010). Por eso
+`auditar-vago.py` y `generar-ramas-vago.py` van antes.
 
 ## En Windows (PowerShell)
 
@@ -33,6 +39,8 @@ py -3.13 -m venv .venv-pipeline
 .\.venv-pipeline\Scripts\python pipeline\descargar.py
 .\.venv-pipeline\Scripts\python pipeline\listar.py
 .\.venv-pipeline\Scripts\python pipeline\mapear.py
+.\.venv-pipeline\Scripts\python pipeline\auditar-vago.py
+.\.venv-pipeline\Scripts\python pipeline\generar-ramas-vago.py
 .\.venv-pipeline\Scripts\python pipeline\extraer.py
 node scripts\comprimir-modelo.ts
 node scripts\mallas-cerradas.ts
@@ -54,9 +62,13 @@ Alternativa con Blender instalado (sin pip), desde la carpeta del repositorio:
   `PENDIENTE`. Nunca sobrescribe entradas existentes de `src/data/estructuras.json`.
 - `extraer.py` evalúa cada pieza con sus modificadores, convierte curvas (nervios) a malla, hornea
   la matriz de mundo en los vértices y exporta. El vago sale trazo por trazo (`#tNN`) para la
-  revisión docente, y cada nervio lleva una malla de toque invisible (`#toque`).
+  revisión docente, y cada nervio lleva una malla de toque invisible (`#toque`). Del tronco de cada
+  vago (`#t02`) y de su `#toque` corta el tramo que reemplaza la ruta torácica, con las bandas de
+  `public/modelos/rutas-vago.json`: parte las aristas que cruzan cada borde y borra lo de dentro, sin
+  mover ningún vértice que queda ni cerrar los extremos.
 - `cajas.json` guarda la caja de cada malla medida en Blender; `check:modelo` la compara con el GLB
-  en cada CI. Si alguien mueve una pieza, CI falla.
+  en cada CI. Si alguien mueve una pieza, CI falla. `check:modelo` también lee los vértices del tronco
+  del vago y falla, nombrando la malla y la altura, si alguno cae dentro de la banda de su lado.
 - `mallas-cerradas.ts` mide en el GLB qué mallas del encéfalo no tienen bordes abiertos (ADR 0011) y
   escribe `src/config/mallas-cerradas.json`, que `check:modelo` también verifica. Si regeneras el GLB
   y no regeneras la lista, `check:modelo` y CI fallan con "Falta en mallas-cerradas.json" o
@@ -89,6 +101,9 @@ npm test                                        # tests/asimetrias.test.ts: las 
 - `generar-ramas-vago.py` no usa Blender; se prueba con un modelo sintético:
   `python pipeline/pruebas/probar_generar.py` y `python pipeline/pruebas/vago_sintetico.py` (este
   último regenera `tests/fixtures/vago-sintetico/`, que usan las pruebas de asimetrías).
+- `extraer.py` corta el tronco con las bandas de `rutas-vago.json`; se prueba en Blender con
+  `python pipeline/pruebas/probar_recorte.py` (curva sintética, troncos reales y los casos en que
+  `extraer.py` se detiene). Necesita bpy y el .blend de `descargar.py`; no corre en el CI.
 - La app dibuja las rutas como tubos punteados en tiempo de ejecución (no van al GLB), con aviso,
   leyenda y filtro (SPEC F25). Lo que sí toca el GLB es el recorte del tramo torácico escaneado
   (ADR 0010), con el pipeline y `check:modelo`.
@@ -100,6 +115,7 @@ En Windows (PowerShell), desde la carpeta del repositorio:
 ```powershell
 .\.venv-pipeline\Scripts\python pipeline\auditar-vago.py
 .\.venv-pipeline\Scripts\python pipeline\generar-ramas-vago.py --borrador
+.\.venv-pipeline\Scripts\python pipeline\pruebas\probar_recorte.py
 ```
 
 ## Marcadores: posiciones propuestas por regla (spec 04, ADR 0013)
