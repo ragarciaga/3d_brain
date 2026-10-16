@@ -88,8 +88,9 @@ juzga en la ficha (F24) y una prueba comprueba las cuatro asimetrías del vago e
 lanzamiento público, toda ruta que siga en revisión se aprueba o se retira.
 
 ```bash
-python pipeline/auditar-vago.py                 # Blender: mide anclajes y trazos -> pipeline/anclajes-vago.json
-                                                #          y pipeline/salida/auditoria-vago.md (nombre propuesto por trazo)
+python pipeline/auditar-vago.py                 # Blender: mide anclajes y trazos -> pipeline/anclajes-vago.json,
+                                                #          pipeline/salida/trazos-medidos.json (regla, ramo propuesto y confianza por trazo)
+                                                #          y pipeline/salida/auditoria-vago.md (la tabla para revisar)
 python pipeline/generar-ramas-vago.py --borrador  # sin Blender: rutas de rutas-vago.yaml -> pipeline/salida/rutas-vago-borrador.json
 python pipeline/generar-ramas-vago.py           # -> public/modelos/rutas-vago.json (cada ruta con su estado de revisión)
 npm test                                        # tests/asimetrias.test.ts: las cuatro asimetrías sobre lo medido y lo trazado
@@ -101,6 +102,13 @@ npm test                                        # tests/asimetrias.test.ts: las 
 - `generar-ramas-vago.py` no usa Blender; se prueba con un modelo sintético:
   `python pipeline/pruebas/probar_generar.py` y `python pipeline/pruebas/vago_sintetico.py` (este
   último regenera `tests/fixtures/vago-sintetico/`, que usan las pruebas de asimetrías).
+- Las reglas de la auditoría (raicilla detrás de la oliva, faríngeo frente a laríngeo superior, ramos
+  abdominales según su destino, tronco) están en `reglas_vago.py`, que no usa Blender y cita
+  `docs/research/marcadores/fuentes.md`. `auditar-vago.py` solo lee el modelo y se las pasa. Cada umbral es
+  una constante con nombre, y lo que no sale de una cifra de la fuente está marcado "(derivado)". Cada
+  trazo sale con `regla`, `propuesta`, `confianza` (`alta`, `media` o `baja`, o `null` sin regla) y `fuente`;
+  lo leerá `scripts/aplicar-trazos.ts` (spec 04, T6). Se prueban con el mismo vago sintético:
+  `python pipeline/pruebas/probar_auditar.py`.
 - `extraer.py` corta el tronco con las bandas de `rutas-vago.json`; se prueba en Blender con
   `python pipeline/pruebas/probar_recorte.py` (curva sintética, troncos reales y los casos en que
   `extraer.py` se detiene). Necesita bpy y el .blend de `descargar.py`; no corre en el CI.
@@ -115,6 +123,7 @@ En Windows (PowerShell), desde la carpeta del repositorio:
 ```powershell
 .\.venv-pipeline\Scripts\python pipeline\auditar-vago.py
 .\.venv-pipeline\Scripts\python pipeline\generar-ramas-vago.py --borrador
+.\.venv-pipeline\Scripts\python pipeline\pruebas\probar_auditar.py
 .\.venv-pipeline\Scripts\python pipeline\pruebas\probar_recorte.py
 ```
 
@@ -147,7 +156,7 @@ node scripts/aplicar-marcadores.ts                          # propuestas -> src/
   y una propuesta sin posición no le quita nada a un marcador. Si algo no valida, no escribe ningún archivo.
   Escribe también `docs/research/marcadores/resumen-propuestas.md`, con antes, después, regla y fuente por marcador.
 - Dos corridas sobre el mismo modelo dan el mismo archivo, byte a byte (5 decimales, claves ordenadas).
-- `geometria.py` reúne las funciones puras (solo biblioteca estándar) que también usarán las reglas del vago.
+- `geometria.py` reúne las funciones puras (solo biblioteca estándar) que también usan las reglas del vago (`reglas_vago.py`).
 - `bpy` se importa solo dentro de `leer_modelo_blender`, así que las pruebas y la validación corren sin Blender.
 - El CI no corre Python: estas pruebas se corren a mano.
 
