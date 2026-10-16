@@ -108,6 +108,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-16: rendimiento en gama baja cerrado como está (decisión del editor): en el Tecno el cerebro aparece a los 5,3 a 6,2 s (antes 7,8 a 11,3 s); los cuadros/s de `?medir=1` caen mientras se arma el índice de toque (10 sin cortes, 12 con el sagital, 6 con tres cortes). Se ajusta solo si llega retroalimentación; mejora conocida: que el índice ceda un cuadro entre tandas (ver #178)
 - 2026-10-16: el Android de gama baja con cortes iba a 3 cuadros/s porque todas las mallas del encéfalo usaban `discard` con cualquier corte; se arregla con recorte por caja (#177, PR #187): las piezas enteras del lado oculto no se dibujan y las enteras del lado visible van sin planos. F19 (modelo liviano) queda diferido hasta medir de nuevo (decisión del editor), see docs/v2.md
 - 2026-10-16: el índice de toque (árboles BVH) se arma después del primer cuadro, por tandas de 12 ms (#178, PR #183)
 - 2026-10-16: `Codigo.js` se despliega una sola vez con #162, #168 y #169 (GET sin lectura, versión 3 exacta en `autorizar`, casilla del vago al guardar)
@@ -156,7 +157,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 ## Next steps
 1. Revisión docente: con el script desplegado (versión 3), mandar el mensaje a los 10 docentes (`docs/guia-docentes.md`).
-2. Rendimiento en gama baja: medir en el Tecno después de #183 y #187; si con tres cortes sigue bajo 30 cuadros/s, recorte por hardware de las piezas cruzadas (`WEBGL_clip_cull_distance`) y después F19.
+2. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
 3. Propuestas para la sesión docente (spec 04): T1 a T5 en main; siguen T4 (#104, marcadores en `src/data`, nivel C), T6 a T8.
 4. F8 cortes: T10 hecho (#42); falta `/rb-verify docs/specs/01-cutting-planes/`.
 5. Seguridad del canal: #149 (S5, S6, analítica y frase de la página de privacidad "está o estuvo en modo revisión").
@@ -166,10 +167,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42).
 
 Sigue, en este orden:
-1. **Confirmar el despliegue de `Codigo.js`** (versión 3) con la prueba corta de la subsección #162 de `docs/revision-docente.md`, si no lo hiciste ya.
-2. **Medir otra vez en el Tecno** con `?medir=1`, `?medir=1&corte=sagital:0` y `?medir=1&corte=sagital:0,coronal:0,axial:0` (después de #183 y #187).
-3. **Decidir** si las respuestas de revisores sin ninguna autorización se apartan solas en el importador (hoy las cuenta y lista los alias; quitarlas depende de ti).
-4. Mandar el mensaje a los docentes (`docs/guia-docentes.md`).
+1. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado (2026-10-16) y la hoja quedó limpia.
 
 ## Seguimientos abiertos (sin decisión pendiente)
 - #149: S5 (`?r=` en la barra), S6 (llaves locales con el código), adopción del código en una pestaña con beacon y la frase de privacidad "está o estuvo en modo revisión" con el ADR 0015.
