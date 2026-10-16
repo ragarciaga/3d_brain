@@ -492,7 +492,6 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
 }));
 
-/** Piezas que resalta la selección actual. */
 /** Sale del modo revisión en memoria: sin código, sin respuestas y sin ubicación pendiente. No toca almacenes. */
 export function dejarModoRevision(): void {
   const s = useAtlas.getState();
@@ -501,6 +500,7 @@ export function dejarModoRevision(): void {
   s.setUbicando(null);
 }
 
+/** Piezas que resalta la selección actual. */
 export function piezasSeleccionadas(s: Seleccion): string[] {
   if (!s.entrada) return [];
   return piezasDeEntrada(s.entrada);

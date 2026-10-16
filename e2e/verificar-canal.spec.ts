@@ -94,7 +94,7 @@ interface RevisionGuardada {
   confirmadas: Record<string, string>;
 }
 
-/** El registro `revision:<código>` de IndexedDB (undefined si no hay). */
+/** El registro `revision:<huella>` de IndexedDB (`claveRevisionIdb`) (undefined si no hay). */
 const revisionGuardada = (page: Page, codigo: string) =>
   page.evaluate(
     (c) =>
