@@ -103,7 +103,9 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
 7. Prueba rápida, desde PowerShell, con una fila de prueba y no con el código de un docente real.
    En `Padrón`, agrega una fila inventada: un código de prueba aleatorio de 8 caracteres, generado
    como lo hace `scripts/crear-revisores.ts` y que no se parezca a los reales, alias `D99` y Activo
-   `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
+   `sí`. Después de agregar la fila, espera un minuto (el script guarda `Padrón` unos 60 s) antes de
+   pegar el bloque: si la caché está caliente, la primera prueba puede responder `codigo_no_activo`
+   aunque la fila ya diga `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
    un PR. Genera un código nuevo para esta prueba: uno anterior pudo quedar en el historial del
    navegador. El script ya no lee por GET (#169): la prueba es un POST, igual que el de la app. Pega
