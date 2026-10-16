@@ -217,8 +217,7 @@ orden, con el sitio primero y el script después:
 
 1. Espera a que los PR de #162 y de #168 estén fusionados y a que termine el workflow `pages`. Si solo
    uno está fusionado, espera al otro: el script se despliega una sola vez. Espera también a los PR de
-   #169 y #166 si aún no están fusionados. Hasta entonces la web publicada sigue leyendo por GET con la
-   versión `1`.
+   #169 y #166 si aún no están fusionados, para que el mismo despliegue los incluya.
 2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script. En PowerShell:
 
    ```powershell

@@ -167,6 +167,7 @@ describe('docs/revision-docente.md', () => {
     expect(cuerpo).toContain('#168');
     expect(cuerpo).toContain('Versión `3`');
     expect(cuerpo).not.toContain('Versión `2`');
+    expect(cuerpo).not.toContain('sigue leyendo por GET');
   });
 
   it('la sección de supresión publica el contacto de las solicitudes (#168)', () => {

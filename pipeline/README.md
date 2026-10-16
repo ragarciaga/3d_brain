@@ -134,12 +134,18 @@ python pipeline/ubicar-marcadores.py                        # Blender: -> pipeli
 python pipeline/ubicar-marcadores.py --salida otra/ruta.json
 python pipeline/pruebas/probar_ubicar.py                    # sin Blender: geometría y ubicador sobre un modelo sintético
 python pipeline/pruebas/probar_reglas.py                    # sin Blender: el YAML real contra fuentes, árbol e inventario
+node scripts/aplicar-marcadores.ts                          # propuestas -> src/data/marcadores.json y el resumen
 ```
 
 - La salida (`pipeline/salida/`, ignorada por git) es una lista ordenada por `id`: `posicion` (un punto, o
   `{ l, r }` si la estructura es par, o `null`), `estado` (`aproximada` o `sin_ubicar`), `metodo` y `cita`
   en es y en, y, solo si aplican, `ancla`, `motivo` y `desacuerdo`. Nunca dice `validada`: eso lo decide un
-  docente. Llevarla a `src/data/marcadores.json` es otro paso (spec 04, T3).
+  docente. Llevarla a `src/data/marcadores.json` es otro paso: `node scripts/aplicar-marcadores.ts` (spec 04,
+  T3) la lee, y con `--propuestas`, `--marcadores` y `--resumen` se cambian las rutas de entrada y de salida.
+  Solo cambian `posicion`, `estado` (siempre `aproximada`), `fuente_ubicacion` (método, cita y, si lo hay,
+  el desacuerdo de fuentes, en es y en) y `ancla` si la propuesta la trae. Un marcador `validada` no se toca,
+  y una propuesta sin posición no le quita nada a un marcador. Si algo no valida, no escribe ningún archivo.
+  Escribe también `docs/research/marcadores/resumen-propuestas.md`, con antes, después, regla y fuente por marcador.
 - Dos corridas sobre el mismo modelo dan el mismo archivo, byte a byte (5 decimales, claves ordenadas).
 - `geometria.py` reúne las funciones puras (solo biblioteca estándar) que también usarán las reglas del vago.
 - `bpy` se importa solo dentro de `leer_modelo_blender`, así que las pruebas y la validación corren sin Blender.
@@ -151,4 +157,5 @@ En Windows (PowerShell), desde la carpeta del repositorio:
 .\.venv-pipeline\Scripts\python pipeline\ubicar-marcadores.py
 .\.venv-pipeline\Scripts\python pipeline\pruebas\probar_ubicar.py
 .\.venv-pipeline\Scripts\python pipeline\pruebas\probar_reglas.py
+node scripts\aplicar-marcadores.ts
 ```
