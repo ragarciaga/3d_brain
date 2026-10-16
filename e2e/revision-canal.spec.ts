@@ -7,6 +7,7 @@ import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, 
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 import { leerRutas } from '../src/lib/rutas';
 import { protegerCanalReal } from './canal-real';
+import { pausarReloj } from './reloj';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
 
@@ -623,8 +624,7 @@ test('guardado: sale a los 3 s, dice Guardando... y Guardado ✓ solo con la mis
   await expect(page.getByTestId('como-revisar')).toHaveCount(0);
 
   // `asentar` usa el requestAnimationFrame de la página, que el reloj pausado congela: no se usa desde aquí.
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // R3.1: mientras espera dice "Guardando..." y no sale nada antes de la espera del panel; en cuanto se cumple, sale.
   // `fastForward` y no `runFor`: este avanza frame por frame y el visor, que dibuja en cada uno, tarda minutos;
@@ -933,8 +933,7 @@ test('formulario de respaldo: con el canal caído no aparece a los 9 min, aparec
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   await expect(correcto(page, 'ubicacion.es')).toHaveAttribute('aria-pressed', 'true');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // Primer envío: con la red caída queda pendiente.
   await correcto(page, 'que_es.es').click({ force: true });
@@ -1009,8 +1008,7 @@ test('formulario de respaldo: sin autorización vigente o con el código no acti
   await conCanal(context, URL_CANAL);
   await entrarDirecto(page, context, 'RES03');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // Sin autorización: el diálogo se descarta y la respuesta queda pendiente, sin enviarse ni ofrecer el formulario.
   await correcto(page, 'que_es.es').click({ force: true });
@@ -1049,8 +1047,7 @@ test('formulario de respaldo: con el canal confirmando no aparece a los 10 min, 
   await conCanal(context, URL_CANAL);
   await entrarDirecto(page, context, 'RES02');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // R7.1 negativo: el canal confirma la primera; la segunda queda pendiente 1 s antes de cumplirse 10 min desde esa confirmación.
   await correcto(page, 'que_es.es').click({ force: true });

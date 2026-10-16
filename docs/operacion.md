@@ -71,10 +71,14 @@ cuadros por segundo. "Copiar resultados" copia todo como texto para pegarlo en e
 chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo quita. No envía nada a ningún
 servidor.
 
-La preparación del modelo viene desglosada en tres partes que suman el total: "Leer el modelo"
-(parseo y decodificación), "Índice de toque" (los árboles BVH que hacen rápido el toque) y "Armar
-las piezas" (piezas, cajas y centros). Si falta alguna marca, esa parte sigue en "midiendo..." en
-el panel y dice "sin dato" en el informe copiado.
+La preparación del modelo viene desglosada en dos partes que suman el total: "Leer el modelo"
+(parseo y decodificación) y "Armar las piezas" (piezas, cajas y centros). El "Índice de toque" (los
+árboles BVH que hacen rápido el toque y el contorno del corte) se arma después de que se ve el
+cerebro, por tandas cortas para no frenar el dibujo: el panel dice cuánto tardó y a qué hora quedó
+listo ("Índice de toque listo a los"), que siempre debe ser después de "Cerebro visible a los".
+Mientras se arma, tocar funciona pero puede ir más lento, y el contorno del corte aparece cuando el
+índice termina. Si falta alguna marca, esa parte sigue en "midiendo..." en el panel y dice "sin dato"
+en el informe copiado.
 
 Los cuadros por segundo cuentan solo de 1 a 10 s después de que se ve el cerebro: el primer segundo
 es arranque y compilación de sombreadores, y no dice qué tan fluido va el visor. Por eso los

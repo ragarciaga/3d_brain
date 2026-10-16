@@ -4,6 +4,7 @@ import {
   cargaLenta,
   cuelloDeBotella,
   informe,
+  MARCA_INDICE_INICIO,
   MARCA_INDICE_TOQUE,
   MARCA_INICIO_APP,
   MARCA_MODELO_LEIDO,
@@ -12,6 +13,7 @@ import {
   muestraEnVentana,
   resumirCarga,
   resumirFluidez,
+  seguirLeyendo,
   type DatosCarga,
   type Equipo,
   type EstadoFluidez,
@@ -43,9 +45,10 @@ const datos = {
   marcas: {
     [MARCA_INICIO_APP]: 950,
     [MARCA_MODELO_LEIDO]: 4_300,
-    [MARCA_INDICE_TOQUE]: 4_550,
     [MARCA_MODELO_LISTO]: 4_600,
     [MARCA_PRIMER_CUADRO]: 4_700,
+    [MARCA_INDICE_INICIO]: 4_750,
+    [MARCA_INDICE_TOQUE]: 5_000,
   } as Partial<Record<string, number>>,
 };
 
@@ -189,19 +192,21 @@ describe('medición de carga (issue 6)', () => {
     expect(txt).toContain('Lo más lento: la descarga del modelo 3D');
   });
 
-  describe('desglose de "Preparar el modelo" (issue 85)', () => {
+  describe('desglose de "Preparar el modelo" (issues 85 y 178)', () => {
     const sinNuevas = (): DatosCarga => ({
       recursos: datos.recursos,
       marcas: { [MARCA_INICIO_APP]: 950, [MARCA_MODELO_LISTO]: 4_600, [MARCA_PRIMER_CUADRO]: 4_700 },
     });
 
-    it('las tres partes suman la preparación', () => {
+    it('leer y armar suman la preparación; el índice de toque va aparte, después del primer cuadro', () => {
       const r = resumirCarga(datos);
       expect(r.leerModeloMs).toBe(300);
-      expect(r.indiceToqueMs).toBe(250);
-      expect(r.armarPiezasMs).toBe(50);
-      expect(r.leerModeloMs! + r.indiceToqueMs! + r.armarPiezasMs!).toBe(r.procesamientoMs);
+      expect(r.armarPiezasMs).toBe(300);
+      expect(r.leerModeloMs! + r.armarPiezasMs!).toBe(r.procesamientoMs);
       expect(r.procesamientoMs).toBe(600);
+      expect(r.indiceToqueMs).toBe(250);
+      expect(r.indiceInicioMs).toBe(4_750);
+      expect(r.indiceListoMs).toBe(5_000);
     });
 
     it('con el modelo antes que el código, leer cuenta desde el código listo y no desde el último byte', () => {
@@ -210,36 +215,47 @@ describe('medición de carga (issue 6)', () => {
         marcas: {
           [MARCA_INICIO_APP]: 3_000,
           [MARCA_MODELO_LEIDO]: 3_300,
-          [MARCA_INDICE_TOQUE]: 3_550,
           [MARCA_MODELO_LISTO]: 3_600,
+          [MARCA_INDICE_INICIO]: 3_700,
+          [MARCA_INDICE_TOQUE]: 3_950,
         },
       });
       expect(r.leerModeloMs).toBe(300);
+      expect(r.armarPiezasMs).toBe(300);
       expect(r.indiceToqueMs).toBe(250);
-      expect(r.armarPiezasMs).toBe(50);
     });
 
-    it('sin las marcas nuevas, las tres partes quedan sin dato y la preparación sigue', () => {
+    it('sin las marcas nuevas, leer, armar y el índice quedan sin dato y la preparación sigue', () => {
       const r = resumirCarga(sinNuevas());
       expect(r.leerModeloMs).toBeNull();
-      expect(r.indiceToqueMs).toBeNull();
       expect(r.armarPiezasMs).toBeNull();
+      expect(r.indiceToqueMs).toBeNull();
+      expect(r.indiceInicioMs).toBeNull();
+      expect(r.indiceListoMs).toBeNull();
       expect(r.procesamientoMs).toBe(600);
     });
 
-    it('con solo la marca de leído, el índice y armar quedan sin dato', () => {
+    it('con solo la marca de leído, armar tiene dato y el índice no', () => {
       const r = resumirCarga({ recursos: datos.recursos, marcas: { ...sinNuevas().marcas, [MARCA_MODELO_LEIDO]: 4_300 } });
       expect(r.leerModeloMs).toBe(300);
+      expect(r.armarPiezasMs).toBe(300);
       expect(r.indiceToqueMs).toBeNull();
-      expect(r.armarPiezasMs).toBeNull();
     });
 
-    it('el informe trae la preparación y sus tres partes', () => {
+    it('con solo la marca de inicio del índice, la duración y la hora de listo quedan sin dato', () => {
+      const r = resumirCarga({ recursos: datos.recursos, marcas: { ...sinNuevas().marcas, [MARCA_INDICE_INICIO]: 4_750 } });
+      expect(r.indiceInicioMs).toBe(4_750);
+      expect(r.indiceToqueMs).toBeNull();
+      expect(r.indiceListoMs).toBeNull();
+    });
+
+    it('el informe trae la preparación con sus dos partes y el índice aparte', () => {
       const txt = informe(resumirCarga(datos), equipo, null, '2026-10-15');
       expect(txt).toContain('Preparar el modelo: 600 ms');
       expect(txt).toContain('  Leer el modelo (parseo y decodificación): 300 ms');
-      expect(txt).toContain('  Índice de toque (árboles BVH): 250 ms');
-      expect(txt).toContain('  Armar las piezas y sus cajas: 50 ms');
+      expect(txt).toContain('  Armar las piezas y sus cajas: 300 ms');
+      expect(txt).toContain('\nÍndice de toque (árboles BVH): 250 ms (empezó a los 4750 ms, listo a los 5000 ms)');
+      expect(txt).not.toContain('  Índice de toque');
     });
 
     it('el informe dice sin dato cuando faltan las marcas nuevas', () => {
@@ -247,6 +263,24 @@ describe('medición de carga (issue 6)', () => {
       expect(txt).toContain('Leer el modelo (parseo y decodificación): sin dato');
       expect(txt).toContain('Índice de toque (árboles BVH): sin dato');
       expect(txt).toContain('Armar las piezas y sus cajas: sin dato');
+    });
+  });
+
+  describe('seguir leyendo las marcas (issue 178)', () => {
+    it('sin primer cuadro sigue', () => {
+      expect(seguirLeyendo(60_000, null, 5_000)).toBe(true);
+    });
+
+    it('dentro de la ventana de fluidez sigue, aunque el índice ya esté listo', () => {
+      expect(seguirLeyendo(14_000, 5_000, 6_000)).toBe(true);
+    });
+
+    it('pasada la ventana sigue mientras el índice no esté listo', () => {
+      expect(seguirLeyendo(20_000, 5_000, null)).toBe(true);
+    });
+
+    it('pasada la ventana y con el índice listo, para', () => {
+      expect(seguirLeyendo(20_000, 5_000, 6_000)).toBe(false);
     });
   });
 
