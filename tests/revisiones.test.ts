@@ -501,6 +501,8 @@ describe('padrón privado de revisores (#15)', () => {
     expect(errorDePadron(padron)).toBeNull();
     expect(errorDePadron([])).toMatch(/objeto/);
     expect(errorDePadron({ 'mal código': 'D01' })).toMatch(/código inválido/);
+    expect(errorDePadron({ AAAA1111: 'D01', 'mal código': 'D02' })).toBe('código inválido en la entrada 2 del padrón (alias D02)');
+    expect(errorDePadron({ 'mal código': 'Ana' })).toBe('código inválido en la entrada 1 del padrón');
     expect(errorDePadron({ AAAA1111: 'Ana' })).toMatch(/alias inválido/);
     expect(errorDePadron({ AAAA1111: 'D01', BBBB2222: 'D01' })).toMatch(/repetido/);
   });

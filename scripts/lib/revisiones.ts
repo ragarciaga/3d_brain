@@ -169,13 +169,20 @@ export type Padron = Record<string, string>;
 
 /**
  * Valida el padrón leído de pipeline/revisores.local.json: un objeto con códigos válidos y alias
- * D01, D02... sin repetir. Devuelve el error en español o null si está bien.
+ * D01, D02... sin repetir. Devuelve el error en español o null si está bien. El error nombra la entrada
+ * por su posición (y su alias si es válido), nunca por su código.
  */
 export function errorDePadron(p: unknown): string | null {
   if (!esObjeto(p)) return 'el padrón debe ser un objeto {"CODIGO": "D01", ...}';
   const alias = new Set<string>();
+  let posicion = 0;
   for (const [codigo, a] of Object.entries(p)) {
-    if (!REVISOR_VALIDO.test(codigo)) return `código inválido en el padrón: ${codigo.slice(0, 40)}`;
+    posicion++;
+    // Nunca se imprime el código, ni entero ni cortado: un código con una errata sigue siendo casi el código.
+    if (!REVISOR_VALIDO.test(codigo)) {
+      const alias = typeof a === 'string' && ALIAS_VALIDO.test(a) ? ` (alias ${a})` : '';
+      return `código inválido en la entrada ${posicion} del padrón${alias}`;
+    }
     if (typeof a !== 'string' || !ALIAS_VALIDO.test(a)) return `alias inválido para un código del padrón (usa D01, D02...)`;
     if (alias.has(a)) return `alias repetido en el padrón: ${a}`;
     alias.add(a);

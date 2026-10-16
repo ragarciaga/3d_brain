@@ -170,6 +170,77 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166)', (
     sinCodigos(tres);
   });
 
+  describe('una entrada que no se puede leer sale con 2, un mensaje corto y la carpeta intacta', () => {
+    /** Una corrida buena deja resúmenes; devuelve la carpeta y su contenido para comparar después de la corrida que falla. */
+    const conCorridaBuena = () => {
+      const tmp = temporal();
+      escribir(join(tmp, 'src', 'data', 'estructuras.json'), ESTRUCTURAS);
+      const rev = join(tmp, ...PARTES);
+      const buena = correr(tmp, HOJA, PADRON, '--autorizaciones', AUT);
+      expect(buena.status, buena.stderr).toBe(0);
+      const nombres = ['m-recurrent-laryngeal-nerve.md', 'vagus-nerve-x.md', 'hippocampus.md', 'resumen.md'];
+      const antes = nombres.map((n) => readFileSync(join(rev, n), 'utf8'));
+      const igual = () => nombres.every((n, i) => existe(join(rev, n)) && readFileSync(join(rev, n), 'utf8') === antes[i]);
+      return { tmp, igual };
+    };
+    const sinRastro = (r: { stdout: string; stderr: string }) => {
+      expect(r.stderr).not.toMatch(/\n\s+at /);
+      expect(r.stderr).not.toContain('node:internal');
+      expect(r.stderr).not.toContain('Error:');
+      expect(r.stdout).toBe('');
+    };
+
+    it('si falta el CSV de respuestas: sale con 2, sin traza de Node y con los resúmenes byte a byte iguales', () => {
+      const { tmp, igual } = conCorridaBuena();
+      const r = correr(tmp, join(tmp, 'no-existe.csv'), PADRON, '--autorizaciones', AUT);
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('No está el CSV de respuestas');
+      expect(r.stderr).toContain('no-existe.csv');
+      sinRastro(r);
+      sinCodigos(r);
+      expect(igual()).toBe(true);
+    });
+
+    it('si el padrón no es un JSON válido: sale con 2 y ni stdout ni stderr traen los códigos del archivo', () => {
+      const { tmp, igual } = conCorridaBuena();
+      const roto = join(tmp, 'padron-roto.json');
+      escribir(roto, '{"QQSECRETOX":"D01","QQSECRETOY":"D02",');
+      const r = correr(tmp, HOJA, roto, '--autorizaciones', AUT);
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('no es un JSON válido');
+      for (const c of ['QQSECRETOX', 'QQSECRETOY']) {
+        expect(r.stdout).not.toContain(c);
+        expect(r.stderr).not.toContain(c);
+      }
+      sinRastro(r);
+      expect(igual()).toBe(true);
+    });
+
+    it('si un código del padrón es inválido: lo dice por su posición y su alias, sin imprimir el código', () => {
+      const { tmp, igual } = conCorridaBuena();
+      const malo = join(tmp, 'padron-malo.json');
+      escribir(malo, '{"QQBUENOXYZ":"D01","QQTYPO XYZ":"D02"}');
+      const r = correr(tmp, HOJA, malo, '--autorizaciones', AUT);
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('código inválido en la entrada 2 del padrón (alias D02)');
+      for (const c of ['QQBUENO', 'QQTYPO']) {
+        expect(r.stdout).not.toContain(c);
+        expect(r.stderr).not.toContain(c);
+      }
+      sinRastro(r);
+      expect(igual()).toBe(true);
+    });
+
+    it('si el CSV de Autorizaciones es una carpeta: sale con 2 y un mensaje corto', () => {
+      const { tmp, igual } = conCorridaBuena();
+      const r = correr(tmp, HOJA, PADRON, '--autorizaciones', tmp);
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('No se pudo leer');
+      sinRastro(r);
+      expect(igual()).toBe(true);
+    });
+  });
+
   it.skipIf(process.platform === 'win32')('si pipeline/salida/revisiones es un enlace, sale con 2, lo dice y no borra en el destino', () => {
     const tmp = temporal();
     escribir(join(tmp, 'src', 'data', 'estructuras.json'), ESTRUCTURAS);

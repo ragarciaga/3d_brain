@@ -24,16 +24,37 @@ if (!args) {
   console.error('Uso: node scripts/importar-revisiones.ts respuestas.csv [pipeline/revisores.local.json] [--autorizaciones autorizaciones.csv]');
   process.exit(2);
 }
-if (args.autorizaciones && !existsSync(args.autorizaciones)) {
-  console.error(`No está el CSV de Autorizaciones en ${args.autorizaciones}. Descárgalo de la pestaña Autorizaciones de la hoja del canal.`);
-  process.exit(2);
+
+/**
+ * Lee un archivo de entrada o sale con 2 y un mensaje corto con el rol y la ruta. Nunca muestra el
+ * contenido ni el mensaje del sistema (el de un JSON roto trae el trozo del texto, con códigos).
+ */
+function leer(ruta: string, falta: string): string {
+  if (!existsSync(ruta)) {
+    console.error(falta);
+    process.exit(2);
+  }
+  try {
+    return readFileSync(ruta, 'utf8');
+  } catch {
+    console.error(`No se pudo leer ${ruta}: revisa que sea un archivo y que tengas permiso para abrirlo.`);
+    process.exit(2);
+  }
 }
+
 const rutaPadron = args.padron ?? join('pipeline', 'revisores.local.json');
-if (!existsSync(rutaPadron)) {
-  console.error(`No está el padrón de revisores en ${rutaPadron}. Créalo con: node scripts/crear-revisores.ts 10`);
+const textoAutorizaciones = args.autorizaciones
+  ? leer(args.autorizaciones, `No está el CSV de Autorizaciones en ${args.autorizaciones}. Descárgalo de la pestaña Autorizaciones de la hoja del canal.`)
+  : null;
+const textoPadron = leer(rutaPadron, `No está el padrón de revisores en ${rutaPadron}. Créalo con: node scripts/crear-revisores.ts 10`);
+const textoRespuestas = leer(args.csv, `No está el CSV de respuestas en ${args.csv}. Descárgalo de la pestaña Respuestas de la hoja del canal.`);
+let padron: unknown;
+try {
+  padron = JSON.parse(textoPadron);
+} catch {
+  console.error(`Padrón inválido (${rutaPadron}): no es un JSON válido. Debe ser un objeto {"CODIGO": "D01", ...}.`);
   process.exit(2);
 }
-const padron: unknown = JSON.parse(readFileSync(rutaPadron, 'utf8'));
 const error = errorDePadron(padron);
 if (error) {
   console.error(`Padrón inválido (${rutaPadron}): ${error}`);
@@ -45,9 +66,8 @@ const datos = JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as {
 if (!args.autorizaciones) {
   console.error('Sin --autorizaciones: todas las respuestas de trazos y rutas del vago van a "Descartadas: sin la casilla del vago".');
 }
-const textoAutorizaciones = args.autorizaciones ? readFileSync(args.autorizaciones, 'utf8') : null;
 const { archivos, validos, invalidas, desconocidos, sinVago, autorizaciones, sinAutorizacion, aliasSinAutorizacion } = importar(
-  readFileSync(args.csv, 'utf8'),
+  textoRespuestas,
   datos.estructuras,
   padron as Padron,
   textoAutorizaciones,

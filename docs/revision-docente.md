@@ -354,7 +354,9 @@ Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por 
 quedado en esa carpeta de una corrida anterior (sin pasar por la papelera), así ningún resumen viejo
 se mezcla con el nuevo. Solo borra ahí: no entra a subcarpetas, no sigue enlaces y no toca el resto
 de `pipeline/salida/`. Si esa carpeta o `pipeline/salida` es un enlace o un archivo, se detiene sin
-borrar nada, y si la corrida falla antes (falta el padrón o un CSV), la carpeta queda como estaba.
+borrar nada, y si la corrida falla antes (falta o no se puede leer el padrón o un CSV, o el padrón no
+es un JSON válido o trae un código inválido), sale con 2, dice cuál archivo falló sin mostrar su
+contenido ni ningún código, y la carpeta queda como estaba.
 Cada revisor aparece con su alias, nunca con su código; los
 envíos con un código fuera del padrón se descartan y el resumen dice cuántos fueron. Las filas malformadas se descartan y se cuentan, sin detener
 la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
