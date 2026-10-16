@@ -3,7 +3,8 @@
 // con el fantasma opcional del lado oculto, el relleno de la cara del corte con las caras traseras de las mallas
 // cerradas (ADR 0011), el contorno del corte (líneas calculadas con el BVH, sin relleno: en las mallas abiertas, y en
 // todas las cortadas cuando el relleno se apaga por lentitud o por un shader que no compila) y el toque que descarta
-// lo que quedó oculto (`raycastCorte`).
+// lo que quedó oculto (`raycastCorte`). Los marcadores del encéfalo siguen la misma regla de los planos, decidida en CPU
+// por el centro del punto (`vistaDeMarcador`): visible, fantasma sin toque u oculto.
 // Todo lo que se prueba vive aquí, sin montar el Canvas; `Visor.tsx` solo lo usa.
 import * as THREE from 'three';
 import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
@@ -11,8 +12,10 @@ import cerradasJson from '../config/mallas-cerradas.json';
 import { esFragmentable, esMallaDeToque, nodos, origenDe } from '../data/atlas';
 import {
   EJE,
+  enEncefalo,
   esEncefalo,
   hayCortes,
+  ocultoPorCortes,
   piezasCruzadas,
   piezasEncefalo,
   planoDe,
@@ -23,6 +26,7 @@ import {
   type EstadoCuadros,
   type Rango,
 } from '../lib/cortes';
+import type { Vec3 } from '../lib/explosion';
 import type { Caja } from '../lib/inventario';
 
 /** Mallas del encéfalo cerradas (sin bordes abiertos): solo ellas se rellenan, porque su cara trasera tapa el hueco. */
@@ -106,6 +110,25 @@ export function seVeConRecorte(p: THREE.Vector3, planos: readonly THREE.Plane[] 
 export function planosDePieza(pieza: string, conCortes: boolean): THREE.Plane[] | null {
   if (conCortes && esEncefalo(pieza)) return PLANOS_CORTE;
   return esFragmentable(pieza) ? null : PLANOS_RECORRIDO;
+}
+
+/** Cómo se ve un marcador con los planos de corte: normal, translúcido sin toque (fantasma) o sin dibujar. */
+export type VistaMarcador = 'visible' | 'fantasma' | 'oculto';
+
+/**
+ * Vista de un marcador (R1.4, R2.1, R5.2, R5.3). Solo se cortan los del encéfalo (padre bajo `g-brain`); los del vago y
+ * los órganos se ven enteros. Se decide por el centro del punto (metros, en el mundo) con la misma regla de las piezas:
+ * un punto sobre el plano se ve. Del lado oculto, `fantasmaCorte` elige entre fantasma y oculto.
+ */
+export function vistaDeMarcador(
+  pos: Vec3,
+  padre: string | null,
+  s: { cortes: Cortes; fantasmaCorte: boolean; cajas: Record<string, Caja> },
+): VistaMarcador {
+  if (!hayCortes(s.cortes)) return 'visible';
+  if (!enEncefalo(padre)) return 'visible';
+  if (!ocultoPorCortes(pos, s.cortes, rangoActual(s.cajas))) return 'visible';
+  return s.fantasmaCorte ? 'fantasma' : 'oculto';
 }
 
 /** `raycast` del encéfalo con cortes: descarta los impactos del lado oculto de cualquier plano activo. */

@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import i18next from 'i18next';
 import { describe, expect, it } from 'vitest';
-import { GRUPO_VAGO, piezasBajo } from '../src/data/atlas';
+import { GRUPO_VAGO, marcadores, piezasBajo } from '../src/data/atlas';
 import {
   ajustarAlRango,
   cortesApagados,
+  enEncefalo,
   esEncefalo,
   etiquetaCorte,
   hayCortes,
@@ -242,5 +243,26 @@ describe('cortes: vigilante de cuadros (R8.2)', () => {
     const e = { bajas: 3, apagado: false };
     expect(vigilarCuadros(e, Number.NaN, true)).toBe(false);
     expect(e.bajas).toBe(3);
+  });
+});
+
+describe('cortes: marcadores del encéfalo (D6)', () => {
+  it('el grupo mismo, un grupo de varios niveles y una pieza cuelgan del encéfalo', () => {
+    expect(enEncefalo('g-brain')).toBe(true);
+    expect(enEncefalo('g-diencephalon')).toBe(true);
+    expect(enEncefalo(piezasBajo('g-brain')[0]!)).toBe(true);
+  });
+  it('el vago, null y un id desconocido no son del encéfalo', () => {
+    expect(enEncefalo('g-vagus-nerve-x')).toBe(false);
+    expect(enEncefalo(null)).toBe(false);
+    expect(enEncefalo('no-existe')).toBe(false);
+  });
+  it('con los marcadores reales: los del vago no, todos los demás sí', () => {
+    const delVago = marcadores.filter((m) => m.padre === 'g-vagus-nerve-x');
+    const delEncefalo = marcadores.filter((m) => m.padre !== 'g-vagus-nerve-x');
+    expect(delVago.length).toBeGreaterThan(0);
+    expect(delEncefalo.length).toBeGreaterThan(0);
+    for (const m of delVago) expect(enEncefalo(m.padre), m.id).toBe(false);
+    for (const m of delEncefalo) expect(enEncefalo(m.padre), m.id).toBe(true);
   });
 });
