@@ -100,16 +100,44 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    publicada dentro de la app, y cualquiera podrá verla. Regla del editor, no una protección: la
    URL se pasa solo por chat a la sesión que construye T13, y nunca en un issue, un PR ni un
    comentario.
-7. Prueba rápida, en el navegador, con una fila de prueba y no con el código de un docente real.
+7. Prueba rápida, desde PowerShell, con una fila de prueba y no con el código de un docente real.
    En `Padrón`, agrega una fila inventada: un código de prueba aleatorio de 8 caracteres, generado
    como lo hace `scripts/crear-revisores.ts` y que no se parezca a los reales, alias `D99` y Activo
    `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
-   un PR. Abre `<URL>?accion=leer&r=<código de prueba>` (esta prueba usa el GET de compatibilidad
-   del script; la app lee por POST y no pone el código en la URL): debe devolver `{"ok":true,...}`.
-   Cambia Activo a `no` (o borra la fila), espera un minuto (el script guarda `Padrón` unos 60 s) y
-   vuelve a abrirla: debe devolver `{"ok":false,"error":"codigo_no_activo"}`. Al terminar, borra las filas de ese código en
-   `Respuestas` y `Autorizaciones` y déjalo en `no` en `Padrón`, para que no llegue al importador.
+   un PR. Genera un código nuevo para esta prueba: uno anterior pudo quedar en el historial del
+   navegador. El script ya no lee por GET (#169): la prueba es un POST, igual que el de la app. Pega
+   este bloque entero (te pide la URL y el código con `Read-Host`, así el código no queda en ninguna URL
+   ni en el historial de PowerShell, y solo imprime el veredicto):
+
+   ```powershell
+   & {
+     $url = Read-Host "Pega la URL /exec del script"
+     $codigo = Read-Host "Escribe el código de prueba"
+     $cuerpo = @{ accion = 'leer'; r = $codigo } | ConvertTo-Json -Compress
+     $r = Invoke-RestMethod -Method Post -Uri $url -ContentType 'text/plain;charset=utf-8' -Body $cuerpo
+     "ok=$($r.ok) error=$($r.error)"
+   }
+   ```
+
+   Debe imprimir `ok=True error=`. Nunca pegues la salida completa de una llamada al script en un chat
+   ni en un issue: con un código real traería las respuestas del docente. Cambia Activo a `no` (o borra
+   la fila), espera un minuto (el script guarda `Padrón` unos 60 s) y pega el bloque otra vez: debe
+   imprimir `ok=False error=codigo_no_activo`. Si `Invoke-RestMethod` no devuelve JSON (no siguió la
+   redirección de Apps Script), avísalo por chat, sin la URL, y usa este bloque, que manda el cuerpo por la
+   entrada estándar:
+
+   ```powershell
+   & {
+     $url = Read-Host "Pega la URL /exec del script"
+     $codigo = Read-Host "Escribe el código de prueba"
+     $cuerpo = @{ accion = 'leer'; r = $codigo } | ConvertTo-Json -Compress
+     $cuerpo | curl.exe -sL -H "Content-Type: text/plain;charset=utf-8" --data-binary '@-' $url | ConvertFrom-Json | ForEach-Object { "ok=$($_.ok) error=$($_.error)" }
+   }
+   ```
+
+   Al terminar, borra las filas de ese código en `Respuestas` y `Autorizaciones` y déjalo en `no` en
+   `Padrón`, para que no llegue al importador.
 
 Para actualizar el script sin cambiar la URL, edita la implementación existente: Implementar,
 Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. No crees una
@@ -145,22 +173,34 @@ de la implementación existente: la URL `/exec` no cambia. En este orden:
 
 Si cambias `VERSION_AUTORIZACION` en `src/config/revision.ts`, cambia la constante igual en
 `apps-script/Codigo.js` (una prueba falla si difieren) y vuelve a desplegar el script como nueva
-versión apenas se publique la app. Si no, el docente acepta y el diálogo vuelve a salir, una y otra vez.
+versión apenas se publique la app. Si no, el script rechaza la aceptación con `formato` (#169): el diálogo
+dice "Sin conexión: no se pudo registrar tu autorización" aunque haya red, y no se guarda nada hasta
+que despliegues el script.
 
-### Actualización: autorización v2 y v3, leer por POST y caché del Padrón (#162 y #168)
+### Actualización: autorización v2 y v3, leer por POST, caché del Padrón y script cerrado (#162, #168, #169 y #166)
 
-Desde #162 cambian cuatro cosas, y las cuatro salen en el mismo despliegue de `apps-script/Codigo.js`:
+Desde #162 cambian cuatro cosas, y con #169 y #166 se suman tres más. Todas salen en el mismo despliegue de
+`apps-script/Codigo.js`:
 
 - El texto del diálogo de autorización avisa que las propuestas y los comentarios pueden publicarse con
   el alias del docente (por ejemplo D01, nunca su nombre) en issues públicos del proyecto en GitHub.
 - `VERSION_AUTORIZACION` pasa de `1` a `2` (#162) y a `3` (#168), en `src/config/revision.ts` y en
   `Codigo.js`. Toda autorización de las versiones `1` y `2` deja de valer y la app vuelve a pedir la
   aceptación del texto nuevo. Ningún docente ha autorizado todavía, así que a nadie se le pide dos veces.
-- La app lee por POST (`{accion:'leer', r}`) y ya no pone el código de revisor en la URL. El script
-  sigue respondiendo el GET `?accion=leer&r=` por compatibilidad (la prueba rápida del paso 7 lo usa)
-  hasta que se retire en otro cambio.
+- La app lee por POST (`{accion:'leer', r}`) y ya no pone el código de revisor en la URL. Desde #169 el
+  script ya no responde el GET de lectura: cualquier GET recibe `{"ok":false,"error":"formato"}` sin leer
+  nada, así que ya no sirve para saber si un código está activo. La prueba rápida del paso 7 usa POST
+  desde PowerShell.
 - El script guarda la lista de códigos activos de `Padrón` unos 60 s en `CacheService`, en vez de leer la
   hoja en cada petición. Un código que pasas a `no`, o uno nuevo con `sí`, cambia como mucho en un minuto.
+- `autorizar` solo acepta la versión vigente (#169): con otra `version` responde `formato` y no escribe en
+  `Autorizaciones`. La app no cambia: el diálogo avisa y no reintenta solo.
+- `guardar` rechaza con `formato` la carga entera si trae respuestas del vago (trazos y rutas, o con malla
+  o ramo) de un código cuya última autorización no marca la casilla del vago (#166). La app deja esa
+  respuesta pendiente en el equipo del docente, sigue guardando las demás, y el importador sigue
+  apartando en "Descartadas" las que lleguen por otro camino sin la casilla. El formulario de respaldo
+  (sección 5) escribe sin pasar por el script, así que esta regla no lo cubre: al importar, pasa siempre
+  `--autorizaciones` (sección 4).
 
 #168 vuelve a cambiar el texto del diálogo: nombra al responsable (Maysa Strategy Partners) y el contacto
 (info@maysasp.com) y enlaza a la página Privacidad. `VERSION_AUTORIZACION` sube a `3` en
@@ -176,8 +216,9 @@ Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementaci�
 orden, con el sitio primero y el script después:
 
 1. Espera a que los PR de #162 y de #168 estén fusionados y a que termine el workflow `pages`. Si solo
-   uno está fusionado, espera al otro: el script se despliega una sola vez. Hasta entonces la web
-   publicada sigue leyendo por GET con la versión `1`.
+   uno está fusionado, espera al otro: el script se despliega una sola vez. Espera también a los PR de
+   #169 y #166 si aún no están fusionados. Hasta entonces la web publicada sigue leyendo por GET con la
+   versión `1`.
 2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script. En PowerShell:
 
    ```powershell
@@ -199,11 +240,18 @@ orden, con el sitio primero y el script después:
       diálogo no debe volver.
    4. Cambia Activo a `no` en `Padrón`, espera un minuto y recarga: debe aparecer "Tu código no está
       activo; escribe al editor".
-   5. Limpia como dice el paso 7.
+   5. El GET ya no lee: abre en el navegador `<URL>?accion=leer`, sin código, y debe mostrar
+      `{"ok":false,"error":"formato"}`.
+   6. Una autorización con versión vieja no se registra: repite el bloque PowerShell del paso 7 de la
+      sección 1 cambiando la línea del cuerpo por
+      `$cuerpo = @{ accion = 'autorizar'; r = $codigo; version = 'vieja'; vago = $false } | ConvertTo-Json -Compress`.
+      Debe imprimir `ok=False error=formato`, y `Autorizaciones` no debe ganar ninguna fila.
+   7. Limpia como dice el paso 7.
 
 Entre el paso 1 y el 4, el sitio y el script no coinciden: la lectura de la app falla (el script viejo
 responde `formato` a la lectura por POST) y `guardar` responde `sin_autorizacion`. Por eso van seguidos
-y antes de mandar los enlaces.
+y antes de mandar los enlaces. Después del despliegue, una pestaña abierta con la app anterior no
+registra una aceptación vieja: el diálogo muestra el aviso y basta recargar la página.
 
 ## 2. Cuidar el padrón
 
