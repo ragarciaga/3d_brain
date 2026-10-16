@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      Los enlaces dentro del sitio mandan solo el origen como referrer: así el código personal del modo
+      revisión (?r=) no viaja en el referrer de una pestaña nueva (docs/adr/0015-analitica-sin-cookies.md).
+    -->
+    <meta name="referrer" content="strict-origin" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!--
       Pide el modelo 3D desde el primer instante (#83), en paralelo con el código. La ruta debe
