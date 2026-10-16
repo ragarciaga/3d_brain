@@ -137,7 +137,7 @@ Spec: docs/specs/01-cutting-planes/  |  Status: approved  |  Converged: 2026-10-
 - Files: docs/operacion.md, docs/progress.md
 - Verify: R8.1 `[manual]` (reason: requiere los equipos físicos de referencia; los resultados se pegan en #6). Procedimiento en docs/operacion.md: en cada equipo (HP Iris Xe, iPhone 12 Pro Max, Android de gama baja), abrir `https://ragarciaga.github.io/3d_brain/es?medir=1&corte=sagital:0,coronal:0,axial:0`, copiar los resultados con "Copiar resultados" y pegarlos en #6 con una captura del panel de cortes. Se cumple si los tres equipos dan 30 cuadros por segundo o más de promedio y el panel no muestra el aviso de relleno apagado; si no, se anota en docs/progress.md y se abre el issue de F19
 - Issue: #42
-- Status: todo
+- Status: done
 
 ### Decision log
 - Ronda 1: rewrite. Procedimiento por enlace (depende de T5) y verificación de que el relleno no se apagó durante la medición.
