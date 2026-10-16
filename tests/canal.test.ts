@@ -78,16 +78,18 @@ describe('guardar', () => {
 });
 
 describe('leer', () => {
-  it('usa GET sin cuerpo, con accion=leer y r=<código>', async () => {
+  it("usa POST text/plain con {accion:'leer', r} en el cuerpo y la URL sin query", async () => {
     const f = responder({ ok: true, respuestas: null, autorizacion: null });
     await leer(CODIGO, idOk);
+    expect(f).toHaveBeenCalledTimes(1);
     const { url, init } = llamada(f);
-    expect(init?.method ?? 'GET').toBe('GET');
-    expect(init?.body).toBeUndefined();
-    expect(init?.headers).toBeUndefined();
-    expect(url.searchParams.get('accion')).toBe('leer');
-    expect(url.searchParams.get('r')).toBe(CODIGO);
-    expect(url.origin + url.pathname).toBe(URL_PRUEBA);
+    expect(init?.method).toBe('POST');
+    const cabeceras = new Headers(init?.headers);
+    expect([...cabeceras.keys()]).toEqual(['content-type']);
+    expect(cabeceras.get('content-type')).toMatch(/^text\/plain(;|$)/);
+    expect(cuerpo(f)).toEqual({ accion: 'leer', r: CODIGO });
+    expect(url.search).toBe('');
+    expect(url.href).toBe(URL_PRUEBA);
   });
 });
 
@@ -109,6 +111,19 @@ const ACCIONES: [string, () => Promise<unknown>][] = [
   ['autorizar', () => autorizar(CODIGO, AUTORIZACION)],
   ['leer', () => leer(CODIGO, idOk)],
 ];
+
+describe('el código no viaja en la URL (S4, #162)', () => {
+  it.each(ACCIONES)('%s: la URL no tiene query ni lleva el código', async (_n, hacer) => {
+    const f = responder({ ok: true, respuestas: null, autorizacion: null, recibidas: [] });
+    await hacer();
+    expect(f).toHaveBeenCalledTimes(1);
+    const { url, init } = llamada(f);
+    expect(init?.method).toBe('POST');
+    expect(url.search).toBe('');
+    expect(url.hash).toBe('');
+    expect(String(url)).not.toContain(CODIGO);
+  });
+});
 
 describe('errores del contrato', () => {
   const codigos: TipoErrorCanal[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'sin_autorizacion', 'interno'];
@@ -316,6 +331,7 @@ describe('autorización vigente (R2.5)', () => {
 
   it.each([
     ['otra versión', { version: `${VERSION_AUTORIZACION}0`, vago: true }],
+    ['la versión 1 anterior', { version: '1', vago: true }],
     ['sin versión', { vago: true }],
     ['versión que no es texto', { version: 1, vago: true }],
     ['vago texto', { version: VERSION_AUTORIZACION, vago: 'sí' }],
@@ -335,6 +351,7 @@ describe('autorización vigente (R2.5)', () => {
 
   it.each([
     ['otra versión', { version: 'vieja', vago: true }],
+    ['la versión 1 anterior', { version: '1', vago: true }],
     ['ausente', undefined],
     ['null', null],
     ['mal formada', { version: VERSION_AUTORIZACION, vago: 'sí' }],

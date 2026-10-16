@@ -75,7 +75,7 @@ Como docente, quiero ver solo lo que me siento capaz de revisar, para no aprobar
 ## R6: Canal de retorno seguro
 Como editor, quiero que el canal solo acepte revisiones válidas de mis docentes, para que nadie llene mi hoja con basura.
 
-- R6.1 Si llega una petición con un código que no está en el padrón de la hoja, entonces el canal deberá rechazarla sin escribir nada y responder "código no activo". `[unit]`
+- R6.1 Si llega una petición con un código que no está en el padrón de la hoja, entonces el canal deberá rechazarla sin escribir nada y responder "código no activo". `[unit]` (2026-10-16, #162: el script guarda una copia del padrón unos 60 s, así que el rechazo de un código que sale del padrón, o la aceptación de uno nuevo, se aplica con hasta 60 s de retraso.)
 - R6.2 Si una petición pesa más de 64 KB o su carga no cumple el formato `v:2` con las validaciones del importador, entonces el canal deberá rechazarla sin escribir nada. `[unit]`
 - R6.3 Si un mismo código envía más de 120 peticiones en un minuto, entonces el canal deberá rechazar las siguientes durante ese minuto y responder "demasiadas peticiones". `[unit]`
 - R6.4 El canal deberá escribir cada respuesta aceptada en una fila con la fecha y hora de recepción en la primera columna y la carga `v:2` en una celda, para que el importador actual la lea sin cambios de formato. `[unit]`

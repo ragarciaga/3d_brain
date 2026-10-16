@@ -7,13 +7,16 @@ import { useTranslation } from 'react-i18next';
 export default function DialogoAutorizacion({
   alAceptar,
   alCerrar,
+  vagoInicial = false,
 }: {
   alAceptar: (vago: boolean) => Promise<void>;
   alCerrar: () => void;
+  /** Valor con el que arranca la casilla del vago (la que el docente pidió en "Acciones"). La obligatoria arranca desmarcada. */
+  vagoInicial?: boolean;
 }) {
   const { t } = useTranslation();
   const [acepto, setAcepto] = useState(false);
-  const [vago, setVago] = useState(false);
+  const [vago, setVago] = useState(vagoInicial);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(false);
   // El control que abrió el diálogo: el foco vuelve a él al cerrarse.

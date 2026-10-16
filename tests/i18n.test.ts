@@ -111,6 +111,18 @@ describe('textos de los botones de revisión', () => {
       expect(privacidad).not.toMatch(idioma === 'es' ? /tu nombre (solo )?aparece/i : /your name (only )?appears/i);
     });
 
+    it(`el texto de autorización (${idioma}) avisa que las propuestas y comentarios se publican con el alias, nunca con el nombre (#162)`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: { autorizacion: Record<string, string> } };
+      const texto = revision.autorizacion.texto!;
+      expect(texto).toContain('alias');
+      expect(texto).toContain(idioma === 'es' ? 'issues públicos' : 'public issues');
+      expect(texto).toContain(idioma === 'es' ? 'nunca tu nombre' : 'never your name');
+      expect(texto).toContain(idioma === 'es' ? 'propuestas y comentarios' : 'proposals and comments');
+      expect(texto).toContain('1581');
+      expect(texto).not.toContain('—');
+      if (idioma === 'es') expect(texto).not.toMatch(/\bvos\b|podés|tenés|querés|escribís/i);
+    });
+
     it(`vagoCasilla (${idioma}) nombra la casilla y Acciones tal como aparecen`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision & { autorizacion: Record<string, string> } };
       expect(revision.autorizacion.vago).toBeTruthy();
