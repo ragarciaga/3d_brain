@@ -16,6 +16,7 @@ importar revisiones.
 | Fuentes y licencia | https://brain.maysasp.com/es/licencia |
 | Medir la carga en un equipo (issue 6) | https://brain.maysasp.com/es?medir=1 |
 | Modo revisión de un docente | `https://brain.maysasp.com/es/revision?r=CODIGO` (cada docente tiene el suyo) |
+| Analítica de visitas (Cloudflare Web Analytics) | https://dash.cloudflare.com/ (Analytics & Logs, Web Analytics) |
 
 Atajos dentro del sitio: Ctrl+K abre la búsqueda; Escape cierra paneles y sale del aislamiento.
 
