@@ -151,8 +151,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 ## Next steps
 1. Canal de retorno (spec 03): T1 a T13 en main y verificada la función completa (#158: seguridad y e2e en PASS;
    lo fusiona el editor). El hallazgo mayor de seguridad (guardar sin autorización registrada) está corregido en
-   la app (#159); falta que el editor vuelva a desplegar `Codigo.js` como nueva versión (#157) y la prueba D5 de
-   #99 en el sitio publicado, antes de mandar los enlaces a los docentes.
+   la app (#159) y en el script desplegado (#157, versión 2); la prueba en el sitio publicado pasó el 2026-10-16.
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
    un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 hecha en la rama
@@ -163,18 +162,21 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
    código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
    "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; sigue #84.
 6. Sitio: dominio propio `https://brain.maysasp.com` (PR #146, ADR 0014; HTTPS forzado). Analítica
-   sin cookies de Cloudflare Web Analytics en #150, esperando tu decisión sobre gitleaks (ADR 0015; no se carga en modo revisión).
+   sin cookies de Cloudflare Web Analytics en #150 (el editor eligió la opción 1 para gitleaks; falta unir los commits, CI y fusionar) (ADR 0015; no se carga en modo revisión).
 7. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1 a T9 (T8 en #145, T9 en #160: cajón de cortes en celular y controles bloqueados con cortes); falta T10, la medición manual del editor en los equipos de referencia, y después la verificación de la función. Después F12 y fichas verificadas. Issue de control: #1.
 
 ## Pendientes del editor (al 2026-10-16)
-En este orden; los dos primeros bloquean el envío de enlaces a los docentes.
-1. **#157: volver a desplegar `apps-script/Codigo.js`** como "Nueva versión" de la implementación existente (la URL no cambia), después de confirmar que el workflow `pages` de main está en verde. Pasos exactos en el issue.
-2. **Prueba del canal en el sitio publicado** (D5 de #99 más la prueba de revocación de #157), en incógnito, con el código de prueba privado que se entregó por chat (nunca en el repositorio). Al final: borrar sus filas en `Respuestas` y `Autorizaciones` y dejarlo en `no` en `Padrón`. Comentar "ok" en #157 y #99.
-3. **Cierres en Google:** cerrar el formulario de registro externo y archivar la implementación de `apps-script/prueba-canal.js` (T1) si sigue activa.
-4. **Decisiones:** #150 (gitleaks y el token público de la analítica; recomendada la opción 1), #102 (04-T2; recomendada la opción 1), y si el texto de autorización debe decir que las propuestas pueden publicarse con el alias (exige subir la versión del texto y volver a autorizar).
-5. **PR que fusiona el editor:** #158 (verificación del spec 03) y #127 (02-T4, espera #49).
-6. **Pruebas en sus equipos:** #49 (Blender), 01-T10 (#42, medición de los cortes en los equipos de referencia), `?medir=1` en el Tecno con el desglose pegado en #6, capturas del relleno y el contorno para #9, y una mirada a la ficha con el cajón de cortes en un celular de pantalla baja (390 x 667).
-7. Después de 1 y 2: mandar el mensaje a los docentes (`docs/guia-docentes.md`).
+Hecho el 2026-10-16: `Codigo.js` redesplegado como versión 2 de la misma implementación (#157 cerrado) y la prueba del canal en el sitio publicado pasó (guardado, `Respuestas`, `Autorizaciones` y revocación). #150: el editor eligió la opción 1 (token público con `gitleaks:allow` en un solo commit); lo toma la próxima corrida.
+
+Sigue, en este orden:
+1. **Limpiar el código de prueba:** borrar sus filas en `Respuestas` y `Autorizaciones` y ponerlo en `no` en `Padrón`. Hasta entonces sigue activo.
+2. **Cierres en Google:** cerrar el formulario de registro externo y archivar la implementación de `apps-script/prueba-canal.js` (T1) si sigue activa.
+3. **Decisiones:**
+   - #102 (issue de 04-T2): ¿una ronda más solo para dos casos de prueba (recomendado) o abrir el PR como está?
+   - Texto de autorización: el diálogo no dice que las propuestas del docente pueden aparecer, con su alias (D01, no su nombre), en issues públicos de GitHub cuando el editor las importa. ¿Se agrega? Cuesta subir `VERSION_AUTORIZACION` en la app y en `Codigo.js` y volver a desplegar el script; como ningún docente ha autorizado todavía, nadie tendría que volver a aceptar. Conviene decidirlo antes de mandar los enlaces.
+4. **PR que fusiona el editor:** #158 (verificación del spec 03) y #127 (02-T4, espera #49).
+5. **Pruebas en sus equipos:** #49 (Blender), 01-T10 (#42, medición de los cortes), `?medir=1` en el Tecno con el desglose pegado en #6, capturas del relleno y el contorno para #9, y una mirada a la ficha con el cajón de cortes en un celular de pantalla baja (390 x 667).
+6. Después de 1 y 3 (texto de autorización): mandar el mensaje a los docentes (`docs/guia-docentes.md`).
 
 ## Seguimientos abiertos (sin decisión pendiente)
 - Seguridad del canal (`docs/specs/03-review-return-channel/security-report.md`): S2 casilla del vago no exigida en el servidor ni en el importador; S3 inundación con códigos inventados (Padrón en `CacheService`); S4 código en la query de `leer`; S5 `?r=` en la barra tras entrar; S6 llaves locales con el código en claro. Nuevo de #157: tocar la casilla del vago con una autorización vieja en caché vuelve a autorizar sin mostrar las condiciones. #149 agrupa S5, S6 y el aviso de la analítica.
