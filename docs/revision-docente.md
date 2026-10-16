@@ -176,8 +176,7 @@ Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementaci�
 orden, con el sitio primero y el script después:
 
 1. Espera a que los PR de #162 y de #168 estén fusionados y a que termine el workflow `pages`. Si solo
-   uno está fusionado, espera al otro: el script se despliega una sola vez. Hasta entonces la web
-   publicada sigue leyendo por GET con la versión `1`.
+   uno está fusionado, espera al otro: el script se despliega una sola vez.
 2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script. En PowerShell:
 
    ```powershell

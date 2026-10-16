@@ -33,7 +33,7 @@ flowchart LR
 | Fuentes | doc | Tabla verificada por marcador y por regla de trazos, bibliografía con PMID/DOI | `docs/research/marcadores/fuentes.md` (nuevo, viene de la investigación del spec) | R2.1, R4.5 |
 | Ubicador | code | Lee reglas y modelo, calcula puntos glTF, comprueba distancia a superficie (5 mm), falla con nombre si falta una malla o una fuente | `pipeline/ubicar-marcadores.py` (nuevo), reusa `pipeline/comun.py` | R1.1, R1.3, R1.4, R1.7, R2.2 |
 | Pruebas del ubicador | code | Modelo sintético pequeño con mallas con nombre; cada operación y cada falla | `pipeline/pruebas/probar_ubicar.py`, `pipeline/pruebas/modelo_sintetico_marcadores.py` (nuevos) | R1.2, R1.3, R1.5, R2.2 |
-| Aplicador de marcadores | code | Escribe `posicion`, `estado: aproximada` y `fuente_ubicacion` sin tocar nada más; produce el resumen antes y después | `scripts/aplicar-marcadores.ts`, `scripts/lib/marcadores.ts` (nuevos) | R1.6, R2.3, R6.1, R6.2 |
+| Aplicador de marcadores | code | Escribe `posicion`, `estado: aproximada` y `fuente_ubicacion` (y `ancla` si la propuesta la trae) sin tocar nada más; produce el resumen antes y después | `scripts/aplicar-marcadores.ts`, `scripts/lib/marcadores.ts` (nuevos) | R1.6, R2.3, R6.1, R6.2 |
 | Esquema de marcador | code | `posicion` admite un punto o `{ l, r }` | `src/data/tipos.ts` | R1.5, R3.3 |
 | Visor | code | Dibuja un punto por lado y desplaza el marcador con su ancla al separar | `src/components/Visor.tsx` | R3.1, R3.2, R3.3 |
 | Auditoría con reglas nuevas | code | Raicilla (detrás de `Olive`, a la altura del bulbo), faríngeo frente a laríngeo superior, abdominales por destino (`Liver`, cara anterior o posterior de `Stomach`, aorta bajo el hiato), confianza y evidencia por trazo | `pipeline/auditar-vago.py`, `docs/research/vago/auditoria-vago.md`, `pipeline/salida/trazos-medidos.json` | R4.1 a R4.5 |
@@ -99,7 +99,7 @@ aplicarPropuestas(marcadores: Marcador[], propuestas: Propuesta[]): { marcadores
 | Nivel | Qué | Cubre |
 |---|---|---|
 | unit (Python) | `probar_ubicar.py` sobre el modelo sintético: cada operación, un punto por lado, malla que falta, regla sin fuente, `aproximada` siempre | R1.2, R1.3, R1.5, R1.6, R2.2 |
-| unit (TS) | `aplicar-marcadores`: solo cambia posición, estado y fuente; método y cita en es y en; desacuerdo citado en Wernicke; claves de fuentes que existen en `fuentes.md`; `aplicar-trazos`: evidencia, confianza, propuesta solo cuando distingue, raicilla como `no_es_ramo` | R2.1, R2.3, R2.4, R4.1 a R4.5, R6.2 |
+| unit (TS) | `aplicar-marcadores`: solo cambia posición, estado y fuente (y ancla si la propuesta la trae); método y cita en es y en; desacuerdo citado en Wernicke; claves de fuentes que existen en `fuentes.md`; `aplicar-trazos`: evidencia, confianza, propuesta solo cuando distingue, raicilla como `no_es_ramo` | R2.1, R2.3, R2.4, R4.1 a R4.5, R6.2 |
 | integration | Corrida real sobre Z-Anatomy en la nube (Blender por pip, modelo por git): 26 marcadores con posición o motivo, 5 mm, dos corridas idénticas | R1.1, R1.4, R1.7 |
 | e2e | Marcador sigue a su ancla al separar y vuelve exacto al armar; un punto por lado; trazo muestra propuesta, confianza, evidencia y fuente; ficha muestra método y fuente; "Correcto" con un toque | R3.1 a R3.3, R5.1 a R5.3 |
 | manual | El editor revisa el PR de datos con el resumen antes y después | R6.1 |
