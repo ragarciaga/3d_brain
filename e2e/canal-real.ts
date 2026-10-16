@@ -5,11 +5,13 @@
 //  1. Antes de la primera carga deja `__urlCanalInicial = ''` (costura de src/main.tsx) si nadie la fijó.
 //     Es condicional para no pisar a `conCanal` de revision-canal.spec.ts, en cualquier orden de ejecución.
 //  2. Una ruta de contexto aborta toda petición a los hosts de Apps Script y el `afterEach` hace fallar la
-//     prueba si hubo alguna. Solo anota método, host y acción: nunca la URL completa.
+//     prueba si hubo alguna. Solo anota método, host y acción (de la query o del cuerpo POST, #169): nunca la
+//     URL completa ni el cuerpo.
 // La costura solo existe con el servidor de desarrollo (`import.meta.env.DEV`). Con `E2E_BASE_URL` apuntando a
 // un build de producción o al sitio publicado, las pruebas del modo revisión fallan por la guarda en vez de
 // salir a la red. Es intencional.
 import { expect, test } from '@playwright/test';
+import { lineaDeSalida } from './registro-canal';
 
 const HOSTS = ['script.google.com', 'script.googleusercontent.com'];
 
@@ -26,8 +28,7 @@ export function protegerCanalReal(): void {
       (url) => HOSTS.includes(url.hostname),
       async (route) => {
         const peticion = route.request();
-        const url = new URL(peticion.url());
-        salidas.push(`${peticion.method()} ${url.hostname} accion=${url.searchParams.get('accion') ?? ''}`);
+        salidas.push(lineaDeSalida(peticion.method(), new URL(peticion.url()), peticion.postData()));
         await route.abort('blockedbyclient');
       },
     );
