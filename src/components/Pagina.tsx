@@ -147,12 +147,17 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   // Si este documento tiene el beacon de analítica (una página abierta antes de entrar en modo revisión), el modo no
   // se activa en caliente: se recarga una vez para que el cargador no lo cree (ADR 0015). Tras `?r=` válido, la URL
   // se reemplaza por la misma sin `r`: Atrás no vuelve a la URL con el código.
+  // El código se escribe en localStorage solo si vino del enlace: uno que vino del almacén ya está recordado, y
+  // volver a escribirlo en cada cambio de URL podría resucitar un código que otra pestaña acaba de borrar (Chromium
+  // propaga localStorage entre pestañas de forma asíncrona y la lectura puede ser vieja). Si el código recordado ya
+  // es el del modo activo, el efecto no hace nada.
   const recargando = useRef(false);
   useEffect(() => {
     if (enlaceInvalido || recargando.current) return;
     const codigoDeUrl = revision && codigoUrl ? codigoUrl : null;
     const codigo = codigoDeUrl || revisorRecordado();
     if (!codigo) return;
+    if (!codigoDeUrl && useAtlas.getState().revisor === codigo) return;
     const decision = decidirAdopcion(beaconCargado());
     if (decision === 'recargar') {
       // Sin recordar el código antes: no se escribe en un documento con beacon. Si vino de ?r=, la URL que se recarga
@@ -167,7 +172,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     }
     useAtlas.getState().setRevisionBloqueada(false);
     useAtlas.getState().setRevisor(codigo);
-    recordarRevisor(codigo);
+    if (codigoDeUrl) recordarRevisor(codigo);
     void pedirPersistencia();
     if (codigoDeUrl) navigate({ pathname: location.pathname, search: busquedaSinCodigo(location.search), hash: location.hash }, { replace: true });
   }, [revision, codigoUrl, enlaceInvalido, navigate, location.pathname, location.search, location.hash]);

@@ -218,6 +218,54 @@ test('la rama que recarga no escribe atlas:revisor antes de recargar (solo lo es
   expect([...new Set(escrituras)]).toEqual(['2']);
 });
 
+// ---------- Escritura del código: solo si vino del enlace ----------
+
+/** Anota en sessionStorage cada escritura de `atlas:revisor` en localStorage (la anotación sobrevive a recargas). */
+const espiarEscrituraDelCodigo = (page: Page) =>
+  page.addInitScript(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (this: Storage, clave: string, valor: string) {
+      if (this === localStorage && clave === 'atlas:revisor') {
+        const previo = JSON.parse(sessionStorage.getItem('e2e-escrituras') ?? '[]') as string[];
+        original.call(sessionStorage, 'e2e-escrituras', JSON.stringify([...previo, valor]));
+      }
+      original.call(this, clave, valor);
+    };
+  });
+
+const escrituras = (page: Page) => page.evaluate(() => JSON.parse(sessionStorage.getItem('e2e-escrituras') ?? '[]') as string[]);
+
+test('un código que viene del almacén no se vuelve a escribir al navegar dentro de la app', async ({ page, context }) => {
+  await entrarYResponder(page, 'SOLOUNA01');
+
+  // Otra pestaña del mismo navegador: adopta el código recordado, sin enlace.
+  const otra = await context.newPage();
+  await espiarEscrituraDelCodigo(otra);
+  await otra.goto('/es');
+  await expect(barra(otra)).toContainText('SOLOUNA01');
+  await irAlHipocampo(otra);
+  await otra.getByRole('link', { name: 'Fuentes y licencia' }).click();
+  await expect(otra).toHaveURL(/\/es\/licencia$/);
+  await otra.getByRole('link', { name: 'Volver al atlas' }).click();
+  await expect(barra(otra)).toContainText('SOLOUNA01');
+  await irAlHipocampo(otra);
+
+  // Ninguna carga ni navegación de esa pestaña escribió el código (podría resucitar uno borrado desde otra pestaña).
+  expect(await escrituras(otra)).toEqual([]);
+  expect(await local(otra, 'atlas:revisor')).toBe('SOLOUNA01');
+});
+
+test('un código que viene del enlace sí se escribe y queda recordado', async ({ page }) => {
+  await espiarEscrituraDelCodigo(page);
+  await page.goto('/es/revision?r=ENLACE01');
+  await expect(barra(page)).toContainText('ENLACE01');
+  await expect(page).toHaveURL(/\/es\/revision$/);
+  const hechas = await escrituras(page);
+  expect(hechas.length).toBeGreaterThan(0);
+  expect([...new Set(hechas)]).toEqual(['ENLACE01']);
+  expect(await local(page, 'atlas:revisor')).toBe('ENLACE01');
+});
+
 // ---------- D5: ?r= fuera de la barra ----------
 
 test('S5: tras un ?r= válido la barra no lleva r, Atrás no vuelve a él y el modo sigue tras recargar', async ({ page }) => {
