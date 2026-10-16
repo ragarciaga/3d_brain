@@ -77,6 +77,27 @@ describe('docs/revision-docente.md', () => {
     expect(paso4).toMatch(/copias\s+que\s+no\s+controlas/);
   });
 
+  it('la sección 4 pide los dos CSV, pasa --autorizaciones y explica las descartadas del vago (#163)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^##\s+4\.\s+Procesar las revisiones/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    expect(fin).toBeGreaterThan(inicio);
+    const seccion = lineas.slice(inicio, fin).join('\n');
+    expect(seccion).toContain('`Autorizaciones`');
+    // El comando de la importación pasa las dos descargas y la bandera, en el mismo bloque.
+    const bloques = [...seccion.matchAll(/```powershell\n([\s\S]*?)```/g)].map((m) => m[1]!);
+    expect(bloques.some((b) => b.includes('--autorizaciones') && b.includes('- Respuestas.csv') && b.includes('- Autorizaciones.csv'))).toBe(true);
+    expect(seccion).toContain('Descartadas: sin la casilla del vago');
+    expect(seccion).toMatch(/solo\s+del\s+archivo\s+de\s+`--autorizaciones`/);
+    // Los CSV traen códigos: cada borrado se ensaya primero.
+    const borrados = seccion.split('\n').filter((l) => /^\s*Remove-Item\b/.test(l));
+    expect(borrados.length).toBeGreaterThanOrEqual(2);
+    for (const linea of borrados) expect(linea, linea).toMatch(/-WhatIf\s*$/);
+    // Un encabezado nuevo con "autorización" confundiría el caso del redespliegue (#157).
+    expect(seccion.split('\n').filter((l) => /^###\s.*autorización/.test(l))).toEqual([]);
+  });
+
   it('trata el código como contraseña, no llama privada a la pestaña Padrón y no presenta el chat como protección', () => {
     expect(texto).toMatch(/trátalo\s+como\s+una\s+contraseña/);
     expect(texto).not.toContain('no es una contraseña');
