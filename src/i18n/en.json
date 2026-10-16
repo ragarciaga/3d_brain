@@ -278,7 +278,7 @@
     },
     "autorizacion": {
       "titulo": "Data processing authorization",
-      "texto": "To save your review, the atlas sends your reviewer code, your answers, the date and time and this authorization to the editor's Google sheet. We do not ask for your name or email. The editor uses these data only to review and correct the entries, and the entries never show any of your data. You can ask the editor to access, correct or delete your data (Colombian Law 1581 of 2012).",
+      "texto": "To save your review, the atlas sends your reviewer code, your answers, the date and time and this authorization to the editor's Google sheet. We do not ask for your name or email. The editor uses these data only to review and correct the entries, and the entries never show any of your data. When the editor imports the reviews, your proposals and comments may be published under your reviewer alias (an identifier such as D01, never your name) in the project's public issues on GitHub, so do not write anything that identifies you. You can ask the editor to access, correct or delete your data (Colombian Law 1581 of 2012).",
       "acepto": "I authorize the processing of these data (Law 1581 of 2012)",
       "vago": "I can also review the course of the vagus nerve in the neck and thorax",
       "continuar": "Continue",

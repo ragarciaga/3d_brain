@@ -130,4 +130,35 @@ describe('docs/revision-docente.md', () => {
     expect(seccion).toMatch(/borra\s+todas\s+sus\s+filas\s+en\s+`Autorizaciones`/i);
     expect(texto).toMatch(/Borrar\s+solo\s+la\s+última\s+fila\s+no\s+basta/);
   });
+
+  it('explica cómo volver a desplegar el script de #162: primero el sitio, luego Nueva versión, y la caché de un minuto', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^###\s.*#162/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    const seccion = lineas.slice(inicio, fin === -1 ? undefined : fin);
+    const cuerpo = seccion.join('\n');
+    expect(cuerpo).toMatch(/Nueva\s+versión/);
+    expect(cuerpo).toMatch(/Nunca\s+"Nueva\s+implementación"/);
+    expect(cuerpo).toContain('VERSION_AUTORIZACION');
+    expect(cuerpo).toMatch(/un\s+minuto/);
+    expect(cuerpo).toMatch(/antes\s+de\s+mandar\s+los\s+enlaces/);
+    expect(cuerpo).toMatch(/alias/);
+    expect(cuerpo).toMatch(/issues\s+públicos/);
+    // El orden de los pasos numerados: el workflow `pages` (el sitio) antes que el paso de Nueva versión (el script).
+    const paso = (re: RegExp) => seccion.findIndex((l) => /^\d+\.\s/.test(l) && re.test(l));
+    const sitio = paso(/workflow\s+`pages`/);
+    const pegar = paso(/copia\s+el\s+script/);
+    const nueva = paso(/Nueva\s+versión/);
+    expect(sitio).toBeGreaterThan(-1);
+    expect(pegar).toBeGreaterThan(sitio);
+    expect(nueva).toBeGreaterThan(pegar);
+    const bloques = [...cuerpo.matchAll(/```powershell\n([\s\S]*?)```/g)].map((m) => m[1]!);
+    expect(bloques.some((b) => b.includes('apps-script\\Codigo.js'))).toBe(true);
+  });
+
+  it('la guía del editor no lleva ninguna URL /exec del script', () => {
+    expect(texto).not.toMatch(/script\.google\.com\/macros\/s\/[\w-]+/);
+    expect(texto).not.toMatch(/\/macros\/s\//);
+  });
 });

@@ -278,7 +278,7 @@
     },
     "autorizacion": {
       "titulo": "Autorización de tratamiento de datos",
-      "texto": "Para guardar tu revisión, el atlas envía a la hoja de Google del editor tu código de revisor, tus respuestas, la fecha y hora y esta autorización. No te pedimos nombre ni correo. El editor usa estos datos solo para revisar y corregir las fichas, y las fichas no muestran ningún dato tuyo. Puedes pedirle al editor conocer, corregir o borrar tus datos (Ley 1581 de 2012).",
+      "texto": "Para guardar tu revisión, el atlas envía a la hoja de Google del editor tu código de revisor, tus respuestas, la fecha y hora y esta autorización. No te pedimos nombre ni correo. El editor usa estos datos solo para revisar y corregir las fichas, y las fichas no muestran ningún dato tuyo. Cuando el editor importa las revisiones, tus propuestas y comentarios pueden publicarse con tu alias de revisor (un identificador como D01, nunca tu nombre) en issues públicos del proyecto en GitHub: no escribas nada que te identifique. Puedes pedirle al editor conocer, corregir o borrar tus datos (Ley 1581 de 2012).",
       "acepto": "Autorizo el tratamiento de estos datos (Ley 1581 de 2012)",
       "vago": "También puedo revisar el recorrido del nervio vago en cuello y tórax",
       "continuar": "Continuar",

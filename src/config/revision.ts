@@ -24,5 +24,9 @@ export const configRevision = {
   },
 };
 
-/** Versión del texto de autorización de tratamiento de datos. Cambiarla vuelve a pedir la autorización a todos (R2.5). */
-export const VERSION_AUTORIZACION = '1';
+/**
+ * Versión del texto de autorización de tratamiento de datos. Cambiarla vuelve a pedir la autorización a todos (R2.5).
+ * Hay una copia en apps-script/Codigo.js (`guardar` exige esta versión en la hoja): se cambian juntas, y una
+ * prueba de tests/apps-script.test.ts falla si difieren. La '2' agrega al texto el alias en issues públicos (#162).
+ */
+export const VERSION_AUTORIZACION = '2';
