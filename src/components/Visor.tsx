@@ -38,6 +38,7 @@ import { esEncefalo, hayCortes, type EstadoCuadros } from '../lib/cortes';
 import ContornoCorte from './ContornoCorte';
 import { arrancarIndice, colaDeIndice, PRESUPUESTO_INDICE_MS, programarTarea } from './indiceToque';
 import { actualizarPlanos, alCuadro, configurarRenderer, crearMallaFantasma, crearMallaRelleno, mallasRellenables, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, vistaDeMarcador, type CandidataCorte } from './recorte';
+import { ladoAlDibujar, ladoDeCorte, seVeConRecorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
 import { useDensidadAdaptativa } from './useDensidadAdaptativa';
 
@@ -122,22 +123,34 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
   const ubicando = useAtlas((s) => !!s.ubicando);
   const revisando = useAtlas((s) => !!s.revisor);
   const shift = useAtlas((s) => s.shift);
-  const conCortes = useAtlas((s) => hayCortes(s.cortes));
+  // Un texto, nunca un arreglo: en zustand 5 un selector que devuelve un arreglo nuevo entra en bucle.
+  const ladoReposo = useAtlas((s) => ladoDeCorte(id, s));
   // Booleano, nunca un arreglo: en zustand 5 un selector que devuelve un arreglo nuevo entra en bucle.
   const conRelleno = useAtlas((s) => piezaConRelleno(id, s));
   const [encima, setEncima] = useState(false);
+  // Con cortes, true cuando la pieza del encéfalo ya está en su sitio (su caja es la de reposo); se actualiza en el cuadro.
+  const [enSitio, setEnSitio] = useState(false);
+  const enSitioVisto = useRef(false);
+  const lado = ladoAlDibujar(ladoReposo, enSitio);
 
-  // Planos de la pieza: los de corte (encéfalo), el del recorrido (vago) o ninguno (órganos y sin cortes).
-  const planos = planosDePieza(id, conCortes);
+  // Planos de la pieza: los de corte (encéfalo cruzada o entera del lado oculto), el del recorrido (vago) o ninguno
+  // (órganos, sin cortes y encéfalo entero del lado visible).
+  const planos = planosDePieza(id, lado);
   const color = colorDePieza(id);
 
   useFrame((_, dt) => {
     const g = grupo.current;
     if (!g) return;
-    const obj = objetivo(useAtlas.getState(), id);
+    const s = useAtlas.getState();
+    const obj = objetivo(s, id);
     const nuevo = acercar(desplazamiento.current, obj, reducirMovimiento() ? 1 : dt * 6);
     desplazamiento.current = nuevo;
     g.position.set(nuevo[0], nuevo[1], nuevo[2]);
+    const quieta = esEncefalo(id) && hayCortes(s.cortes) && nuevo[0] === 0 && nuevo[1] === 0 && nuevo[2] === 0;
+    if (quieta !== enSitioVisto.current) {
+      enSitioVisto.current = quieta;
+      setEnSitio(quieta);
+    }
   });
 
   // Una pieza oculta nunca se toca; un fantasma (aislar con contexto) solo con Shift, para sumarlo.
@@ -215,7 +228,8 @@ function Pieza({ id, mallas, idioma }: { id: string; mallas: MallaCargada[]; idi
             geometry={m.geometria}
             matrixAutoUpdate={false}
             matrix={m.matriz}
-            raycast={seleccionable ? (planos === PLANOS_CORTE ? raycastCorte : acceleratedRaycast) : raycastNulo}
+            visible={lado !== 'fuera'}
+            raycast={seleccionable && lado !== 'fuera' ? (planos === PLANOS_CORTE ? raycastCorte : acceleratedRaycast) : raycastNulo}
             userData={{ nombreMalla: m.nombre }}
             renderOrder={referencia ? 2 : m.toque ? 3 : 0}
           >
@@ -772,7 +786,9 @@ export const cortesVisor: {
   contornos: ((pieza?: string) => number) | null;
   /** Geometrías vivas en la GPU del renderer (`gl.info.memory.geometries`): detecta lo que no se libera al desmontar. */
   geometrias: (() => number) | null;
-} = { planosDe: null, fantasmas: null, cajasMundo: null, rellenos: null, puntoCorte: null, contornos: null, geometrias: null };
+  /** Solo pruebas E2E: lo que se dibuja y cuántos vértices quedan del lado oculto de `PLANOS_CORTE`, por pieza del encéfalo. */
+  recortePorVertices: (() => Record<string, { dibujada: boolean; planos: number; vertices: number; ocultos: number }>) | null;
+} = { planosDe: null, fantasmas: null, cajasMundo: null, rellenos: null, puntoCorte: null, contornos: null, geometrias: null, recortePorVertices: null };
 
 const seVeEnMundo = (o: THREE.Object3D) => {
   for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
@@ -833,6 +849,28 @@ function AyudasCortes() {
       return n;
     };
     cortesVisor.geometrias = () => obtener().gl.info.memory.geometries;
+    cortesVisor.recortePorVertices = () => {
+      const res: Record<string, { dibujada: boolean; planos: number; vertices: number; ocultos: number }> = {};
+      const v = new THREE.Vector3();
+      for (const { malla, pieza, toque } of mallasDePieza()) {
+        if (toque || !esEncefalo(pieza)) continue;
+        // La primera malla de la pieza dice si se dibuja y cuántos planos lleva; los vértices se suman en todas.
+        const r = (res[pieza] ??= {
+          dibujada: seVeEnMundo(malla),
+          planos: (malla.material as THREE.Material).clippingPlanes?.length ?? 0,
+          vertices: 0,
+          ocultos: 0,
+        });
+        malla.updateWorldMatrix(true, false);
+        const posicion = malla.geometry.attributes.position!;
+        r.vertices += posicion.count;
+        for (let i = 0; i < posicion.count; i++) {
+          v.fromBufferAttribute(posicion, i).applyMatrix4(malla.matrixWorld);
+          if (!seVeConRecorte(v, PLANOS_CORTE)) r.ocultos++;
+        }
+      }
+      return res;
+    };
     cortesVisor.puntoCorte = (pieza, lado = 'corte') => {
       if (!hayCortes(useAtlas.getState().cortes)) return null;
       const { camera, gl } = obtener();
@@ -852,6 +890,7 @@ function AyudasCortes() {
       cortesVisor.puntoCorte = null;
       cortesVisor.contornos = null;
       cortesVisor.geometrias = null;
+      cortesVisor.recortePorVertices = null;
     };
   }, [obtener]);
   return null;
