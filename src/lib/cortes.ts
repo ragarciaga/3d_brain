@@ -1,8 +1,8 @@
 // Planos de corte (F8): funciones puras, sin three, React ni store.
 // Las cajas vienen en metros (las del Visor); el rango y la posición de cada corte se expresan en mm enteros
-// desde el centro del encéfalo. Solo las piezas del encéfalo se cortan: nunca el vago ni los órganos.
+// desde el centro del encéfalo. Solo las piezas y los marcadores del encéfalo se cortan: nunca el vago, sus marcadores ni los órganos.
 import type { TFunction } from 'i18next';
-import { piezasBajo } from '../data/atlas';
+import { nodos, piezasBajo } from '../data/atlas';
 import type { Vec3 } from './explosion';
 import type { Caja } from './inventario';
 
@@ -37,6 +37,16 @@ export const piezasEncefalo: string[] = piezasBajo(GRUPO_ENCEFALO);
 const conjuntoEncefalo = new Set(piezasEncefalo);
 
 export const esEncefalo = (pieza: string): boolean => conjuntoEncefalo.has(pieza);
+
+/** True si el nodo es `g-brain` o cuelga de él en el árbol (un marcador toma el padre que declara). Tope de pasos contra ciclos. */
+export function enEncefalo(nodo: string | null): boolean {
+  let actual = nodo;
+  for (let paso = 0; actual && paso < 64; paso++) {
+    if (actual === GRUPO_ENCEFALO) return true;
+    actual = nodos[actual]?.padre ?? null;
+  }
+  return false;
+}
 
 export const cortesApagados = (): Cortes => ({
   sagital: { activo: false, mm: 0, invertido: false },
