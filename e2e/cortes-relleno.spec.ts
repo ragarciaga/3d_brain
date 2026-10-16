@@ -13,8 +13,10 @@ interface VentanaRelleno {
 }
 
 // Copias de los ayudantes de cortes-visor.spec.ts: este archivo no los comparte para que cada prueba sea independiente.
-async function abrir(page: Page, ruta: string) {
+async function abrir(page: Page, ruta: string, opciones: { retenerIndice?: boolean } = {}) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
+  // Solo DEV: el visor no arma el índice de toque (árboles BVH) mientras esta bandera sea true (#178).
+  if (opciones.retenerIndice) await page.addInitScript(() => Object.assign(window, { __retenerIndice: true }));
   // El navegador de la prueba no tiene GPU y da pocos cuadros por segundo: sin esto el vigilante (R8.2) apagaría el relleno que se mira.
   await page.addInitScript(() => Object.assign(window, { __sinVigilante: true }));
   await page.goto(ruta);
@@ -48,6 +50,8 @@ const contornos = (page: Page, pieza?: string) => page.evaluate((p) => (window a
 const geometrias = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__cortes.geometrias());
 const puntoCorte = (page: Page, pieza: string, lado?: 'corte' | 'oculto') =>
   page.evaluate(([p, l]) => (window as unknown as VentanaRelleno).__puntoCorte(p as string, l as 'corte' | 'oculto' | undefined), [pieza, lado] as const);
+/** Cuántas veces existe la marca de rendimiento (0 o 1: se pone una sola vez). */
+const marca = (page: Page, nombre: string) => page.evaluate((n) => performance.getEntriesByName(n).length, nombre);
 const seleccion = (page: Page) => page.evaluate(() => (window as unknown as VentanaRelleno).__atlas.getState().seleccion);
 /** Llama una acción del store (solo pruebas, con `window.__atlas` de DEV). */
 const accion = (page: Page, nombre: string, ...args: unknown[]) =>
@@ -173,5 +177,54 @@ test('relleno del corte: cara sólida de las mallas cerradas, con nombre y ficha
     expect(await rellenos(page)).toBe(0);
     // Un objeto desmontado sale de la escena aunque no se libere: se mira la memoria de la GPU (R8.3, limpieza de design.md).
     await expect.poll(() => geometrias(page)).toBe(baseGeometrias);
+  });
+});
+
+test('el índice de toque se arma después del primer cuadro: mientras falta, el toque selecciona y el contorno llega con los árboles (#178)', async ({ page }) => {
+  test.setTimeout(240_000);
+  await abrir(page, '/es', { retenerIndice: true });
+  const cajas = await page.evaluate(() => (window as unknown as VentanaRelleno).__atlas.getState().cajas);
+  const encefalo = piezasBajo('g-brain');
+  const zs = encefalo.flatMap((p) => (cajas[p] ? [cajas[p]![0][2]!, cajas[p]![1][2]!] : []));
+  const centroZ = (Math.min(...zs) + Math.max(...zs)) / 2;
+  const zTalamo = (cajas['thalamus-l']![0][2]! + cajas['thalamus-l']![1][2]!) / 2;
+  const mm = Math.round((zTalamo - centroZ) * 1000);
+  const plano = centroZ + mm / 1000;
+  const cruza = (p: string) => cajas[p]![0][2]! < plano && plano < cajas[p]![1][2]!;
+  const abierta = encefalo.find((p) => cajas[p] && cruza(p) && nodos[p]!.malla && !cerradas.has(nodos[p]!.malla!))!;
+  expect(abierta).toBeDefined();
+
+  await test.step('(1) el primer cuadro no espera el índice (D1)', async () => {
+    await expect.poll(() => marca(page, 'atlas:primer-cuadro')).toBe(1);
+    // Lecturas únicas: el índice está retenido, así que ni empezó ni terminó.
+    expect(await marca(page, 'atlas:indice-inicio')).toBe(0);
+    expect(await marca(page, 'atlas:indice-toque')).toBe(0);
+  });
+
+  await test.step('(2) con el corte activo y sin árboles, la pieza abierta cortada no tiene contorno (D3)', async () => {
+    await accion(page, 'setCorte', 'coronal', { activo: true, mm });
+    // El relleno ya se dibuja: el corte llegó al visor y el contorno vacío no es solo que no ha pasado un cuadro.
+    await expect.poll(() => rellenos(page, 'thalamus-l')).toBeGreaterThan(0);
+    expect(await contornos(page, abierta)).toBe(0);
+  });
+
+  await test.step('(3) sin árboles, tocar el centro del lienzo selecciona una pieza (D2)', async () => {
+    await page.locator('[data-vista="lateral-izq"]').click();
+    await camaraQuieta(page);
+    const lienzo = await page.locator('canvas').first().boundingBox();
+    await page.mouse.click(lienzo!.x + lienzo!.width / 2, lienzo!.y + lienzo!.height / 2);
+    await expect.poll(async () => (await seleccion(page)).pieza).not.toBeNull();
+    expect(await marca(page, 'atlas:indice-toque')).toBe(0);
+  });
+
+  await test.step('(4) al soltar el índice llegan los árboles y el contorno, sin tocar los cortes (D3)', async () => {
+    await page.evaluate(() => Object.assign(window, { __retenerIndice: false }));
+    await expect.poll(() => marca(page, 'atlas:indice-toque')).toBe(1);
+    await expect.poll(() => contornos(page, abierta)).toBeGreaterThan(0);
+  });
+
+  await test.step('(5) con el índice completo el visor encuentra el punto de la cara del corte', async () => {
+    const { x, y } = await apuntar(page, 'thalamus-l');
+    expect(Number.isFinite(x) && Number.isFinite(y)).toBe(true);
   });
 });
