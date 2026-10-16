@@ -1,6 +1,6 @@
 // Pausa del reloj simulado para los E2E (e2e/reloj.ts): reintenta solo cuando la pausa cayó en el pasado.
 import { describe, expect, it } from 'vitest';
-import { INTENTOS_PAUSA, MARGEN_PAUSA_MS, pausarReloj, type PaginaConReloj } from '../e2e/reloj';
+import { INTENTOS_PAUSA, pausarReloj, type PaginaConReloj } from '../e2e/reloj';
 
 function pagina(horas: number[], fallas: (Error | null)[]) {
   const pausas: number[] = [];
@@ -24,13 +24,13 @@ describe('pausarReloj', () => {
   it('pausa una vez, un margen después de la hora de la página', async () => {
     const p = pagina([5_000], []);
     await pausarReloj(p.page);
-    expect(p.pausas).toEqual([5_000 + MARGEN_PAUSA_MS]);
+    expect(p.pausas).toEqual([6_000]); // valor escrito aquí, no la constante: el margen es 1 s
   });
 
   it('si la pausa cae en el pasado, vuelve a leer la hora y pausa sobre la nueva', async () => {
     const p = pagina([5_000, 7_500], [PASADO()]);
     await pausarReloj(p.page);
-    expect(p.pausas).toEqual([5_000 + MARGEN_PAUSA_MS, 7_500 + MARGEN_PAUSA_MS]);
+    expect(p.pausas).toEqual([6_000, 8_500]);
     expect(p.lecturas()).toBe(2);
   });
 

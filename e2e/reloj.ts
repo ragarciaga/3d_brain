@@ -1,7 +1,7 @@
 // Pausa del reloj simulado de Playwright un segundo después de la hora de la página. Leer `Date.now()` y pedir
 // `pauseAt` son dos idas al navegador: si el runner tarda más de ese segundo entre las dos, `pauseAt` cae en el
 // pasado y Playwright lanza "Cannot fast-forward to the past" (pasó en CI en el PR #182). Se vuelve a leer la
-// hora y se reintenta. No importa Playwright: recibe lo mínimo de `page` para probarla con Vitest
+// hora y se reintenta. No depende de Playwright: recibe lo mínimo de `page` para probarla con Vitest
 // (tests/reloj.test.ts).
 
 /** Lo que usa de `page`: leer la hora de la página y pausar su reloj. */
