@@ -120,7 +120,7 @@ describe('vaciarSalida (#166)', () => {
   });
 });
 
-describe('importar-revisiones.ts borra los .md de la corrida anterior (#166)', () => {
+describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #190)', () => {
   const fx = (n: string) => join(raiz, 'tests', 'fixtures', 'revisiones', n);
   const HOJA = fx('hoja-respuestas-vago.csv');
   const PADRON = fx('padron-prueba.json');
@@ -146,18 +146,25 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166)', (
     const uno = correr(tmp, HOJA, PADRON, '--autorizaciones', AUT);
     expect(uno.status, uno.stderr).toBe(0);
     for (const n of ['m-recurrent-laryngeal-nerve.md', 'vagus-nerve-x.md', 'hippocampus.md', 'resumen.md']) expect(existe(join(rev, n)), n).toBe(true);
-    expect(uno.stdout).toContain('1 respuestas de revisores sin ninguna autorización');
+    expect(uno.stdout).toContain(', 3 respuestas de revisores sin ninguna autorización');
     expect(uno.stdout).toContain(`Resumen: ${join('pipeline', 'salida', 'revisiones', 'resumen.md')}`);
-    expect(uno.stdout).toContain('D93');
-    expect(readFileSync(join(rev, 'resumen.md'), 'utf8')).toContain('Hay 1 respuestas de revisores sin ninguna autorización en `Autorizaciones`.');
+    expect(uno.stdout.split('\n')).toContain('Alias con respuestas sin ninguna autorización (van solo a "Descartadas: sin autorización"): D93');
+    const resumenUno = readFileSync(join(rev, 'resumen.md'), 'utf8');
+    const posSeccion = resumenUno.indexOf('## Descartadas: sin autorización');
+    expect(posSeccion).toBeGreaterThan(-1);
+    expect(resumenUno.slice(posSeccion).split('\n').some((l) => l.startsWith('| `D93` |'))).toBe(true);
+    expect(readFileSync(join(rev, 'vagus-nerve-x.md'), 'utf8')).not.toContain('`D93`');
     sinCodigos(uno);
 
     const dos = correr(tmp, HOJA, PADRON);
     expect(dos.status, dos.stderr).toBe(0);
     expect(existe(join(rev, 'm-recurrent-laryngeal-nerve.md'))).toBe(false);
     expect(existe(join(rev, 'vagus-nerve-x.md'))).toBe(true);
+    // Sin la bandera nada se aparta: la fila de D93 sigue en el <id>.md.
+    expect(readFileSync(join(rev, 'vagus-nerve-x.md'), 'utf8')).toContain('| `D93` | `nombre` |');
     expect(dos.stdout).not.toContain('sin ninguna autorización');
     expect(readFileSync(join(rev, 'resumen.md'), 'utf8')).not.toContain('sin ninguna autorización');
+    expect(readFileSync(join(rev, 'resumen.md'), 'utf8')).not.toContain('Descartadas: sin autorización');
     expect(dos.stderr).toContain('Sin --autorizaciones');
     expect(readFileSync(enlaces, 'utf8')).toBe('enlaces');
     sinCodigos(dos);
