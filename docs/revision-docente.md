@@ -350,7 +350,12 @@ autorizaciones se leen solo del archivo de `--autorizaciones`, aunque el CSV de 
 sus filas.
 
 Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
-`resumen.md` con toda la importación. Cada revisor aparece con su alias, nunca con su código; los
+`resumen.md` con toda la importación. Antes de escribir, el importador borra los `.md` que hayan
+quedado en esa carpeta de una corrida anterior (sin pasar por la papelera), así ningún resumen viejo
+se mezcla con el nuevo. Solo borra ahí: no entra a subcarpetas, no sigue enlaces y no toca el resto
+de `pipeline/salida/`. Si esa carpeta o `pipeline/salida` es un enlace o un archivo, se detiene sin
+borrar nada, y si la corrida falla antes (falta el padrón o un CSV), la carpeta queda como estaba.
+Cada revisor aparece con su alias, nunca con su código; los
 envíos con un código fuera del padrón se descartan y el resumen dice cuántos fueron. Las filas malformadas se descartan y se cuentan, sin detener
 la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
 idioma distinto de es o en, textos que no son texto, una posición que no son tres números, un
@@ -374,7 +379,12 @@ respuestas sin que tenga que reenviarlas, porque manda la última autorización 
 importar. Si pasas el archivo sin `--autorizaciones`, el script corre, avisa en la consola y manda
 todas las respuestas del vago a esa sección, con una línea que lo dice. Las respuestas que un
 docente mandó por el formulario de respaldo (sin canal) no pueden salir de ahí hasta que use el canal,
-porque sin canal nadie marca la casilla en Acciones. Nunca agregues a mano filas en
+porque sin canal nadie marca la casilla en Acciones. Con `--autorizaciones`, la consola dice también
+cuántas respuestas son de revisores sin ninguna autorización (ninguna fila en `Autorizaciones`;
+pasa, por ejemplo, con lo que llegó por el formulario de respaldo) y de qué alias, y `resumen.md`
+lo marca con una línea bajo el título. Esas respuestas siguen en las tablas. Si el número no es 0,
+antes de crear el issue, que es público, abre `resumen.md`, busca esos alias y borra sus filas de
+las tablas y de los archivos por estructura. Nunca agregues a mano filas en
 `Autorizaciones`: serían registros de consentimiento fabricados.
 
 3. Crea el issue de la importación con el resumen:
@@ -391,8 +401,8 @@ vuelve a la hoja por el canal cuando hay conexión y el docente tiene abierta la
 de revisión tiene filas de un código que no llegaron a `Respuestas` (porque el docente no volvió a
 abrir su enlace), descarga también el CSV del formulario (sección 5) e impórtalo en otra corrida,
 también con `--autorizaciones` (sin él, todas las respuestas del vago de esa corrida quedan en
-"Descartadas"), pero solo después de crear el issue de la primera: la segunda corrida reescribe
-`pipeline/salida/revisiones/`.
+"Descartadas"), pero solo después de crear el issue de la primera: la segunda corrida borra los
+resúmenes de la primera en `pipeline/salida/revisiones/`.
 
 Cuando termines, borra los dos CSV de Descargas. Primero mira qué borraría cada comando con
 `-WhatIf`, y solo si la lista es correcta ejecútalo sin esa opción:
@@ -497,6 +507,7 @@ por su canal propio. Los pasos, con el alias del docente:
       ```powershell
       cd C:\Users\TU_USUARIO\proyectos\3d_brain
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Respuestas*.csv" -WhatIf
+      Remove-Item "C:\Users\TU_USUARIO\Downloads\*Autorizaciones*.csv" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Revisión del atlas*.csv*" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Registro de revisores*.csv*" -WhatIf
       ```
