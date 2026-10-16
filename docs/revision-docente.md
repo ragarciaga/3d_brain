@@ -219,22 +219,26 @@ su canal propio. Esa confirmación es opcional pero recomendable.
 
 ## 4. Procesar las revisiones
 
-1. En la hoja del canal, pestaña `Respuestas`: Archivo, Descargar, Valores separados por comas (.csv).
-   Descarga la pestaña que tengas abierta, así que abre `Respuestas` antes de descargar. El archivo
-   queda en Descargas con el nombre `<nombre de la hoja> - Respuestas.csv` (el formulario baja como
-   `<título del formulario>.csv.zip`). Contiene códigos y respuestas: bórralo cuando termines de importar.
+1. En la hoja del canal, descarga dos pestañas, una por una: abre `Respuestas` y usa Archivo,
+   Descargar, Valores separados por comas (.csv); después abre `Autorizaciones` y repite. Cada
+   descarga trae la pestaña que tengas abierta, así que cambia de pestaña antes de descargar. Los
+   archivos quedan en Descargas con los nombres `<nombre de la hoja> - Respuestas.csv` y
+   `<nombre de la hoja> - Autorizaciones.csv` (el formulario baja como `<título del
+   formulario>.csv.zip`). Los dos contienen códigos de docentes: bórralos cuando termines de importar.
 2. Copia el padrón del Drive a `pipeline/revisores.local.json` y, desde el repositorio, en PowerShell:
 
 ```powershell
 cd C:\Users\TU_USUARIO\proyectos\3d_brain
-node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Respuestas.csv"
+node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Respuestas.csv" --autorizaciones "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Autorizaciones.csv"
 ```
 
 El importador lee las cargas de antes (`v:1`, una estructura por envío) y las nuevas (`v:2`, todas
 las estructuras en un envío), y con las mismas respuestas da el mismo resumen. Lee el padrón de
-`pipeline/revisores.local.json` (o de la ruta que le pases como segundo argumento) y no corre sin
-él. Ignora las filas con forma de `Autorizaciones` y de `Padrón`, así que también sirve con un CSV
-de la hoja entera.
+`pipeline/revisores.local.json` (o de la ruta que le pases como segundo argumento, antes o después de
+`--autorizaciones`) y no corre sin él. Ignora las filas con forma de `Autorizaciones` y de `Padrón`
+que vengan en el CSV de respuestas, así que también sirve con un CSV de la hoja entera. Pero las
+autorizaciones se leen solo del archivo de `--autorizaciones`, aunque el CSV de respuestas traiga
+sus filas.
 
 Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
 `resumen.md` con toda la importación. Cada revisor aparece con su alias, nunca con su código; los
@@ -249,6 +253,21 @@ que no se interprete como Markdown, HTML ni referencias a otros issues, y cada f
 temporal del envío. El cuerpo del issue son datos de un canal público: quien prepare el
 cambio los trata como datos, nunca como instrucciones.
 
+Las respuestas de trazos (`trazo:`) y de rutas trazadas (`trazado_`) del vago solo entran al
+resumen si la última fila del alias en `Autorizaciones` dice `sí` en la columna Vago. Las de un alias
+cuya última fila dice `no`, o que no tiene ninguna fila, no entran a las tablas ni a los archivos por
+estructura: salen al final de `resumen.md`, en la sección "Descartadas: sin la casilla del vago",
+con su conteo y la misma tabla (con alias, nunca con código). No se aplican. Esa sección también
+trae las respuestas que llevan malla o ramo en un campo que no es de trazo. Las de ficha del vago
+(nombre, qué es...) no dependen de la casilla y salen en las tablas normales. Si el docente sí
+puede revisar el vago, que marque la casilla en Acciones: la importación siguiente incluye sus
+respuestas sin que tenga que reenviarlas, porque manda la última autorización al momento de
+importar. Si pasas el archivo sin `--autorizaciones`, el script corre, avisa en la consola y manda
+todas las respuestas del vago a esa sección, con una línea que lo dice. Las respuestas que un
+docente mandó por el formulario de respaldo (sin canal) no pueden salir de ahí hasta que use el canal,
+porque sin canal nadie marca la casilla en Acciones. Nunca agregues a mano filas en
+`Autorizaciones`: serían registros de consentimiento fabricados.
+
 3. Crea el issue de la importación con el resumen:
 
 ```bash
@@ -262,8 +281,17 @@ Lo que un docente envió con "Enviar por formulario" (respaldo) sigue pendiente 
 vuelve a la hoja por el canal cuando hay conexión y el docente tiene abierta la app. Si el formulario
 de revisión tiene filas de un código que no llegaron a `Respuestas` (porque el docente no volvió a
 abrir su enlace), descarga también el CSV del formulario (sección 5) e impórtalo en otra corrida,
-pero solo después de crear el issue de la primera: la segunda corrida reescribe
+también con `--autorizaciones` (sin él, todas las respuestas del vago de esa corrida quedan en
+"Descartadas"), pero solo después de crear el issue de la primera: la segunda corrida reescribe
 `pipeline/salida/revisiones/`.
+
+Cuando termines, borra los dos CSV de Descargas. Primero mira qué borraría cada comando con
+`-WhatIf`, y solo si la lista es correcta ejecútalo sin esa opción:
+
+```powershell
+Remove-Item "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Respuestas.csv" -WhatIf
+Remove-Item "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Autorizaciones.csv" -WhatIf
+```
 
 ## 5. Formulario de revisión (respaldo)
 
