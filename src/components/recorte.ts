@@ -339,11 +339,13 @@ export function crearLineaContorno(matriz: THREE.Matrix4, color: THREE.ColorRepr
 }
 
 /**
- * Recalcula las líneas solo si cambió la referencia de `cortes` o de `rango` desde la última vez. Reemplaza la
- * geometría de la línea (libera la anterior) y devuelve true; false si no había nada que hacer. Muta `linea`.
+ * Recalcula las líneas solo si cambió la referencia de `cortes` o de `rango`, o el árbol de la geometría, desde la última
+ * vez (el índice de toque llega después del primer cuadro: sin árbol la línea queda vacía y debe rehacerse cuando llega).
+ * Reemplaza la geometría de la línea (libera la anterior) y devuelve true; false si no había nada que hacer. Muta `linea`.
  */
 export function refrescarContorno(linea: THREE.LineSegments, geometria: THREE.BufferGeometry, cortes: Cortes, rango: Rango): boolean {
-  if (linea.userData.cortes === cortes && linea.userData.rango === rango) return false;
+  const arbol = geometria.boundsTree ?? null;
+  if (linea.userData.cortes === cortes && linea.userData.rango === rango && linea.userData.arbol === arbol) return false;
   const nueva = new THREE.BufferGeometry();
   nueva.setAttribute('position', new THREE.Float32BufferAttribute(segmentosDeCorte(geometria, linea.matrix, planosActivos(cortes, rango)), 3));
   const anterior = linea.geometry;
@@ -351,6 +353,7 @@ export function refrescarContorno(linea: THREE.LineSegments, geometria: THREE.Bu
   anterior.dispose();
   linea.userData.cortes = cortes;
   linea.userData.rango = rango;
+  linea.userData.arbol = arbol;
   return true;
 }
 
@@ -434,6 +437,8 @@ const CELDAS = 40;
  *   el corte, sobre la cara del corte.
  * - `'oculto'`: el rayo cruza `objetivo` solo del lado oculto de los planos: ningún impacto de ninguna candidata es
  *   visible y al menos uno es de `objetivo`. Es un clic que no debe tocar nada.
+ * Null también si alguna candidata aún no tiene árbol (el índice de toque se arma después del primer cuadro): sin todos
+ * los árboles no puede asegurar qué impacto se ve. Quien consulta repite la pregunta hasta que haya respuesta.
  */
 export function puntoDeCorte(
   objetivo: string,
@@ -442,6 +447,7 @@ export function puntoDeCorte(
   planos: readonly THREE.Plane[] = PLANOS_CORTE,
   lado: 'corte' | 'oculto' = 'corte',
 ): { x: number; y: number } | null {
+  if (candidatas.some((c) => !c.malla.geometry.boundsTree)) return null;
   camara.updateMatrixWorld();
   const cajas = candidatas.map((c) => {
     c.malla.updateWorldMatrix(true, false);

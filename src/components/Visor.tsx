@@ -22,7 +22,7 @@ import {
 import type { Idioma, Marcador } from '../data/tipos';
 import { acercar, CERO, promedio, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
-import { MARCA_INDICE_TOQUE, MARCA_MODELO_LEIDO, MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
+import { MARCA_INDICE_INICIO, MARCA_INDICE_TOQUE, MARCA_MODELO_LEIDO, MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombre, nombrePieza } from '../lib/nombres';
@@ -35,7 +35,8 @@ import { marcarUnaVez, useMetricas } from './metricas';
 import { punteado } from './acabados';
 import { esEncefalo, hayCortes, type EstadoCuadros } from '../lib/cortes';
 import ContornoCorte from './ContornoCorte';
-import { actualizarPlanos, alCuadro, configurarRenderer, construirBvh, crearMallaFantasma, crearMallaRelleno, mallasRellenables, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
+import { arrancarIndice, colaDeIndice, PRESUPUESTO_INDICE_MS, programarTarea } from './indiceToque';
+import { actualizarPlanos, alCuadro, configurarRenderer, crearMallaFantasma, crearMallaRelleno, mallasRellenables, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
 import { useDensidadAdaptativa } from './useDensidadAdaptativa';
 
@@ -273,8 +274,6 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       const nombre = (o.userData.name as string | undefined) ?? o.name;
       const pieza = piezaDeMalla(nombre);
       if (!pieza) return;
-      // Árbol de intersección para tocar rápido aun con un millón de triángulos.
-      if (!mesh.geometry.boundsTree) mesh.geometry.boundsTree = construirBvh(mesh.geometry);
       const l = res.get(pieza) ?? [];
       l.push({
         nombre,
@@ -285,7 +284,6 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       });
       res.set(pieza, l);
     });
-    marcarUnaVez(MARCA_INDICE_TOQUE);
     return res;
   }, [gltf]);
 
@@ -322,9 +320,45 @@ function Modelo({ idioma }: { idioma: Idioma }) {
         <Pieza key={id} id={id} mallas={mallas} idioma={idioma} />
       ))}
       <FantasmaCorte porPieza={porPieza} />
+      <IndiceToque porPieza={porPieza} />
       {conCortes && <ContornoCorte porPieza={porPieza} />}
     </>
   );
+}
+
+/**
+ * Índice de toque (issue 178): arma los árboles BVH de las mallas por tandas, después del primer cuadro. La primera
+ * tanda es una tarea del navegador y corre después del `gl.render` del cuadro en que `cargado` pasó a true, así que el
+ * primer cuadro nunca espera el índice. Mientras falta el árbol de una malla, `acceleratedRaycast` usa el raycast de
+ * three (el toque sigue funcionando, más lento) y el contorno del corte queda vacío hasta que llega el árbol.
+ */
+function IndiceToque({ porPieza }: { porPieza: Map<string, MallaCargada[]> }) {
+  const arrancado = useRef(false);
+  const cancelar = useRef<(() => void) | null>(null);
+  useFrame(() => {
+    // La misma condición con que `MedidorCuadros` marca el primer cuadro.
+    if (arrancado.current || !useAtlas.getState().cargado) return;
+    arrancado.current = true;
+    cancelar.current = arrancarIndice(colaDeIndice([...porPieza.values()].flat().map((m) => m.geometria)), {
+      presupuestoMs: PRESUPUESTO_INDICE_MS,
+      ahora: () => performance.now(),
+      programar: programarTarea,
+      esperar: (fn) => setTimeout(fn, 100),
+      // Solo E2E (DEV): permite mirar la app mientras el índice no está.
+      retenido: () => import.meta.env.DEV && (window as unknown as { __retenerIndice?: boolean }).__retenerIndice === true,
+      alEmpezar: () => marcarUnaVez(MARCA_INDICE_INICIO),
+      alTerminar: () => marcarUnaVez(MARCA_INDICE_TOQUE),
+    });
+  });
+  useEffect(
+    () => () => {
+      cancelar.current?.();
+      cancelar.current = null;
+      arrancado.current = false;
+    },
+    [porPieza],
+  );
+  return null;
 }
 
 /**

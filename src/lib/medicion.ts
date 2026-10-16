@@ -8,7 +8,9 @@ export const MARCA_MODELO_LISTO = 'atlas:modelo-listo';
 export const MARCA_PRIMER_CUADRO = 'atlas:primer-cuadro';
 /** El visor recibió el modelo ya leído (parseado y decodificado). */
 export const MARCA_MODELO_LEIDO = 'atlas:modelo-leido';
-/** Terminó de construir el índice de toque (árboles BVH) de las mallas. */
+/** Empezó a armarse el índice de toque (árboles BVH): después del primer cuadro. */
+export const MARCA_INDICE_INICIO = 'atlas:indice-inicio';
+/** Terminó de armarse el índice de toque (árboles BVH) de las mallas, también después del primer cuadro. Se mide desde `MARCA_INDICE_INICIO`. */
 export const MARCA_INDICE_TOQUE = 'atlas:indice-toque';
 
 /** Lo que interesa de cada recurso descargado (PerformanceResourceTiming). */
@@ -41,14 +43,18 @@ export interface ResumenCarga {
   modeloEsperaMs: number | null;
   /**
    * Preparar el modelo desde que estaban listos el modelo y el código: descomprimir, armar las
-   * piezas y sus cajas. Es la suma de `leerModeloMs`, `indiceToqueMs` y `armarPiezasMs`.
+   * piezas y sus cajas. Es la suma de `leerModeloMs` y `armarPiezasMs`; el índice de toque ya no entra.
    */
   procesamientoMs: number | null;
   /** Parseo y decodificación, hasta que el visor recibe el modelo leído. */
   leerModeloMs: number | null;
-  /** Construcción de los árboles BVH del toque. */
+  /** Cuánto tardó armar los árboles BVH del toque, desde que empezó hasta que quedó listo (ocurre después del primer cuadro). */
   indiceToqueMs: number | null;
-  /** El resto hasta que el modelo está listo: piezas, cajas y centros. */
+  /** A qué hora empezó el índice de toque (ms desde que se pidió la página). */
+  indiceInicioMs: number | null;
+  /** A qué hora quedó listo el índice de toque (ms desde que se pidió la página). */
+  indiceListoMs: number | null;
+  /** Desde el modelo leído hasta que el modelo está listo: piezas, cajas y centros. */
   armarPiezasMs: number | null;
   modeloListoMs: number | null;
   primerCuadroMs: number | null;
@@ -69,6 +75,7 @@ export function resumirCarga(d: DatosCarga): ResumenCarga {
   const modeloListo = d.marcas[MARCA_MODELO_LISTO];
   const codigoListo = d.marcas[MARCA_INICIO_APP] ?? (codigo.length ? Math.max(...codigo.map((r) => r.responseEnd)) : undefined);
   const leido = d.marcas[MARCA_MODELO_LEIDO];
+  const indiceInicio = d.marcas[MARCA_INDICE_INICIO];
   const indice = d.marcas[MARCA_INDICE_TOQUE];
   const inicioPreparacion = modelo ? Math.max(modelo.responseEnd, codigoListo ?? modelo.responseEnd) : undefined;
   return {
@@ -86,8 +93,11 @@ export function resumirCarga(d: DatosCarga): ResumenCarga {
         : null,
     leerModeloMs:
       inicioPreparacion !== undefined && leido !== undefined ? redondo(Math.max(0, leido - inicioPreparacion)) : null,
-    indiceToqueMs: leido !== undefined && indice !== undefined ? redondo(Math.max(0, indice - leido)) : null,
-    armarPiezasMs: indice !== undefined && modeloListo !== undefined ? redondo(Math.max(0, modeloListo - indice)) : null,
+    indiceToqueMs:
+      indiceInicio !== undefined && indice !== undefined ? redondo(Math.max(0, indice - indiceInicio)) : null,
+    indiceInicioMs: redondo(indiceInicio),
+    indiceListoMs: redondo(indice),
+    armarPiezasMs: leido !== undefined && modeloListo !== undefined ? redondo(Math.max(0, modeloListo - leido)) : null,
     modeloListoMs: redondo(modeloListo),
     primerCuadroMs: redondo(d.marcas[MARCA_PRIMER_CUADRO]),
   };
@@ -142,6 +152,14 @@ export function resumirFluidez(muestras: number[]): Fluidez | null {
  */
 export const FLUIDEZ_DESDE_MS = 1_000;
 export const FLUIDEZ_HASTA_MS = 10_000;
+
+/**
+ * Si el panel sigue leyendo las marcas: hasta que pase la ventana de fluidez Y el índice de toque esté listo (el índice
+ * llega después del primer cuadro y en un equipo lento puede pasar de los 10 s).
+ */
+export function seguirLeyendo(ahora: number, primerCuadro: number | null, indiceListo: number | null): boolean {
+  return !(primerCuadro !== null && ahora - primerCuadro > FLUIDEZ_HASTA_MS && indiceListo !== null);
+}
 
 /** Una muestra cuenta si su intervalo [desde, hasta] cae entero dentro de la ventana de fluidez. */
 export function muestraEnVentana(desde: number, hasta: number, primerCuadro: number): boolean {
@@ -199,9 +217,9 @@ export function informe(r: ResumenCarga, e: Equipo, f: Fluidez | null, fecha: st
     `Modelo 3D: empezó a los ${ms(r.modeloInicioMs)}, descarga ${ms(r.modeloDescargaMs)} (${r.modeloDesdeCache ? 'desde la memoria del navegador' : `${r.modeloKB} KB`}), espera después del código ${ms(r.modeloEsperaMs)}`,
     `Preparar el modelo: ${ms(r.procesamientoMs)}`,
     `  Leer el modelo (parseo y decodificación): ${ms(r.leerModeloMs)}`,
-    `  Índice de toque (árboles BVH): ${ms(r.indiceToqueMs)}`,
     `  Armar las piezas y sus cajas: ${ms(r.armarPiezasMs)}`,
     `Modelo listo: ${ms(r.modeloListoMs)} · Primer cuadro: ${ms(r.primerCuadroMs)}`,
+    `Índice de toque (árboles BVH): ${ms(r.indiceToqueMs)} (empezó a los ${ms(r.indiceInicioMs)}, listo a los ${ms(r.indiceListoMs)})`,
     `Cuadros por segundo (de 1 a 10 s tras el primer cuadro): ${f ? `promedio ${f.promedio}, mínimo ${f.minimo}` : 'midiendo'}`,
     ...(cargaLenta(r) ? [`Lo más lento: ${c ? CUELLO[c] : 'sin dato'}`] : []),
   ].join('\n');

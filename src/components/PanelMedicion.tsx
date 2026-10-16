@@ -6,11 +6,11 @@ import {
   acumularFluidez,
   cargaLenta,
   cuelloDeBotella,
-  FLUIDEZ_HASTA_MS,
   informe,
   MARCA_PRIMER_CUADRO,
   resumirCarga,
   resumirFluidez,
+  seguirLeyendo,
   type Equipo,
   type EstadoFluidez,
   type Fluidez,
@@ -77,7 +77,7 @@ export default function PanelMedicion() {
   const densidadFija = useMetricas((s) => s.densidadFija);
   const muestras = useRef<number[]>([]);
 
-  // Tiempos de carga: se leen cada medio segundo hasta tener el primer cuadro y la ventana de fluidez.
+  // Tiempos de carga: se leen cada medio segundo hasta que pasa la ventana de fluidez y el índice de toque está listo.
   useEffect(() => {
     if (!activo) return;
     // Cada lectura de cuadros por segundo es una muestra; cuenta solo si su intervalo (de la lectura
@@ -91,7 +91,7 @@ export default function PanelMedicion() {
       const { resumen: r, primerCuadro } = leerDatos();
       setResumen(r);
       if (primerCuadro !== null) setFluidez(resumirFluidez(muestras.current));
-      if (primerCuadro !== null && performance.now() - primerCuadro > FLUIDEZ_HASTA_MS) clearInterval(id);
+      if (!seguirLeyendo(performance.now(), primerCuadro, r.indiceListoMs)) clearInterval(id);
     }, 500);
     return () => {
       clearInterval(id);
@@ -145,12 +145,14 @@ export default function PanelMedicion() {
         <dd data-testid="medicion-preparar">{ms(resumen?.procesamientoMs)}</dd>
         <dt className="medicion-parte">{t('medicion.leerModelo')}</dt>
         <dd data-testid="medicion-leer">{ms(resumen?.leerModeloMs)}</dd>
-        <dt className="medicion-parte">{t('medicion.indiceToque')}</dt>
-        <dd data-testid="medicion-indice">{ms(resumen?.indiceToqueMs)}</dd>
         <dt className="medicion-parte">{t('medicion.armarPiezas')}</dt>
         <dd data-testid="medicion-armar">{ms(resumen?.armarPiezasMs)}</dd>
         <dt>{t('medicion.primerCuadro')}</dt>
         <dd data-testid="medicion-primer-cuadro">{ms(resumen?.primerCuadroMs)}</dd>
+        <dt>{t('medicion.indiceToque')}</dt>
+        <dd data-testid="medicion-indice">{ms(resumen?.indiceToqueMs)}</dd>
+        <dt>{t('medicion.indiceListo')}</dt>
+        <dd data-testid="medicion-indice-listo">{ms(resumen?.indiceListoMs)}</dd>
         <dt>{t('medicion.fluidez')}</dt>
         <dd>{fluidez ? t('medicion.fps', { promedio: fluidez.promedio, minimo: fluidez.minimo }) : t('medicion.esperando')}</dd>
       </dl>

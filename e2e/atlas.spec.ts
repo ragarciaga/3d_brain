@@ -245,10 +245,11 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   await expect(page.getByTestId('medicion-modelo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-codigo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-primer-cuadro')).toHaveText(/\d+ ms/);
-  // El desglose de "Preparar el modelo" sale con las tres partes.
+  // El desglose de "Preparar el modelo" sale con sus dos partes; el índice de toque va aparte y llega después del primer cuadro.
   await expect(page.getByTestId('medicion-leer')).toHaveText(/\d+ ms/);
-  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-armar')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice-listo')).toHaveText(/\d+ ms/);
   // "Lo más lento" solo sale si el cerebro tardó más de 3 s en verse.
   const primerCuadro = Number(/(\d+) ms/.exec((await page.getByTestId('medicion-primer-cuadro').textContent()) ?? '')![1]);
   if (primerCuadro > 3000) await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
@@ -264,7 +265,7 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   expect(copiado).toContain('Maysa Brain, medición de carga');
   expect(copiado).toMatch(/Modelo 3D: empezó a los \d+ ms/);
   expect(copiado).toMatch(/Leer el modelo \(parseo y decodificación\): \d+ ms/);
-  expect(copiado).toMatch(/Índice de toque \(árboles BVH\): \d+ ms/);
+  expect(copiado).toMatch(/Índice de toque \(árboles BVH\): \d+ ms \(empezó a los \d+ ms, listo a los \d+ ms\)/);
   // Cerrar lo quita también al recargar.
   await panel.getByRole('button', { name: 'Cerrar' }).click();
   await expect(panel).toHaveCount(0);
