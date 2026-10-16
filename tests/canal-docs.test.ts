@@ -50,6 +50,13 @@ describe('la prueba rápida del paso 7 de la guía (D9)', () => {
     expect(paso).toContain('codigo_no_activo');
     expect(paso).toMatch(/borra\s+las\s+filas\s+de\s+ese\s+código/);
   });
+
+  it('pide esperar un minuto después de marcar la fila de prueba con Activo `sí` y antes del primer bloque (#185)', () => {
+    // Con la caché del Padrón caliente, la primera prueba podría responder codigo_no_activo aunque la fila diga sí.
+    const espera = paso.search(/Activo\s+`sí`\.\s+Después\s+de\s+agregar\s+la\s+fila,\s+espera\s+un\s+minuto[^.]*antes\s+de\s+pegar\s+el\s+bloque/);
+    expect(espera).toBeGreaterThan(-1);
+    expect(espera).toBeLessThan(paso.indexOf('```powershell'));
+  });
 });
 
 describe('la subsección de #162 (D10)', () => {

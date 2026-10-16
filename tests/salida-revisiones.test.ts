@@ -204,14 +204,15 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166)', (
     it('si el padrón no es un JSON válido: sale con 2 y ni stdout ni stderr traen los códigos del archivo', () => {
       const { tmp, igual } = conCorridaBuena();
       const roto = join(tmp, 'padron-roto.json');
-      escribir(roto, '{"QQSECRETOX":"D01","QQSECRETOY":"D02",');
+      // El error de V8 cita la entrada solo con un token inesperado: así un `e.message` impreso traería el código.
+      const texto = '{"QQSECRETOX":D07}';
+      expect(() => JSON.parse(texto)).toThrow(/QQSECRETOX/);
+      escribir(roto, texto);
       const r = correr(tmp, HOJA, roto, '--autorizaciones', AUT);
       expect(r.status).toBe(2);
       expect(r.stderr).toContain('no es un JSON válido');
-      for (const c of ['QQSECRETOX', 'QQSECRETOY']) {
-        expect(r.stdout).not.toContain(c);
-        expect(r.stderr).not.toContain(c);
-      }
+      expect(r.stdout).not.toContain('QQSECRETOX');
+      expect(r.stderr).not.toContain('QQSECRETOX');
       sinRastro(r);
       expect(igual()).toBe(true);
     });
