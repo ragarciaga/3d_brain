@@ -57,11 +57,13 @@ describe('docs/revision-docente.md', () => {
     const seccion = texto.split('\n').slice(inicio).join('\n');
     // Cada borrado se ensaya primero: toda línea Remove-Item de la sección (incluido el recursivo) termina en -WhatIf.
     const borrados = seccion.split('\n').filter((l) => /^\s*Remove-Item\b/.test(l));
-    expect(borrados.length).toBeGreaterThanOrEqual(4);
+    expect(borrados.length).toBeGreaterThanOrEqual(5);
     for (const linea of borrados) expect(linea, linea).toMatch(/-WhatIf\s*$/);
-    for (const comodin of ['*Respuestas*.csv', '*Revisión del atlas*.csv*', '*Registro de revisores*.csv*']) {
+    for (const comodin of ['*Respuestas*.csv', '*Autorizaciones*.csv', '*Revisión del atlas*.csv*', '*Registro de revisores*.csv*']) {
       expect(seccion, comodin).toContain(comodin);
     }
+    // El CSV de Autorizaciones también trae códigos de docentes (#166).
+    expect(borrados.some((l) => l.includes('Downloads\\*Autorizaciones*.csv'))).toBe(true);
     expect(seccion).not.toContain('Downloads\\Respuestas*.csv');
     expect(seccion).toContain('historial de versiones');
     expect(seccion).toContain('Hacer una copia');
@@ -96,6 +98,21 @@ describe('docs/revision-docente.md', () => {
     for (const linea of borrados) expect(linea, linea).toMatch(/-WhatIf\s*$/);
     // Un encabezado nuevo con "autorización" confundiría el caso del redespliegue (#157).
     expect(seccion.split('\n').filter((l) => /^###\s.*autorización/.test(l))).toEqual([]);
+  });
+
+  it('la sección 4 explica el borrado previo de los .md, que no sigue enlaces y el conteo sin autorización (#166)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^##\s+4\.\s+Procesar las revisiones/.test(l));
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    const seccion = lineas.slice(inicio, fin).join('\n');
+    expect(seccion).toMatch(/borra\s+los\s+`\.md`/);
+    expect(seccion).toMatch(/sin\s+pasar\s+por\s+la\s+papelera/);
+    expect(seccion).toMatch(/no\s+sigue\s+enlaces/);
+    expect(seccion).toMatch(/no\s+toca\s+el\s+resto\s+de\s+`pipeline\/salida\/`/);
+    expect(seccion).toMatch(/se\s+detiene\s+sin\s+borrar\s+nada/);
+    expect(seccion).toMatch(/sin\s+ninguna\s+autorización/);
+    expect(seccion).toMatch(/borra\s+sus\s+filas/);
+    expect(seccion).not.toMatch(/segunda\s+corrida\s+reescribe/);
   });
 
   it('trata el código como contraseña, no llama privada a la pestaña Padrón y no presenta el chat como protección', () => {

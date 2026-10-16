@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GRUPO_VAGO, nodos, piezasBajo, todasLasPiezas } from '../src/data/atlas';
-import { actualizarPlanos, alCuadro, alErrorShaderRelleno, alMuestraFps, configurarRenderer, construirBvh, crearLineaContorno, crearMallaFantasma, crearMallaRelleno, liberarContornos, mallasDeContorno, mallasDeRelleno, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasConContorno, piezasFantasmaCorte, PLANOS_CORTE, PLANOS_FANTASMA, PLANOS_RECORRIDO, planosActivos, planosDePieza, puntoDeCorte, raycastCorte, raycastNulo, refrescarContorno, segmentosDeCorte, seVeConRecorte, type EstadoFantasma, type EstadoRelleno } from '../src/components/recorte';
+import { actualizarPlanos, alCuadro, alErrorShaderRelleno, alMuestraFps, configurarRenderer, construirBvh, crearLineaContorno, crearMallaFantasma, crearMallaRelleno, liberarContornos, mallasDeContorno, mallasDeRelleno, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasConContorno, piezasFantasmaCorte, PLANOS_CORTE, PLANOS_FANTASMA, PLANOS_RECORRIDO, planosActivos, planosDePieza, puntoDeCorte, raycastCorte, raycastNulo, refrescarContorno, segmentosDeCorte, seVeConRecorte, vistaDeMarcador, type EstadoFantasma, type EstadoRelleno } from '../src/components/recorte';
 import { cortesApagados, EJE, esEncefalo, ocultoPorCortes, piezasCruzadas, PLANOS, rangoCerebro, type Cortes, type EstadoCuadros, type Plano } from '../src/lib/cortes';
 import { useAtlas } from '../src/store/useAtlas';
 import type { Vec3 } from '../src/lib/explosion';
@@ -819,5 +819,82 @@ describe('limpieza del contorno (D1, R8.3)', () => {
     const s: EstadoRelleno = { cortes: cortesApagados(), ocultas: new Set(), aislar: null, soloEscaneada: false, cajas, rellenoApagado: true };
     expect(piezasConContorno(s, new Set())).toEqual([]);
     expect(piezasConContorno({ ...s, rellenoApagado: false }, new Set())).toEqual([]);
+  });
+});
+
+describe('marcadores con cortes (D1, D2, D3, D6)', () => {
+  const PADRE = 'g-diencephalon';
+  const estado = (cortes: Cortes, fantasmaCorte: boolean) => ({ cortes, fantasmaCorte, cajas });
+  const en = (d: Vec3): Vec3 => [centro[0] + d[0], centro[1] + d[1], centro[2] + d[2]];
+  /** Punto a `dist` m del plano (10 mm) de ese eje; positivo es el lado que se esconde por defecto. */
+  const aDistancia = (plano: Plano, dist: number): Vec3 => {
+    const d: Vec3 = [0, 0, 0];
+    d[EJE[plano]] = dist + 0.01;
+    return en(d);
+  };
+
+  it('sin cortes da visible aunque fantasmaCorte sea true, y con un plano inactivo también', () => {
+    const oculto = aDistancia('sagital', 0.02);
+    expect(vistaDeMarcador(oculto, PADRE, estado(con({ sagital: { mm: 10 } }), false))).toBe('oculto');
+    expect(vistaDeMarcador(oculto, PADRE, estado(cortesApagados(), true))).toBe('visible');
+    const inactivo = { ...cortesApagados(), sagital: { activo: false, mm: -50, invertido: false } };
+    expect(vistaDeMarcador(oculto, PADRE, estado(inactivo, true))).toBe('visible');
+  });
+  it.each(PLANOS.flatMap((p) => [[p, false], [p, true]] as [Plano, boolean][]))(
+    'con solo el plano %s (invertido: %s) el lado oculto es oculto o fantasma y el otro lado es visible',
+    (plano, invertido) => {
+      const cortes = con({ [plano]: { mm: 10, invertido } });
+      const signo = invertido ? -1 : 1;
+      const delOculto = aDistancia(plano, 0.02 * signo);
+      const delVisible = aDistancia(plano, -0.02 * signo);
+      expect(ocultoPorCortes(delOculto, cortes, rango)).toBe(true);
+      expect(vistaDeMarcador(delOculto, PADRE, estado(cortes, false))).toBe('oculto');
+      expect(vistaDeMarcador(delOculto, PADRE, estado(cortes, true))).toBe('fantasma');
+      expect(vistaDeMarcador(delVisible, PADRE, estado(cortes, false))).toBe('visible');
+      expect(vistaDeMarcador(delVisible, PADRE, estado(cortes, true))).toBe('visible');
+    },
+  );
+  it('un punto exactamente sobre el plano se ve (distancia 0)', () => {
+    const cortes = con({ sagital: { mm: 0 } });
+    expect(vistaDeMarcador(en([0, 0, 0]), PADRE, estado(cortes, false))).toBe('visible');
+    expect(vistaDeMarcador(en([0, 0, 0]), PADRE, estado(cortes, true))).toBe('visible');
+  });
+  it('con dos planos basta uno para esconder (unión, R1.4)', () => {
+    const cortes = con({ sagital: { mm: 0 }, axial: { mm: 10 } });
+    const soloAxial = en([-0.02, 0.03, 0]);
+    expect(ocultoPorCortes(soloAxial, cortes, rango)).toBe(true);
+    expect(vistaDeMarcador(soloAxial, PADRE, estado(cortes, false))).toBe('oculto');
+    expect(vistaDeMarcador(en([-0.02, 0, 0]), PADRE, estado(cortes, false))).toBe('visible');
+  });
+  it('el vago y un padre nulo nunca se cortan; la única diferencia con el oculto es el padre (R2.1)', () => {
+    const cortes = con({ sagital: { mm: 10 } });
+    const p = aDistancia('sagital', 0.02);
+    for (const fantasma of [false, true]) {
+      expect(vistaDeMarcador(p, 'g-vagus-nerve-x', estado(cortes, fantasma))).toBe('visible');
+      expect(vistaDeMarcador(p, null, estado(cortes, fantasma))).toBe('visible');
+    }
+    expect(vistaDeMarcador(p, PADRE, estado(cortes, false))).toBe('oculto');
+  });
+  it.each([
+    ['dos planos', con({ sagital: { mm: 0 }, axial: { mm: 10 } })],
+    ['tres planos con el coronal invertido', con({ sagital: { mm: 0 }, axial: { mm: 10 }, coronal: { mm: -5, invertido: true } })],
+  ])('%s: lo oculto coincide con lo que las piezas esconden', (_, cortes) => {
+    actualizarPlanos(cortes, rango);
+    const grilla = [-0.04, -0.02, 0, 0.02, 0.04];
+    let ocultos = 0;
+    let visibles = 0;
+    for (const x of grilla) {
+      for (const y of grilla) {
+        for (const z of grilla) {
+          const p = punto(x, y, z);
+          const oculto = vistaDeMarcador(p.toArray(), PADRE, estado(cortes, false)) === 'oculto';
+          if (oculto) ocultos++;
+          else visibles++;
+          expect(oculto, `${x} ${y} ${z}`).toBe(!seVeConRecorte(p, PLANOS_CORTE));
+        }
+      }
+    }
+    expect(ocultos).toBeGreaterThan(0);
+    expect(visibles).toBeGreaterThan(0);
   });
 });
