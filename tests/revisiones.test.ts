@@ -924,9 +924,9 @@ describe('casilla del vago (S2, #163)', () => {
       expect(descartadas(archivos.get('resumen.md')!)).toContain('ramo: `rama_x` (`Vagus_nerve.R#t01`)');
     });
 
-    it('sin respuestas del vago los archivos son los mismos con o sin CSV de autorizaciones', () => {
+    it('sin respuestas del vago los archivos son los mismos con o sin CSV de autorizaciones (con una fila para cada código)', () => {
       const sin = importar(csvDelCriterio(), estructuras, padron, null);
-      const con = importar(csvDelCriterio(), estructuras, padron, autorizaciones);
+      const con = importar(csvDelCriterio(), estructuras, padron, `${cabeceraAut}\nANAT01,2026-10-15T10:00:00.000Z,1,no\n`);
       expect([...sin.archivos]).toEqual([...con.archivos]);
       expect([...importar(csvDelCriterio(), estructuras, padron).archivos]).toEqual([...sin.archivos]);
       expect(sin.archivos.get('resumen.md')).not.toContain('Descartadas');
@@ -1052,6 +1052,85 @@ describe('casilla del vago (S2, #163)', () => {
 
     it('sin descartadas ni archivo, resumen.md no menciona la frase', () => {
       expect(importar(csvDelCriterio(), estructuras, padron, null).archivos.get('resumen.md')).not.toContain(FRASE_SIN_ARCHIVO);
+    });
+  });
+
+  describe('S1: respuestas de revisores sin ninguna autorización (#166)', () => {
+    const LINEA = (n: number) => `Hay ${n} respuestas de revisores sin ninguna autorización en \`Autorizaciones\`.`;
+    const filaAut = (codigo: string, vago: string) => `${codigo},2026-10-15T10:00:00.000Z,1,${vago}`;
+    const [cab, vago01, novago01] = hojaVago.trim().split('\n') as [string, string, string];
+    const nombreVago = { c: 'nombre', i: 'es', d: 'correcto', s: '0.1.0' };
+    const ubicacion = { c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0' };
+    const hojaSinaut = (...recibidos: string[]) =>
+      `Recibido,Código,Estructuras,Carga\n${recibidos.map((t) => filaHoja({ r: 'SINAUT01', e: { 'vagus-nerve-x': [nombreVago], hippocampus: [ubicacion] } }, t)).join('\n')}\n`;
+
+    it('con los fixtures cuenta 1 (el nombre de D93), no lo aparta y deja la línea antes de las tablas', () => {
+      const r = importar(hojaVago, estructurasVago, padronVago, autorizaciones);
+      expect(r.sinAutorizacion).toBe(1);
+      expect(r.aliasSinAutorizacion).toEqual(['D93']);
+      expect(camposDe(filasDe(r.archivos.get('vagus-nerve-x.md')!, 'D93'))).toEqual(['`nombre`']);
+      const resumen = r.archivos.get('resumen.md')!;
+      expect(resumen).toContain(LINEA(1));
+      expect(resumen.indexOf(LINEA(1))).toBeLessThan(resumen.indexOf('## Revisiones de'));
+      expect(resumen).not.toContain('Siguen en las tablas');
+      for (const [nombre, md] of r.archivos) if (nombre !== 'resumen.md') expect(md, nombre).not.toContain('sin ninguna autorización');
+    });
+
+    it('solo cuenta al alias sin fila: con fila no o sí da 0 y no hay línea', () => {
+      const soloNovago = importar([cab, novago01].join('\n'), estructurasVago, padronVago, `${cabeceraAut}\n${filaAut('NOVAGO01', 'no')}\n`);
+      expect(soloNovago.sinAutorizacion).toBe(0);
+      expect(soloNovago.aliasSinAutorizacion).toEqual([]);
+      expect(soloNovago.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+      const soloVago = importar([cab, vago01].join('\n'), estructurasVago, padronVago, `${cabeceraAut}\n${filaAut('VAGO01', 'sí')}\n`);
+      expect(soloVago.sinAutorizacion).toBe(0);
+      expect(soloVago.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+    });
+
+    it('cuenta respuestas únicas: dos respuestas dan 2 y un reenvío de la misma clave sigue dando 2', () => {
+      const una = importar(hojaSinaut('2026-10-15 11:10:00'), estructurasVago, padronVago, autorizaciones);
+      expect(una.sinAutorizacion).toBe(2);
+      expect(una.archivos.get('resumen.md')).toContain(LINEA(2));
+      const reenvio = importar(hojaSinaut('2026-10-15 11:10:00', '2026-10-15 12:00:00'), estructurasVago, padronVago, autorizaciones);
+      expect(reenvio.sinAutorizacion).toBe(2);
+    });
+
+    it('un CSV con solo la cabecera cuenta todas las respuestas normales (4)', () => {
+      const r = importar(hojaVago, estructurasVago, padronVago, `${cabeceraAut}\n`);
+      expect(r.sinAutorizacion).toBe(4);
+      expect(r.aliasSinAutorizacion).toEqual(['D91', 'D92', 'D93']);
+      expect(r.archivos.get('resumen.md')).toContain('(4 respuestas, 2 estructuras)');
+      expect(r.archivos.get('resumen.md')).toContain(LINEA(4));
+    });
+
+    it('sin CSV da null, sin alias y sin la línea', () => {
+      const r = importar(hojaVago, estructurasVago, padronVago, null);
+      expect(r.sinAutorizacion).toBeNull();
+      expect(r.aliasSinAutorizacion).toEqual([]);
+      expect(r.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+    });
+
+    it('un código fuera del padrón no cuenta', () => {
+      const r = importar(hojaVago, estructurasVago, { VAGO01: 'D91', NOVAGO01: 'D92' }, autorizaciones);
+      expect(r.desconocidos).toBeGreaterThan(0);
+      expect(r.sinAutorizacion).toBe(0);
+      expect(r.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+    });
+
+    it('un alias repetido cuenta si basta uno de sus códigos sin fila, sin depender del orden del padrón', () => {
+      for (const repetido of [{ VAGO01: 'D91', SINAUT01: 'D91' }, { SINAUT01: 'D91', VAGO01: 'D91' }]) {
+        const r = importar(hojaVago, estructurasVago, repetido, autorizaciones);
+        expect(r.sinAutorizacion).toBe(1); // nombre de vagus-nerve-x de los dos códigos: la misma clave
+        expect(r.aliasSinAutorizacion).toEqual(['D91']);
+      }
+    });
+
+    it('en resumen.md el aviso de desconocidos va antes que el de sin autorización y los dos antes de las tablas', () => {
+      const md = importar(hojaVago, estructurasVago, { VAGO01: 'D91', SINAUT01: 'D93' }, autorizaciones).archivos.get('resumen.md')!;
+      const desconocidos = md.indexOf('Se descartaron');
+      const sinAut = md.indexOf(LINEA(1));
+      expect(desconocidos).toBeGreaterThan(md.indexOf('# Revisiones docentes'));
+      expect(sinAut).toBeGreaterThan(desconocidos);
+      expect(md.indexOf('## Revisiones de')).toBeGreaterThan(sinAut);
     });
   });
 

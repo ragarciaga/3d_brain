@@ -337,6 +337,7 @@ export function resumenConsolidado(
   versionDe: (id: string) => string,
   desconocidos = 0,
   vago: { descartadas: Envio[]; sinArchivo: boolean } = { descartadas: [], sinArchivo: false },
+  sinAutorizacion = 0,
 ): string {
   const ids = [...new Set(envios.map((e) => e.estructura))].sort();
   const partes = ids.map((id) => resumenMarkdown(id, envios.filter((e) => e.estructura === id), versionDe(id)));
@@ -344,6 +345,8 @@ export function resumenConsolidado(
   const aviso = desconocidos
     ? [`Se descartaron ${desconocidos} envíos con un código que no está en el padrón de revisores.`, '']
     : [];
+  // Marca para el editor: quita de las tablas las filas de esos alias antes de crear el issue público.
+  if (sinAutorizacion > 0) aviso.push(`Hay ${sinAutorizacion} respuestas de revisores sin ninguna autorización en \`Autorizaciones\`.`, '');
   const sinVago = seccionSinVago(vago.descartadas, versionDe, vago.sinArchivo);
   return [`# Revisiones docentes (${total} respuestas, ${ids.length} estructuras)`, '', ...aviso, ...partes, ...(sinVago ? [sinVago] : [])].join('\n\n');
 }
@@ -363,6 +366,13 @@ export interface Importacion {
   sinVago: number;
   /** Códigos distintos leídos del CSV de Autorizaciones, o null si no se pasó. */
   autorizaciones: number | null;
+  /**
+   * Respuestas únicas que no son del vago de alias con algún código del padrón sin ninguna fila en
+   * Autorizaciones. Siguen en las tablas (son solo un conteo); `null` si no se pasó el CSV.
+   */
+  sinAutorizacion: number | null;
+  /** Alias (nunca códigos) de esas respuestas, en orden alfabético; vacío si no hay o no se pasó el CSV. */
+  aliasSinAutorizacion: string[];
 }
 
 /**
@@ -372,7 +382,9 @@ export interface Importacion {
  * de un alias cuya última autorización no dice `vago = sí` salen solo en la sección "Descartadas: sin la
  * casilla del vago" de `resumen.md`, no en las tablas normales ni en `<id>.md`. Con `null` (sin archivo)
  * ninguna respuesta del vago entra al resumen. Los códigos del CSV solo sirven de llave y no salen en
- * ningún archivo.
+ * ningún archivo. Con el CSV, `sinAutorizacion` cuenta las respuestas normales de alias con algún código sin
+ * ninguna fila en Autorizaciones: no se apartan, solo se avisa con una línea en `resumen.md` (nunca en los
+ * `<id>.md`) y se devuelven sus alias para que el editor las revise antes del issue público.
  */
 export function importar(
   csvTexto: string,
@@ -390,11 +402,21 @@ export function importar(
   const porAlias = new Map<string, boolean>();
   for (const [c, alias] of Object.entries(padron)) porAlias.set(alias, (porAlias.get(alias) ?? true) && codigos.get(c) === true);
   const { envios, sinVago } = separarSinVago(conAlias, (a) => porAlias.get(a) === true);
+  // Falla cerrada también aquí: basta un código del alias sin fila en Autorizaciones. `envios` ya no trae
+  // respuestas del vago de esos alias, así que el conteo es de las respuestas normales.
+  const sinFila = new Set<string>();
+  for (const [c, alias] of Object.entries(padron)) if (!codigos.has(c)) sinFila.add(alias);
+  const afectadas = autorizacionesCsv === null ? [] : ultimasRespuestas(envios.filter((e) => sinFila.has(e.revisor)));
+  const sinAutorizacion = autorizacionesCsv === null ? null : afectadas.length;
+  const aliasSinAutorizacion = [...new Set(afectadas.map((a) => a.revisor))].sort();
   const porEstructura = new Map<string, Envio[]>();
   for (const e of envios) porEstructura.set(e.estructura, [...(porEstructura.get(e.estructura) ?? []), e]);
   const archivos = new Map<string, string>();
   for (const [id, lista] of porEstructura) archivos.set(`${id}.md`, resumenMarkdown(id, lista, versionDe(id)));
-  archivos.set('resumen.md', resumenConsolidado(envios, versionDe, desconocidos, { descartadas: sinVago, sinArchivo: autorizacionesCsv === null }));
+  archivos.set(
+    'resumen.md',
+    resumenConsolidado(envios, versionDe, desconocidos, { descartadas: sinVago, sinArchivo: autorizacionesCsv === null }, sinAutorizacion ?? 0),
+  );
   return {
     archivos,
     validos: conAlias.length,
@@ -402,6 +424,8 @@ export function importar(
     desconocidos,
     sinVago: ultimasRespuestas(sinVago).length,
     autorizaciones: autorizacionesCsv === null ? null : codigos.size,
+    sinAutorizacion,
+    aliasSinAutorizacion,
   };
 }
 
