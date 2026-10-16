@@ -147,29 +147,36 @@ Si cambias `VERSION_AUTORIZACION` en `src/config/revision.ts`, cambia la constan
 `apps-script/Codigo.js` (una prueba falla si difieren) y vuelve a desplegar el script como nueva
 versión apenas se publique la app. Si no, el docente acepta y el diálogo vuelve a salir, una y otra vez.
 
-### Actualización: autorización v2, leer por POST y caché del Padrón (#162)
+### Actualización: autorización v2 y v3, leer por POST y caché del Padrón (#162 y #168)
 
 Desde #162 cambian cuatro cosas, y las cuatro salen en el mismo despliegue de `apps-script/Codigo.js`:
 
 - El texto del diálogo de autorización avisa que las propuestas y los comentarios pueden publicarse con
   el alias del docente (por ejemplo D01, nunca su nombre) en issues públicos del proyecto en GitHub.
-- `VERSION_AUTORIZACION` pasa de `1` a `2`, en `src/config/revision.ts` y en `Codigo.js`. Toda
-  autorización de la versión `1` deja de valer y la app vuelve a pedir la aceptación del texto nuevo. Ningún
-  docente ha autorizado todavía, así que a nadie se le pide dos veces.
+- `VERSION_AUTORIZACION` pasa de `1` a `2` (#162) y a `3` (#168), en `src/config/revision.ts` y en
+  `Codigo.js`. Toda autorización de las versiones `1` y `2` deja de valer y la app vuelve a pedir la
+  aceptación del texto nuevo. Ningún docente ha autorizado todavía, así que a nadie se le pide dos veces.
 - La app lee por POST (`{accion:'leer', r}`) y ya no pone el código de revisor en la URL. El script
   sigue respondiendo el GET `?accion=leer&r=` por compatibilidad (la prueba rápida del paso 7 lo usa)
   hasta que se retire en otro cambio.
 - El script guarda la lista de códigos activos de `Padrón` unos 60 s en `CacheService`, en vez de leer la
   hoja en cada petición. Un código que pasas a `no`, o uno nuevo con `sí`, cambia como mucho en un minuto.
 
+#168 vuelve a cambiar el texto del diálogo: nombra al responsable (Maysa Strategy Partners) y el contacto
+(info@maysasp.com) y enlaza a la página Privacidad. `VERSION_AUTORIZACION` sube a `3` en
+`src/config/revision.ts` y en `Codigo.js`. Como el script aún no se ha desplegado con #162, un solo
+despliegue cubre las versiones 2 y 3 juntas: despliégalo una sola vez, cuando los dos PR estén fusionados.
+
 Antes de la primera importación, confirma que `Respuestas` no tiene filas de códigos reales cuya última
-autorización en `Autorizaciones` sea la versión `1`: esas respuestas se aceptaron con el texto anterior,
-que no avisaba de la publicación del alias. Hoy la hoja está vacía (la limpiaste el 2026-10-16).
+autorización en `Autorizaciones` sea la versión `1` o `2`: esas respuestas se aceptaron con un texto
+anterior (el `1` no avisaba de la publicación del alias y el `2` no nombraba al responsable ni el
+contacto). Hoy la hoja está vacía (la limpiaste el 2026-10-16).
 
 Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementación existente. En este
 orden, con el sitio primero y el script después:
 
-1. Espera a que el PR de #162 esté fusionado y a que termine el workflow `pages`. Hasta entonces la web
+1. Espera a que los PR de #162 y de #168 estén fusionados y a que termine el workflow `pages`. Si solo
+   uno está fusionado, espera al otro: el script se despliega una sola vez. Hasta entonces la web
    publicada sigue leyendo por GET con la versión `1`.
 2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script. En PowerShell:
 
@@ -186,8 +193,9 @@ orden, con el sitio primero y el script después:
 6. Comprueba que funciona, con el código de prueba del paso 7:
    1. Márcalo `sí` en `Padrón` y espera un minuto (la caché del `Padrón`).
    2. Abre la app con su enlace y responde un campo. El diálogo debe nombrar el alias y los issues
-      públicos. Acepta y espera "Guardado ✓".
-   3. En `Autorizaciones`, la fila nueva del código debe tener la Versión `2`. Recarga la página: el
+      públicos, al responsable y el contacto, y tener el enlace "Lee el aviso de privacidad". Acepta y
+      espera "Guardado ✓".
+   3. En `Autorizaciones`, la fila nueva del código debe tener la Versión `3`. Recarga la página: el
       diálogo no debe volver.
    4. Cambia Activo a `no` en `Padrón`, espera un minuto y recarga: debe aparecer "Tu código no está
       activo; escribe al editor".
@@ -404,8 +412,9 @@ revisión es suya. Las pruebas fallan si una ficha queda verificada sin revisor 
 
 ## 7. Solicitud de supresión de datos (Ley 1581 de 2012)
 
-Un docente puede pedirte conocer, corregir o borrar sus datos. Respóndele por su canal propio. Los
-pasos, con el alias del docente:
+Un docente puede pedirte conocer, corregir o borrar sus datos. Las solicitudes llegan al contacto
+publicado en la página Privacidad y en el diálogo de autorización: info@maysasp.com (#168). Respóndele
+por su canal propio. Los pasos, con el alias del docente:
 
 1. Ubica el código: busca el alias en el documento privado "Enlaces de docentes Maysa Brain (privado)".
 2. Si pide conocer sus datos, filtra por su código en `Respuestas` y en `Autorizaciones`, y entrégale

@@ -30,8 +30,8 @@ const VERSION_VALIDA = /^(\d+\.\d+\.\d+|sin-ficha)$/;
 const ID_VALIDO = /^[a-z0-9-]+$/;
 const VERSION_AUTORIZACION_VALIDA = /^[A-Za-z0-9._-]{1,40}$/;
 // Copia de VERSION_AUTORIZACION de src/config/revision.ts: se cambian juntas, y una prueba de
-// tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones.
-const VERSION_AUTORIZACION = '2';
+// tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones (3 desde #168).
+const VERSION_AUTORIZACION = '3';
 const MAX_TEXTO_LARGO = 4000;
 const MAX_TEXTO_CORTO = 200;
 const MAX_FECHA = 40;

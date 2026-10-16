@@ -893,18 +893,20 @@ describe('(k) caché del padrón (S3, #162)', () => {
   });
 });
 
-describe('(l) versión de la autorización (A2, #162)', () => {
-  it('la constante del script es la de la app y es la 2', () => {
+describe('(l) versión de la autorización (A2, #162, #168)', () => {
+  it('la constante del script es la de la app y es la 3', () => {
     const delScript = /const VERSION_AUTORIZACION = '([^']+)';/.exec(readFileSync(RUTA_SCRIPT, 'utf8'))?.[1];
     expect(delScript).toBe(VERSION_AUTORIZACION);
-    expect(VERSION_AUTORIZACION).toBe('2');
+    expect(VERSION_AUTORIZACION).toBe('3');
   });
 
-  it('una fila de la versión 1 ya no deja guardar y la de la versión 2 sí', () => {
+  it('las filas de las versiones 1 y 2 ya no dejan guardar y la de la versión 3 sí', () => {
     const env = crearEntorno();
     env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', '1', 'no']);
     expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'sin_autorizacion' });
     env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:01:00.000Z', '2', 'no']);
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'sin_autorizacion' });
+    env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:02:00.000Z', '3', 'no']);
     expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))['ok']).toBe(true);
   });
 });

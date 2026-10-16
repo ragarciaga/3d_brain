@@ -306,6 +306,42 @@ test('la pantalla de licencia abierta directo respeta el idioma de la URL', asyn
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 });
 
+for (const [lang, ficha, licencia, privacidad, volver] of [
+  ['es', 'hipocampo', 'Fuentes y licencia', 'Privacidad', 'Volver al atlas'],
+  ['en', 'hippocampus', 'Sources and license', 'Privacy', 'Back to the atlas'],
+] as const) {
+  test(`Privacidad: el pie de inicio y de ficha la enlaza junto a Fuentes y licencia y la abre en el idioma (${lang})`, async ({ page }) => {
+    const ruta = lang === 'es' ? '/es/privacidad' : '/en/privacy';
+    const pie = page.locator('footer');
+    await abrir(page, `/${lang}`);
+    await expect(pie.getByRole('link', { name: licencia, exact: true })).toBeVisible();
+    await expect(pie.getByRole('link', { name: privacidad, exact: true })).toBeVisible();
+    await expect(pie.getByRole('link', { name: privacidad, exact: true })).toHaveAttribute('href', ruta);
+
+    await abrir(page, `/${lang}/${ficha}`);
+    await expect(pie.getByRole('link', { name: licencia, exact: true })).toBeVisible();
+    await expect(pie.getByRole('link', { name: privacidad, exact: true })).toHaveAttribute('href', ruta);
+
+    await pie.getByRole('link', { name: privacidad, exact: true }).click();
+    // El encabezado primero: toHaveURL pasa antes de que cambie la vista.
+    await expect(page.getByRole('heading', { level: 1, name: privacidad, exact: true })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${ruta}$`));
+    await expect(page.getByTestId('privacidad')).toContainText('Maysa Strategy Partners');
+    await expect(page.getByTestId('privacidad')).toContainText('info@maysasp.com');
+    await expect(page.locator('html')).toHaveAttribute('lang', lang);
+    await expect(page.getByRole('link', { name: volver })).toBeVisible();
+  });
+}
+
+test('la página de privacidad abierta directo respeta el idioma de la URL', async ({ page }) => {
+  await abrir(page, '/en/privacy');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await abrir(page, '/es/privacidad');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacidad');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+});
+
 test('búsqueda bilingüe: con la interfaz en español, "amygdala" abre la amígdala', async ({ page }) => {
   await abrir(page, '/es');
   await modeloCargado(page);
