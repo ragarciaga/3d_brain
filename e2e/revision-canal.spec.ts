@@ -7,6 +7,7 @@ import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, 
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 import { leerRutas } from '../src/lib/rutas';
 import { protegerCanalReal } from './canal-real';
+import { pausarReloj } from './reloj';
 
 const barra = (page: Page) => page.getByTestId('panel-revision');
 
@@ -427,6 +428,43 @@ test('autorización: con la casilla del vago manda vago true y si autorizar fall
   await expect.poll(() => peticionesDe(canal, 'guardar').length).toBeGreaterThan(0);
 });
 
+test('autorización v3 (#168): nombra responsable y contacto, enlaza Privacidad en otra pestaña sin cerrar el diálogo', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: null, autorizar: 'ok' });
+  await conCanal(context, URL_CANAL);
+  await entrarEnRevision(page, context, 'AUT07');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  // El pie del modo revisión también enlaza la página.
+  await expect(page.locator('footer').getByRole('link', { name: 'Privacidad', exact: true })).toHaveAttribute('href', '/es/privacidad');
+
+  await correcto(page, 'que_es.es').click();
+  await expect(dialogoAut(page)).toBeVisible();
+  await expect(dialogoAut(page).locator('#autorizacion-texto')).toContainText('Maysa Strategy Partners');
+  await expect(dialogoAut(page).locator('#autorizacion-texto')).toContainText('info@maysasp.com');
+  const enlace = dialogoAut(page).getByRole('link', { name: 'Lee el aviso de privacidad' });
+  await expect(enlace).toHaveAttribute('href', '/es/privacidad');
+  await expect(enlace).toHaveAttribute('target', '_blank');
+  await expect(enlace).toHaveAttribute('rel', /noopener/);
+
+  // D2: el enlace abre otra pestaña sin código en la URL; el diálogo de esta sigue abierto y no se autoriza nada.
+  const [nueva] = await Promise.all([context.waitForEvent('page'), enlace.click()]);
+  await expect(nueva.getByRole('heading', { level: 1, name: 'Privacidad', exact: true })).toBeVisible();
+  const url = new URL(nueva.url());
+  expect(url.pathname).toBe('/es/privacidad');
+  expect(url.search).toBe('');
+  await nueva.close();
+  await expect(dialogoAut(page)).toBeVisible();
+  await expect(dialogoAut(page).getByRole('checkbox')).toHaveCount(2);
+  await asentar(page);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+
+  // Al aceptar, la autorización lleva la versión vigente.
+  await casillaAcepto(page).check();
+  await continuar(page).click();
+  await expect(dialogoAut(page)).toHaveCount(0);
+  expect(peticionesDe(canal, 'autorizar')).toHaveLength(1);
+  expect(peticionesDe(canal, 'autorizar')[0]!.cuerpo).toEqual({ accion: 'autorizar', r: 'AUT07', version: VERSION_AUTORIZACION, vago: false });
+});
+
 test('autorización: la vigente no se vuelve a pedir, ni sin conexión, y la del canal manda sobre la copia local', async ({ page, context }) => {
   // `guardar: 'red'`: así la respuesta nunca queda guardada y el diálogo puede volver con la autorización de otra
   // versión. Si el canal la confirmara, antes de la última recarga no habría nada por guardar y no aparecería.
@@ -586,8 +624,7 @@ test('guardado: sale a los 3 s, dice Guardando... y Guardado ✓ solo con la mis
   await expect(page.getByTestId('como-revisar')).toHaveCount(0);
 
   // `asentar` usa el requestAnimationFrame de la página, que el reloj pausado congela: no se usa desde aquí.
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // R3.1: mientras espera dice "Guardando..." y no sale nada antes de la espera del panel; en cuanto se cumple, sale.
   // `fastForward` y no `runFor`: este avanza frame por frame y el visor, que dibuja en cada uno, tarda minutos;
@@ -896,8 +933,7 @@ test('formulario de respaldo: con el canal caído no aparece a los 9 min, aparec
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
   await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
   await expect(correcto(page, 'ubicacion.es')).toHaveAttribute('aria-pressed', 'true');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // Primer envío: con la red caída queda pendiente.
   await correcto(page, 'que_es.es').click({ force: true });
@@ -972,8 +1008,7 @@ test('formulario de respaldo: sin autorización vigente o con el código no acti
   await conCanal(context, URL_CANAL);
   await entrarDirecto(page, context, 'RES03');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // Sin autorización: el diálogo se descarta y la respuesta queda pendiente, sin enviarse ni ofrecer el formulario.
   await correcto(page, 'que_es.es').click({ force: true });
@@ -1012,8 +1047,7 @@ test('formulario de respaldo: con el canal confirmando no aparece a los 10 min, 
   await conCanal(context, URL_CANAL);
   await entrarDirecto(page, context, 'RES02');
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  const ahora = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(ahora + 1000);
+  await pausarReloj(page);
 
   // R7.1 negativo: el canal confirma la primera; la segunda queda pendiente 1 s antes de cumplirse 10 min desde esa confirmación.
   await correcto(page, 'que_es.es').click({ force: true });

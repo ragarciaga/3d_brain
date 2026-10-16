@@ -4,9 +4,11 @@
 // formato `@` no se puede comprobar aquí.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { importar, leerEnvios, parsearCsv } from '../scripts/lib/revisiones.ts';
+import { esRespuestaDelVago, importar, leerEnvios, parsearCsv } from '../scripts/lib/revisiones.ts';
 import { VERSION_AUTORIZACION } from '../src/config/revision';
-import { cargaRevisionV2, fechaValida, REVISOR_VALIDO, respuestaValida, type Respuesta } from '../src/lib/revision';
+import { cuerpoGuardar, type TipoErrorCanal } from '../src/lib/canal';
+import { armarLotes, estadoInicial, pendientes, porEnviar, trasEnvio, type ResultadoEnvio } from '../src/lib/colaGuardado';
+import { cargaRevisionV2, claveRespuesta, fechaValida, REVISOR_VALIDO, respuestaValida, type Respuesta } from '../src/lib/revision';
 import {
   CABECERAS,
   casosCarga,
@@ -32,20 +34,19 @@ const AUTORIZADOS = [CODIGO_ACTIVO, CODIGO_GUION, OTRO_ACTIVO];
 const base = { idioma: 'es' as const, version: '0.1.0', fecha: '2026-10-14T09:59:00.000Z' };
 const resp = (extra: Partial<Respuesta> = {}): Respuesta => ({ ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto', ...extra });
 const guardarCuerpo = (codigo: string, respuestas: Respuesta[]) => JSON.stringify({ accion: 'guardar', carga: cargaRevisionV2(codigo, respuestas) });
-const autorizarCuerpo = (codigo: string, extra: Record<string, unknown> = {}) => JSON.stringify({ accion: 'autorizar', r: codigo, version: '1', vago: true, ...extra });
+const autorizarCuerpo = (codigo: string, extra: Record<string, unknown> = {}) => JSON.stringify({ accion: 'autorizar', r: codigo, version: VERSION_AUTORIZACION, vago: true, ...extra });
 const idForma = (id: unknown) => typeof id === 'string' && /^[a-z0-9-]+$/.test(id);
 const isoDe = (env: Entorno) => new Date(env.reloj.ahora).toISOString();
 
-/** `leer` es el POST de la app y `leerGet` el GET que el script sigue aceptando por compatibilidad (#162). */
-type Accion = 'guardar' | 'autorizar' | 'leer' | 'leerGet';
+/** Las tres acciones del POST. El GET ya no lee (#169): se prueba aparte, en el describe (m). */
+type Accion = 'guardar' | 'autorizar' | 'leer';
 /** Una petición de cada acción con un código dado. */
 function pedir(env: Entorno, accion: Accion, codigo: string) {
   if (accion === 'guardar') return env.post(guardarCuerpo(codigo, [resp()]));
   if (accion === 'autorizar') return env.post(autorizarCuerpo(codigo));
-  if (accion === 'leer') return env.postLeer(codigo);
-  return env.get({ accion: 'leer', r: codigo });
+  return env.postLeer(codigo);
 }
-const ACCIONES: Accion[] = ['guardar', 'autorizar', 'leer', 'leerGet'];
+const ACCIONES: Accion[] = ['guardar', 'autorizar', 'leer'];
 
 describe('(a) código fuera del padrón, inactivo o inválido (R6.1)', () => {
   const codigos = [
@@ -77,7 +78,7 @@ describe('(a) código fuera del padrón, inactivo o inválido (R6.1)', () => {
 
   it.each(['Sí', 'si', 'SÍ', 'sí '])('Activo con %j: solo cuenta sí exacto sin espacios sobrantes', (activo) => {
     const env = crearEntorno({ padron: [[CODIGO_ACTIVO, 'D01', activo]] });
-    const res = env.get({ accion: 'leer', r: CODIGO_ACTIVO });
+    const res = env.postLeer(CODIGO_ACTIVO);
     // `sí ` con espacio final cuenta (se recortan los espacios); las demás formas no.
     expect(res['ok']).toBe(activo === 'sí ');
   });
@@ -85,11 +86,11 @@ describe('(a) código fuera del padrón, inactivo o inválido (R6.1)', () => {
   it('la fila 1 del padrón es la cabecera y no activa a nadie', () => {
     const env = crearEntorno({ padron: [] });
     env.hojas.Padrón.filas[0] = [CODIGO_ACTIVO, 'D01', 'sí'];
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: false, error: 'codigo_no_activo' });
+    expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: false, error: 'codigo_no_activo' });
     env.hojas.Padrón.filas.push([CODIGO_ACTIVO, 'D01', 'sí']);
     // El padrón se guarda 60 s en la caché (S3, #162): la fila nueva cuenta al vencer.
     env.reloj.avanzar(61000);
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['ok']).toBe(true);
+    expect(env.postLeer(CODIGO_ACTIVO)['ok']).toBe(true);
   });
 
   it('un código que no cumple REVISOR_VALIDO se rechaza aunque alguien lo haya puesto como activo en el padrón', () => {
@@ -103,7 +104,7 @@ describe('(a) código fuera del padrón, inactivo o inválido (R6.1)', () => {
     const env = crearEntorno();
     expect(env.post(JSON.stringify({ accion: 'autorizar', version: '1', vago: true }))).toEqual({ ok: false, error: 'codigo_no_activo' });
     expect(env.post(JSON.stringify({ accion: 'autorizar', r: 7, version: '1', vago: true }))).toEqual({ ok: false, error: 'codigo_no_activo' });
-    expect(env.get({ accion: 'leer' })).toEqual({ ok: false, error: 'codigo_no_activo' });
+    expect(env.post(JSON.stringify({ accion: 'leer' }))).toEqual({ ok: false, error: 'codigo_no_activo' });
   });
 });
 
@@ -183,20 +184,12 @@ describe('(b) tamaño y formato (R6.2)', () => {
     expect(env.post('')).toEqual({ ok: false, error: 'formato' });
   });
 
-  it.each([
-    ['sin accion', {}],
-    ['con otra accion', { accion: 'guardar', r: CODIGO_ACTIVO }],
-  ])('un GET %s da formato', (_n, parametros) => {
-    const env = crearEntorno();
-    expect(env.get(parametros as Record<string, string>)).toEqual({ ok: false, error: 'formato' });
-  });
-
   it('todas las respuestas salen como JSON por ContentService', () => {
     const env = crearEntorno();
     env.post('no json');
     env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]));
     env.get({ accion: 'leer', r: CODIGO_ACTIVO });
-    env.get({ accion: 'leer', r: CODIGO_AUSENTE });
+    env.postLeer(CODIGO_AUSENTE);
     env.postLeer(CODIGO_ACTIVO);
     expect(env.salidas).toHaveLength(5);
     for (const s of env.salidas) {
@@ -224,10 +217,10 @@ describe('(b) tamaño y formato (R6.2)', () => {
       expect(env.escritas('Autorizaciones')).toEqual([]);
     });
 
-    it('version 1 con vago true pasa; 40 caracteres también', () => {
+    it('la versión vigente con vago true pasa; una de 40 caracteres tiene forma válida pero da formato (#169)', () => {
       const env = crearEntorno();
       expect(env.post(autorizarCuerpo(CODIGO_ACTIVO))).toEqual({ ok: true });
-      expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { version: 'a'.repeat(40) }))).toEqual({ ok: true });
+      expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { version: 'a'.repeat(40) }))).toEqual({ ok: false, error: 'formato' });
     });
   });
 
@@ -247,7 +240,8 @@ describe('(b) tamaño y formato (R6.2)', () => {
     });
 
     it.each(casosCarga)('la carga con %s', (_n, carga, vale) => {
-      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      // La app no conoce la casilla del vago (S2, #166): la paridad se prueba con la casilla en `sí`.
+      const env = crearEntorno({ autorizados: AUTORIZADOS, vago: true });
       const res = env.post(JSON.stringify({ accion: 'guardar', carga }));
       const { envios, invalidas } = leerEnvios([['Recibido', 'Código', 'Estructuras', 'Carga'], ['t', 'x', 'y', carga]]);
       const laApp = invalidas === 0 && envios.length > 0;
@@ -285,11 +279,12 @@ describe('(c) ritmo por código (R6.3)', () => {
     expect(pedir(env, accion, CODIGO_ACTIVO)['ok']).toBe(true);
   });
 
-  it('el ritmo se comparte entre las cuatro acciones del mismo código', () => {
+  it('el ritmo se comparte entre las tres acciones del mismo código', () => {
     const env = crearEntorno();
-    for (let i = 0; i < 30; i++) for (const a of ACCIONES) pedir(env, a, CODIGO_ACTIVO);
+    for (let i = 0; i < 40; i++) for (const a of ACCIONES) pedir(env, a, CODIGO_ACTIVO);
     expect(pedir(env, 'leer', CODIGO_ACTIVO)).toEqual({ ok: false, error: 'demasiadas_peticiones' });
-    expect(pedir(env, 'leerGet', CODIGO_ACTIVO)).toEqual({ ok: false, error: 'demasiadas_peticiones' });
+    // El GET no mira el ritmo: sigue dando formato aun con el ritmo agotado.
+    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: false, error: 'formato' });
   });
 
   it('un código inactivo no gasta el ritmo ni lo cuenta', () => {
@@ -397,7 +392,8 @@ describe('(d) guardar escribe en Respuestas (R6.4)', () => {
   });
 
   it('la carga se escribe idéntica a la de la app (las claves cortas no se reordenan ni se pierden)', () => {
-    const env = crearEntorno({ autorizados: AUTORIZADOS });
+    // Con malla y ramo, la carga es del vago: pasa solo con la casilla en `sí` (S2, #166).
+    const env = crearEntorno({ autorizados: AUTORIZADOS, vago: true });
     const respuestas = [resp({ campo: 'posicion', veredicto: 'corregir', posicion: [1, 2.5, -3], malla: 'Vagus_nerve.R', ramo: 'no_se', propuesta: 'p', comentario: 'k', version: 'sin-ficha' })];
     env.post(guardarCuerpo(CODIGO_ACTIVO, respuestas));
     expect(env.escritas('Respuestas')[0]![3]).toBe(cargaRevisionV2(CODIGO_ACTIVO, respuestas));
@@ -423,7 +419,7 @@ describe('(e) autorizar escribe en Autorizaciones (R2.3)', () => {
     const hoja = env.hojas.Autorizaciones;
     expect(hoja.filas[0]).toEqual([...CABECERAS.Autorizaciones]);
     expect(hoja.filas).toHaveLength(2);
-    expect(hoja.filas[1]).toEqual([CODIGO_ACTIVO, isoDe(env), '1', texto]);
+    expect(hoja.filas[1]).toEqual([CODIGO_ACTIVO, isoDe(env), VERSION_AUTORIZACION, texto]);
     for (let c = 1; c <= 4; c++) expect(hoja.formatos.get(`2,${c}`)).toBe('@');
     expect(env.escritas('Respuestas')).toEqual([]);
   });
@@ -449,11 +445,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
   const el = (extra: Record<string, unknown> = {}) => ({ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: '2026-10-14T09:00:00.000Z', ...extra });
   const fila = (b: string, carga: string, c = 'hippocampus'): Celda[] => ['2026-10-14T10:00:00.000Z', b, c, carga];
 
-  type Via = 'POST' | 'GET';
-  const VIAS: Via[] = ['POST', 'GET'];
-  const leerPor = (env: Entorno, via: Via, codigo: string) => (via === 'POST' ? env.postLeer(codigo) : env.get({ accion: 'leer', r: codigo }));
-
-  it.each(VIAS)('solo las respuestas de ese código, una por clave (la última) y sin duplicados (%s)', (via) => {
+  it('solo las respuestas de ese código, una por clave (la última) y sin duplicados', () => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(
       fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el({ p: 'secreto de otro' })], 'm-periaqueductal-grey': [el({ c: 'nombre' })] })),
@@ -465,7 +457,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
       fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el({ c: 'otra' })] })),
     );
     const antes = JSON.stringify(env.hojas.Respuestas.filas);
-    const res = leerPor(env, via, CODIGO_ACTIVO);
+    const res = env.postLeer(CODIGO_ACTIVO);
     expect(res['ok']).toBe(true);
     expect(res['respuestas']).toEqual({
       v: 2,
@@ -482,14 +474,14 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
   it('una fila con otro código en B no se devuelve aunque su carga diga el código pedido', () => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(fila(OTRO_ACTIVO, cargaDe(CODIGO_ACTIVO, { hippocampus: [el({ c: 'ajena' })] })));
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['respuestas']).toEqual({ v: 2, r: CODIGO_ACTIVO, e: {} });
-    expect(env.get({ accion: 'leer', r: OTRO_ACTIVO })['respuestas']).toEqual({ v: 2, r: OTRO_ACTIVO, e: {} });
+    expect(env.postLeer(CODIGO_ACTIVO)['respuestas']).toEqual({ v: 2, r: CODIGO_ACTIVO, e: {} });
+    expect(env.postLeer(OTRO_ACTIVO)['respuestas']).toEqual({ v: 2, r: OTRO_ACTIVO, e: {} });
   });
 
   it('separa por idioma: es y en de un mismo campo son claves distintas', () => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(fila(CODIGO_ACTIVO, cargaDe(CODIGO_ACTIVO, { hippocampus: [el({ i: 'es' }), el({ i: 'en', d: 'corregir', p: 'x' }), el({ i: undefined })] })));
-    const e = (env.get({ accion: 'leer', r: CODIGO_ACTIVO })['respuestas'] as { e: Record<string, unknown[]> }).e;
+    const e = (env.postLeer(CODIGO_ACTIVO)['respuestas'] as { e: Record<string, unknown[]> }).e;
     expect(e['hippocampus']).toHaveLength(3);
   });
 
@@ -497,7 +489,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
     const env = crearEntorno({ autorizados: AUTORIZADOS });
     const respuestas = [resp({ campo: 'relaciones', idioma: undefined, veredicto: 'corregir', propuesta: 'p' }), resp({ estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [1, 2, 3], version: 'sin-ficha' })];
     env.post(guardarCuerpo(CODIGO_ACTIVO, respuestas));
-    expect((env.get({ accion: 'leer', r: CODIGO_ACTIVO }) as { respuestas: unknown }).respuestas).toEqual(JSON.parse(cargaRevisionV2(CODIGO_ACTIVO, respuestas)));
+    expect((env.postLeer(CODIGO_ACTIVO) as { respuestas: unknown }).respuestas).toEqual(JSON.parse(cargaRevisionV2(CODIGO_ACTIVO, respuestas)));
   });
 
   it('las filas con carga inválida o con un id raro se saltan', () => {
@@ -508,31 +500,31 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
       fila(CODIGO_ACTIVO, cargaDe(CODIGO_ACTIVO, { hippocampus: [el({ d: 'aprobado' })] })),
       fila(CODIGO_ACTIVO, cargaDe(CODIGO_ACTIVO, { hippocampus: [el()] })),
     );
-    expect((env.get({ accion: 'leer', r: CODIGO_ACTIVO })['respuestas'] as { e: object }).e).toEqual({ hippocampus: [el()] });
+    expect((env.postLeer(CODIGO_ACTIVO)['respuestas'] as { e: object }).e).toEqual({ hippocampus: [el()] });
   });
 
-  it.each(VIAS)('la última autorización de ese código manda y la de otro código no cuenta (%s)', (via) => {
+  it('la última autorización de ese código manda y la de otro código no cuenta', () => {
     const env = crearEntorno();
     env.hojas.Autorizaciones.filas.push(
       [CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', '0', 'sí'],
       [CODIGO_ACTIVO, '2026-10-14T09:30:00.000Z', '1', 'no'],
       [OTRO_ACTIVO, '2026-10-14T09:45:00.000Z', '2', 'sí'],
     );
-    expect(leerPor(env, via, CODIGO_ACTIVO)['autorizacion']).toEqual({ version: '1', vago: false });
-    expect(leerPor(env, via, OTRO_ACTIVO)['autorizacion']).toEqual({ version: '2', vago: true });
+    expect(env.postLeer(CODIGO_ACTIVO)['autorizacion']).toEqual({ version: '1', vago: false });
+    expect(env.postLeer(OTRO_ACTIVO)['autorizacion']).toEqual({ version: '2', vago: true });
   });
 
-  it.each(VIAS)('un código sin filas recibe respuestas vacías y autorizacion null (%s)', (via) => {
+  it('un código sin filas recibe respuestas vacías y autorizacion null', () => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el()] })));
     env.hojas.Autorizaciones.filas.push([OTRO_ACTIVO, '2026-10-14T09:00:00.000Z', '1', 'sí']);
-    expect(leerPor(env, via, CODIGO_ACTIVO)).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
+    expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
   });
 
   it('autorizar y luego leer devuelve la autorización escrita', () => {
     const env = crearEntorno();
     env.post(autorizarCuerpo(CODIGO_ACTIVO, { vago: true }));
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['autorizacion']).toEqual({ version: '1', vago: true });
+    expect(env.postLeer(CODIGO_ACTIVO)['autorizacion']).toEqual({ version: VERSION_AUTORIZACION, vago: true });
   });
 });
 
@@ -585,13 +577,13 @@ describe('(g) bloqueo y fallos de escritura (R6.4)', () => {
   });
 
   it('si falta la pestaña de lectura, leer da interno', () => {
-    expect(crearEntorno({ sinPestana: 'Respuestas' }).get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: false, error: 'interno' });
-    expect(crearEntorno({ sinPestana: 'Autorizaciones' }).get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: false, error: 'interno' });
+    expect(crearEntorno({ sinPestana: 'Respuestas' }).postLeer(CODIGO_ACTIVO)).toEqual({ ok: false, error: 'interno' });
+    expect(crearEntorno({ sinPestana: 'Autorizaciones' }).postLeer(CODIGO_ACTIVO)).toEqual({ ok: false, error: 'interno' });
   });
 
   it('leer no toma el bloqueo ni escribe', () => {
     const env = crearEntorno();
-    env.get({ accion: 'leer', r: CODIGO_ACTIVO });
+    expect(env.postLeer(CODIGO_ACTIVO)['ok']).toBe(true);
     expect(env.candado.esperas).toEqual([]);
     expect(env.candado.liberaciones).toBe(0);
     expect(env.hojas.Respuestas.llamadasSetValues).toBe(0);
@@ -704,7 +696,7 @@ describe('(i) guardar exige la autorización vigente (S1, #157)', () => {
 
     it('leer sin autorización sigue dando ok con autorizacion null y autorizar no la exige', () => {
       const env = crearEntorno();
-      expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
+      expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
       expect(env.post(autorizarCuerpo(CODIGO_ACTIVO))).toEqual({ ok: true });
     });
   });
@@ -715,8 +707,7 @@ describe('(j) leer por POST (S4, #162)', () => {
   const leerCuerpo = (extra: Record<string, unknown> = {}) => JSON.stringify({ accion: 'leer', r: CODIGO_ACTIVO, ...extra });
   const carga = (r: string) => JSON.stringify({ v: 2, r, e: { hippocampus: [{ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: '2026-10-14T09:00:00.000Z' }] } });
 
-  it('POST y GET dan la misma respuesta con las hojas pobladas', () => {
-    const env = crearEntorno();
+  const poblar = (env: Entorno) => {
     env.hojas.Respuestas.filas.push(
       ['2026-10-14T10:00:00.000Z', OTRO_ACTIVO, 'hippocampus', carga(OTRO_ACTIVO)],
       ['2026-10-14T10:00:01.000Z', CODIGO_ACTIVO, 'hippocampus', carga(CODIGO_ACTIVO)],
@@ -725,13 +716,23 @@ describe('(j) leer por POST (S4, #162)', () => {
       [CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', VERSION_AUTORIZACION, 'sí'],
       [OTRO_ACTIVO, '2026-10-14T09:10:00.000Z', '1', 'no'],
     );
+  };
+
+  it('el POST con las hojas pobladas devuelve solo lo del código', () => {
+    const env = crearEntorno();
+    poblar(env);
     const porPost = env.postLeer(CODIGO_ACTIVO);
-    const porGet = env.get({ accion: 'leer', r: CODIGO_ACTIVO });
     expect(porPost['ok']).toBe(true);
-    expect(porPost).toEqual(porGet);
     expect(porPost['autorizacion']).toEqual({ version: VERSION_AUTORIZACION, vago: true });
     expect(JSON.stringify(porPost['respuestas'])).toContain('ubicacion');
     expect(JSON.stringify(porPost)).not.toContain(OTRO_ACTIVO);
+  });
+
+  it('el GET con las mismas hojas da formato y no lee ninguna pestaña (#169)', () => {
+    const env = crearEntorno();
+    poblar(env);
+    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: false, error: 'formato' });
+    expect(env.hojas.Respuestas.lecturas + env.hojas.Autorizaciones.lecturas + env.hojas.Padrón.lecturas).toBe(0);
   });
 
   it.each([
@@ -793,7 +794,6 @@ describe('(k) caché del padrón (S3, #162)', () => {
     expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { version: VERSION_AUTORIZACION }))).toEqual({ ok: true });
     expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))['ok']).toBe(true);
     expect(leer(env)['ok']).toBe(true);
-    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })['ok']).toBe(true);
     expect(lecturasPadron(env)).toBe(1);
   });
 
@@ -893,19 +893,260 @@ describe('(k) caché del padrón (S3, #162)', () => {
   });
 });
 
-describe('(l) versión de la autorización (A2, #162)', () => {
-  it('la constante del script es la de la app y es la 2', () => {
+describe('(l) versión de la autorización (A2, #162, #168)', () => {
+  it('la constante del script es la de la app y es la 3', () => {
     const delScript = /const VERSION_AUTORIZACION = '([^']+)';/.exec(readFileSync(RUTA_SCRIPT, 'utf8'))?.[1];
     expect(delScript).toBe(VERSION_AUTORIZACION);
-    expect(VERSION_AUTORIZACION).toBe('2');
+    expect(VERSION_AUTORIZACION).toBe('3');
   });
 
-  it('una fila de la versión 1 ya no deja guardar y la de la versión 2 sí', () => {
+  it('las filas de las versiones 1 y 2 ya no dejan guardar y la de la versión 3 sí', () => {
     const env = crearEntorno();
     env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:00:00.000Z', '1', 'no']);
     expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'sin_autorizacion' });
     env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:01:00.000Z', '2', 'no']);
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'sin_autorizacion' });
+    env.hojas.Autorizaciones.filas.push([CODIGO_ACTIVO, '2026-10-14T09:02:00.000Z', '3', 'no']);
     expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))['ok']).toBe(true);
+  });
+});
+
+describe('(m) el GET ya no lee (S4, #169)', () => {
+  const GET_CASOS: [string, Record<string, string>][] = [
+    ['sin parámetros', {}],
+    ['leer con un código activo', { accion: 'leer', r: CODIGO_ACTIVO }],
+    ['leer con un código inactivo', { accion: 'leer', r: CODIGO_INACTIVO }],
+    ['leer con un código ausente', { accion: 'leer', r: CODIGO_AUSENTE }],
+    ['leer sin r', { accion: 'leer' }],
+    ['otra acción', { accion: 'guardar', r: CODIGO_ACTIVO }],
+  ];
+  const FORMATO = { ok: false, error: 'formato' };
+  type DoGet = (e?: unknown) => { getContent(): string };
+
+  it.each(GET_CASOS)('un GET %s da formato', (_n, parametros) => {
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
+    expect(env.get(parametros)).toEqual(FORMATO);
+  });
+
+  it('un GET sin evento o con un evento vacío también da formato', () => {
+    const env = crearEntorno();
+    const doGet = env.fn<DoGet>('doGet');
+    expect(JSON.parse(doGet(undefined).getContent())).toEqual(FORMATO);
+    expect(JSON.parse(doGet({}).getContent())).toEqual(FORMATO);
+  });
+
+  it('ningún GET lee una pestaña, toca la caché, toma el bloqueo ni escribe, y todas las salidas son JSON sin el código', () => {
+    const env = crearEntorno({ autorizados: AUTORIZADOS, vago: true });
+    for (const [, parametros] of GET_CASOS) env.get(parametros);
+    expect(env.hojas.Padrón.lecturas).toBe(0);
+    expect(env.hojas.Respuestas.lecturas).toBe(0);
+    expect(env.hojas.Autorizaciones.lecturas).toBe(0);
+    expect(env.puts).toEqual([]);
+    expect(env.candado.esperas).toEqual([]);
+    expect(env.candado.liberaciones).toBe(0);
+    expect(env.hojas.Respuestas.llamadasSetValues + env.hojas.Autorizaciones.llamadasSetValues + env.hojas.Padrón.llamadasSetValues).toBe(0);
+    expect(env.salidas).toHaveLength(GET_CASOS.length);
+    for (const s of env.salidas) {
+      expect(s.mime).toBe(MIME_JSON);
+      expect(s.contenido).not.toContain(CODIGO_ACTIVO);
+    }
+  });
+
+  it('sin la pestaña Padrón el GET da formato y no interno', () => {
+    const env = crearEntorno({ sinPestana: 'Padrón' });
+    expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual(FORMATO);
+    expect(env.hojas.Padrón.lecturas).toBe(0);
+  });
+
+  it('130 GET con un código activo no gastan el ritmo: después 120 POST leer siguen pasando', () => {
+    const env = crearEntorno();
+    for (let i = 0; i < 130; i++) expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual(FORMATO);
+    for (let i = 0; i < 120; i++) expect(env.postLeer(CODIGO_ACTIVO)['ok']).toBe(true);
+  });
+});
+
+describe('(n) autorizar solo con la versión vigente (#169)', () => {
+  it.each([true, false])('con la versión vigente y vago %s escribe la fila', (vago) => {
+    const env = crearEntorno();
+    expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { vago }))).toEqual({ ok: true });
+    expect(env.escritas('Autorizaciones')).toEqual([[CODIGO_ACTIVO, isoDe(env), VERSION_AUTORIZACION, vago ? 'sí' : 'no']]);
+  });
+
+  it.each([`${VERSION_AUTORIZACION}-anterior`, `0${VERSION_AUTORIZACION}`, 'vieja', 'a'.repeat(40)])('la versión %j, de forma válida pero no vigente, da formato sin escribir ni tomar el bloqueo', (version) => {
+    const env = crearEntorno();
+    expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { version }))).toEqual({ ok: false, error: 'formato' });
+    expect(env.escritas('Autorizaciones')).toEqual([]);
+    expect(env.hojas.Autorizaciones.llamadasSetValues).toBe(0);
+    expect(env.candado.esperas).toEqual([]);
+  });
+
+  it('un autorizar rechazado por la versión no habilita guardar', () => {
+    const env = crearEntorno();
+    expect(env.post(autorizarCuerpo(CODIGO_ACTIVO, { version: 'vieja' }))).toEqual({ ok: false, error: 'formato' });
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'sin_autorizacion' });
+    expect(env.escritas('Respuestas')).toEqual([]);
+  });
+
+  it('un código inactivo con versión vieja da codigo_no_activo: el padrón va primero', () => {
+    const env = crearEntorno();
+    expect(env.post(autorizarCuerpo(CODIGO_INACTIVO, { version: 'vieja' }))).toEqual({ ok: false, error: 'codigo_no_activo' });
+    expect(env.escritas('Autorizaciones')).toEqual([]);
+  });
+});
+
+describe('(o) guardar y la casilla del vago (S2, #166)', () => {
+  const VAGO = 'vagus-nerve-x';
+  const FORMATO = { ok: false, error: 'formato' };
+  const SIN_AUT = { ok: false, error: 'sin_autorizacion' };
+  const ruta = resp({ estructura: VAGO, campo: 'trazo:Vagus_nerve.R#t01' });
+  const aut = (vago: 'sí' | 'no' | 'sí ', t: string): Celda[] => [CODIGO_ACTIVO, t, VERSION_AUTORIZACION, vago];
+  const filasRespuestas = (env: Entorno) => env.escritas('Respuestas');
+
+  /** [nombre, elemento corto, ¿del vago?] */
+  const CASOS_VAGO: [string, Record<string, unknown>, boolean][] = [
+    ['campo trazo:', { c: 'trazo:Vagus_nerve.R#t01' }, true],
+    ['campo trazado_', { c: 'trazado_derecho' }, true],
+    ['campo trazado_ largo', { c: 'trazado_vago_toracico_derecho' }, true],
+    ['malla', { c: 'nombre', m: 'm' }, true],
+    ['ramo', { c: 'nombre', a: 'no_se' }, true],
+    ['ficha normal', { c: 'nombre' }, false],
+    ['posicion', { c: 'posicion' }, false],
+    ['relevancia.0', { c: 'relevancia.0' }, false],
+    ['trazado sin guion bajo', { c: 'trazado' }, false],
+    ['prefijo en medio', { c: 'xtrazo:a' }, false],
+  ];
+
+  it.each(CASOS_VAGO)('esRespuestaDelVago del script y del importador coinciden: %s', (_n, el, esperado) => {
+    const env = crearEntorno();
+    const delScript = env.fn<(e: unknown) => boolean>('esRespuestaDelVago')(el);
+    const delImportador = esRespuestaDelVago({ campo: el['c'] as string, malla: el['m'] as string | undefined, ramo: el['a'] as string | undefined });
+    expect(delScript).toBe(delImportador);
+    expect(delScript).toBe(esperado);
+  });
+
+  const CONDICIONES: [string, Respuesta][] = [
+    ['un campo que empieza por trazo:', resp({ estructura: VAGO, campo: 'trazo:Vagus_nerve.R#t01' })],
+    ['un campo que empieza por trazado_', resp({ estructura: VAGO, campo: 'trazado_derecho' })],
+    ['una malla', resp({ estructura: VAGO, campo: 'nombre', malla: 'm' })],
+    ['un ramo', resp({ estructura: VAGO, campo: 'nombre', ramo: 'no_se' })],
+  ];
+
+  it.each(CONDICIONES)('con la casilla en no, %s rechaza la carga con formato, sin escribir ni tomar el bloqueo', (_n, r) => {
+    const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [r]))).toEqual(FORMATO);
+    expect(filasRespuestas(env)).toEqual([]);
+    expect(env.hojas.Respuestas.llamadasSetValues).toBe(0);
+    expect(env.candado.esperas).toEqual([]);
+  });
+
+  it.each(CONDICIONES)('con la casilla en sí, %s se guarda', (_n, r) => {
+    const env = crearEntorno({ autorizados: [CODIGO_ACTIVO], vago: true });
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [r]))['ok']).toBe(true);
+    expect(filasRespuestas(env)).toHaveLength(1);
+  });
+
+  it('una carga mixta (una normal y una del vago) con la casilla en no se rechaza entera', () => {
+    const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp(), ruta]))).toEqual(FORMATO);
+    expect(filasRespuestas(env)).toEqual([]);
+  });
+
+  it('una carga sin respuestas del vago, incluida una ficha de vagus-nerve-x, se guarda con la casilla en no', () => {
+    const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+    expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [resp(), resp({ estructura: VAGO, campo: 'nombre' })]))['ok']).toBe(true);
+    expect(filasRespuestas(env)).toHaveLength(1);
+  });
+
+  it('manda la última fila: sí y después no rechaza; no y después sí guarda; sí con espacio final cuenta como sí', () => {
+    const siLuegoNo = crearEntorno();
+    siLuegoNo.hojas.Autorizaciones.filas.push(aut('sí', 't1'), aut('no', 't2'));
+    expect(siLuegoNo.post(guardarCuerpo(CODIGO_ACTIVO, [ruta]))).toEqual(FORMATO);
+
+    const noLuegoSi = crearEntorno();
+    noLuegoSi.hojas.Autorizaciones.filas.push(aut('no', 't1'), aut('sí', 't2'));
+    expect(noLuegoSi.post(guardarCuerpo(CODIGO_ACTIVO, [ruta]))['ok']).toBe(true);
+
+    const conEspacio = crearEntorno();
+    conEspacio.hojas.Autorizaciones.filas.push(aut('sí ', 't1'));
+    expect(conEspacio.post(guardarCuerpo(CODIGO_ACTIVO, [ruta]))['ok']).toBe(true);
+  });
+
+  describe('orden de las comprobaciones', () => {
+    it('sin autorización y con un trazo da sin_autorizacion', () => {
+      const env = crearEntorno();
+      expect(env.post(guardarCuerpo(CODIGO_ACTIVO, [ruta]))).toEqual(SIN_AUT);
+    });
+
+    it('con la casilla en no, una carga mal formada con un trazo da formato y no escribe', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+      const carga = JSON.stringify({ v: 2, r: CODIGO_ACTIVO, e: { [VAGO]: [{ c: 'trazo:Vagus_nerve.R', i: 'es', d: 'aprobado', s: 'sin-ficha' }] } });
+      expect(env.post(JSON.stringify({ accion: 'guardar', carga }))).toEqual(FORMATO);
+      expect(filasRespuestas(env)).toEqual([]);
+    });
+
+    const grande = [
+      ...Array.from({ length: 12 }, (_, i) => resp({ campo: `fuente.${i}`, veredicto: 'corregir', propuesta: 'x'.repeat(4000) })),
+      resp({ estructura: VAGO, campo: 'trazo:Vagus_nerve.R', veredicto: 'corregir', propuesta: 'x'.repeat(4000) }),
+    ];
+
+    it('con la casilla en sí, 13 respuestas de 4000 caracteres con un trazo dan demasiado_grande', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO], vago: true });
+      expect(cargaRevisionV2(CODIGO_ACTIVO, grande).length).toBeGreaterThan(50000);
+      expect(env.post(guardarCuerpo(CODIGO_ACTIVO, grande))).toEqual({ ok: false, error: 'demasiado_grande' });
+    });
+
+    it('con la casilla en no, esa misma carga da formato: el vago va antes del tamaño de la celda', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+      expect(env.post(guardarCuerpo(CODIGO_ACTIVO, grande))).toEqual(FORMATO);
+    });
+  });
+
+  describe('con la cola real de la app', () => {
+    const fecha = '2026-10-14T09:59:00.000Z';
+    const normales = [resp({ campo: 'ubicacion', fecha }), resp({ campo: 'que_es', fecha }), resp({ campo: 'nombre', fecha })];
+    const trazo = resp({ estructura: VAGO, campo: 'trazo:Vagus_nerve.R', fecha });
+
+    /** Envía la cola como el panel: lote a lote, hasta que no queda nada por enviar o la cola se detiene. */
+    function enviarTodo(env: Entorno) {
+      const lista = [...normales, trazo];
+      let estado = estadoInicial();
+      let guardados = 0;
+      for (let vuelta = 0; vuelta < 20; vuelta++) {
+        const lote = armarLotes(CODIGO_ACTIVO, porEnviar(lista, estado.confirmadas, estado.rechazadas), estado.tope)[0];
+        if (!lote) break;
+        const res = env.post(cuerpoGuardar(CODIGO_ACTIVO, lote));
+        guardados++;
+        const resultado: ResultadoEnvio = res['ok'] ? { ok: true, recibidas: new Set(res['recibidas'] as string[]) } : { ok: false, error: res['error'] as TipoErrorCanal };
+        const sig = trasEnvio(estado, lote, resultado, Date.parse(fecha));
+        estado = sig.estado;
+        if (sig.espera === null) break;
+      }
+      return { estado, guardados, lista };
+    }
+
+    it('con la casilla en no termina sin bucle en 5 guardar: confirma las 3 normales y deja el trazo rechazado y pendiente', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+      const { estado, guardados, lista } = enviarTodo(env);
+      expect(guardados).toBe(5);
+      for (const n of normales) expect(estado.confirmadas[claveRespuesta(n)]).toBe(fecha);
+      expect(Object.keys(estado.confirmadas)).toHaveLength(3);
+      expect(estado.rechazadas[claveRespuesta(trazo)]).toBe(fecha);
+      expect(pendientes(lista, estado.confirmadas).map(claveRespuesta)).toEqual([claveRespuesta(trazo)]);
+      expect(porEnviar(lista, estado.confirmadas, estado.rechazadas)).toEqual([]);
+      // Las 3 normales quedaron en las filas que sí se escribieron (la partición las separó en dos) y ninguna es un trazo.
+      const escritas = filasRespuestas(env).flatMap((f) => Object.values((JSON.parse(String(f[3])) as { e: Record<string, unknown[]> }).e).flat());
+      expect(escritas).toHaveLength(3);
+      for (const f of filasRespuestas(env)) expect(String(f[3])).not.toContain('trazo:');
+    });
+
+    it('con la casilla en sí, un solo guardar confirma las 4', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO], vago: true });
+      const { estado, guardados, lista } = enviarTodo(env);
+      expect(guardados).toBe(1);
+      expect(Object.keys(estado.confirmadas)).toHaveLength(4);
+      expect(pendientes(lista, estado.confirmadas)).toEqual([]);
+      expect(filasRespuestas(env)).toHaveLength(1);
+    });
   });
 });
 

@@ -3,7 +3,8 @@
 // con el fantasma opcional del lado oculto, el relleno de la cara del corte con las caras traseras de las mallas
 // cerradas (ADR 0011), el contorno del corte (líneas calculadas con el BVH, sin relleno: en las mallas abiertas, y en
 // todas las cortadas cuando el relleno se apaga por lentitud o por un shader que no compila) y el toque que descarta
-// lo que quedó oculto (`raycastCorte`).
+// lo que quedó oculto (`raycastCorte`). Los marcadores del encéfalo siguen la misma regla de los planos, decidida en CPU
+// por el centro del punto (`vistaDeMarcador`): visible, fantasma sin toque u oculto.
 // Todo lo que se prueba vive aquí, sin montar el Canvas; `Visor.tsx` solo lo usa.
 import * as THREE from 'three';
 import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
@@ -11,8 +12,10 @@ import cerradasJson from '../config/mallas-cerradas.json';
 import { esFragmentable, esMallaDeToque, nodos, origenDe } from '../data/atlas';
 import {
   EJE,
+  enEncefalo,
   esEncefalo,
   hayCortes,
+  ocultoPorCortes,
   piezasCruzadas,
   piezasEncefalo,
   planoDe,
@@ -23,6 +26,7 @@ import {
   type EstadoCuadros,
   type Rango,
 } from '../lib/cortes';
+import type { Vec3 } from '../lib/explosion';
 import type { Caja } from '../lib/inventario';
 
 /** Mallas del encéfalo cerradas (sin bordes abiertos): solo ellas se rellenan, porque su cara trasera tapa el hueco. */
@@ -106,6 +110,25 @@ export function seVeConRecorte(p: THREE.Vector3, planos: readonly THREE.Plane[] 
 export function planosDePieza(pieza: string, conCortes: boolean): THREE.Plane[] | null {
   if (conCortes && esEncefalo(pieza)) return PLANOS_CORTE;
   return esFragmentable(pieza) ? null : PLANOS_RECORRIDO;
+}
+
+/** Cómo se ve un marcador con los planos de corte: normal, translúcido sin toque (fantasma) o sin dibujar. */
+export type VistaMarcador = 'visible' | 'fantasma' | 'oculto';
+
+/**
+ * Vista de un marcador (R1.4, R2.1, R5.2, R5.3). Solo se cortan los del encéfalo (padre bajo `g-brain`); los del vago y
+ * los órganos se ven enteros. Se decide por el centro del punto (metros, en el mundo) con la misma regla de las piezas:
+ * un punto sobre el plano se ve. Del lado oculto, `fantasmaCorte` elige entre fantasma y oculto.
+ */
+export function vistaDeMarcador(
+  pos: Vec3,
+  padre: string | null,
+  s: { cortes: Cortes; fantasmaCorte: boolean; cajas: Record<string, Caja> },
+): VistaMarcador {
+  if (!hayCortes(s.cortes)) return 'visible';
+  if (!enEncefalo(padre)) return 'visible';
+  if (!ocultoPorCortes(pos, s.cortes, rangoActual(s.cajas))) return 'visible';
+  return s.fantasmaCorte ? 'fantasma' : 'oculto';
 }
 
 /** `raycast` del encéfalo con cortes: descarta los impactos del lado oculto de cualquier plano activo. */
@@ -339,11 +362,13 @@ export function crearLineaContorno(matriz: THREE.Matrix4, color: THREE.ColorRepr
 }
 
 /**
- * Recalcula las líneas solo si cambió la referencia de `cortes` o de `rango` desde la última vez. Reemplaza la
- * geometría de la línea (libera la anterior) y devuelve true; false si no había nada que hacer. Muta `linea`.
+ * Recalcula las líneas solo si cambió la referencia de `cortes` o de `rango`, o el árbol de la geometría, desde la última
+ * vez (el índice de toque llega después del primer cuadro: sin árbol la línea queda vacía y debe rehacerse cuando llega).
+ * Reemplaza la geometría de la línea (libera la anterior) y devuelve true; false si no había nada que hacer. Muta `linea`.
  */
 export function refrescarContorno(linea: THREE.LineSegments, geometria: THREE.BufferGeometry, cortes: Cortes, rango: Rango): boolean {
-  if (linea.userData.cortes === cortes && linea.userData.rango === rango) return false;
+  const arbol = geometria.boundsTree ?? null;
+  if (linea.userData.cortes === cortes && linea.userData.rango === rango && linea.userData.arbol === arbol) return false;
   const nueva = new THREE.BufferGeometry();
   nueva.setAttribute('position', new THREE.Float32BufferAttribute(segmentosDeCorte(geometria, linea.matrix, planosActivos(cortes, rango)), 3));
   const anterior = linea.geometry;
@@ -351,6 +376,7 @@ export function refrescarContorno(linea: THREE.LineSegments, geometria: THREE.Bu
   anterior.dispose();
   linea.userData.cortes = cortes;
   linea.userData.rango = rango;
+  linea.userData.arbol = arbol;
   return true;
 }
 
@@ -434,6 +460,8 @@ const CELDAS = 40;
  *   el corte, sobre la cara del corte.
  * - `'oculto'`: el rayo cruza `objetivo` solo del lado oculto de los planos: ningún impacto de ninguna candidata es
  *   visible y al menos uno es de `objetivo`. Es un clic que no debe tocar nada.
+ * Null también si alguna candidata aún no tiene árbol (el índice de toque se arma después del primer cuadro): sin todos
+ * los árboles no puede asegurar qué impacto se ve. Quien consulta repite la pregunta hasta que haya respuesta.
  */
 export function puntoDeCorte(
   objetivo: string,
@@ -442,6 +470,7 @@ export function puntoDeCorte(
   planos: readonly THREE.Plane[] = PLANOS_CORTE,
   lado: 'corte' | 'oculto' = 'corte',
 ): { x: number; y: number } | null {
+  if (candidatas.some((c) => !c.malla.geometry.boundsTree)) return null;
   camara.updateMatrixWorld();
   const cajas = candidatas.map((c) => {
     c.malla.updateWorldMatrix(true, false);

@@ -69,6 +69,9 @@ test('con ?medir=1, el informe cuenta la descarga de la precarga y una preparaci
   await expect(panel).toBeVisible();
   await modeloCargado(page);
   await expect(page.getByTestId('medicion-primer-cuadro')).toHaveText(/\d+ ms/);
+  // El índice de toque se arma después del primer cuadro: se espera a que el panel lo tenga antes de copiar.
+  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice-listo')).toHaveText(/\d+ ms/);
   await panel.getByRole('button', { name: 'Copiar resultados' }).click();
   await expect(panel.getByRole('button', { name: 'Copiado' })).toBeVisible();
   const copiado = await page.evaluate(() => navigator.clipboard.readText());
@@ -89,13 +92,22 @@ test('con ?medir=1, el informe cuenta la descarga de la precarga y una preparaci
   expect(Math.abs(inicio - Math.round(conCuerpo!.startTime))).toBeLessThanOrEqual(1);
   // La preparación no incluye la espera por el código (+1 ms por el redondeo de cada cifra).
   expect(preparar).toBeLessThanOrEqual(primerCuadro - codigo + 1);
-  // Las tres partes del desglose suman la preparación (±2 ms por el redondeo de cada cifra).
+  // Las dos partes del desglose suman la preparación (±2 ms por el redondeo de cada cifra).
   const leer = numero(/Leer el modelo \(parseo y decodificación\): (\d+) ms/);
-  const indice = numero(/Índice de toque \(árboles BVH\): (\d+) ms/);
   const armar = numero(/Armar las piezas y sus cajas: (\d+) ms/);
-  expect(Math.abs(leer + indice + armar - preparar)).toBeLessThanOrEqual(2);
-  // Construir los árboles BVH de cientos de mallas toma mucho más que 50 ms: un valor menor diría
-  // que la marca quedó antes de construirlos (solo el recorrido de la escena tarda unos 20 ms).
+  expect(Math.abs(leer + armar - preparar)).toBeLessThanOrEqual(2);
+  // El índice de toque va aparte: empieza después del primer cuadro y termina más tarde.
+  const indice = numero(/Índice de toque \(árboles BVH\): (\d+) ms/);
+  const indiceInicio = numero(/Índice de toque \(árboles BVH\): \d+ ms \(empezó a los (\d+) ms/);
+  const indiceListo = numero(/Índice de toque \(árboles BVH\): \d+ ms \(empezó a los \d+ ms, listo a los (\d+) ms\)/);
+  // Construir los árboles BVH de cientos de mallas toma mucho más que 50 ms: un valor menor diría que la marca
+  // quedó fuera de la construcción.
   expect(indice).toBeGreaterThan(50);
+  expect(indiceInicio).toBeGreaterThanOrEqual(primerCuadro);
+  // Si el índice se armara antes del primer cuadro, el primer cuadro caería después de que el índice quedó listo.
+  // Medido en este entorno (sin GPU), en ms: con el índice después del primer cuadro, inicio - primer cuadro = +325 y
+  // listo - primer cuadro = +1518; con el índice armado antes (en el useMemo, como era), -1423 y -408. Los umbrales
+  // (0 y 50) caen entre los dos.
+  expect(indiceListo - primerCuadro).toBeGreaterThan(50);
   expect(copiado).toContain('Cuadros por segundo (de 1 a 10 s tras el primer cuadro)');
 });

@@ -13,6 +13,7 @@ import {
   estructuras,
   marcadores,
   nodos,
+  padreDeEntrada,
   piezaDeMalla,
   piezasDeAncla,
   piezasDeEntrada,
@@ -22,7 +23,7 @@ import {
 import type { Idioma, Marcador } from '../data/tipos';
 import { acercar, CERO, promedio, type Vec3 } from '../lib/explosion';
 import type { Vista } from '../lib/enlaces';
-import { MARCA_INDICE_TOQUE, MARCA_MODELO_LEIDO, MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
+import { MARCA_INDICE_INICIO, MARCA_INDICE_TOQUE, MARCA_MODELO_LEIDO, MARCA_MODELO_LISTO, MARCA_PRIMER_CUADRO } from '../lib/medicion';
 import { crearLectorMovimiento } from '../lib/movimiento';
 import { DIRECCIONES, desfaseVerticalPx, distanciaEncuadre, esSeleccionable } from '../lib/vistas';
 import { nombre, nombrePieza } from '../lib/nombres';
@@ -35,7 +36,8 @@ import { marcarUnaVez, useMetricas } from './metricas';
 import { punteado } from './acabados';
 import { esEncefalo, hayCortes, type EstadoCuadros } from '../lib/cortes';
 import ContornoCorte from './ContornoCorte';
-import { actualizarPlanos, alCuadro, configurarRenderer, construirBvh, crearMallaFantasma, crearMallaRelleno, mallasRellenables, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, type CandidataCorte } from './recorte';
+import { arrancarIndice, colaDeIndice, PRESUPUESTO_INDICE_MS, programarTarea } from './indiceToque';
+import { actualizarPlanos, alCuadro, configurarRenderer, crearMallaFantasma, crearMallaRelleno, mallasRellenables, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasFantasmaCorte, planoRecorrido, PLANOS_CORTE, planosDePieza, puntoDeCorte, rangoActual, raycastCorte, raycastNulo, SIN_RECORTE, vistaDeMarcador, type CandidataCorte } from './recorte';
 import RutasTrazadas from './RutasTrazadas';
 import { useDensidadAdaptativa } from './useDensidadAdaptativa';
 
@@ -273,8 +275,6 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       const nombre = (o.userData.name as string | undefined) ?? o.name;
       const pieza = piezaDeMalla(nombre);
       if (!pieza) return;
-      // Árbol de intersección para tocar rápido aun con un millón de triángulos.
-      if (!mesh.geometry.boundsTree) mesh.geometry.boundsTree = construirBvh(mesh.geometry);
       const l = res.get(pieza) ?? [];
       l.push({
         nombre,
@@ -285,7 +285,6 @@ function Modelo({ idioma }: { idioma: Idioma }) {
       });
       res.set(pieza, l);
     });
-    marcarUnaVez(MARCA_INDICE_TOQUE);
     return res;
   }, [gltf]);
 
@@ -322,9 +321,45 @@ function Modelo({ idioma }: { idioma: Idioma }) {
         <Pieza key={id} id={id} mallas={mallas} idioma={idioma} />
       ))}
       <FantasmaCorte porPieza={porPieza} />
+      <IndiceToque porPieza={porPieza} />
       {conCortes && <ContornoCorte porPieza={porPieza} />}
     </>
   );
+}
+
+/**
+ * Índice de toque (issue 178): arma los árboles BVH de las mallas por tandas, después del primer cuadro. La primera
+ * tanda es una tarea del navegador y corre después del `gl.render` del cuadro en que `cargado` pasó a true, así que el
+ * primer cuadro nunca espera el índice. Mientras falta el árbol de una malla, `acceleratedRaycast` usa el raycast de
+ * three (el toque sigue funcionando, más lento) y el contorno del corte queda vacío hasta que llega el árbol.
+ */
+function IndiceToque({ porPieza }: { porPieza: Map<string, MallaCargada[]> }) {
+  const arrancado = useRef(false);
+  const cancelar = useRef<(() => void) | null>(null);
+  useFrame(() => {
+    // La misma condición con que `MedidorCuadros` marca el primer cuadro.
+    if (arrancado.current || !useAtlas.getState().cargado) return;
+    arrancado.current = true;
+    cancelar.current = arrancarIndice(colaDeIndice([...porPieza.values()].flat().map((m) => m.geometria)), {
+      presupuestoMs: PRESUPUESTO_INDICE_MS,
+      ahora: () => performance.now(),
+      programar: programarTarea,
+      esperar: (fn) => setTimeout(fn, 100),
+      // Solo E2E (DEV): permite mirar la app mientras el índice no está.
+      retenido: () => import.meta.env.DEV && (window as unknown as { __retenerIndice?: boolean }).__retenerIndice === true,
+      alEmpezar: () => marcarUnaVez(MARCA_INDICE_INICIO),
+      alTerminar: () => marcarUnaVez(MARCA_INDICE_TOQUE),
+    });
+  });
+  useEffect(
+    () => () => {
+      cancelar.current?.();
+      cancelar.current = null;
+      arrancado.current = false;
+    },
+    [porPieza],
+  );
+  return null;
 }
 
 /**
@@ -390,6 +425,14 @@ export interface PuntoDibujado {
   id: string;
   lado: 'l' | 'r' | null;
   propuesta: boolean;
+  /** Translúcido por estar del lado oculto de un corte (sin toque). */
+  fantasma: boolean;
+  /** Se dibuja por encima de todo (`depthTest` apagado): el seleccionado que se ve. */
+  encima: boolean;
+  /** Opacidad del material: `OPACIDAD_FANTASMA_CORTE` en fantasma, 1 en el resto. */
+  opacidad: number;
+  /** Si el material escribe profundidad: no lo hace el fantasma. */
+  escribeProfundidad: boolean;
   pos: [number, number, number];
 }
 
@@ -403,34 +446,64 @@ function suscribirPrueba(cb: () => void) {
 }
 
 /** Solo pruebas E2E: se expone en DEV desde src/main.tsx. Inyecta marcadores y lee los puntos dibujados. */
-export const marcadoresDePrueba: { inyectar(lista: Marcador[]): void; puntos: (() => PuntoDibujado[]) | null } = {
+export const marcadoresDePrueba: {
+  inyectar(lista: Marcador[]): void;
+  puntos: (() => PuntoDibujado[]) | null;
+  /** Posición en px CSS del viewport de un punto del mundo (para tocar un marcador en las pruebas). */
+  enPantalla: ((pos: [number, number, number]) => { x: number; y: number }) | null;
+} = {
   inyectar(lista) {
     extraPrueba = [...lista];
     for (const cb of oyentesPrueba) cb();
   },
   puntos: null,
+  enPantalla: null,
 };
 
 /**
  * Marcadores (SPEC sección 6): lo que no tiene malla. Con posición propia se dibuja uno o un punto por lado y
  * sigue a su ancla al separar. Sin posición y con ancla, en el centro de cada pieza del ancla.
+ * Con cortes (F8), los del encéfalo cuyo centro queda del lado oculto no se dibujan, o se ven como fantasma (translúcidos
+ * y sin toque) con "Fantasma"; los del vago no se cortan (R2.1). La posición nunca cambia: solo el material y el toque.
  */
 function Marcadores({ idioma }: { idioma: Idioma }) {
   const cargado = useAtlas((s) => s.cargado);
   const extra = useSyncExternalStore(suscribirPrueba, () => extraPrueba);
   const grupo = useRef<THREE.Group>(null);
+  const obtener = useThree((s) => s.get);
   useEffect(() => {
     marcadoresDePrueba.puntos = () =>
       (grupo.current?.children ?? []).flatMap((obj) => {
-        const u = obj.userData as { marcador?: string; lado?: 'l' | 'r' | null; propuesta?: boolean };
+        const u = obj.userData as { marcador?: string; lado?: 'l' | 'r' | null; propuesta?: boolean; fantasma?: boolean };
         if (!u.marcador) return [];
         const p = obj.getWorldPosition(new THREE.Vector3()).toArray();
-        return [{ id: u.marcador, lado: u.lado ?? null, propuesta: u.propuesta ?? false, pos: [p[0], p[1], p[2]] as [number, number, number] }];
+        return [
+          {
+            id: u.marcador,
+            lado: u.lado ?? null,
+            propuesta: u.propuesta ?? false,
+            fantasma: u.fantasma ?? false,
+            encima: ((obj as THREE.Mesh).material as THREE.Material).depthTest === false,
+            opacidad: ((obj as THREE.Mesh).material as THREE.Material).opacity,
+            escribeProfundidad: ((obj as THREE.Mesh).material as THREE.Material).depthWrite,
+            pos: [p[0], p[1], p[2]] as [number, number, number],
+          },
+        ];
       });
+    marcadoresDePrueba.enPantalla = (pos) => {
+      const { camera, gl } = obtener();
+      const ndc = new THREE.Vector3(...pos).project(camera);
+      const r = gl.domElement.getBoundingClientRect();
+      return { x: r.left + ((ndc.x + 1) / 2) * r.width, y: r.top + ((1 - ndc.y) / 2) * r.height };
+    };
     return () => {
       marcadoresDePrueba.puntos = null;
+      marcadoresDePrueba.enPantalla = null;
     };
-  }, []);
+  }, [obtener]);
+  const cortes = useAtlas((s) => s.cortes);
+  const fantasmaCorte = useAtlas((s) => s.fantasmaCorte);
+  const cajas = useAtlas((s) => s.cajas);
   const seleccion = useAtlas((s) => s.seleccion.entrada);
   const respuestas = useAtlas((s) => s.respuestas);
   // Los marcadores con ancla siguen a su pieza cuando se fragmenta.
@@ -445,7 +518,7 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
   const visibles = useMemo(() => new Set(piezasVisibles({ ocultas, aislar })), [ocultas, aislar]);
   if (!cargado) return null;
   const s = useAtlas.getState();
-  const puntos: { id: string; lado: 'l' | 'r' | null; pos: THREE.Vector3; aproximada: boolean; propuesta: boolean }[] = [];
+  const puntos: { id: string; lado: 'l' | 'r' | null; pos: THREE.Vector3; aproximada: boolean; propuesta: boolean; padre: string | null }[] = [];
   for (const m of [...marcadores, ...extra]) {
     if (m.posicion) {
       // Con posición propia, cada punto suma lo que se desplaza su ancla (el promedio si son varias piezas).
@@ -458,6 +531,7 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
           pos: new THREE.Vector3(...b.posicion).add(new THREE.Vector3(...d)),
           aproximada: m.estado !== 'validada',
           propuesta: false,
+          padre: m.padre,
         });
       }
     } else if (m.ancla) {
@@ -472,44 +546,54 @@ function Marcadores({ idioma }: { idioma: Idioma }) {
       if (m.unir && centros.length) {
         // Línea media (rafe, área postrema): un punto entre los dos lados, no uno por lado.
         const medio = centros.reduce((a, c) => a.add(c.pos), new THREE.Vector3()).multiplyScalar(1 / centros.length);
-        puntos.push({ id: m.id, lado: null, pos: medio, aproximada: true, propuesta: false });
+        puntos.push({ id: m.id, lado: null, pos: medio, aproximada: true, propuesta: false, padre: m.padre });
       } else {
-        for (const c of centros) puntos.push({ id: m.id, lado: c.lado, pos: c.pos, aproximada: true, propuesta: false });
+        for (const c of centros) puntos.push({ id: m.id, lado: c.lado, pos: c.pos, aproximada: true, propuesta: false, padre: m.padre });
       }
     }
   }
   for (const r of Object.values(respuestas)) {
     if (r.campo === 'posicion' && r.posicion) {
-      puntos.push({ id: r.estructura, lado: null, pos: new THREE.Vector3(...r.posicion), aproximada: true, propuesta: true });
+      puntos.push({ id: r.estructura, lado: null, pos: new THREE.Vector3(...r.posicion), aproximada: true, propuesta: true, padre: padreDeEntrada(r.estructura) });
     }
   }
   return (
     <group ref={grupo}>
-      {puntos.map((p, i) => (
-        <mesh
-          key={`${p.id}-${i}`}
-          position={p.pos}
-          userData={{ marcador: p.id, lado: p.lado, propuesta: p.propuesta }}
-          renderOrder={5}
-          onClick={(e) => {
-            e.stopPropagation();
-            useAtlas.getState().seleccionar({ entrada: p.id });
-            window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: p.id } }));
-          }}
-        >
-          <sphereGeometry args={[p.id === seleccion ? 0.0028 : 0.002, 16, 16]} />
-          <meshBasicMaterial
-            color={p.propuesta ? '#00a36c' : p.aproximada ? '#ff8c1a' : '#d6336c'}
-            depthTest={p.id !== seleccion && !p.propuesta}
-            transparent
-          />
-          {p.id === seleccion && (
-            <Html center style={{ pointerEvents: 'none' }} position={[0, 0.006, 0]}>
-              <div className="etiqueta-3d">{nombre(estructuras[p.id], idioma)}</div>
-            </Html>
-          )}
-        </mesh>
-      ))}
+      {puntos.map((p, i) => {
+        const vista = vistaDeMarcador([p.pos.x, p.pos.y, p.pos.z], p.padre, { cortes, fantasmaCorte, cajas });
+        // Oculto: no se monta (ni se dibuja ni se toca). La clave por índice no cambia porque el arreglo se arma completo.
+        if (vista === 'oculto') return null;
+        const fantasma = vista === 'fantasma';
+        return (
+          <mesh
+            key={`${p.id}-${i}`}
+            position={p.pos}
+            userData={{ marcador: p.id, lado: p.lado, propuesta: p.propuesta, fantasma }}
+            renderOrder={5}
+            // Siempre explícito: la malla se reutiliza por índice y al volver de fantasma debe recuperar el toque.
+            raycast={fantasma ? raycastNulo : THREE.Mesh.prototype.raycast}
+            onClick={(e) => {
+              e.stopPropagation();
+              useAtlas.getState().seleccionar({ entrada: p.id });
+              window.dispatchEvent(new CustomEvent('atlas:seleccion', { detail: { entrada: p.id } }));
+            }}
+          >
+            <sphereGeometry args={[p.id === seleccion ? 0.0028 : 0.002, 16, 16]} />
+            <meshBasicMaterial
+              color={p.propuesta ? '#00a36c' : p.aproximada ? '#ff8c1a' : '#d6336c'}
+              opacity={fantasma ? OPACIDAD_FANTASMA_CORTE : 1}
+              depthWrite={!fantasma}
+              depthTest={fantasma || (p.id !== seleccion && !p.propuesta)}
+              transparent
+            />
+            {p.id === seleccion && !fantasma && (
+              <Html center style={{ pointerEvents: 'none' }} position={[0, 0.006, 0]}>
+                <div className="etiqueta-3d">{nombre(estructuras[p.id], idioma)}</div>
+              </Html>
+            )}
+          </mesh>
+        );
+      })}
     </group>
   );
 }

@@ -116,8 +116,13 @@ export interface Opciones {
   padron?: string[][];
   ahora?: number;
   sinPestana?: NombreHoja;
-  /** Códigos con una fila en `Autorizaciones` con la versión de la app. Por defecto ninguno, como un código nuevo. */
+  /**
+   * Códigos con una fila en `Autorizaciones` con la versión de la app. Por defecto ninguno, como un código
+   * nuevo. La casilla del vago de esas filas es `no`, salvo con `vago: true`.
+   */
   autorizados?: string[];
+  /** Pone `sí` en la casilla del vago de las filas de `autorizados`. Por defecto `no`. */
+  vago?: boolean;
   /** Claves de CacheService para las que `put` lanza, como si el valor no cupiera. */
   putFalla?: (clave: string) => boolean;
 }
@@ -144,7 +149,7 @@ export function crearEntorno(op: Opciones = {}) {
     Padrón: new HojaDoble(CABECERAS.Padrón, candado),
   };
   hojas.Padrón.filas.push(...(op.padron ?? PADRON_PRUEBA).map((f) => [...f]));
-  hojas.Autorizaciones.filas.push(...(op.autorizados ?? []).map((c) => [c, '2026-10-14T09:00:00.000Z', VERSION_AUTORIZACION, 'no']));
+  hojas.Autorizaciones.filas.push(...(op.autorizados ?? []).map((c) => [c, '2026-10-14T09:00:00.000Z', VERSION_AUTORIZACION, op.vago ? 'sí' : 'no']));
 
   let flushes = 0;
   const SpreadsheetApp = {
@@ -248,6 +253,7 @@ export function crearEntorno(op: Opciones = {}) {
     postSinCuerpo(): Record<string, unknown> {
       return JSON.parse(doPost({ parameter: {} }).getContent()) as Record<string, unknown>;
     },
+    /** GET con esos parámetros. Desde #169 siempre responde `formato`: sirve para probar que ya no lee. */
     get(parametros: Record<string, string>): Record<string, unknown> {
       return JSON.parse(doGet({ parameter: parametros }).getContent()) as Record<string, unknown>;
     },

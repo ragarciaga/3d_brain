@@ -10,11 +10,13 @@
 //   - `{accion:'autorizar', r:<código>, version, vago}`. Responde `{ok:true}`.
 //   - `{accion:'leer', r:<código>}`. Responde
 //     `{ok:true, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, autorizacion:{version, vago} | null}`.
-// - Ninguna petición lleva el código ni una query en la URL (S4, #162). El script aún responde el GET
-//   `?accion=leer&r=<código>` por compatibilidad, pero este cliente no lo usa.
+// - Ninguna petición lleva el código ni una query en la URL (S4, #162). El script ya no lee por GET (#169):
+//   responde `formato` a cualquier GET, y este cliente nunca lo usa.
 // - Un error siempre responde `{ok:false, error}` con `error` en `codigo_no_activo`, `demasiado_grande`,
 //   `formato`, `demasiadas_peticiones`, `sin_autorizacion` o `interno`. `guardar` responde
-//   `sin_autorizacion` si el código no tiene registrada en la hoja la autorización de la versión vigente.
+//   `sin_autorizacion` si el código no tiene registrada en la hoja la autorización de la versión vigente, y
+//   `formato` si la carga trae respuestas del vago y la última autorización no marca la casilla (#166).
+//   `autorizar` responde `formato` si `version` no es la vigente (#169).
 //
 // Red caída, tiempo agotado (10 s), HTTP que no es 2xx y cuerpo que no es JSON valen `red`.
 import { configRevision, VERSION_AUTORIZACION } from '../config/revision';

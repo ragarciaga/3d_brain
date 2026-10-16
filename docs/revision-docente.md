@@ -100,16 +100,44 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    publicada dentro de la app, y cualquiera podrá verla. Regla del editor, no una protección: la
    URL se pasa solo por chat a la sesión que construye T13, y nunca en un issue, un PR ni un
    comentario.
-7. Prueba rápida, en el navegador, con una fila de prueba y no con el código de un docente real.
+7. Prueba rápida, desde PowerShell, con una fila de prueba y no con el código de un docente real.
    En `Padrón`, agrega una fila inventada: un código de prueba aleatorio de 8 caracteres, generado
    como lo hace `scripts/crear-revisores.ts` y que no se parezca a los reales, alias `D99` y Activo
    `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
-   un PR. Abre `<URL>?accion=leer&r=<código de prueba>` (esta prueba usa el GET de compatibilidad
-   del script; la app lee por POST y no pone el código en la URL): debe devolver `{"ok":true,...}`.
-   Cambia Activo a `no` (o borra la fila), espera un minuto (el script guarda `Padrón` unos 60 s) y
-   vuelve a abrirla: debe devolver `{"ok":false,"error":"codigo_no_activo"}`. Al terminar, borra las filas de ese código en
-   `Respuestas` y `Autorizaciones` y déjalo en `no` en `Padrón`, para que no llegue al importador.
+   un PR. Genera un código nuevo para esta prueba: uno anterior pudo quedar en el historial del
+   navegador. El script ya no lee por GET (#169): la prueba es un POST, igual que el de la app. Pega
+   este bloque entero (te pide la URL y el código con `Read-Host`, así el código no queda en ninguna URL
+   ni en el historial de PowerShell, y solo imprime el veredicto):
+
+   ```powershell
+   & {
+     $url = Read-Host "Pega la URL /exec del script"
+     $codigo = Read-Host "Escribe el código de prueba"
+     $cuerpo = @{ accion = 'leer'; r = $codigo } | ConvertTo-Json -Compress
+     $r = Invoke-RestMethod -Method Post -Uri $url -ContentType 'text/plain;charset=utf-8' -Body $cuerpo
+     "ok=$($r.ok) error=$($r.error)"
+   }
+   ```
+
+   Debe imprimir `ok=True error=`. Nunca pegues la salida completa de una llamada al script en un chat
+   ni en un issue: con un código real traería las respuestas del docente. Cambia Activo a `no` (o borra
+   la fila), espera un minuto (el script guarda `Padrón` unos 60 s) y pega el bloque otra vez: debe
+   imprimir `ok=False error=codigo_no_activo`. Si `Invoke-RestMethod` no devuelve JSON (no siguió la
+   redirección de Apps Script), avísalo por chat, sin la URL, y usa este bloque, que manda el cuerpo por la
+   entrada estándar:
+
+   ```powershell
+   & {
+     $url = Read-Host "Pega la URL /exec del script"
+     $codigo = Read-Host "Escribe el código de prueba"
+     $cuerpo = @{ accion = 'leer'; r = $codigo } | ConvertTo-Json -Compress
+     $cuerpo | curl.exe -sL -H "Content-Type: text/plain;charset=utf-8" --data-binary '@-' $url | ConvertFrom-Json | ForEach-Object { "ok=$($_.ok) error=$($_.error)" }
+   }
+   ```
+
+   Al terminar, borra las filas de ese código en `Respuestas` y `Autorizaciones` y déjalo en `no` en
+   `Padrón`, para que no llegue al importador.
 
 Para actualizar el script sin cambiar la URL, edita la implementación existente: Implementar,
 Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. No crees una
@@ -145,32 +173,51 @@ de la implementación existente: la URL `/exec` no cambia. En este orden:
 
 Si cambias `VERSION_AUTORIZACION` en `src/config/revision.ts`, cambia la constante igual en
 `apps-script/Codigo.js` (una prueba falla si difieren) y vuelve a desplegar el script como nueva
-versión apenas se publique la app. Si no, el docente acepta y el diálogo vuelve a salir, una y otra vez.
+versión apenas se publique la app. Si no, el script rechaza la aceptación con `formato` (#169): el diálogo
+dice "Sin conexión: no se pudo registrar tu autorización" aunque haya red, y no se guarda nada hasta
+que despliegues el script.
 
-### Actualización: autorización v2, leer por POST y caché del Padrón (#162)
+### Actualización: autorización v2 y v3, leer por POST, caché del Padrón y script cerrado (#162, #168, #169 y #166)
 
-Desde #162 cambian cuatro cosas, y las cuatro salen en el mismo despliegue de `apps-script/Codigo.js`:
+Desde #162 cambian cuatro cosas, y con #169 y #166 se suman tres más. Todas salen en el mismo despliegue de
+`apps-script/Codigo.js`:
 
 - El texto del diálogo de autorización avisa que las propuestas y los comentarios pueden publicarse con
   el alias del docente (por ejemplo D01, nunca su nombre) en issues públicos del proyecto en GitHub.
-- `VERSION_AUTORIZACION` pasa de `1` a `2`, en `src/config/revision.ts` y en `Codigo.js`. Toda
-  autorización de la versión `1` deja de valer y la app vuelve a pedir la aceptación del texto nuevo. Ningún
-  docente ha autorizado todavía, así que a nadie se le pide dos veces.
-- La app lee por POST (`{accion:'leer', r}`) y ya no pone el código de revisor en la URL. El script
-  sigue respondiendo el GET `?accion=leer&r=` por compatibilidad (la prueba rápida del paso 7 lo usa)
-  hasta que se retire en otro cambio.
+- `VERSION_AUTORIZACION` pasa de `1` a `2` (#162) y a `3` (#168), en `src/config/revision.ts` y en
+  `Codigo.js`. Toda autorización de las versiones `1` y `2` deja de valer y la app vuelve a pedir la
+  aceptación del texto nuevo. Ningún docente ha autorizado todavía, así que a nadie se le pide dos veces.
+- La app lee por POST (`{accion:'leer', r}`) y ya no pone el código de revisor en la URL. Desde #169 el
+  script ya no responde el GET de lectura: cualquier GET recibe `{"ok":false,"error":"formato"}` sin leer
+  nada, así que ya no sirve para saber si un código está activo. La prueba rápida del paso 7 usa POST
+  desde PowerShell.
 - El script guarda la lista de códigos activos de `Padrón` unos 60 s en `CacheService`, en vez de leer la
   hoja en cada petición. Un código que pasas a `no`, o uno nuevo con `sí`, cambia como mucho en un minuto.
+- `autorizar` solo acepta la versión vigente (#169): con otra `version` responde `formato` y no escribe en
+  `Autorizaciones`. La app no cambia: el diálogo avisa y no reintenta solo.
+- `guardar` rechaza con `formato` la carga entera si trae respuestas del vago (trazos y rutas, o con malla
+  o ramo) de un código cuya última autorización no marca la casilla del vago (#166). La app deja esa
+  respuesta pendiente en el equipo del docente, sigue guardando las demás, y el importador sigue
+  apartando en "Descartadas" las que lleguen por otro camino sin la casilla. El formulario de respaldo
+  (sección 5) escribe sin pasar por el script, así que esta regla no lo cubre: al importar, pasa siempre
+  `--autorizaciones` (sección 4).
+
+#168 vuelve a cambiar el texto del diálogo: nombra al responsable (Maysa Strategy Partners) y el contacto
+(info@maysasp.com) y enlaza a la página Privacidad. `VERSION_AUTORIZACION` sube a `3` en
+`src/config/revision.ts` y en `Codigo.js`. Como el script aún no se ha desplegado con #162, un solo
+despliegue cubre las versiones 2 y 3 juntas: despliégalo una sola vez, cuando los dos PR estén fusionados.
 
 Antes de la primera importación, confirma que `Respuestas` no tiene filas de códigos reales cuya última
-autorización en `Autorizaciones` sea la versión `1`: esas respuestas se aceptaron con el texto anterior,
-que no avisaba de la publicación del alias. Hoy la hoja está vacía (la limpiaste el 2026-10-16).
+autorización en `Autorizaciones` sea la versión `1` o `2`: esas respuestas se aceptaron con un texto
+anterior (el `1` no avisaba de la publicación del alias y el `2` no nombraba al responsable ni el
+contacto). Hoy la hoja está vacía (la limpiaste el 2026-10-16).
 
 Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementación existente. En este
 orden, con el sitio primero y el script después:
 
-1. Espera a que el PR de #162 esté fusionado y a que termine el workflow `pages`. Hasta entonces la web
-   publicada sigue leyendo por GET con la versión `1`.
+1. Espera a que los PR de #162 y de #168 estén fusionados y a que termine el workflow `pages`. Si solo
+   uno está fusionado, espera al otro: el script se despliega una sola vez. Espera también a los PR de
+   #169 y #166 si aún no están fusionados, para que el mismo despliegue los incluya.
 2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script. En PowerShell:
 
    ```powershell
@@ -186,16 +233,26 @@ orden, con el sitio primero y el script después:
 6. Comprueba que funciona, con el código de prueba del paso 7:
    1. Márcalo `sí` en `Padrón` y espera un minuto (la caché del `Padrón`).
    2. Abre la app con su enlace y responde un campo. El diálogo debe nombrar el alias y los issues
-      públicos. Acepta y espera "Guardado ✓".
-   3. En `Autorizaciones`, la fila nueva del código debe tener la Versión `2`. Recarga la página: el
+      públicos, al responsable y el contacto, y tener el enlace "Lee el aviso de privacidad". Acepta y
+      espera "Guardado ✓".
+   3. En `Autorizaciones`, la fila nueva del código debe tener la Versión `3`. Recarga la página: el
       diálogo no debe volver.
-   4. Cambia Activo a `no` en `Padrón`, espera un minuto y recarga: debe aparecer "Tu código no está
+   4. El GET ya no lee: abre en el navegador `<URL>?accion=leer`, sin código, y debe mostrar
+      `{"ok":false,"error":"formato"}`.
+   5. Una autorización con versión vieja no se registra: repite el bloque PowerShell del paso 7 de la
+      sección 1 cambiando la línea del cuerpo por
+      `$cuerpo = @{ accion = 'autorizar'; r = $codigo; version = 'vieja'; vago = $false } | ConvertTo-Json -Compress`.
+      Debe imprimir `ok=False error=formato`, y `Autorizaciones` no debe ganar ninguna fila. Hazlo mientras
+      el código sigue activo: con Activo en `no`, el script revisa el `Padrón` primero y respondería
+      `codigo_no_activo`.
+   6. Cambia Activo a `no` en `Padrón`, espera un minuto y recarga: debe aparecer "Tu código no está
       activo; escribe al editor".
-   5. Limpia como dice el paso 7.
+   7. Limpia como dice el paso 7.
 
 Entre el paso 1 y el 4, el sitio y el script no coinciden: la lectura de la app falla (el script viejo
 responde `formato` a la lectura por POST) y `guardar` responde `sin_autorizacion`. Por eso van seguidos
-y antes de mandar los enlaces.
+y antes de mandar los enlaces. Después del despliegue, una pestaña abierta con la app anterior no
+registra una aceptación vieja: el diálogo muestra el aviso y basta recargar la página.
 
 ## 2. Cuidar el padrón
 
@@ -293,7 +350,14 @@ autorizaciones se leen solo del archivo de `--autorizaciones`, aunque el CSV de 
 sus filas.
 
 Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por estructura y
-`resumen.md` con toda la importación. Cada revisor aparece con su alias, nunca con su código; los
+`resumen.md` con toda la importación. Antes de escribir, el importador borra los `.md` que hayan
+quedado en esa carpeta de una corrida anterior (sin pasar por la papelera), así ningún resumen viejo
+se mezcla con el nuevo. Solo borra ahí: no entra a subcarpetas, no sigue enlaces y no toca el resto
+de `pipeline/salida/`. Si esa carpeta o `pipeline/salida` es un enlace o un archivo, se detiene sin
+borrar nada, y si la corrida falla antes (falta o no se puede leer el padrón o un CSV, o el padrón no
+es un JSON válido o trae un código inválido), sale con 2, dice cuál archivo falló sin mostrar su
+contenido ni ningún código, y la carpeta queda como estaba.
+Cada revisor aparece con su alias, nunca con su código; los
 envíos con un código fuera del padrón se descartan y el resumen dice cuántos fueron. Las filas malformadas se descartan y se cuentan, sin detener
 la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
 idioma distinto de es o en, textos que no son texto, una posición que no son tres números, un
@@ -317,7 +381,12 @@ respuestas sin que tenga que reenviarlas, porque manda la última autorización 
 importar. Si pasas el archivo sin `--autorizaciones`, el script corre, avisa en la consola y manda
 todas las respuestas del vago a esa sección, con una línea que lo dice. Las respuestas que un
 docente mandó por el formulario de respaldo (sin canal) no pueden salir de ahí hasta que use el canal,
-porque sin canal nadie marca la casilla en Acciones. Nunca agregues a mano filas en
+porque sin canal nadie marca la casilla en Acciones. Con `--autorizaciones`, la consola dice también
+cuántas respuestas son de revisores sin ninguna autorización (ninguna fila en `Autorizaciones`;
+pasa, por ejemplo, con lo que llegó por el formulario de respaldo) y de qué alias, y `resumen.md`
+lo marca con una línea bajo el título. Esas respuestas siguen en las tablas. Si el número no es 0,
+antes de crear el issue, que es público, abre `resumen.md`, busca esos alias y borra sus filas de
+las tablas y de los archivos por estructura. Nunca agregues a mano filas en
 `Autorizaciones`: serían registros de consentimiento fabricados.
 
 3. Crea el issue de la importación con el resumen:
@@ -334,8 +403,8 @@ vuelve a la hoja por el canal cuando hay conexión y el docente tiene abierta la
 de revisión tiene filas de un código que no llegaron a `Respuestas` (porque el docente no volvió a
 abrir su enlace), descarga también el CSV del formulario (sección 5) e impórtalo en otra corrida,
 también con `--autorizaciones` (sin él, todas las respuestas del vago de esa corrida quedan en
-"Descartadas"), pero solo después de crear el issue de la primera: la segunda corrida reescribe
-`pipeline/salida/revisiones/`.
+"Descartadas"), pero solo después de crear el issue de la primera: la segunda corrida borra los
+resúmenes de la primera en `pipeline/salida/revisiones/`.
 
 Cuando termines, borra los dos CSV de Descargas. Primero mira qué borraría cada comando con
 `-WhatIf`, y solo si la lista es correcta ejecútalo sin esa opción:
@@ -404,8 +473,9 @@ revisión es suya. Las pruebas fallan si una ficha queda verificada sin revisor 
 
 ## 7. Solicitud de supresión de datos (Ley 1581 de 2012)
 
-Un docente puede pedirte conocer, corregir o borrar sus datos. Respóndele por su canal propio. Los
-pasos, con el alias del docente:
+Un docente puede pedirte conocer, corregir o borrar sus datos. Las solicitudes llegan al contacto
+publicado en la página Privacidad y en el diálogo de autorización: info@maysasp.com (#168). Respóndele
+por su canal propio. Los pasos, con el alias del docente:
 
 1. Ubica el código: busca el alias en el documento privado "Enlaces de docentes Maysa Brain (privado)".
 2. Si pide conocer sus datos, filtra por su código en `Respuestas` y en `Autorizaciones`, y entrégale
@@ -439,6 +509,7 @@ pasos, con el alias del docente:
       ```powershell
       cd C:\Users\TU_USUARIO\proyectos\3d_brain
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Respuestas*.csv" -WhatIf
+      Remove-Item "C:\Users\TU_USUARIO\Downloads\*Autorizaciones*.csv" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Revisión del atlas*.csv*" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Registro de revisores*.csv*" -WhatIf
       ```

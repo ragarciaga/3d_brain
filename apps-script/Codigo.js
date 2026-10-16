@@ -6,32 +6,35 @@
 // Contrato (lo cumple src/lib/canal.ts):
 // - POST (cuerpo text/plain con JSON) {accion: 'leer', r}: {ok, respuestas: {v: 2, r, e}, autorizacion:
 //   {version, vago} | null}. Es la forma de la app: el código no viaja en la URL (S4, #162).
-// - GET ?accion=leer&r=<código>: la misma respuesta. Se acepta por compatibilidad (pestañas abiertas con
-//   la app anterior y la prueba rápida del editor) y se retirará en otro cambio.
+// - GET: siempre {ok: false, error: 'formato'}, sin leer nada ni mirar los parámetros (S4, #169). Se
+//   deja para que todo GET reciba JSON.
 // - POST {accion: 'guardar', carga}: {ok, recibidas: [...]}. Exige que la última fila del código en
-//   `Autorizaciones` tenga la versión VERSION_AUTORIZACION (S1, #157).
-// - POST {accion: 'autorizar', r, version, vago}: {ok}.
+//   `Autorizaciones` tenga la versión VERSION_AUTORIZACION (S1, #157). Si esa fila no tiene el vago en
+//   `sí`, rechaza con `formato` la carga entera cuando alguna respuesta es del vago (S2, #166).
+// - POST {accion: 'autorizar', r, version, vago}: {ok}. `version` debe ser VERSION_AUTORIZACION; otra
+//   da `formato` y no escribe (#169).
 // - Un error siempre es {ok: false, error} con error en codigo_no_activo, demasiado_grande, formato,
 //   demasiadas_peticiones, sin_autorizacion o interno. Nunca lleva el mensaje de una excepción.
 // - El padrón se guarda en CacheService 60 s (S3, #162): un código que pasa a `no`, o uno nuevo, cambia
 //   como mucho en un minuto.
 // Orden de las comprobaciones: tamaño, JSON, acción, código en el padrón, ritmo, autorización (solo
-// guardar), forma de la carga. Leer por POST pasa por las mismas que el GET, sin tomar el bloqueo.
+// guardar), forma de la carga, casilla del vago (solo guardar), tamaño de la celda; en autorizar, forma
+// y versión. Leer pasa por las del código, sin tomar el bloqueo.
 /* global SpreadsheetApp, CacheService, LockService, ContentService */
 /* exported doGet, doPost */
 
 // Reglas de validación: copia, regla por regla, de src/lib/revision.ts (REVISOR_VALIDO, CAMPO_VALIDO,
 // VERSION_VALIDA, topes, respuestaValida, fechaValida, CLAVES_V2) y de expandirV2 en
-// scripts/lib/revisiones.ts (ID_VALIDO). Una prueba pasa los mismos casos a las dos y exige el mismo
-// veredicto; si cambias una, cambia la otra.
+// scripts/lib/revisiones.ts (ID_VALIDO), y esRespuestaDelVago es copia de la del mismo archivo. Una
+// prueba pasa los mismos casos a las dos y exige el mismo veredicto; si cambias una, cambia la otra.
 const REVISOR_VALIDO = /^[A-Za-z0-9_-]{1,40}$/;
 const CAMPO_VALIDO = /^([a-z_]+(\.\d+)?|trazo:[^\r\n`|<>]{1,120})$/;
 const VERSION_VALIDA = /^(\d+\.\d+\.\d+|sin-ficha)$/;
 const ID_VALIDO = /^[a-z0-9-]+$/;
 const VERSION_AUTORIZACION_VALIDA = /^[A-Za-z0-9._-]{1,40}$/;
 // Copia de VERSION_AUTORIZACION de src/config/revision.ts: se cambian juntas, y una prueba de
-// tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones.
-const VERSION_AUTORIZACION = '2';
+// tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones (3 desde #168).
+const VERSION_AUTORIZACION = '3';
 const MAX_TEXTO_LARGO = 4000;
 const MAX_TEXTO_CORTO = 200;
 const MAX_FECHA = 40;
@@ -90,6 +93,13 @@ function respuestaValida(r, idOk) {
 }
 
 const idForma = (id) => typeof id === 'string' && ID_VALIDO.test(id);
+
+// Una respuesta es del vago si su campo empieza por `trazo:` o `trazado_`, o si trae malla o ramo. Recibe
+// un elemento con claves cortas (c, m, a).
+function esRespuestaDelVago(el) {
+  if (typeof el.c === 'string' && (el.c.indexOf('trazo:') === 0 || el.c.indexOf('trazado_') === 0)) return true;
+  return hasOwn(el, 'm') || hasOwn(el, 'a');
+}
 
 // Bytes de un texto en UTF-8: 1, 2 o 3 por unidad de código y 4 por par sustituto.
 function bytesUtf8(texto) {
@@ -258,6 +268,7 @@ function accionGuardar(codigo, carga) {
   if (!aut || aut.version !== VERSION_AUTORIZACION) return fallo('sin_autorizacion');
   const limpia = validarCarga(carga);
   if (!limpia || limpia.r !== codigo) return fallo('formato');
+  if (!aut.vago && Object.keys(limpia.e).some((id) => limpia.e[id].some(esRespuestaDelVago))) return fallo('formato');
   const texto = JSON.stringify({ v: 2, r: codigo, e: limpia.e });
   if (texto.length > MAX_CELDA) return fallo('demasiado_grande');
   const fila = [ahoraIso(), codigo, Object.keys(limpia.e).join(','), texto];
@@ -269,6 +280,7 @@ function accionAutorizar(codigo, cuerpo) {
   const version = cuerpo.version;
   if (typeof version !== 'string' || !VERSION_AUTORIZACION_VALIDA.test(version)) return fallo('formato');
   if (typeof cuerpo.vago !== 'boolean') return fallo('formato');
+  if (version !== VERSION_AUTORIZACION) return fallo('formato');
   const fila = [codigo, ahoraIso(), version, cuerpo.vago ? 'sí' : 'no'];
   if (!escribir(PESTANA_AUTORIZACIONES, [fila])) return fallo('interno');
   return json({ ok: true });
@@ -334,21 +346,14 @@ function autorizacionDe(codigo) {
   return null;
 }
 
-// Lo que el canal guarda de un código. Solo lee: no toma el bloqueo ni escribe. Lo usan doPost (forma de
-// la app) y doGet (compatibilidad), después de rechazoDeCodigo.
+// Lo que el canal guarda de un código. Solo lee: no toma el bloqueo ni escribe. Lo usa doPost, después de
+// rechazoDeCodigo.
 function accionLeer(codigo) {
   return json({ ok: true, respuestas: respuestasDe(codigo), autorizacion: autorizacionDe(codigo) });
 }
 
-function doGet(e) {
-  try {
-    const p = e && e.parameter;
-    if (!p || p.accion !== 'leer') return fallo('formato');
-    const codigo = p.r;
-    const rechazo = rechazoDeCodigo(codigo);
-    if (rechazo) return fallo(rechazo);
-    return accionLeer(codigo);
-  } catch {
-    return fallo('interno');
-  }
+// El GET ya no lee (S4, #169): responde el error del contrato sin mirar parámetros, padrón, caché ni
+// hojas. Se deja para que todo GET reciba JSON.
+function doGet() {
+  return fallo('formato');
 }

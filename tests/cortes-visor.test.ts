@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GRUPO_VAGO, nodos, piezasBajo, todasLasPiezas } from '../src/data/atlas';
-import { actualizarPlanos, alCuadro, alErrorShaderRelleno, alMuestraFps, configurarRenderer, construirBvh, crearLineaContorno, crearMallaFantasma, crearMallaRelleno, liberarContornos, mallasDeContorno, mallasDeRelleno, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasConContorno, piezasFantasmaCorte, PLANOS_CORTE, PLANOS_FANTASMA, PLANOS_RECORRIDO, planosActivos, planosDePieza, puntoDeCorte, raycastCorte, raycastNulo, refrescarContorno, segmentosDeCorte, seVeConRecorte, type EstadoFantasma, type EstadoRelleno } from '../src/components/recorte';
+import { actualizarPlanos, alCuadro, alErrorShaderRelleno, alMuestraFps, configurarRenderer, construirBvh, crearLineaContorno, crearMallaFantasma, crearMallaRelleno, liberarContornos, mallasDeContorno, mallasDeRelleno, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasConContorno, piezasFantasmaCorte, PLANOS_CORTE, PLANOS_FANTASMA, PLANOS_RECORRIDO, planosActivos, planosDePieza, puntoDeCorte, raycastCorte, raycastNulo, refrescarContorno, segmentosDeCorte, seVeConRecorte, vistaDeMarcador, type EstadoFantasma, type EstadoRelleno } from '../src/components/recorte';
 import { cortesApagados, EJE, esEncefalo, ocultoPorCortes, piezasCruzadas, PLANOS, rangoCerebro, type Cortes, type EstadoCuadros, type Plano } from '../src/lib/cortes';
 import { useAtlas } from '../src/store/useAtlas';
 import type { Vec3 } from '../src/lib/explosion';
@@ -30,10 +30,10 @@ const con = (parcial: Partial<Record<Plano, { mm: number; invertido?: boolean }>
 };
 const punto = (dx: number, dy: number, dz: number) => new THREE.Vector3(centro[0] + dx, centro[1] + dy, centro[2] + dz);
 
-/** Caja de prueba con su árbol de intersección, centrada en `c`. */
-function caja(lado: number, c: Vec3, material: THREE.Material = new THREE.MeshBasicMaterial()): THREE.Mesh {
+/** Caja de prueba con su árbol de intersección (o sin él, como antes de que llegue el índice de toque), centrada en `c`. */
+function caja(lado: number, c: Vec3, material: THREE.Material = new THREE.MeshBasicMaterial(), conArbol = true): THREE.Mesh {
   const g = new THREE.BoxGeometry(lado, lado, lado);
-  g.boundsTree = new MeshBVH(g);
+  if (conArbol) g.boundsTree = new MeshBVH(g);
   const m = new THREE.Mesh(g, material);
   m.position.set(...c);
   m.updateMatrixWorld();
@@ -177,6 +177,16 @@ describe('toque con cortes (R4.3)', () => {
     actualizarPlanos(cortesApagados(), rango);
     expect(desdeArriba(c).intersectObject(m)).toHaveLength(1);
   });
+  it('sin árbol (el índice de toque aún no llega) descarta el impacto oculto y conserva el visible, igual que con árbol', () => {
+    const m = caja(0.01, c, new THREE.MeshBasicMaterial(), false);
+    expect(m.geometry.boundsTree).toBeUndefined();
+    m.raycast = raycastCorte;
+    actualizarPlanos(cortesDe(1, -20), rango);
+    expect(desdeArriba(c).intersectObject(m)).toEqual([]);
+    actualizarPlanos(cortesDe(1, 20), rango);
+    expect(desdeArriba(c).intersectObject(m)).toHaveLength(1);
+    expect(m.geometry.boundsTree).toBeUndefined(); // tocar nunca construye el árbol
+  });
   it('con firstHitOnly se queda con el impacto visible aunque el primero esté oculto, y con dos visibles con el más cercano', () => {
     const m = caja(0.01, c, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
     m.raycast = raycastCorte;
@@ -223,6 +233,13 @@ describe('punto sobre la cara del corte (D1)', () => {
     const d = Math.max(Math.abs(en.y - c[1]), Math.abs(en.z - c[2]));
     expect(d).toBeLessThan(0.02);
     expect(d).toBeGreaterThan(0.005);
+  });
+  it('si alguna candidata aún no tiene árbol da null; con todos los árboles da el punto', () => {
+    actualizarPlanos(con({ sagital: { mm: 0 } }), rangoD);
+    const cam = camaraEn(0.3);
+    const sinArbol = [candidatas[0]!, { pieza: B, malla: caja(0.01, c, new THREE.MeshBasicMaterial(), false), cortada: true }];
+    expect(puntoDeCorte(A, sinArbol, cam)).toBeNull();
+    expect(puntoDeCorte(A, candidatas, cam)).not.toBeNull(); // control: la misma escena con todos los árboles
   });
   it('sin cortes y con la cámara del lado visible da null', () => {
     actualizarPlanos(cortesApagados(), rangoD);
@@ -768,6 +785,19 @@ describe('limpieza del contorno (D1, R8.3)', () => {
     expect(refrescarContorno(linea, g, cortesApagados(), rango)).toBe(true);
     expect(posiciones(linea)).toBe(0);
   });
+  it('refrescarContorno recalcula cuando la geometría recibe su árbol, con los mismos cortes y rango', () => {
+    const g = tuboAbierto();
+    delete (g as { boundsTree?: unknown }).boundsTree;
+    const linea = crearLineaContorno(matriz, '#ff0000', P);
+    const cortes = con({ axial: { mm: 0 } });
+    expect(refrescarContorno(linea, g, cortes, rango)).toBe(true);
+    expect(posiciones(linea)).toBe(0); // sin árbol la línea queda vacía
+    expect(refrescarContorno(linea, g, cortes, rango)).toBe(false); // y sigue igual mientras no llegue el árbol
+    g.boundsTree = construirBvh(g);
+    expect(refrescarContorno(linea, g, cortes, rango)).toBe(true);
+    expect(posiciones(linea)).toBeGreaterThan(0);
+    expect(refrescarContorno(linea, g, cortes, rango)).toBe(false);
+  });
   it('refrescarContorno recalcula también cuando cambia el rango', () => {
     const g = tuboAbierto();
     const linea = crearLineaContorno(matriz, '#ff0000', P);
@@ -789,5 +819,82 @@ describe('limpieza del contorno (D1, R8.3)', () => {
     const s: EstadoRelleno = { cortes: cortesApagados(), ocultas: new Set(), aislar: null, soloEscaneada: false, cajas, rellenoApagado: true };
     expect(piezasConContorno(s, new Set())).toEqual([]);
     expect(piezasConContorno({ ...s, rellenoApagado: false }, new Set())).toEqual([]);
+  });
+});
+
+describe('marcadores con cortes (D1, D2, D3, D6)', () => {
+  const PADRE = 'g-diencephalon';
+  const estado = (cortes: Cortes, fantasmaCorte: boolean) => ({ cortes, fantasmaCorte, cajas });
+  const en = (d: Vec3): Vec3 => [centro[0] + d[0], centro[1] + d[1], centro[2] + d[2]];
+  /** Punto a `dist` m del plano (10 mm) de ese eje; positivo es el lado que se esconde por defecto. */
+  const aDistancia = (plano: Plano, dist: number): Vec3 => {
+    const d: Vec3 = [0, 0, 0];
+    d[EJE[plano]] = dist + 0.01;
+    return en(d);
+  };
+
+  it('sin cortes da visible aunque fantasmaCorte sea true, y con un plano inactivo también', () => {
+    const oculto = aDistancia('sagital', 0.02);
+    expect(vistaDeMarcador(oculto, PADRE, estado(con({ sagital: { mm: 10 } }), false))).toBe('oculto');
+    expect(vistaDeMarcador(oculto, PADRE, estado(cortesApagados(), true))).toBe('visible');
+    const inactivo = { ...cortesApagados(), sagital: { activo: false, mm: -50, invertido: false } };
+    expect(vistaDeMarcador(oculto, PADRE, estado(inactivo, true))).toBe('visible');
+  });
+  it.each(PLANOS.flatMap((p) => [[p, false], [p, true]] as [Plano, boolean][]))(
+    'con solo el plano %s (invertido: %s) el lado oculto es oculto o fantasma y el otro lado es visible',
+    (plano, invertido) => {
+      const cortes = con({ [plano]: { mm: 10, invertido } });
+      const signo = invertido ? -1 : 1;
+      const delOculto = aDistancia(plano, 0.02 * signo);
+      const delVisible = aDistancia(plano, -0.02 * signo);
+      expect(ocultoPorCortes(delOculto, cortes, rango)).toBe(true);
+      expect(vistaDeMarcador(delOculto, PADRE, estado(cortes, false))).toBe('oculto');
+      expect(vistaDeMarcador(delOculto, PADRE, estado(cortes, true))).toBe('fantasma');
+      expect(vistaDeMarcador(delVisible, PADRE, estado(cortes, false))).toBe('visible');
+      expect(vistaDeMarcador(delVisible, PADRE, estado(cortes, true))).toBe('visible');
+    },
+  );
+  it('un punto exactamente sobre el plano se ve (distancia 0)', () => {
+    const cortes = con({ sagital: { mm: 0 } });
+    expect(vistaDeMarcador(en([0, 0, 0]), PADRE, estado(cortes, false))).toBe('visible');
+    expect(vistaDeMarcador(en([0, 0, 0]), PADRE, estado(cortes, true))).toBe('visible');
+  });
+  it('con dos planos basta uno para esconder (unión, R1.4)', () => {
+    const cortes = con({ sagital: { mm: 0 }, axial: { mm: 10 } });
+    const soloAxial = en([-0.02, 0.03, 0]);
+    expect(ocultoPorCortes(soloAxial, cortes, rango)).toBe(true);
+    expect(vistaDeMarcador(soloAxial, PADRE, estado(cortes, false))).toBe('oculto');
+    expect(vistaDeMarcador(en([-0.02, 0, 0]), PADRE, estado(cortes, false))).toBe('visible');
+  });
+  it('el vago y un padre nulo nunca se cortan; la única diferencia con el oculto es el padre (R2.1)', () => {
+    const cortes = con({ sagital: { mm: 10 } });
+    const p = aDistancia('sagital', 0.02);
+    for (const fantasma of [false, true]) {
+      expect(vistaDeMarcador(p, 'g-vagus-nerve-x', estado(cortes, fantasma))).toBe('visible');
+      expect(vistaDeMarcador(p, null, estado(cortes, fantasma))).toBe('visible');
+    }
+    expect(vistaDeMarcador(p, PADRE, estado(cortes, false))).toBe('oculto');
+  });
+  it.each([
+    ['dos planos', con({ sagital: { mm: 0 }, axial: { mm: 10 } })],
+    ['tres planos con el coronal invertido', con({ sagital: { mm: 0 }, axial: { mm: 10 }, coronal: { mm: -5, invertido: true } })],
+  ])('%s: lo oculto coincide con lo que las piezas esconden', (_, cortes) => {
+    actualizarPlanos(cortes, rango);
+    const grilla = [-0.04, -0.02, 0, 0.02, 0.04];
+    let ocultos = 0;
+    let visibles = 0;
+    for (const x of grilla) {
+      for (const y of grilla) {
+        for (const z of grilla) {
+          const p = punto(x, y, z);
+          const oculto = vistaDeMarcador(p.toArray(), PADRE, estado(cortes, false)) === 'oculto';
+          if (oculto) ocultos++;
+          else visibles++;
+          expect(oculto, `${x} ${y} ${z}`).toBe(!seVeConRecorte(p, PLANOS_CORTE));
+        }
+      }
+    }
+    expect(ocultos).toBeGreaterThan(0);
+    expect(visibles).toBeGreaterThan(0);
   });
 });

@@ -245,10 +245,11 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   await expect(page.getByTestId('medicion-modelo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-codigo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-primer-cuadro')).toHaveText(/\d+ ms/);
-  // El desglose de "Preparar el modelo" sale con las tres partes.
+  // El desglose de "Preparar el modelo" sale con sus dos partes; el índice de toque va aparte y llega después del primer cuadro.
   await expect(page.getByTestId('medicion-leer')).toHaveText(/\d+ ms/);
-  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-armar')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice-listo')).toHaveText(/\d+ ms/);
   // "Lo más lento" solo sale si el cerebro tardó más de 3 s en verse.
   const primerCuadro = Number(/(\d+) ms/.exec((await page.getByTestId('medicion-primer-cuadro').textContent()) ?? '')![1]);
   if (primerCuadro > 3000) await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
@@ -264,7 +265,7 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   expect(copiado).toContain('Maysa Brain, medición de carga');
   expect(copiado).toMatch(/Modelo 3D: empezó a los \d+ ms/);
   expect(copiado).toMatch(/Leer el modelo \(parseo y decodificación\): \d+ ms/);
-  expect(copiado).toMatch(/Índice de toque \(árboles BVH\): \d+ ms/);
+  expect(copiado).toMatch(/Índice de toque \(árboles BVH\): \d+ ms \(empezó a los \d+ ms, listo a los \d+ ms\)/);
   // Cerrar lo quita también al recargar.
   await panel.getByRole('button', { name: 'Cerrar' }).click();
   await expect(panel).toHaveCount(0);
@@ -303,6 +304,42 @@ test('la pantalla de licencia abierta directo respeta el idioma de la URL', asyn
   await abrir(page, '/es/licencia');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fuentes y licencia');
   await expect(page.getByRole('link', { name: 'Volver al atlas' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+});
+
+for (const [lang, ficha, licencia, privacidad, volver] of [
+  ['es', 'hipocampo', 'Fuentes y licencia', 'Privacidad', 'Volver al atlas'],
+  ['en', 'hippocampus', 'Sources and license', 'Privacy', 'Back to the atlas'],
+] as const) {
+  test(`Privacidad: el pie de inicio y de ficha la enlaza junto a Fuentes y licencia y la abre en el idioma (${lang})`, async ({ page }) => {
+    const ruta = lang === 'es' ? '/es/privacidad' : '/en/privacy';
+    const pie = page.locator('footer');
+    await abrir(page, `/${lang}`);
+    await expect(pie.getByRole('link', { name: licencia, exact: true })).toBeVisible();
+    await expect(pie.getByRole('link', { name: privacidad, exact: true })).toBeVisible();
+    await expect(pie.getByRole('link', { name: privacidad, exact: true })).toHaveAttribute('href', ruta);
+
+    await abrir(page, `/${lang}/${ficha}`);
+    await expect(pie.getByRole('link', { name: licencia, exact: true })).toBeVisible();
+    await expect(pie.getByRole('link', { name: privacidad, exact: true })).toHaveAttribute('href', ruta);
+
+    await pie.getByRole('link', { name: privacidad, exact: true }).click();
+    // El encabezado primero: toHaveURL pasa antes de que cambie la vista.
+    await expect(page.getByRole('heading', { level: 1, name: privacidad, exact: true })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${ruta}$`));
+    await expect(page.getByTestId('privacidad')).toContainText('Maysa Strategy Partners');
+    await expect(page.getByTestId('privacidad')).toContainText('info@maysasp.com');
+    await expect(page.locator('html')).toHaveAttribute('lang', lang);
+    await expect(page.getByRole('link', { name: volver })).toBeVisible();
+  });
+}
+
+test('la página de privacidad abierta directo respeta el idioma de la URL', async ({ page }) => {
+  await abrir(page, '/en/privacy');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await abrir(page, '/es/privacidad');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacidad');
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 });
 

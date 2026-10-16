@@ -57,11 +57,13 @@ describe('docs/revision-docente.md', () => {
     const seccion = texto.split('\n').slice(inicio).join('\n');
     // Cada borrado se ensaya primero: toda línea Remove-Item de la sección (incluido el recursivo) termina en -WhatIf.
     const borrados = seccion.split('\n').filter((l) => /^\s*Remove-Item\b/.test(l));
-    expect(borrados.length).toBeGreaterThanOrEqual(4);
+    expect(borrados.length).toBeGreaterThanOrEqual(5);
     for (const linea of borrados) expect(linea, linea).toMatch(/-WhatIf\s*$/);
-    for (const comodin of ['*Respuestas*.csv', '*Revisión del atlas*.csv*', '*Registro de revisores*.csv*']) {
+    for (const comodin of ['*Respuestas*.csv', '*Autorizaciones*.csv', '*Revisión del atlas*.csv*', '*Registro de revisores*.csv*']) {
       expect(seccion, comodin).toContain(comodin);
     }
+    // El CSV de Autorizaciones también trae códigos de docentes (#166).
+    expect(borrados.some((l) => l.includes('Downloads\\*Autorizaciones*.csv'))).toBe(true);
     expect(seccion).not.toContain('Downloads\\Respuestas*.csv');
     expect(seccion).toContain('historial de versiones');
     expect(seccion).toContain('Hacer una copia');
@@ -96,6 +98,21 @@ describe('docs/revision-docente.md', () => {
     for (const linea of borrados) expect(linea, linea).toMatch(/-WhatIf\s*$/);
     // Un encabezado nuevo con "autorización" confundiría el caso del redespliegue (#157).
     expect(seccion.split('\n').filter((l) => /^###\s.*autorización/.test(l))).toEqual([]);
+  });
+
+  it('la sección 4 explica el borrado previo de los .md, que no sigue enlaces y el conteo sin autorización (#166)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^##\s+4\.\s+Procesar las revisiones/.test(l));
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    const seccion = lineas.slice(inicio, fin).join('\n');
+    expect(seccion).toMatch(/borra\s+los\s+`\.md`/);
+    expect(seccion).toMatch(/sin\s+pasar\s+por\s+la\s+papelera/);
+    expect(seccion).toMatch(/no\s+sigue\s+enlaces/);
+    expect(seccion).toMatch(/no\s+toca\s+el\s+resto\s+de\s+`pipeline\/salida\/`/);
+    expect(seccion).toMatch(/se\s+detiene\s+sin\s+borrar\s+nada/);
+    expect(seccion).toMatch(/sin\s+ninguna\s+autorización/);
+    expect(seccion).toMatch(/borra\s+sus\s+filas/);
+    expect(seccion).not.toMatch(/segunda\s+corrida\s+reescribe/);
   });
 
   it('trata el código como contraseña, no llama privada a la pestaña Padrón y no presenta el chat como protección', () => {
@@ -155,6 +172,33 @@ describe('docs/revision-docente.md', () => {
     expect(nueva).toBeGreaterThan(pegar);
     const bloques = [...cuerpo.matchAll(/```powershell\n([\s\S]*?)```/g)].map((m) => m[1]!);
     expect(bloques.some((b) => b.includes('apps-script\\Codigo.js'))).toBe(true);
+  });
+
+  it('la subsección de #162 dice que un solo despliegue cubre las versiones 2 y 3 (#168)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^###\s.*#162/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    const cuerpo = lineas.slice(inicio, fin === -1 ? undefined : fin).join('\n');
+    expect(cuerpo).toMatch(/versiones\s+2\s+y\s+3/);
+    expect(cuerpo).toContain('#168');
+    expect(cuerpo).toContain('Versión `3`');
+    expect(cuerpo).not.toContain('Versión `2`');
+    expect(cuerpo).not.toContain('sigue leyendo por GET');
+  });
+
+  it('la sección de supresión publica el contacto de las solicitudes (#168)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^##\s/.test(l) && l.includes('supresión'));
+    expect(inicio).toBeGreaterThan(-1);
+    expect(lineas.slice(inicio).join('\n')).toContain('info@maysasp.com');
+  });
+
+  it.each(['docs/adr/0012-apps-script-canal-revision.md', 'docs/adr/0015-analitica-sin-cookies.md'])('%s enlaza la página Privacidad en los dos idiomas (#168)', (ruta) => {
+    const adr = leer(ruta);
+    expect(adr).toContain('/es/privacidad');
+    expect(adr).toContain('/en/privacy');
+    expect(adr).toMatch(/Amended:.*#168/);
   });
 
   it('la guía del editor no lleva ninguna URL /exec del script', () => {
