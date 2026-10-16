@@ -100,7 +100,7 @@ describe('docs/revision-docente.md', () => {
     expect(seccion.split('\n').filter((l) => /^###\s.*autorización/.test(l))).toEqual([]);
   });
 
-  it('la sección 4 explica el borrado previo de los .md, que no sigue enlaces y el conteo sin autorización (#166)', () => {
+  it('la sección 4 explica el borrado previo de los .md, que no sigue enlaces y que las respuestas sin autorización van solas a Descartadas (#166, #190)', () => {
     const lineas = texto.split('\n');
     const inicio = lineas.findIndex((l) => /^##\s+4\.\s+Procesar las revisiones/.test(l));
     const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
@@ -111,8 +111,23 @@ describe('docs/revision-docente.md', () => {
     expect(seccion).toMatch(/no\s+toca\s+el\s+resto\s+de\s+`pipeline\/salida\/`/);
     expect(seccion).toMatch(/se\s+detiene\s+sin\s+borrar\s+nada/);
     expect(seccion).toMatch(/sin\s+ninguna\s+autorización/);
-    expect(seccion).toMatch(/borra\s+sus\s+filas/);
+    // Las respuestas sin ninguna fila en Autorizaciones se apartan solas: la guía ya no pide borrarlas a mano.
+    expect(seccion).not.toMatch(/borra\s+sus\s+filas/);
+    expect(seccion).toContain('Descartadas: sin autorización');
+    expect(seccion).not.toMatch(/siguen\s+en\s+las\s+tablas/);
+    expect(seccion).toMatch(/no\s+tienes\s+que\s+borrar\s+nada\s+a\s+mano/i);
+    expect(seccion).toMatch(/pasa\s+siempre\s+la\s+bandera/);
+    expect(seccion).not.toMatch(/o\s+que\s+no\s+tiene\s+ninguna\s+fila/);
     expect(seccion).not.toMatch(/segunda\s+corrida\s+reescribe/);
+  });
+
+  it('la sección 7 dice que quien retira la autorización queda en Descartadas: sin autorización (#190)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^Si un docente retira la autorización/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && l.trim() === '');
+    const parrafo = lineas.slice(inicio, fin === -1 ? undefined : fin).join('\n');
+    expect(parrafo).toContain('Descartadas: sin autorización');
   });
 
   it('trata el código como contraseña, no llama privada a la pestaña Padrón y no presenta el chat como protección', () => {

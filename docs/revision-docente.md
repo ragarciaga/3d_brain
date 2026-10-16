@@ -373,7 +373,7 @@ cambio los trata como datos, nunca como instrucciones.
 
 Las respuestas de trazos (`trazo:`) y de rutas trazadas (`trazado_`) del vago solo entran al
 resumen si la última fila del alias en `Autorizaciones` dice `sí` en la columna Vago. Las de un alias
-cuya última fila dice `no`, o que no tiene ninguna fila, no entran a las tablas ni a los archivos por
+cuya última fila dice `no` no entran a las tablas ni a los archivos por
 estructura: salen al final de `resumen.md`, en la sección "Descartadas: sin la casilla del vago",
 con su conteo y la misma tabla (con alias, nunca con código). No se aplican. Esa sección también
 trae las respuestas que llevan malla o ramo en un campo que no es de trazo. Las de ficha del vago
@@ -381,15 +381,19 @@ trae las respuestas que llevan malla o ramo en un campo que no es de trazo. Las 
 puede revisar el vago, que marque la casilla en Acciones: la importación siguiente incluye sus
 respuestas sin que tenga que reenviarlas, porque manda la última autorización al momento de
 importar. Si pasas el archivo sin `--autorizaciones`, el script corre, avisa en la consola y manda
-todas las respuestas del vago a esa sección, con una línea que lo dice. Las respuestas que un
-docente mandó por el formulario de respaldo (sin canal) no pueden salir de ahí hasta que use el canal,
-porque sin canal nadie marca la casilla en Acciones. Con `--autorizaciones`, la consola dice también
-cuántas respuestas son de revisores sin ninguna autorización (ninguna fila en `Autorizaciones`;
-pasa, por ejemplo, con lo que llegó por el formulario de respaldo) y de qué alias, y `resumen.md`
-lo marca con una línea bajo el título. Esas respuestas siguen en las tablas. Si el número no es 0,
-antes de crear el issue, que es público, abre `resumen.md`, busca esos alias y borra sus filas de
-las tablas y de los archivos por estructura. Nunca agregues a mano filas en
-`Autorizaciones`: serían registros de consentimiento fabricados.
+todas las respuestas del vago a esa sección, con una línea que lo dice.
+
+Con `--autorizaciones`, las respuestas de un alias sin ninguna autorización (ninguna fila en
+`Autorizaciones`; pasa, por ejemplo, con lo que llegó por el formulario de respaldo de un docente que nunca usó el canal) no entran
+a las tablas ni a los archivos por estructura, tampoco las del vago: el importador las aparta solo en
+la sección "Descartadas: sin autorización" de `resumen.md`, antes de la del vago, con su conteo y una
+fila por respuesta con el alias (nunca el código), el campo, el idioma y la estructura. Como el docente
+no autorizó el tratamiento de sus datos, esa sección no trae su veredicto, su propuesta ni su
+comentario, y no se aplican. La consola dice cuántas son y de qué alias. No tienes que borrar nada a
+mano antes de crear el issue. Si el docente usa el canal y acepta la autorización, la importación
+siguiente las incluye sin que tenga que reenviarlas. Sin `--autorizaciones` el importador no puede
+saber quién autorizó y esas respuestas salen en las tablas: pasa siempre la bandera. Nunca agregues a
+mano filas en `Autorizaciones`: serían registros de consentimiento fabricados.
 
 3. Crea el issue de la importación con el resumen:
 
@@ -539,5 +543,7 @@ por su canal propio. Los pasos, con el alias del docente:
 
 Si un docente retira la autorización pero sigue revisando, borra todas sus filas de `Autorizaciones` y
 deja su código activo en `Padrón`: la app le vuelve a pedir la autorización antes de guardar y el script
-rechaza sus `guardar` hasta que acepte. Borrar solo la última fila no basta, porque la anterior sigue
+rechaza sus `guardar` hasta que acepte. Mientras no tenga ninguna fila, la importación con
+`--autorizaciones` aparta todas sus respuestas en "Descartadas: sin autorización", sin su veredicto, su
+propuesta ni su comentario. Borrar solo la última fila no basta, porque la anterior sigue
 valiendo. En una supresión, en cambio, el paso 3.1 (`no` en `Padrón`) es obligatorio y va primero.
