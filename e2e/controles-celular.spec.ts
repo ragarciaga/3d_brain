@@ -2,6 +2,10 @@
 // pisaban con él y Post asomaba fuera del círculo de la brújula. Se miden las cajas reales (sin modelo:
 // el dock y la brújula no dependen de él) a varios anchos y con la raíz al 100 % y al 125 %.
 import { expect, test, type Page } from '@playwright/test';
+import { protegerCanalReal } from './canal-real';
+
+// El modo revisión (más abajo) no debe salir al Apps Script del editor.
+protegerCanalReal();
 
 interface R {
   x: number;
@@ -233,8 +237,8 @@ for (const { w, h } of [TAMANOS[0]!, TAMANOS[3]!]) {
   });
 }
 
-// Escritorio: el dock no cambia; la brújula conserva el tamaño de sus botones y crece solo en el
-// padding para que Post (esquina) quepa en el círculo.
+// Escritorio: el dock no cambia; la brújula achica sus celdas a 2rem y sube el padding a 0,95rem para que
+// Post (esquina) quepa en el círculo sin crecer (134,8 px, igual que antes) y sin chocar con el dock.
 for (const alto of [720, 800]) {
   test(`escritorio 1280x${alto}: el dock sigue igual y la brújula contiene sus seis botones (#194)`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: alto });
@@ -249,13 +253,68 @@ for (const alto of [720, 800]) {
     expect.soft(m.marcasPosicion, `${etiqueta}: las marcas siguen absolutas`).toBe('absolute');
     comprobarDock(m, etiqueta);
     comprobarMarcas(m, etiqueta);
-    // Los botones de la brújula no cambian de tamaño; su padding sube a 1,15rem (18,4 px).
+    // Los botones de la brújula miden 32 px (2rem) y su padding es 0,95rem (15,2 px): el total sigue en 134,8 px.
     for (const c of m.botones) {
-      expect.soft(Math.abs(c.caja.w - 38.4) + Math.abs(c.caja.h - 38.4), `${etiqueta}: botón ${c.nombre} de 38,4 px ${fmt(c.caja)}`).toBeLessThanOrEqual(0.1);
+      expect.soft(Math.abs(c.caja.w - 32) + Math.abs(c.caja.h - 32), `${etiqueta}: botón ${c.nombre} de 32 px ${fmt(c.caja)}`).toBeLessThanOrEqual(0.1);
     }
-    expect.soft(Math.abs(m.brujula.padding - 18.4), `${etiqueta}: padding de la brújula (${m.brujula.padding}px)`).toBeLessThanOrEqual(0.1);
-    expect.soft(Math.abs(m.brujula.caja.w - 160.4) + Math.abs(m.brujula.caja.h - 160.4), `${etiqueta}: brújula de 160,4 px ${fmt(m.brujula.caja)}`).toBeLessThanOrEqual(0.2);
+    expect.soft(Math.abs(m.brujula.padding - 15.2), `${etiqueta}: padding de la brújula (${m.brujula.padding}px)`).toBeLessThanOrEqual(0.1);
+    expect.soft(Math.abs(m.brujula.caja.w - 134.8) + Math.abs(m.brujula.caja.h - 134.8), `${etiqueta}: brújula de 134,8 px ${fmt(m.brujula.caja)}`).toBeLessThanOrEqual(0.2);
     comprobarBrujula(m, etiqueta);
     comprobarSinCruces(m, etiqueta);
   });
 }
+
+/** Modo revisión (la barra de revisión le quita alto a `.centro`): se cierra la guía y se espera la barra. */
+async function abrirRevision(page: Page) {
+  await preparar(page, '/es/revision?r=CELU01', false);
+  const guia = page.getByTestId('como-revisar');
+  if (await guia.isVisible()) await guia.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(page.getByTestId('panel-revision')).toBeVisible();
+  await expect(guia).toHaveCount(0);
+}
+
+/** El dock (con su nota y "Mostrar todo", si están) y la brújula no se cruzan y quedan dentro de `.centro`. */
+function comprobarEscritorio(m: Medida, etiqueta: string) {
+  comprobarDock(m, etiqueta);
+  comprobarBrujula(m, etiqueta);
+  comprobarSinCruces(m, etiqueta);
+}
+
+// En 1280x720 el dock más alto (nota de cortes y "Mostrar todo") y la barra de revisión le dejan poco
+// espacio a la brújula: se mide cada combinación de modo y estado.
+test('escritorio 1280x720: con un corte y un filtro el dock y la brújula no se cruzan (#194)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await preparar(page, '/es', false);
+  await conCortesYFiltro(page);
+  comprobarEscritorio(await medir(page), '1280x720 100 % es con corte y filtro');
+});
+
+test('escritorio 1280x720 en modo revisión: el dock y la brújula no se cruzan (#194)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await abrirRevision(page);
+  comprobarEscritorio(await medir(page), '1280x720 100 % es revisión base');
+});
+
+// Con la barra de revisión, la nota de cortes y "Mostrar todo", el dock mide 438,5 px y baja hasta y 624,6;
+// la brújula (134,8 px, top 541,7) ya se cruzaba con él antes de #194 (medido con el CSS de la base). No se
+// mueve el dock: aquí solo se vigila que la brújula no empeore (mismo tamaño y misma posición) y que los dos
+// sigan dentro de `.centro`. El cruce queda como seguimiento.
+test('escritorio 1280x720 en modo revisión con un corte y un filtro: la brújula no empeora y los dos caben en .centro (#194)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await abrirRevision(page);
+  await conCortesYFiltro(page);
+  const m = await medir(page);
+  const etiqueta = '1280x720 100 % es revisión con corte y filtro';
+  comprobarDock(m, etiqueta);
+  comprobarBrujula(m, etiqueta);
+  expect.soft(Math.abs(m.brujula.caja.w - 134.8) + Math.abs(m.brujula.caja.h - 134.8), `${etiqueta}: brújula de 134,8 px ${fmt(m.brujula.caja)}`).toBeLessThanOrEqual(0.2);
+  expect.soft(m.brujula.caja.y, `${etiqueta}: la brújula no sube sobre el dock (y ${m.brujula.caja.y.toFixed(1)})`).toBeGreaterThanOrEqual(541.5);
+  expect.soft(exceso(m.dock.caja, m.centro), `${etiqueta}: el dock dentro de .centro ${fmt(m.centro)}`).toBeLessThanOrEqual(TOL);
+  expect.soft(exceso(m.brujula.caja, m.centro), `${etiqueta}: la brújula dentro de .centro ${fmt(m.centro)}`).toBeLessThanOrEqual(TOL);
+});
+
+test('escritorio 1280x720 en inglés: la brújula contiene sus seis botones y sus textos (#194)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await preparar(page, '/en', false);
+  comprobarEscritorio(await medir(page), '1280x720 100 % en base');
+});
