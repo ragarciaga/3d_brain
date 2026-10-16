@@ -180,8 +180,8 @@ export function errorDePadron(p: unknown): string | null {
     posicion++;
     // Nunca se imprime el código, ni entero ni cortado: un código con una errata sigue siendo casi el código.
     if (!REVISOR_VALIDO.test(codigo)) {
-      const alias = typeof a === 'string' && ALIAS_VALIDO.test(a) ? ` (alias ${a})` : '';
-      return `código inválido en la entrada ${posicion} del padrón${alias}`;
+      const sufijoAlias = typeof a === 'string' && ALIAS_VALIDO.test(a) ? ` (alias ${a})` : '';
+      return `código inválido en la entrada ${posicion} del padrón${sufijoAlias}`;
     }
     if (typeof a !== 'string' || !ALIAS_VALIDO.test(a)) return `alias inválido para un código del padrón (usa D01, D02...)`;
     if (alias.has(a)) return `alias repetido en el padrón: ${a}`;

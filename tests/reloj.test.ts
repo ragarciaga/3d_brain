@@ -1,6 +1,6 @@
 // Pausa del reloj simulado para los E2E (e2e/reloj.ts): reintenta solo cuando la pausa cayó en el pasado.
 import { describe, expect, it } from 'vitest';
-import { INTENTOS_PAUSA, pausarReloj, type PaginaConReloj } from '../e2e/reloj';
+import { pausarReloj, type PaginaConReloj } from '../e2e/reloj';
 
 function pagina(horas: number[], fallas: (Error | null)[]) {
   const pausas: number[] = [];
@@ -43,6 +43,6 @@ describe('pausarReloj', () => {
   it('se rinde después de los intentos máximos con el último error', async () => {
     const p = pagina([1, 2, 3, 4, 5, 6, 7], Array.from({ length: 10 }, PASADO));
     await expect(pausarReloj(p.page)).rejects.toThrow('Cannot fast-forward to the past');
-    expect(p.pausas).toHaveLength(INTENTOS_PAUSA);
+    expect(p.pausas).toHaveLength(5); // valor escrito aquí, no la constante
   });
 });
