@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-16 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
+Updated: 2026-10-16 (corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -108,6 +108,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-16: la regla de no escribir la URL `/exec` aplica a issues, PR y documentos; en `src/config/revision.ts` se queda porque la app la necesita en el bundle (decisión del editor).
+- 2026-10-16: aviso de privacidad sin banner (analítica sin cookies): página "Privacidad" en es y en con responsable Maysa Strategy Partners y contacto info@maysasp.com; la transferencia a EE. UU. va en la página, no en el diálogo (#168, texto pendiente de aprobación).
+- 2026-10-16: analítica de Cloudflare publicada en un solo commit con `gitleaks:allow` en las dos líneas del token público (#150, opción 1; PR #165); el editor confirmó que cuenta visitas.
 - 2026-10-14: posiciones de marcadores propuestas por regla anatómica sobre piezas vecinas del
   modelo, cada una con fuente verificada, como `aproximada`; trazos del vago con evidencia medida y
   propuesta con confianza (spec 04 por delegación del editor), see
@@ -149,72 +152,68 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03): T1 a T13 en main y verificada la función completa (#158: seguridad y e2e en PASS;
-   lo fusiona el editor). El hallazgo mayor de seguridad (guardar sin autorización registrada) está corregido en
-   la app (#159) y en el script desplegado (#157, versión 2); la prueba en el sitio publicado pasó el 2026-10-16.
-2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
-   ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
-   un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 hecha en la rama
-   `rb/T2-reglas-ubicador-v2` salvo dos casos de prueba (#102, escalada: se recomienda una ronda más).
-3. Revisión docente: cuando 1 y 2 estén en main, mandar el mensaje a los 10 docentes.
-4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. T1, T2 y T3 en main (PR #112, #119 y #124); T4 en PR #127, espera la prueba de Blender del editor (#49). Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
-5. Carga (#6, medición hecha; tareas #83 a #85, #85 fusionado en #154: el panel desglosa "Preparar el modelo"): pedir el modelo desde el inicio, junto con el
-   código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
-   "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; sigue #84.
-6. Sitio: dominio propio `https://brain.maysasp.com` (PR #146, ADR 0014; HTTPS forzado). Analítica
-   sin cookies de Cloudflare Web Analytics en #150 (el editor eligió la opción 1 para gitleaks; falta unir los commits, CI y fusionar) (ADR 0015; no se carga en modo revisión).
-7. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1 a T9 (T8 en #145, T9 en #160: cajón de cortes en celular y controles bloqueados con cortes); falta T10, la medición manual del editor en los equipos de referencia, y después la verificación de la función. Después F12 y fichas verificadas. Issue de control: #1.
+1. Canal de retorno (spec 03): completo y verificado. Autorización v2, Padrón en caché y `leer` por POST en main (#170); el script todavía no se ha redesplegado a propósito: se despliega una sola vez después de #168.
+2. Privacidad (#168): plan publicado con el texto exacto (es y en); espera la aprobación del editor (`rb:needs-human`). Sube `VERSION_AUTORIZACION` a 3.
+3. Propuestas para la sesión docente (spec 04): T1 y T2 en main (#164). Sigue T3 (#103).
+4. Vago (ADR 0010): T4 en PR #127, verificado con Blender real en la nube; bloqueado por el orden de los imports en `extraer.py` (`bmesh` antes que `bpy`), escalado en #49 con una ronda más recomendada. R2.1 y R2.2 se cortan en la línea central (R2.4).
+5. Seguridad del canal: #149 (S5, S6 y la analítica) sigue abierto; seguimientos en #166 (importador) y #169 (GET de `leer`, versión en `autorizar`).
+6. F8 cortes: falta T10 (#42, medición del editor) y después `/rb-verify docs/specs/01-cutting-planes/`.
+7. Revisión docente: cuando #168 esté en main y el script desplegado, mandar el mensaje a los 10 docentes.
 
 ## Pendientes del editor (al 2026-10-16)
-Hecho el 2026-10-16: `Codigo.js` redesplegado como versión 2 de la misma implementación (#157 cerrado) y la prueba del canal en el sitio publicado pasó (guardado, `Respuestas`, `Autorizaciones` y revocación). #150: el editor eligió la opción 1 (token público con `gitleaks:allow` en un solo commit); lo toma la próxima corrida.
+Hecho el 2026-10-16: hoja limpia (verificado: `Respuestas` y `Autorizaciones` solo con encabezados, código de prueba en `no`), formulario de registro cerrado, `prueba-canal.js` archivado, #164 fusionado y analítica confirmada en Cloudflare (cuenta visitas).
 
 Sigue, en este orden:
-1. **Limpiar el código de prueba:** borrar sus filas en `Respuestas` y `Autorizaciones` y ponerlo en `no` en `Padrón`. Hasta entonces sigue activo.
-2. **Cierres en Google:** cerrar el formulario de registro externo y archivar la implementación de `apps-script/prueba-canal.js` (T1) si sigue activa.
-3. **Decisiones:**
-   - #102 (issue de 04-T2): ¿una ronda más solo para dos casos de prueba (recomendado) o abrir el PR como está?
-   - Texto de autorización: el diálogo no dice que las propuestas del docente pueden aparecer, con su alias (D01, no su nombre), en issues públicos de GitHub cuando el editor las importa. ¿Se agrega? Cuesta subir `VERSION_AUTORIZACION` en la app y en `Codigo.js` y volver a desplegar el script; como ningún docente ha autorizado todavía, nadie tendría que volver a aceptar. Conviene decidirlo antes de mandar los enlaces.
-4. **PR que fusiona el editor:** #158 (verificación del spec 03) y #127 (02-T4, espera #49).
-5. **Pruebas en sus equipos:** #49 (Blender), 01-T10 (#42, medición de los cortes), `?medir=1` en el Tecno con el desglose pegado en #6, capturas del relleno y el contorno para #9, y una mirada a la ficha con el cajón de cortes en un celular de pantalla baja (390 x 667).
-6. Después de 1 y 3 (texto de autorización): mandar el mensaje a los docentes (`docs/guia-docentes.md`).
+1. **#168:** aprobar el texto de la página de privacidad y del diálogo v3 (o los cambios), con las decisiones del comentario de escalación.
+2. **Desplegar `Codigo.js` una sola vez** cuando #170 y #168 estén en main, con los pasos de la subsección #162 de `docs/revision-docente.md`, y repetir la prueba corta en el sitio.
+3. **#49:** autorizar una ronda más para el orden de los imports de `extraer.py`.
+4. **Pruebas en tus equipos:** 01-T10 (#42, medición de los cortes), `?medir=1` en el Tecno con el desglose para #6, capturas del relleno y el contorno para #9.
+5. Después de 1 y 2: mandar el mensaje a los docentes (`docs/guia-docentes.md`).
 
 ## Seguimientos abiertos (sin decisión pendiente)
-- Seguridad del canal (`docs/specs/03-review-return-channel/security-report.md`): S2 casilla del vago no exigida en el servidor ni en el importador; S3 inundación con códigos inventados (Padrón en `CacheService`); S4 código en la query de `leer`; S5 `?r=` en la barra tras entrar; S6 llaves locales con el código en claro. Nuevo de #157: tocar la casilla del vago con una autorización vieja en caché vuelve a autorizar sin mostrar las condiciones. #149 agrupa S5, S6 y el aviso de la analítica.
-- Pruebas: F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas; una respuesta del canal con un campo inventado con formato válido se acepta (pregunta para R6.6).
+- #149: S5 (`?r=` en la barra), S6 (llaves locales con el código), adopción del código en una pestaña con beacon (también con el botón Atrás) y la frase "Revisit when" del ADR 0015. Toca `PanelRevision.tsx`; va después de #168.
+- #166: seguimientos del importador (sección 7 de la guía, rechazo del vago en el servidor, salida vieja, design.md línea 38).
+- #169: retirar el GET de `leer` y rechazar `autorizar` con versión vieja (juntar con el siguiente redespliegue).
+- Sitio: GitHub Pages sirve `/es` y `/en` con estado 404 (por `404.html`); funciona para el usuario, pero los buscadores pueden no indexar esas rutas.
+- Pruebas: F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas.
 - Cortes: el encuadre en celular no descuenta el cajón de cortes; el recorrido del vago puede tapar el cajón.
-- Spec 01: tras T10, correr la verificación de la función completa (`/rb-verify docs/specs/01-cutting-planes/`).
-- Mejoras del harness Rockbuilt observadas en estas corridas (puntos 1 a 15): comentario en el issue de control #1 del 2026-10-16; se llevan al repositorio de Rockbuilt, no se implementan aquí.
+- Mejoras del harness: issue en el repo de Rockbuilt (corrida cycle-c2c1f9f-hbrq).
 
 ## Timing
 <!-- rb:timing:start -->
-| Task | plan | implement | Total |
-|---|---:|---:|---:|
-| T3 | 5.8 | 5.1 | 10.9 |
-| T1 | 5.8 |  | 5.8 |
-| T1 |  |  | 0.0 |
-| T1 |  |  | 0.0 |
-| T4 | 7.2 |  | 7.2 |
-| T5 | 2.8 | 14.2 | 17.0 |
-| T2 | 17.1 |  | 17.1 |
-| i83 |  |  | 0.0 |
-| T2 |  |  | 0.0 |
-| i120 |  |  | 0.0 |
-| T4 |  |  | 0.0 |
-| T3 |  |  | 0.0 |
-| T6 | 9.5 |  | 9.5 |
-| T4 |  |  | 0.0 |
-| T5 |  |  | 0.0 |
-| i84 |  |  | 0.0 |
-| T7 | 9.3 |  | 9.3 |
-| T8 | 8.5 |  | 8.5 |
-| T9 |  |  | 0.0 |
-| T11 | 4.9 |  | 4.9 |
-| T10 |  |  | 0.0 |
-| T12 | 8.5 |  | 8.5 |
-| T6 |  |  | 0.0 |
-| T8 |  |  | 0.0 |
-| T7 |  |  | 0.0 |
+| Task | plan | implement | audit | security | Total |
+|---|---:|---:|---:|---:|---:|
+| T3 | 5.8 | 5.1 |  |  | 10.9 |
+| T1 |  |  |  |  | 0.0 |
+| T1 |  |  |  |  | 0.0 |
+| T1 |  |  |  |  | 0.0 |
+| T4 |  |  |  |  | 0.0 |
+| T5 |  |  |  |  | 0.0 |
+| T2 |  |  |  |  | 0.0 |
+| i83 |  |  |  |  | 0.0 |
+| T2 |  |  |  |  | 0.0 |
+| i120 |  |  |  |  | 0.0 |
+| T4 |  |  |  |  | 0.0 |
+| T3 |  |  |  |  | 0.0 |
+| T6 |  |  |  |  | 0.0 |
+| T4 |  |  |  |  | 0.0 |
+| T5 |  |  |  |  | 0.0 |
+| i84 |  |  |  |  | 0.0 |
+| T7 |  |  |  |  | 0.0 |
+| T8 |  |  |  |  | 0.0 |
+| T9 |  |  |  |  | 0.0 |
+| T11 |  |  |  |  | 0.0 |
+| T10 |  |  |  |  | 0.0 |
+| T12 |  |  |  |  | 0.0 |
+| T6 |  |  |  |  | 0.0 |
+| T8 |  |  |  |  | 0.0 |
+| T7 |  |  |  |  | 0.0 |
+| T2 |  |  |  |  | 0.0 |
+| analitica |  |  |  |  | 0.0 |
+| i163 | 9.4 |  | 3.3 | 2.2 | 14.9 |
+| i162 | 10.1 |  |  |  | 10.1 |
+| i149 |  |  |  |  | 0.0 |
 
 Minutes per phase.
-Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement, T9/implement.
+Open (started, not ended): i149/plan, T2/fix, i163/implement, i162/implement.
 <!-- rb:timing:end -->

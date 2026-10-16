@@ -105,9 +105,10 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    como lo hace `scripts/crear-revisores.ts` y que no se parezca a los reales, alias `D99` y Activo
    `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
-   un PR. Abre `<URL>?accion=leer&r=<código de prueba>`: debe devolver `{"ok":true,...}`. Cambia
-   Activo a `no` (o borra la fila) y vuelve a abrirla: debe devolver
-   `{"ok":false,"error":"codigo_no_activo"}`. Al terminar, borra las filas de ese código en
+   un PR. Abre `<URL>?accion=leer&r=<código de prueba>` (esta prueba usa el GET de compatibilidad
+   del script; la app lee por POST y no pone el código en la URL): debe devolver `{"ok":true,...}`.
+   Cambia Activo a `no` (o borra la fila), espera un minuto (el script guarda `Padrón` unos 60 s) y
+   vuelve a abrirla: debe devolver `{"ok":false,"error":"codigo_no_activo"}`. Al terminar, borra las filas de ese código en
    `Respuestas` y `Autorizaciones` y déjalo en `no` en `Padrón`, para que no llegue al importador.
 
 Para actualizar el script sin cambiar la URL, edita la implementación existente: Implementar,
@@ -146,6 +147,56 @@ Si cambias `VERSION_AUTORIZACION` en `src/config/revision.ts`, cambia la constan
 `apps-script/Codigo.js` (una prueba falla si difieren) y vuelve a desplegar el script como nueva
 versión apenas se publique la app. Si no, el docente acepta y el diálogo vuelve a salir, una y otra vez.
 
+### Actualización: autorización v2, leer por POST y caché del Padrón (#162)
+
+Desde #162 cambian cuatro cosas, y las cuatro salen en el mismo despliegue de `apps-script/Codigo.js`:
+
+- El texto del diálogo de autorización avisa que las propuestas y los comentarios pueden publicarse con
+  el alias del docente (por ejemplo D01, nunca su nombre) en issues públicos del proyecto en GitHub.
+- `VERSION_AUTORIZACION` pasa de `1` a `2`, en `src/config/revision.ts` y en `Codigo.js`. Toda
+  autorización de la versión `1` deja de valer y la app vuelve a pedir la aceptación del texto nuevo. Ningún
+  docente ha autorizado todavía, así que a nadie se le pide dos veces.
+- La app lee por POST (`{accion:'leer', r}`) y ya no pone el código de revisor en la URL. El script
+  sigue respondiendo el GET `?accion=leer&r=` por compatibilidad (la prueba rápida del paso 7 lo usa)
+  hasta que se retire en otro cambio.
+- El script guarda la lista de códigos activos de `Padrón` unos 60 s en `CacheService`, en vez de leer la
+  hoja en cada petición. Un código que pasas a `no`, o uno nuevo con `sí`, cambia como mucho en un minuto.
+
+Antes de la primera importación, confirma que `Respuestas` no tiene filas de códigos reales cuya última
+autorización en `Autorizaciones` sea la versión `1`: esas respuestas se aceptaron con el texto anterior,
+que no avisaba de la publicación del alias. Hoy la hoja está vacía (la limpiaste el 2026-10-16).
+
+Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementación existente. En este
+orden, con el sitio primero y el script después:
+
+1. Espera a que el PR de #162 esté fusionado y a que termine el workflow `pages`. Hasta entonces la web
+   publicada sigue leyendo por GET con la versión `1`.
+2. El mismo día, y antes de mandar los enlaces a los docentes, copia el script. En PowerShell:
+
+   ```powershell
+   cd C:\Users\TU_USUARIO\proyectos\3d_brain
+   Get-Content -Raw -Encoding UTF8 apps-script\Codigo.js | Set-Clipboard
+   ```
+
+3. En Apps Script, selecciona todo `Código.gs`, pega y pulsa Guardar.
+4. Implementar, Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. Nunca
+   "Nueva implementación".
+5. Comprueba que la URL de la aplicación web que muestra Google es la misma que ya está en
+   `src/config/revision.ts`. Si cambió, no la pegues en ningún issue: avísalo por chat.
+6. Comprueba que funciona, con el código de prueba del paso 7:
+   1. Márcalo `sí` en `Padrón` y espera un minuto (la caché del `Padrón`).
+   2. Abre la app con su enlace y responde un campo. El diálogo debe nombrar el alias y los issues
+      públicos. Acepta y espera "Guardado ✓".
+   3. En `Autorizaciones`, la fila nueva del código debe tener la Versión `2`. Recarga la página: el
+      diálogo no debe volver.
+   4. Cambia Activo a `no` en `Padrón`, espera un minuto y recarga: debe aparecer "Tu código no está
+      activo; escribe al editor".
+   5. Limpia como dice el paso 7.
+
+Entre el paso 1 y el 4, el sitio y el script no coinciden: la lectura de la app falla (el script viejo
+responde `formato` a la lectura por POST) y `guardar` responde `sin_autorizacion`. Por eso van seguidos
+y antes de mandar los enlaces.
+
 ## 2. Cuidar el padrón
 
 `Padrón` decide qué códigos pueden escribir. La hoja del canal no se comparte con nadie: quien tenga
@@ -174,7 +225,8 @@ las respuestas de ese docente.
   el segundo.
 - Para docentes nuevos, `node scripts/crear-revisores.ts N` (sección 3) y agrega las filas nuevas a
   `Padrón`.
-- Si un código se filtra, cámbialo a `no` en `Padrón` y crea uno nuevo.
+- Si un código se filtra, cámbialo a `no` en `Padrón` y crea uno nuevo. El cambio vale en un minuto
+  como mucho: el script guarda `Padrón` unos 60 s (#162).
 
 ## 3. Invitar a cada docente
 
@@ -359,7 +411,8 @@ pasos, con el alias del docente:
 2. Si pide conocer sus datos, filtra por su código en `Respuestas` y en `Autorizaciones`, y entrégale
    esas filas.
 3. Si pide borrarlos, haz todo esto, en este orden:
-   1. Pon `no` en su fila de `Padrón` (o bórrala). Así el código deja de escribir.
+   1. Pon `no` en su fila de `Padrón` (o bórrala). Así el código deja de escribir en un minuto como
+      mucho (el script guarda `Padrón` unos 60 s).
    2. Borra todas sus filas de `Respuestas` y de `Autorizaciones` (en `Autorizaciones` hay una por
       cada aceptación y por cada cambio de la casilla del vago).
    3. Borra su nombre del documento privado de enlaces.

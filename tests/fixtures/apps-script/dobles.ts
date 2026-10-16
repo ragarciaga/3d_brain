@@ -55,6 +55,8 @@ export class HojaDoble {
   formulas = new Set<string>();
   falla = false;
   llamadasSetValues = 0;
+  /** Veces que el script leyó la hoja entera (`getDataRange().getValues()`), para probar la caché del padrón. */
+  lecturas = 0;
 
   constructor(
     cabecera: readonly string[],
@@ -68,7 +70,12 @@ export class HojaDoble {
   }
 
   getDataRange() {
-    return { getValues: (): Celda[][] => (this.filas.length ? this.filas.map((f) => [...f]) : [['']]) };
+    return {
+      getValues: (): Celda[][] => {
+        this.lecturas++;
+        return this.filas.length ? this.filas.map((f) => [...f]) : [['']];
+      },
+    };
   }
 
   getRange(fila: number, columna: number, nFilas: number, nColumnas: number) {
@@ -111,6 +118,8 @@ export interface Opciones {
   sinPestana?: NombreHoja;
   /** Códigos con una fila en `Autorizaciones` con la versión de la app. Por defecto ninguno, como un código nuevo. */
   autorizados?: string[];
+  /** Claves de CacheService para las que `put` lanza, como si el valor no cupiera. */
+  putFalla?: (clave: string) => boolean;
 }
 
 export interface Salida {
@@ -150,6 +159,8 @@ export function crearEntorno(op: Opciones = {}) {
   const almacen = new Map<string, { valor: string; vence: number }>();
   /** Segundos de vida de cada `put`, para comprobar que el contador no queda guardado de más. */
   const vidas: number[] = [];
+  /** Cada `put` que llegó a guardar, con su clave y su vida en segundos. */
+  const puts: { clave: string; segundos: number }[] = [];
   const CacheService = {
     getScriptCache: () => ({
       get(clave: string): string | null {
@@ -158,7 +169,9 @@ export function crearEntorno(op: Opciones = {}) {
       },
       put(clave: string, valor: string, segundos = 600) {
         if (typeof valor !== 'string') throw new Error('CacheService solo guarda texto');
+        if (op.putFalla?.(clave)) throw new Error('falla simulada de la caché');
         vidas.push(segundos);
+        puts.push({ clave, segundos });
         almacen.set(clave, { valor, vence: reloj.ahora + segundos * 1000 });
       },
     }),
@@ -215,7 +228,18 @@ export function crearEntorno(op: Opciones = {}) {
     candado,
     salidas,
     vidas,
+    puts,
     flushes: () => flushes,
+    /** Deja un valor en la caché como si otra ejecución del script lo hubiera guardado. */
+    sembrarCache(clave: string, valor: string, segundos = 600) {
+      almacen.set(clave, { valor, vence: reloj.ahora + segundos * 1000 });
+    },
+    /** POST `{accion:'leer', r}`: la forma de la app. */
+    postLeer(codigo: unknown): Record<string, unknown> {
+      const cuerpo = JSON.stringify({ accion: 'leer', r: codigo });
+      const length = Buffer.byteLength(cuerpo, 'utf8');
+      return JSON.parse(doPost({ postData: { contents: cuerpo, type: 'text/plain', length }, parameter: {} }).getContent()) as Record<string, unknown>;
+    },
     post(cuerpo: string): Record<string, unknown> {
       const length = Buffer.byteLength(cuerpo, 'utf8');
       return JSON.parse(doPost({ postData: { contents: cuerpo, type: 'text/plain', length }, parameter: {} }).getContent()) as Record<string, unknown>;

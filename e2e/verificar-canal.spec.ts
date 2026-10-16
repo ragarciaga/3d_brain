@@ -58,14 +58,14 @@ async function simularCanal(page: Page, inicial: Partial<Pick<Canal, 'autorizaci
       const url = new URL(pedido.url());
       const json = (cuerpo: unknown) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(cuerpo) });
       if (pedido.method() === 'GET') {
-        const accion = url.searchParams.get('accion');
-        canal.peticiones.push({ accion, cuerpo: null });
-        if (accion !== 'leer') return route.abort('failed');
-        return json({ ok: true, respuestas: { v: 2, r: url.searchParams.get('r'), e: canal.respuestas }, autorizacion: canal.autorizacion });
+        // La app lee por POST (S4, #162): un GET es una petición que no debería salir.
+        canal.peticiones.push({ accion: url.searchParams.get('accion'), cuerpo: null });
+        return route.abort('failed');
       }
       const cuerpo = JSON.parse(pedido.postData() ?? '{}') as Record<string, unknown>;
       const accion = typeof cuerpo['accion'] === 'string' ? cuerpo['accion'] : null;
       canal.peticiones.push({ accion, cuerpo });
+      if (accion === 'leer') return json({ ok: true, respuestas: { v: 2, r: cuerpo['r'], e: canal.respuestas }, autorizacion: canal.autorizacion });
       if (accion === 'autorizar') return json({ ok: true });
       if (accion === 'guardar') {
         if (canal.guardar === 'red') return route.abort('failed');

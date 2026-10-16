@@ -4,14 +4,19 @@
 // ids de hoja, ni direcciones, ni códigos del padrón; el padrón vive solo en la pestaña `Padrón`.
 //
 // Contrato (lo cumple src/lib/canal.ts):
-// - GET ?accion=leer&r=<código>: {ok, respuestas: {v: 2, r, e}, autorizacion: {version, vago} | null}.
-// - POST (cuerpo text/plain con JSON) {accion: 'guardar', carga}: {ok, recibidas: [...]}. Exige que la
-//   última fila del código en `Autorizaciones` tenga la versión VERSION_AUTORIZACION (S1, #157).
+// - POST (cuerpo text/plain con JSON) {accion: 'leer', r}: {ok, respuestas: {v: 2, r, e}, autorizacion:
+//   {version, vago} | null}. Es la forma de la app: el código no viaja en la URL (S4, #162).
+// - GET ?accion=leer&r=<código>: la misma respuesta. Se acepta por compatibilidad (pestañas abiertas con
+//   la app anterior y la prueba rápida del editor) y se retirará en otro cambio.
+// - POST {accion: 'guardar', carga}: {ok, recibidas: [...]}. Exige que la última fila del código en
+//   `Autorizaciones` tenga la versión VERSION_AUTORIZACION (S1, #157).
 // - POST {accion: 'autorizar', r, version, vago}: {ok}.
 // - Un error siempre es {ok: false, error} con error en codigo_no_activo, demasiado_grande, formato,
 //   demasiadas_peticiones, sin_autorizacion o interno. Nunca lleva el mensaje de una excepción.
+// - El padrón se guarda en CacheService 60 s (S3, #162): un código que pasa a `no`, o uno nuevo, cambia
+//   como mucho en un minuto.
 // Orden de las comprobaciones: tamaño, JSON, acción, código en el padrón, ritmo, autorización (solo
-// guardar), forma de la carga.
+// guardar), forma de la carga. Leer por POST pasa por las mismas que el GET, sin tomar el bloqueo.
 /* global SpreadsheetApp, CacheService, LockService, ContentService */
 /* exported doGet, doPost */
 
@@ -26,7 +31,7 @@ const ID_VALIDO = /^[a-z0-9-]+$/;
 const VERSION_AUTORIZACION_VALIDA = /^[A-Za-z0-9._-]{1,40}$/;
 // Copia de VERSION_AUTORIZACION de src/config/revision.ts: se cambian juntas, y una prueba de
 // tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones.
-const VERSION_AUTORIZACION = '1';
+const VERSION_AUTORIZACION = '2';
 const MAX_TEXTO_LARGO = 4000;
 const MAX_TEXTO_CORTO = 200;
 const MAX_FECHA = 40;
@@ -53,6 +58,8 @@ const MAX_BYTES = 65536;
 const MAX_CELDA = 50000; // tope de caracteres de una celda de Sheets
 const MAX_PETICIONES_POR_MINUTO = 120;
 const ESPERA_BLOQUEO_MS = 10000;
+const CLAVE_PADRON = 'padron';
+const VIDA_PADRON_S = 60;
 
 const PESTANA_RESPUESTAS = 'Respuestas';
 const PESTANA_AUTORIZACIONES = 'Autorizaciones';
@@ -167,10 +174,36 @@ function filasDe(nombre) {
   return pestana(nombre).getDataRange().getValues().slice(1);
 }
 
-// Activo solo con `sí` exacto (sin espacios sobrantes) en la tercera columna. Igualdad de texto, nunca
-// búsqueda de propiedad en un objeto.
+// Los códigos activos del padrón, en un arreglo de textos. Se guardan en CacheService VIDA_PADRON_S
+// segundos (S3, #162) para no leer la hoja en cada petición: un código que pasa a `no`, o uno nuevo,
+// cambia como mucho al vencer la caché. Un valor guardado que no sea un arreglo de textos se ignora y se
+// lee la hoja; un `put` que falla no rompe la petición. La lista nunca sale en una respuesta ni en un error.
+function codigosActivos() {
+  const cache = CacheService.getScriptCache();
+  const guardado = cache.get(CLAVE_PADRON);
+  if (typeof guardado === 'string') {
+    try {
+      const lista = JSON.parse(guardado);
+      if (Array.isArray(lista) && lista.every((c) => typeof c === 'string')) return lista;
+    } catch {
+      // valor dañado: se lee la hoja
+    }
+  }
+  const lista = filasDe(PESTANA_PADRON)
+    .filter((fila) => String(fila[2]).trim() === ACTIVO)
+    .map((fila) => String(fila[0]).trim());
+  try {
+    cache.put(CLAVE_PADRON, JSON.stringify(lista), VIDA_PADRON_S);
+  } catch {
+    // sin caché: la próxima petición lee la hoja otra vez
+  }
+  return lista;
+}
+
+// Activo solo con `sí` exacto (sin espacios sobrantes) en la tercera columna. Igualdad de texto en un
+// arreglo, nunca búsqueda de propiedad en un objeto.
 function codigoActivo(codigo) {
-  return filasDe(PESTANA_PADRON).some((fila) => String(fila[0]).trim() === codigo && String(fila[2]).trim() === ACTIVO);
+  return codigosActivos().indexOf(codigo) !== -1;
 }
 
 // Cuenta aproximada (CacheService no es atómico): hasta 120 peticiones por código y minuto.
@@ -253,14 +286,16 @@ function doPost(e) {
       const cruda = parsearObjeto(cuerpo.carga);
       if (!cruda) return fallo('formato');
       codigo = cruda.r;
-    } else if (cuerpo.accion === 'autorizar') {
+    } else if (cuerpo.accion === 'autorizar' || cuerpo.accion === 'leer') {
       codigo = cuerpo.r;
     } else {
       return fallo('formato');
     }
     const rechazo = rechazoDeCodigo(codigo);
     if (rechazo) return fallo(rechazo);
-    return cuerpo.accion === 'guardar' ? accionGuardar(codigo, cuerpo.carga) : accionAutorizar(codigo, cuerpo);
+    if (cuerpo.accion === 'guardar') return accionGuardar(codigo, cuerpo.carga);
+    if (cuerpo.accion === 'autorizar') return accionAutorizar(codigo, cuerpo);
+    return accionLeer(codigo);
   } catch {
     return fallo('interno');
   }
@@ -299,6 +334,12 @@ function autorizacionDe(codigo) {
   return null;
 }
 
+// Lo que el canal guarda de un código. Solo lee: no toma el bloqueo ni escribe. Lo usan doPost (forma de
+// la app) y doGet (compatibilidad), después de rechazoDeCodigo.
+function accionLeer(codigo) {
+  return json({ ok: true, respuestas: respuestasDe(codigo), autorizacion: autorizacionDe(codigo) });
+}
+
 function doGet(e) {
   try {
     const p = e && e.parameter;
@@ -306,7 +347,7 @@ function doGet(e) {
     const codigo = p.r;
     const rechazo = rechazoDeCodigo(codigo);
     if (rechazo) return fallo(rechazo);
-    return json({ ok: true, respuestas: respuestasDe(codigo), autorizacion: autorizacionDe(codigo) });
+    return accionLeer(codigo);
   } catch {
     return fallo('interno');
   }

@@ -4,12 +4,13 @@ Status: accepted
 Date: 2026-10-14
 Related: docs/specs/03-review-return-channel/design.md, docs/adr/0008-revision-docente.md, issue #67, docs/research/revision-docente/auditoria-ux.md
 Approved by: el editor, con design.md el 2026-10-14
+Amended: 2026-10-16, #162 (leer por POST y caché del padrón)
 
 ## Context
 Cada docente revisa una sola vez. Con el formulario de Google (ADR 0008 y #58), la app no sabe si el docente pulsó Enviar, una revisión larga se parte por el tope de unos 7000 caracteres del enlace y lo no enviado se pierde si se borra el navegador o se cambia de equipo. AGENTS.md prohíbe un backend propio y datos personales en un servidor propio; la única excepción era el formulario de Google del editor.
 
 ## Decision
-La app guardará cada respuesta, automáticamente, en la hoja de Google del editor mediante un Apps Script publicado en la cuenta del editor (`doGet` para leer las respuestas y la autorización de un código, `doPost` para guardar y autorizar). El script valida el código contra un padrón privado de la misma hoja, el tamaño, el ritmo y el formato. La autorización de tratamiento de datos (Ley 1581 de 2012) se da una vez dentro de la app. Las fichas muestran "Revisado por un docente universitario", sin datos personales. El formulario de revisión queda como respaldo; el de registro se retira. El código del script vive en `apps-script/Codigo.js`, sin datos.
+La app guardará cada respuesta, automáticamente, en la hoja de Google del editor mediante un Apps Script publicado en la cuenta del editor (`doPost` para leer las respuestas y la autorización de un código, guardar y autorizar; `doGet` queda solo para la lectura de compatibilidad, #162). El script valida el código contra un padrón privado de la misma hoja, el tamaño, el ritmo y el formato. La autorización de tratamiento de datos (Ley 1581 de 2012) se da una vez dentro de la app. Las fichas muestran "Revisado por un docente universitario", sin datos personales. El formulario de revisión queda como respaldo; el de registro se retira. El código del script vive en `apps-script/Codigo.js`, sin datos.
 
 Esto no es un backend propio en el sentido de AGENTS.md: corre en la cuenta de Google del editor, igual que el formulario, guarda en la misma hoja y no tiene servidor, base de datos ni cuentas nuevas. La excepción de AGENTS.md se reescribe para nombrarlo.
 
