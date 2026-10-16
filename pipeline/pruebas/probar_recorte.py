@@ -6,6 +6,8 @@ Z-Anatomy (python pipeline/descargar.py). No escribe en pipeline/cajas.json ni e
 
 Parte C (sin .blend): `extraer.main()` se detiene antes de abrir el .blend y de escribir nada si
         falta rutas-vago.json o la banda de algún lado.
+Parte D (sin .blend): `python pipeline/extraer.py` arranca como script en un proceso nuevo (orden de
+        imports) y se detiene en el mismo mensaje de bandas, no con ModuleNotFoundError.
 Parte A (bpy, sin .blend): `cortar_banda` sobre una curva sintética en zigzag.
 Parte B (con .blend): `cortar_banda` sobre `Vagus nerve (X).r#t02` y `.l#t02` reales y sus `#toque`,
         y `extraer.main()` completo con rutas, cajas y salida temporales.
@@ -23,6 +25,7 @@ Parte B (con .blend): `cortar_banda` sobre `Vagus nerve (X).r#t02` y `.l#t02` re
 import hashlib
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -228,6 +231,34 @@ def parte_c():
 
 
 # ---------------------------------------------------------------------------------------------
+# Parte D: extraer.py corrido como script, en un proceso nuevo
+# ---------------------------------------------------------------------------------------------
+def parte_d():
+    """`python pipeline/extraer.py` es el camino principal (pipeline/README.md). Las otras partes cargan el
+    archivo con bpy ya importado y no ven un orden de imports que falla en un proceso limpio (con bpy como
+    módulo, `import bmesh` antes de `import bpy` da ModuleNotFoundError). Aquí se corre el archivo real
+    con el intérprete de bpy (sys.executable), sin importar bpy antes. La copia temporal del pipeline trae
+    un rutas-vago.json sin bandas, así que se detiene en leer_bandas, antes de abrir el .blend, sin
+    depender de lo que haya publicado public/modelos/."""
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        (tmp / "pipeline").mkdir()
+        for nombre in ("extraer.py", "comun.py"):
+            (tmp / "pipeline" / nombre).write_bytes((RAIZ / "pipeline" / nombre).read_bytes())
+        (tmp / "public" / "modelos").mkdir(parents=True)
+        (tmp / "public" / "modelos" / "rutas-vago.json").write_text('{"rutas": {}}', encoding="utf-8")
+        r = subprocess.run([sys.executable, str(tmp / "pipeline" / "extraer.py")], cwd=tmp,
+                           capture_output=True, text=True, timeout=300)
+        afirmar("ModuleNotFoundError" not in r.stderr and "ImportError" not in r.stderr,
+                f"extraer.py no arranca como script: {r.stderr}")
+        afirmar(r.returncode != 0, "extraer.py debió detenerse por falta de bandas, pero terminó bien")
+        afirmar("falta la banda del vago derecho" in r.stderr,
+                f"extraer.py no se detuvo en leer_bandas (código {r.returncode}): {r.stderr}")
+        afirmar(not (tmp / "pipeline" / "salida").exists() and not (tmp / "pipeline" / "cajas.json").exists(),
+                "extraer.py escribió salida o cajas.json al detenerse")
+
+
+# ---------------------------------------------------------------------------------------------
 # Parte A: curva sintética en zigzag
 # ---------------------------------------------------------------------------------------------
 # Baja en zigzag: cruza z = 1,45 tres veces (1,80 a 1,40; 1,40 a 1,55; 1,55 a 1,30), con x e y que
@@ -344,6 +375,7 @@ def comprobar_main_completo(bandas):
 
 def main():
     parte_c()
+    parte_d()
     parte_a()
     parte_b()
     print(f"probar_recorte.py: {pruebas} pruebas en verde")

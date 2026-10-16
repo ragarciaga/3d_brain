@@ -24,8 +24,8 @@ Mallas derivadas:
 import json
 import math
 
-import bmesh
 import bpy
+import bmesh  # después de bpy: con Blender como módulo de Python, bmesh solo se encuentra tras importar bpy
 
 import sys
 from pathlib import Path
