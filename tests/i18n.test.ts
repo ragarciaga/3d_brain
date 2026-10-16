@@ -123,6 +123,14 @@ describe('textos de los botones de revisión', () => {
       if (idioma === 'es') expect(texto).not.toMatch(/\bvos\b|podés|tenés|querés|escribís/i);
     });
 
+    it(`el texto de autorización (${idioma}) nombra al responsable y el contacto (#168)`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: { autorizacion: Record<string, string> } };
+      const texto = revision.autorizacion.texto!;
+      expect(texto).toContain('Maysa Strategy Partners');
+      expect(texto).toContain('info@maysasp.com');
+      expect(texto).toContain(idioma === 'es' ? 'casilla del nervio vago' : 'vagus nerve checkbox');
+    });
+
     it(`vagoCasilla (${idioma}) nombra la casilla y Acciones tal como aparecen`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision & { autorizacion: Record<string, string> } };
       expect(revision.autorizacion.vago).toBeTruthy();
@@ -236,4 +244,84 @@ describe('check:i18n', () => {
     const codigo = "t('a.b'); t('visor.piezas', { count: 2 }); t('no.existe')";
     expect(clavesFaltantes(codigo, { a: { b: 'x' }, visor: { piezas_one: 'p', piezas_other: 'ps' } })).toEqual(['no.existe']);
   });
+});
+
+describe('página Privacidad (#168)', () => {
+  const CLAVES = [
+    'enlace', 'leer', 'titulo', 'intro', 'actualizado',
+    'responsableTitulo', 'responsable', 'visitasTitulo', 'visitas', 'alojamiento',
+    'revisionTitulo', 'revision', 'respaldo', 'publicacion',
+    'finalidadesTitulo', 'finalidades', 'baseTitulo', 'base',
+    'proveedoresTitulo', 'proveedorCloudflare', 'proveedorGoogle', 'proveedorGithub', 'transferencia',
+    'conservacionTitulo', 'conservacionRevision', 'conservacionProveedores',
+    'derechosTitulo', 'derechos', 'autoridad', 'cookiesTitulo', 'cookies', 'volver',
+  ];
+  const pagina = readFileSync('src/components/Privacidad.tsx', 'utf8');
+
+  for (const idioma of ['es', 'en'] as const) {
+    const raiz = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as {
+      ficha: Record<string, string>;
+      revision: { autorizacion: Record<string, string> };
+      privacidad: Record<string, string>;
+    };
+    const p = raiz.privacidad;
+    const todo = Object.values(p).join('\n');
+    const dice = (clave: string, ...partes: string[]) => {
+      for (const parte of partes) expect(p[clave], `${clave} debe contener "${parte}"`).toContain(parte);
+    };
+    const es = idioma === 'es';
+
+    it(`(${idioma}) las claves de privacidad son exactamente las acordadas`, () => {
+      expect(Object.keys(p).sort()).toEqual([...CLAVES].sort());
+    });
+
+    it(`(${idioma}) toda clave de contenido se pinta en Privacidad.tsx`, () => {
+      for (const clave of CLAVES.filter((c) => c !== 'enlace' && c !== 'leer')) {
+        expect(pagina, clave).toContain(`t('privacidad.${clave}')`);
+      }
+    });
+
+    it(`(${idioma}) nombra al responsable y el contacto`, () => {
+      dice('responsable', 'Maysa Strategy Partners', 'info@maysasp.com');
+    });
+
+    it(`(${idioma}) dice qué recoge Cloudflare de los visitantes y que no usa cookies`, () => {
+      dice('visitas', 'Cloudflare', 'referrer', 'cookies', ...(es ? ['dirección IP', 'agente de usuario'] : ['IP address', 'user agent']));
+    });
+
+    it(`(${idioma}) dice qué recoge de los revisores y cómo se publica`, () => {
+      dice('revision', ...(es ? ['código de revisor', 'fecha y hora', 'casilla del nervio vago'] : ['reviewer code', 'date and time', 'vagus nerve checkbox']));
+      expect(p['revision']).toContain(raiz.ficha['revisadoDocente']!);
+      dice('publicacion', 'alias', es ? 'issues públicos' : 'public issues');
+    });
+
+    it(`(${idioma}) dice las finalidades, la base, los proveedores y la transferencia`, () => {
+      dice('finalidades', es ? 'analítica' : 'Analytics');
+      dice('base', ...(es ? ['interés legítimo', 'autorización'] : ['legitimate interest', 'authorization']));
+      dice('proveedorCloudflare', 'Cloudflare');
+      dice('proveedorGoogle', 'Google');
+      dice('proveedorGithub', 'GitHub');
+      dice('transferencia', es ? 'Estados Unidos' : 'United States');
+    });
+
+    it(`(${idioma}) dice la conservación y los derechos`, () => {
+      // La frase completa: "hasta que pidas" también aparece en la segunda oración (issues públicos).
+      dice('conservacionRevision', es ? 'se conservan hasta que pidas borrarlas' : 'are kept until you ask for them to be deleted');
+      dice('derechos', 'info@maysasp.com', ...(es ? ['conocer', 'corregir', 'borrar', 'oponerte'] : ['access', 'correct', 'delete', 'object']));
+      dice('cookies', es ? 'cookies de rastreo' : 'tracking cookies');
+    });
+
+    it(`(${idioma}) no lleva guion largo, URL del canal, alias ni voseo, y ningún título termina en "revisor" con nombre`, () => {
+      const textos = [todo, raiz.revision.autorizacion['texto']!];
+      for (const texto of textos) {
+        expect(texto).not.toContain('—');
+        expect(texto).not.toContain('/exec');
+        expect(texto).not.toContain('script.google.com');
+        if (es) expect(texto).not.toMatch(/\bvos\b|podés|tenés|querés|escribís/i);
+      }
+      expect(todo).not.toMatch(/\bD\d{2}\b/);
+      // Misma regla que F7-E1 (e2e/verificar-canal.spec.ts): una vista pública no puede decir "revisor" seguido de un nombre.
+      expect(todo.replace(/\n/g, ' ')).not.toMatch(/\b(?:[Rr]evisor(?:a|es)?|[Rr]eviewers?)\s*:?\s+\p{Lu}\p{Ll}+/u);
+    });
+  }
 });

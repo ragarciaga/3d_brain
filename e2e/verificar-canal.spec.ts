@@ -4,7 +4,7 @@
 //   F2-E2  cerrar el diálogo sin aceptar: nada sale, no hay "Guardado ✓" y la respuesta queda pendiente en el equipo.
 //   F3-E2  sin conexión: el aviso, la respuesta pendiente y ningún paso de envío; más el tope literal de 3 s de R3.1.
 //   F4-E1  respuestas malformadas del canal: solo se muestra la válida y la página no se rompe (R6.6).
-//   F7-E1  vistas públicas sin alias del padrón ni "revisor" con un nombre (R9.2), en es y en en.
+//   F7-E1  vistas públicas (también la de privacidad, #168) sin alias del padrón ni "revisor" con un nombre (R9.2), en es y en en.
 // El canal del editor se simula siempre con page.route sobre `canal-prueba.invalid`; el real nunca se llama.
 import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
@@ -258,11 +258,11 @@ test('F4-E1: de lo que devuelve el canal solo se muestra la respuesta válida; l
 const ALIAS = /\bD\d{2}\b/;
 const REVISOR_CON_NOMBRE = /\b(?:[Rr]evisor(?:a|es)?|[Rr]eviewers?)\s*:?\s+\p{Lu}\p{Ll}+/u;
 
-for (const [lang, ficha, licencia] of [
-  ['es', 'hipocampo', 'Fuentes y licencia'],
-  ['en', 'hippocampus', 'Sources and license'],
+for (const [lang, ficha, licencia, leerAviso, tituloPrivacidad] of [
+  ['es', 'hipocampo', 'Fuentes y licencia', 'Lee el aviso de privacidad', 'Privacidad'],
+  ['en', 'hippocampus', 'Sources and license', 'Read the privacy notice', 'Privacy'],
 ] as const) {
-  test(`F7-E1: las vistas públicas (inicio, ficha sin verificar, licencia) no muestran alias ni revisor con nombre (${lang})`, async ({ page }) => {
+  test(`F7-E1: las vistas públicas (inicio, ficha sin verificar, licencia, privacidad) no muestran alias ni revisor con nombre (${lang})`, async ({ page }) => {
     const sinRevisor = async (vista: string) => {
       const texto = await page.locator('body').innerText();
       expect(texto, `texto de ${vista}`).not.toMatch(ALIAS);
@@ -288,5 +288,11 @@ for (const [lang, ficha, licencia] of [
     await page.getByRole('link', { name: licencia }).click();
     await expect(page.getByTestId('licencia')).toContainText('Z-Anatomy');
     await sinRevisor('licencia');
+
+    // La página de privacidad (#168) es pública: se llega por el enlace de la línea de analítica.
+    await page.getByTestId('licencia').getByRole('link', { name: leerAviso }).click();
+    await expect(page.getByRole('heading', { level: 1, name: tituloPrivacidad, exact: true })).toBeVisible();
+    await expect(page.getByTestId('privacidad')).toContainText('Maysa Strategy Partners');
+    await sinRevisor('privacidad');
   });
 }

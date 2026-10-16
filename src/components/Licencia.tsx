@@ -1,10 +1,13 @@
 // Pantalla "Fuentes y licencia" (SPEC sección 13).
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
+import type { Idioma } from '../data/tipos';
+import { rutaPrivacidad } from '../lib/paginas';
 
 export default function Licencia() {
   const { t } = useTranslation();
   const { lang = 'es' } = useParams();
+  const idioma: Idioma = lang === 'en' ? 'en' : 'es';
   return (
     <main className="pagina-texto" data-testid="licencia">
       <h1>{t('licencia.titulo')}</h1>
@@ -33,7 +36,9 @@ export default function Licencia() {
       <h2>{t('licencia.avisosTitulo')}</h2>
       <p>{t('aviso.educativo')}</p>
       <p>{t('aviso.unCuerpo')}</p>
-      <p>{t('licencia.analitica')}</p>
+      <p>
+        {t('licencia.analitica')} <Link to={rutaPrivacidad(idioma)}>{t('privacidad.leer')}</Link>
+      </p>
       <p>
         <Link to={`/${lang}`}>{t('licencia.volver')}</Link>
       </p>

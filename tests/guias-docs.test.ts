@@ -157,6 +157,33 @@ describe('docs/revision-docente.md', () => {
     expect(bloques.some((b) => b.includes('apps-script\\Codigo.js'))).toBe(true);
   });
 
+  it('la subsección de #162 dice que un solo despliegue cubre las versiones 2 y 3 (#168)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^###\s.*#162/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##\s/.test(l));
+    const cuerpo = lineas.slice(inicio, fin === -1 ? undefined : fin).join('\n');
+    expect(cuerpo).toMatch(/versiones\s+2\s+y\s+3/);
+    expect(cuerpo).toContain('#168');
+    expect(cuerpo).toContain('Versión `3`');
+    expect(cuerpo).not.toContain('Versión `2`');
+    expect(cuerpo).not.toContain('sigue leyendo por GET');
+  });
+
+  it('la sección de supresión publica el contacto de las solicitudes (#168)', () => {
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^##\s/.test(l) && l.includes('supresión'));
+    expect(inicio).toBeGreaterThan(-1);
+    expect(lineas.slice(inicio).join('\n')).toContain('info@maysasp.com');
+  });
+
+  it.each(['docs/adr/0012-apps-script-canal-revision.md', 'docs/adr/0015-analitica-sin-cookies.md'])('%s enlaza la página Privacidad en los dos idiomas (#168)', (ruta) => {
+    const adr = leer(ruta);
+    expect(adr).toContain('/es/privacidad');
+    expect(adr).toContain('/en/privacy');
+    expect(adr).toMatch(/Amended:.*#168/);
+  });
+
   it('la guía del editor no lleva ninguna URL /exec del script', () => {
     expect(texto).not.toMatch(/script\.google\.com\/macros\/s\/[\w-]+/);
     expect(texto).not.toMatch(/\/macros\/s\//);

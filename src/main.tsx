@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router'
 import BarreraErrores from './components/BarreraErrores';
 import Licencia from './components/Licencia';
 import Pagina from './components/Pagina';
+import Privacidad from './components/Privacidad';
 import { configRevision } from './config/revision';
 import { camaraActual, cortesVisor, marcadoresDePrueba } from './components/Visor';
 import { alturaRecorte } from './components/recorte';
@@ -11,6 +12,7 @@ import i18n, { idiomaDelNavegador } from './i18n';
 import { useAtlas } from './store/useAtlas';
 import './estilos.css';
 import { MARCA_INICIO_APP } from './lib/medicion';
+import { esPrivacidad } from './lib/paginas';
 
 performance.mark(MARCA_INICIO_APP);
 
@@ -25,6 +27,7 @@ function Ruta() {
   }, [idioma]);
   if (lang !== 'es' && lang !== 'en') return <Navigate to="/es" replace />;
   if (resto === 'licencia') return <Licencia />;
+  if (esPrivacidad(resto)) return <Privacidad />;
   if (resto === 'revision') return <Pagina revision />;
   return <Pagina slug={resto || undefined} />;
 }
