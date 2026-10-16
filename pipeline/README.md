@@ -21,7 +21,7 @@ python pipeline/generar-ramas-vago.py # public/modelos/rutas-vago.json, con las 
 python pipeline/extraer.py            # pipeline/salida/atlas-crudo.glb y pipeline/cajas.json
 node scripts/comprimir-modelo.ts      # public/modelos/atlas.glb (meshopt, sin simplificar)
 node scripts/mallas-cerradas.ts       # src/config/mallas-cerradas.json (mallas del encéfalo sin bordes abiertos, F8)
-npm run check:modelo                  # 0,1 mm de tolerancia por pieza, presupuesto de 15 MB y ningún vértice del tronco del vago dentro de su banda
+npm run check:modelo                  # 0,1 mm por pieza, lista de mallas cerradas, bandas del vago y 15 MB
 ```
 
 Con `.venv-pipeline/bin/python` en lugar de `python` si usas el entorno de arriba.
