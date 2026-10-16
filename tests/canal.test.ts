@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
 import { estructuras } from '../src/data/atlas';
-import { autorizacionVigente, autorizar, canalConfigurado, ErrorCanal, guardar, leer, TIEMPO_CANAL_MS, type TipoErrorCanal } from '../src/lib/canal';
+import { autorizacionVigente, autorizar, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS, TIEMPO_CANAL_MS, type TipoErrorCanal } from '../src/lib/canal';
 import { cargaRevisionV2, type Respuesta } from '../src/lib/revision';
 
 const idOk = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
@@ -111,7 +111,7 @@ const ACCIONES: [string, () => Promise<unknown>][] = [
 ];
 
 describe('errores del contrato', () => {
-  const codigos: TipoErrorCanal[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'interno'];
+  const codigos: TipoErrorCanal[] = ['codigo_no_activo', 'demasiado_grande', 'formato', 'demasiadas_peticiones', 'sin_autorizacion', 'interno'];
   const casos = ACCIONES.flatMap(([n, f]) => codigos.map((c) => [n, f, c] as const));
   it.each(casos)('%s: {ok:false, error:%s} lanza ErrorCanal con ese tipo', async (_n, hacer, codigo) => {
     responder({ ok: false, error: codigo });
@@ -269,6 +269,26 @@ describe('leer valida lo que vuelve (R6.6)', () => {
     const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect((await leer(CODIGO, idOk)).respuestas).toEqual([]);
     expect(aviso).not.toHaveBeenCalled();
+  });
+
+  it('una f en el futuro: pasa hasta el margen de 24 h y se descarta (y se cuenta) más allá', async () => {
+    const AHORA = Date.parse('2026-10-14T12:00:00.000Z');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(AHORA);
+    expect(MARGEN_FECHA_FUTURA_MS).toBe(24 * 60 * 60 * 1000);
+    const conF = (ms: number) => ({ ...buena, f: new Date(AHORA + ms).toISOString() });
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    responder({ ok: true, respuestas: cargaCon([conF(MARGEN_FECHA_FUTURA_MS)]), autorizacion: null });
+    const justo = await leer(CODIGO, idOk);
+    expect(justo.respuestas.map((x) => x.campo)).toEqual(['ubicacion', 'que_es']);
+    expect(aviso).not.toHaveBeenCalled();
+
+    responder({ ok: true, respuestas: cargaCon([conF(MARGEN_FECHA_FUTURA_MS + 1)]), autorizacion: null });
+    const pasado = await leer(CODIGO, idOk);
+    expect(pasado.respuestas).toEqual([a]);
+    expect(aviso).toHaveBeenCalledTimes(1);
+    expect(String(aviso.mock.calls[0]?.[0])).toMatch(/1 /);
   });
 
   it('ida y vuelta: lo que produce cargaRevisionV2 vuelve igual, con la fecha original y sin avisos', async () => {

@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { importar, leerEnvios, parsearCsv } from '../scripts/lib/revisiones.ts';
+import { VERSION_AUTORIZACION } from '../src/config/revision';
 import { cargaRevisionV2, fechaValida, REVISOR_VALIDO, respuestaValida, type Respuesta } from '../src/lib/revision';
 import {
   CABECERAS,
@@ -24,6 +25,9 @@ import {
   type Celda,
   type Entorno,
 } from './fixtures/apps-script/dobles';
+
+/** Códigos con la autorización vigente en `Autorizaciones`: los que guardan en las pruebas que no tratan de la autorización. */
+const AUTORIZADOS = [CODIGO_ACTIVO, CODIGO_GUION, OTRO_ACTIVO];
 
 const base = { idioma: 'es' as const, version: '0.1.0', fecha: '2026-10-14T09:59:00.000Z' };
 const resp = (extra: Partial<Respuesta> = {}): Respuesta => ({ ...base, estructura: 'hippocampus', campo: 'ubicacion', veredicto: 'correcto', ...extra });
@@ -103,7 +107,7 @@ describe('(b) tamaño y formato (R6.2)', () => {
   const rellenar = (cuerpo: string, bytes: number) => cuerpo + ' '.repeat(bytes - Buffer.byteLength(cuerpo, 'utf8'));
 
   it('un cuerpo válido de exactamente 65536 bytes pasa el control de tamaño', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const cuerpo = rellenar(guardarCuerpo(CODIGO_ACTIVO, [resp()]), 65536);
     expect(Buffer.byteLength(cuerpo, 'utf8')).toBe(65536);
     expect(env.post(cuerpo)['ok']).toBe(true);
@@ -133,7 +137,7 @@ describe('(b) tamaño y formato (R6.2)', () => {
   });
 
   it('una carga válida cuyo texto pasa de 50000 caracteres da demasiado_grande sin filas', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const respuestas = Array.from({ length: 13 }, (_, i) => resp({ campo: `fuente.${i}`, veredicto: 'corregir', propuesta: 'x'.repeat(4000) }));
     const cuerpo = guardarCuerpo(CODIGO_ACTIVO, respuestas);
     const carga = cargaRevisionV2(CODIGO_ACTIVO, respuestas);
@@ -144,7 +148,7 @@ describe('(b) tamaño y formato (R6.2)', () => {
   });
 
   it('una carga de 12 respuestas con propuesta de 4000 cabe en la celda', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const respuestas = Array.from({ length: 12 }, (_, i) => resp({ campo: `fuente.${i}`, veredicto: 'corregir', propuesta: 'x'.repeat(4000) }));
     const carga = cargaRevisionV2(CODIGO_ACTIVO, respuestas);
     expect(carga.length).toBeLessThanOrEqual(50000);
@@ -239,7 +243,7 @@ describe('(b) tamaño y formato (R6.2)', () => {
     });
 
     it.each(casosCarga)('la carga con %s', (_n, carga, vale) => {
-      const env = crearEntorno();
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
       const res = env.post(JSON.stringify({ accion: 'guardar', carga }));
       const { envios, invalidas } = leerEnvios([['Recibido', 'Código', 'Estructuras', 'Carga'], ['t', 'x', 'y', carga]]);
       const laApp = invalidas === 0 && envios.length > 0;
@@ -265,7 +269,7 @@ describe('(b) tamaño y formato (R6.2)', () => {
 
 describe('(c) ritmo por código (R6.3)', () => {
   it.each(ACCIONES)('%s: las peticiones 1 a 120 pasan, la 121 no y a los 60 s vuelve a pasar', (accion) => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     for (let i = 1; i <= 120; i++) expect(pedir(env, accion, CODIGO_ACTIVO)['ok']).toBe(true);
     const filas = env.hojas.Respuestas.filas.length + env.hojas.Autorizaciones.filas.length;
     expect(pedir(env, accion, CODIGO_ACTIVO)).toEqual({ ok: false, error: 'demasiadas_peticiones' });
@@ -308,7 +312,7 @@ describe('(c) ritmo por código (R6.3)', () => {
 
 describe('(d) guardar escribe en Respuestas (R6.4)', () => {
   it('conserva la cabecera y escribe A fecha de recepción, B código, C ids, D carga, todo como texto', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     env.reloj.avanzar(5000);
     const respuestas = [
       resp({ idioma: undefined, campo: 'relaciones', veredicto: 'corregir', propuesta: 'Agregar el subículo' }),
@@ -336,7 +340,7 @@ describe('(d) guardar escribe en Respuestas (R6.4)', () => {
   });
 
   it('cada guardar aceptado va en la fila siguiente', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     env.post(guardarCuerpo(CODIGO_ACTIVO, [resp({ campo: 'nombre' })]));
     env.reloj.avanzar(1000);
     env.post(guardarCuerpo(OTRO_ACTIVO, [resp({ campo: 'latin' })]));
@@ -349,7 +353,7 @@ describe('(d) guardar escribe en Respuestas (R6.4)', () => {
   });
 
   it('un código con guion inicial y una propuesta que empieza con = quedan como texto, nunca como fórmula', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const res = env.post(guardarCuerpo(CODIGO_GUION, [resp({ campo: 'relaciones', veredicto: 'corregir', propuesta: '=HYPERLINK("x")' }), resp({ estructura: '-x', campo: 'nombre', veredicto: 'corregir', propuesta: '+1', comentario: '@SUMA(1)' })]));
     expect(res['ok']).toBe(true);
     const hoja = env.hojas.Respuestas;
@@ -366,7 +370,7 @@ describe('(d) guardar escribe en Respuestas (R6.4)', () => {
   });
 
   it('las filas que escribió el script, exportadas a CSV, se importan sin inválidas', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     env.post(guardarCuerpo(CODIGO_GUION, [resp({ campo: 'relaciones', veredicto: 'corregir', propuesta: 'Texto, con coma y "comillas"\ny salto' })]));
     env.post(guardarCuerpo(CODIGO_ACTIVO, [resp({ campo: 'que_es', idioma: 'en' }), resp({ estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [0.00123, 1.61234, -0.01987], version: 'sin-ficha' })]));
     env.post(autorizarCuerpo(CODIGO_ACTIVO));
@@ -386,14 +390,14 @@ describe('(d) guardar escribe en Respuestas (R6.4)', () => {
   });
 
   it('la carga se escribe idéntica a la de la app (las claves cortas no se reordenan ni se pierden)', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const respuestas = [resp({ campo: 'posicion', veredicto: 'corregir', posicion: [1, 2.5, -3], malla: 'Vagus_nerve.R', ramo: 'no_se', propuesta: 'p', comentario: 'k', version: 'sin-ficha' })];
     env.post(guardarCuerpo(CODIGO_ACTIVO, respuestas));
     expect(env.escritas('Respuestas')[0]![3]).toBe(cargaRevisionV2(CODIGO_ACTIVO, respuestas));
   });
 
   it('las claves desconocidas de la carga no se escriben', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const carga = JSON.stringify({ v: 2, r: CODIGO_ACTIVO, extra: 1, e: { hippocampus: [{ c: 'a', d: 'correcto', s: '0.1.0', zzz: 'x', estructura: 'otra' }] } });
     expect(env.post(JSON.stringify({ accion: 'guardar', carga }))).toEqual({ ok: true, recibidas: ['hippocampus|a||'] });
     expect(env.escritas('Respuestas')[0]![3]).toBe(JSON.stringify({ v: 2, r: CODIGO_ACTIVO, e: { hippocampus: [{ c: 'a', d: 'correcto', s: '0.1.0' }] } }));
@@ -479,7 +483,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
   });
 
   it('lo guardado por guardar vuelve igual por leer', () => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     const respuestas = [resp({ campo: 'relaciones', idioma: undefined, veredicto: 'corregir', propuesta: 'p' }), resp({ estructura: 'm-periaqueductal-grey', campo: 'posicion', veredicto: 'corregir', posicion: [1, 2, 3], version: 'sin-ficha' })];
     env.post(guardarCuerpo(CODIGO_ACTIVO, respuestas));
     expect((env.get({ accion: 'leer', r: CODIGO_ACTIVO }) as { respuestas: unknown }).respuestas).toEqual(JSON.parse(cargaRevisionV2(CODIGO_ACTIVO, respuestas)));
@@ -523,7 +527,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
 
 describe('(g) bloqueo y fallos de escritura (R6.4)', () => {
   it.each(['guardar', 'autorizar'] as const)('%s toma el bloqueo una vez con espera de 10 s y lo libera', (accion) => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
     expect(pedir(env, accion, CODIGO_ACTIVO)['ok']).toBe(true);
     expect(env.candado.esperas).toEqual([10000]);
     expect(env.candado.liberaciones).toBe(1);
@@ -533,27 +537,29 @@ describe('(g) bloqueo y fallos de escritura (R6.4)', () => {
   });
 
   it.each(['guardar', 'autorizar'] as const)('%s sin bloqueo da interno y no escribe', (accion) => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
+    const antes = conteoFilas(env);
     env.candado.obtener = false;
     expect(pedir(env, accion, CODIGO_ACTIVO)).toEqual({ ok: false, error: 'interno' });
     expect(env.candado.esperas).toEqual([10000]);
-    expect(conteoFilas(env)).toEqual({ Respuestas: 1, Autorizaciones: 1, Padrón: 1 + PADRON_PRUEBA.length });
+    expect(conteoFilas(env)).toEqual(antes);
     expect(env.hojas.Respuestas.llamadasSetValues + env.hojas.Autorizaciones.llamadasSetValues).toBe(0);
   });
 
   it.each(['guardar', 'autorizar'] as const)('%s con la escritura fallida da interno, libera el bloqueo y no deja filas ni el mensaje de la excepción', (accion) => {
-    const env = crearEntorno();
+    const env = crearEntorno({ autorizados: AUTORIZADOS });
+    const antes = conteoFilas(env);
     env.hojas.Respuestas.falla = true;
     env.hojas.Autorizaciones.falla = true;
     const res = pedir(env, accion, CODIGO_ACTIVO);
     expect(res).toEqual({ ok: false, error: 'interno' });
     expect(JSON.stringify(res)).not.toContain('falla simulada');
     expect(env.candado.liberaciones).toBe(1);
-    expect(conteoFilas(env)).toEqual({ Respuestas: 1, Autorizaciones: 1, Padrón: 1 + PADRON_PRUEBA.length });
+    expect(conteoFilas(env)).toEqual(antes);
   });
 
   it('si falta la pestaña Respuestas, guardar da interno; si falta Autorizaciones, autorizar', () => {
-    const a = crearEntorno({ sinPestana: 'Respuestas' });
+    const a = crearEntorno({ sinPestana: 'Respuestas', autorizados: AUTORIZADOS });
     expect(a.post(guardarCuerpo(CODIGO_ACTIVO, [resp()]))).toEqual({ ok: false, error: 'interno' });
     expect(a.candado.liberaciones).toBe(1);
     const b = crearEntorno({ sinPestana: 'Autorizaciones' });
@@ -590,6 +596,106 @@ describe('(g) bloqueo y fallos de escritura (R6.4)', () => {
     const env = crearEntorno();
     expect(() => env.hojas.Respuestas.getRange(2, 1, 1, 1).setValues([['x'.repeat(50001)]])).toThrow();
     expect(() => env.hojas.Respuestas.getRange(2, 1, 1, 1).setValues([['x'.repeat(50000)]])).not.toThrow();
+  });
+});
+
+describe('(i) guardar exige la autorización vigente (S1, #157)', () => {
+  const SIN_AUT = { ok: false, error: 'sin_autorizacion' };
+  const guardarDe = (env: Entorno, codigo = CODIGO_ACTIVO) => env.post(guardarCuerpo(codigo, [resp()]));
+  const fila = (codigo: string, version: string, vago: 'sí' | 'no', t = '2026-10-14T09:00:00.000Z'): Celda[] => [codigo, t, version, vago];
+
+  it('sin ninguna fila en Autorizaciones da sin_autorizacion y no escribe ni toma el bloqueo', () => {
+    const env = crearEntorno();
+    expect(guardarDe(env)).toEqual(SIN_AUT);
+    expect(env.escritas('Respuestas')).toEqual([]);
+    expect(env.hojas.Respuestas.llamadasSetValues).toBe(0);
+    expect(env.candado.esperas).toEqual([]);
+  });
+
+  it('con la fila de otro código solo, el código sin fila da sin_autorizacion y el otro guarda', () => {
+    const env = crearEntorno({ autorizados: [OTRO_ACTIVO] });
+    expect(guardarDe(env)).toEqual(SIN_AUT);
+    expect(env.escritas('Respuestas')).toEqual([]);
+    expect(env.hojas.Respuestas.llamadasSetValues).toBe(0);
+    expect(env.candado.esperas).toEqual([]);
+    expect(guardarDe(env, OTRO_ACTIVO)['ok']).toBe(true);
+    expect(env.escritas('Respuestas')).toHaveLength(1);
+  });
+
+  it('la versión del script es la de la app: con la de la app guarda y con otra da sin_autorizacion', () => {
+    const bien = crearEntorno();
+    bien.hojas.Autorizaciones.filas.push(fila(CODIGO_ACTIVO, VERSION_AUTORIZACION, 'no'));
+    expect(guardarDe(bien)['ok']).toBe(true);
+    expect(bien.escritas('Respuestas')).toHaveLength(1);
+
+    const vieja = crearEntorno();
+    vieja.hojas.Autorizaciones.filas.push(fila(CODIGO_ACTIVO, `${VERSION_AUTORIZACION}-anterior`, 'no'));
+    expect(guardarDe(vieja)).toEqual(SIN_AUT);
+    expect(vieja.escritas('Respuestas')).toEqual([]);
+    expect(vieja.hojas.Respuestas.llamadasSetValues).toBe(0);
+    expect(vieja.candado.esperas).toEqual([]);
+  });
+
+  it('manda la última fila del código: versión vigente tras una vieja guarda, y al revés no', () => {
+    const vigenteAlFinal = crearEntorno();
+    vigenteAlFinal.hojas.Autorizaciones.filas.push(fila(CODIGO_ACTIVO, '0', 'sí', 't1'), fila(CODIGO_ACTIVO, VERSION_AUTORIZACION, 'no', 't2'));
+    expect(guardarDe(vigenteAlFinal)['ok']).toBe(true);
+
+    const viejaAlFinal = crearEntorno();
+    viejaAlFinal.hojas.Autorizaciones.filas.push(fila(CODIGO_ACTIVO, VERSION_AUTORIZACION, 'no', 't1'), fila(CODIGO_ACTIVO, '0', 'sí', 't2'));
+    expect(guardarDe(viejaAlFinal)).toEqual(SIN_AUT);
+    expect(viejaAlFinal.escritas('Respuestas')).toEqual([]);
+  });
+
+  it('autorizar y luego guardar por POST guarda una fila', () => {
+    const env = crearEntorno();
+    expect(guardarDe(env)).toEqual(SIN_AUT);
+    expect(env.post(JSON.stringify({ accion: 'autorizar', r: CODIGO_ACTIVO, version: VERSION_AUTORIZACION, vago: false }))).toEqual({ ok: true });
+    expect(guardarDe(env)['ok']).toBe(true);
+    expect(env.escritas('Respuestas')).toHaveLength(1);
+  });
+
+  it('supresión: al borrar la fila del código, el siguiente guardar da sin_autorizacion', () => {
+    const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+    expect(guardarDe(env)['ok']).toBe(true);
+    env.hojas.Autorizaciones.filas.splice(1);
+    expect(guardarDe(env)).toEqual(SIN_AUT);
+    expect(env.escritas('Respuestas')).toHaveLength(1);
+  });
+
+  it('con dos filas válidas del código, borrar solo la última no quita la autorización (hay que borrar todas)', () => {
+    const env = crearEntorno();
+    env.hojas.Autorizaciones.filas.push(fila(CODIGO_ACTIVO, VERSION_AUTORIZACION, 'no', 't1'), fila(CODIGO_ACTIVO, VERSION_AUTORIZACION, 'sí', 't2'));
+    env.hojas.Autorizaciones.filas.pop();
+    expect(guardarDe(env)['ok']).toBe(true);
+    env.hojas.Autorizaciones.filas.pop();
+    expect(guardarDe(env)).toEqual(SIN_AUT);
+  });
+
+  describe('orden de las comprobaciones', () => {
+    it('un código inactivo sin autorización da codigo_no_activo', () => {
+      const env = crearEntorno();
+      expect(guardarDe(env, CODIGO_INACTIVO)).toEqual({ ok: false, error: 'codigo_no_activo' });
+    });
+
+    it('una carga mal formada de un código sin autorización da sin_autorizacion, no formato', () => {
+      const env = crearEntorno();
+      const malformada = casosCarga.find(([n]) => n === 'e es un arreglo')![1];
+      expect(env.post(JSON.stringify({ accion: 'guardar', carga: malformada }))).toEqual(SIN_AUT);
+      expect(env.escritas('Respuestas')).toEqual([]);
+    });
+
+    it('un guardar sin autorización cuenta para el ritmo: 120 dan sin_autorizacion y el 121 demasiadas_peticiones', () => {
+      const env = crearEntorno();
+      for (let i = 1; i <= 120; i++) expect(guardarDe(env)).toEqual(SIN_AUT);
+      expect(guardarDe(env)).toEqual({ ok: false, error: 'demasiadas_peticiones' });
+    });
+
+    it('leer sin autorización sigue dando ok con autorizacion null y autorizar no la exige', () => {
+      const env = crearEntorno();
+      expect(env.get({ accion: 'leer', r: CODIGO_ACTIVO })).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
+      expect(env.post(autorizarCuerpo(CODIGO_ACTIVO))).toEqual({ ok: true });
+    });
   });
 });
 

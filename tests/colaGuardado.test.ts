@@ -6,9 +6,11 @@ import {
   confirmarRecibidas,
   ESPERA_CANAL_MS,
   ESPERA_DEMASIADAS_MS,
+  ESPERA_ENVIO_MS,
   estadoInicial,
   fusionarConCanal,
   marcarPendientes,
+  MARGEN_ENVIO_MS,
   MAX_LOTE_BYTES,
   MAX_LOTE_RESPUESTAS,
   ofrecerRespaldo,
@@ -40,6 +42,12 @@ describe('constantes', () => {
   it('la espera del canal es 3 s y no es la del guardado local', () => {
     expect(ESPERA_CANAL_MS).toBe(3000);
     expect(ESPERA_CANAL_MS).not.toBe(ESPERA_GUARDADO_MS);
+  });
+
+  it('la espera del panel más la del texto de la ficha cabe en los 3 s de R3.1, con margen para los temporizadores', () => {
+    expect(ESPERA_ENVIO_MS + ESPERA_GUARDADO_MS).toBeLessThan(ESPERA_CANAL_MS);
+    expect(ESPERA_ENVIO_MS).toBe(ESPERA_CANAL_MS - MARGEN_ENVIO_MS);
+    expect(ESPERA_ENVIO_MS).toBeGreaterThan(0);
   });
 });
 
@@ -99,6 +107,15 @@ describe('reintentos (R3.4)', () => {
     expect(r.espera).toBeNull();
     expect(r.estado.fallos).toBe(0);
     expect(r.estado.confirmadas).toEqual({});
+  });
+
+  it('sin_autorizacion no espera, no cuenta como fallo ni deja inactivo y el lote sigue por enviar', () => {
+    const antes: EstadoCola = { ...estadoInicial({ [kB]: b.fecha }), fallos: 2, tope: 7, rechazadas: { x: 'y' }, ultimaConfirmacion: T0 - 5 };
+    const r = trasEnvio(antes, [a], falla('sin_autorizacion'), T0);
+    expect(r.espera).toBeNull();
+    expect(r.estado).toEqual({ ...antes, fallos: 0 });
+    expect(r.estado.inactivo).toBe(false);
+    expect(porEnviar([a], r.estado.confirmadas, r.estado.rechazadas)).toEqual([a]);
   });
 
   it('no muta el estado de entrada', () => {

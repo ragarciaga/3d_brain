@@ -117,3 +117,38 @@ En Windows (PowerShell), desde la carpeta del repositorio:
 .\.venv-pipeline\Scripts\python pipeline\generar-ramas-vago.py --borrador
 .\.venv-pipeline\Scripts\python pipeline\pruebas\probar_recorte.py
 ```
+
+## Marcadores: posiciones propuestas por regla (spec 04, ADR 0013)
+
+`ubicar-marcadores.py` pone cada marcador del atlas con una regla anatómica de `reglas-marcadores.yaml`
+(una por marcador, sin coordenadas escritas a mano), y no con una coordenada tomada a ojo. Lee las mallas
+con nombre del modelo en caché (el mismo `.blend` de `descargar.py`) y la bibliografía de
+`docs/research/marcadores/fuentes.md`. Cada regla nombra sus fuentes por clave: si una clave no está en la
+sección "Referencias" de `fuentes.md`, el marcador queda `sin_ubicar` con el motivo. Si falta una malla, o un
+punto queda a más de 5 mm de las mallas de su regla, el script se detiene y no escribe nada. Lo que es
+deducción propia (milímetros, fracciones, puntos medios, caras) va marcado "(derivado)" en el `metodo` de la
+regla, y lo aprueba el editor en el PR de datos.
+
+```bash
+python pipeline/ubicar-marcadores.py                        # Blender: -> pipeline/salida/marcadores-propuestos.json
+python pipeline/ubicar-marcadores.py --salida otra/ruta.json
+python pipeline/pruebas/probar_ubicar.py                    # sin Blender: geometría y ubicador sobre un modelo sintético
+python pipeline/pruebas/probar_reglas.py                    # sin Blender: el YAML real contra fuentes, árbol e inventario
+```
+
+- La salida (`pipeline/salida/`, ignorada por git) es una lista ordenada por `id`: `posicion` (un punto, o
+  `{ l, r }` si la estructura es par, o `null`), `estado` (`aproximada` o `sin_ubicar`), `metodo` y `cita`
+  en es y en, y, solo si aplican, `ancla`, `motivo` y `desacuerdo`. Nunca dice `validada`: eso lo decide un
+  docente. Llevarla a `src/data/marcadores.json` es otro paso (spec 04, T3).
+- Dos corridas sobre el mismo modelo dan el mismo archivo, byte a byte (5 decimales, claves ordenadas).
+- `geometria.py` reúne las funciones puras (solo biblioteca estándar) que también usarán las reglas del vago.
+- `bpy` se importa solo dentro de `leer_modelo_blender`, así que las pruebas y la validación corren sin Blender.
+- El CI no corre Python: estas pruebas se corren a mano.
+
+En Windows (PowerShell), desde la carpeta del repositorio:
+
+```powershell
+.\.venv-pipeline\Scripts\python pipeline\ubicar-marcadores.py
+.\.venv-pipeline\Scripts\python pipeline\pruebas\probar_ubicar.py
+.\.venv-pipeline\Scripts\python pipeline\pruebas\probar_reglas.py
+```

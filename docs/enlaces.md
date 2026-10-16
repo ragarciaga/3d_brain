@@ -10,12 +10,13 @@ importar revisiones.
 
 | Qué | Enlace |
 |---|---|
-| Maysa Brain, español | https://ragarciaga.github.io/3d_brain/es |
-| Maysa Brain, inglés | https://ragarciaga.github.io/3d_brain/en |
-| Una estructura directa (ejemplo) | https://ragarciaga.github.io/3d_brain/es/hipocampo |
-| Fuentes y licencia | https://ragarciaga.github.io/3d_brain/es/licencia |
-| Medir la carga en un equipo (issue 6) | https://ragarciaga.github.io/3d_brain/es?medir=1 |
-| Modo revisión de un docente | `https://ragarciaga.github.io/3d_brain/es/revision?r=CODIGO` (cada docente tiene el suyo) |
+| Maysa Brain, español | https://brain.maysasp.com/es |
+| Maysa Brain, inglés | https://brain.maysasp.com/en |
+| Una estructura directa (ejemplo) | https://brain.maysasp.com/es/hipocampo |
+| Fuentes y licencia | https://brain.maysasp.com/es/licencia |
+| Medir la carga en un equipo (issue 6) | https://brain.maysasp.com/es?medir=1 |
+| Modo revisión de un docente | `https://brain.maysasp.com/es/revision?r=CODIGO` (cada docente tiene el suyo) |
+| Analítica de visitas (Cloudflare Web Analytics) | https://dash.cloudflare.com/ (Analytics & Logs, Web Analytics) |
 
 Atajos dentro del sitio: Ctrl+K abre la búsqueda; Escape cierra paneles y sale del aislamiento.
 
@@ -27,7 +28,7 @@ Atajos dentro del sitio: Ctrl+K abre la búsqueda; Escape cierra paneles y sale 
 | Formulario de revisión (lo abre la app ya lleno) | https://docs.google.com/forms/d/e/1FAIpQLSfT2a766E2OwUtl65MyfFBRgZji_wEW5-EyUA4NGas_xpO5SQ/viewform |
 | Mensaje para mandarle a cada docente (la guía está dentro de la web) | [docs/guia-docentes.md](guia-docentes.md) |
 | Cómo funciona la revisión, crear códigos e importar respuestas | [docs/revision-docente.md](revision-docente.md) |
-| Probar el canal de revisión (Apps Script, issue 87) | https://ragarciaga.github.io/3d_brain/probar-canal.html |
+| Probar el canal de revisión (Apps Script, issue 87) | https://brain.maysasp.com/probar-canal.html |
 | Dudas conocidas sobre las fichas (registro; los docentes las ven en cada ficha) | [docs/fichas-dudas.md](fichas-dudas.md) |
 | Cómo se trazó cada ruta del vago (registro; el docente revisa en la app) | [pipeline/rutas-vago.yaml](../pipeline/rutas-vago.yaml) |
 | Auditoría del vago: anclajes y nombre propuesto por trazo | [docs/research/vago/auditoria-vago.md](research/vago/auditoria-vago.md) |
@@ -39,9 +40,9 @@ Las hojas de respuestas de los dos formularios están en el Drive de Maysa Digit
 
 | Qué | Enlace |
 |---|---|
-| Logo para fondo oscuro (SVG) | https://ragarciaga.github.io/3d_brain/marca/maysa-brain-oscuro.svg |
-| Logo para fondo claro (SVG) | https://ragarciaga.github.io/3d_brain/marca/maysa-brain-claro.svg |
-| Ícono solo (SVG) | https://ragarciaga.github.io/3d_brain/marca/icono.svg |
+| Logo para fondo oscuro (SVG) | https://brain.maysasp.com/marca/maysa-brain-oscuro.svg |
+| Logo para fondo claro (SVG) | https://brain.maysasp.com/marca/maysa-brain-claro.svg |
+| Ícono solo (SVG) | https://brain.maysasp.com/marca/icono.svg |
 
 Los mismos archivos están en `public/marca/` del repositorio.
 

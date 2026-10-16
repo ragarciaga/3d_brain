@@ -5,6 +5,8 @@ import path from 'node:path';
 import { holdsLock, stopStatus } from './control.mjs';
 import { ops } from './gh.mjs';
 import { defaultBranch, resolveBaseRef } from './repo.mjs';
+import { readContract } from './contract.mjs';
+import { classify, isTestPath } from './delta.mjs';
 import { computeRisk, maxTier, tierRank } from './risk.mjs';
 import { CliError, git, now, sleepMs } from './util.mjs';
 
@@ -14,6 +16,17 @@ export const CI_CHECK = 'rockbuilt-ci';
 
 // The CI evidence must be a check run created by GitHub Actions and concluded success. A commit status
 // with the same name proves nothing: any token with repo access can post one.
+// With an `## E2E` section the `rockbuilt-e2e` check must exist and pass: since E2E runs in shards
+// behind a plan job, its check runs appear late, and "every present check is green" alone could
+// be read before they exist.
+export const E2E_CHECK = 'rockbuilt-e2e';
+function e2eRequired(root, checks, no) {
+  const { text } = readContract(root);
+  if (!/^##\s+E2E\s*$/m.test(text || '')) return;
+  const ok = checks.some((x) => x.name === E2E_CHECK && x.source === 'check-run' && x.app === 'github-actions' && x.status === 'completed' && x.conclusion === 'success');
+  if (!ok) no('e2e', `no successful ${E2E_CHECK} check run on the head (AGENTS.md has ## E2E)`);
+}
+
 export function ciPassed(checks) {
   return checks.some((x) => (x.name === CI_CHECK || x.name.startsWith(`${CI_CHECK} `) || x.name.startsWith(`${CI_CHECK}/`))
     && x.source === 'check-run' && x.app === 'github-actions' && x.status === 'completed' && x.conclusion === 'success');
@@ -23,7 +36,7 @@ export function ciPassed(checks) {
 export function parseBody(body) {
   const status = {};
   for (const m of String(body || '').matchAll(/<!--\s*rockbuilt:status\s+([^>]*?)\s*-->/g)) {
-    const kv = Object.fromEntries([...m[1].matchAll(/(\w+)=(\S+)/g)].map((x) => [x[1], x[2]]));
+    const kv = Object.fromEntries([...m[1].matchAll(/([\w-]+)=(\S+)/g)].map((x) => [x[1], x[2]]));
     if (kv.stage) status[kv.stage] = kv;
   }
   const tier = (String(body || '').match(/<!--\s*rockbuilt:tier\s+([ABC])\s*-->/i) || [])[1];
@@ -34,6 +47,53 @@ export function parseBody(body) {
 
 function shaMatches(given, head) {
   return Boolean(given && head && given.length >= 7 && head.toLowerCase().startsWith(given.toLowerCase()));
+}
+
+// Two SHAs (either may be abbreviated, 7+ chars) name the same commit.
+function sameSha(a, b) {
+  if (!a || !b || a.length < 7 || b.length < 7) return false;
+  const x = a.toLowerCase();
+  const y = b.toLowerCase();
+  return x.startsWith(y) || y.startsWith(x);
+}
+
+// DESIGN 8.3, the gate's own check (never the verifier's word): for every path the task touched at
+// the reviewed head (compare base...reviewed) or touches now (compare base...head), the blob at the
+// reviewed head equals the blob at the current head. Paths missing from one listing are read with
+// the contents API. 300 files (the compare API truncates) or more than 40 lookups: not confirmed.
+// Returns { class: identical | test-only | different, detail }.
+export function reviewedChange(c, baseRef, reviewedHead, head) {
+  try {
+    const before = ops.compareFiles(c, baseRef, reviewedHead);
+    const after = ops.compareFiles(c, baseRef, head);
+    if (before.truncated || after.truncated) return { class: 'different', detail: 'too many files to compare (300+)' };
+    const blob = (f) => (f.status === 'removed' ? null : f.sha || undefined);
+    // A rename removes the previous path on that side: it is a touched path too (moving app code
+    // under tests/ must not read as test-only).
+    const side = (files) => {
+      const m = new Map(files.map((f) => [f.filename, blob(f)]));
+      for (const f of files) if (f.previous && !m.has(f.previous)) m.set(f.previous, null);
+      return m;
+    };
+    const atOld = side(before.files);
+    const atNow = side(after.files);
+    const touched = [...new Set([...atOld.keys(), ...atNow.keys()])].sort();
+    let lookups = 0;
+    const read = (map, p, ref) => {
+      if (map.has(p) && map.get(p) !== undefined) return map.get(p);
+      if (++lookups > 40) throw new Error('too many files to look up');
+      const sha = ops.blobSha(c, p, ref);
+      map.set(p, sha);
+      return sha;
+    };
+    const differing = touched.filter((p) => read(atOld, p, reviewedHead) !== read(atNow, p, head));
+    const cls = classify(differing);
+    if (cls === 'identical') return { class: cls, detail: `${touched.length} touched file(s), same content as reviewed` };
+    if (cls === 'test-only') return { class: cls, detail: `only test files changed: ${differing.slice(0, 3).join(', ')}` };
+    return { class: cls, detail: `app files changed: ${differing.filter((p) => !isTestPath(p)).slice(0, 3).join(', ')}` };
+  } catch (e) {
+    return { class: 'different', detail: `compare failed: ${e.message}` };
+  }
 }
 
 // PR kinds that carry no reviewer lines (DESIGN 8.1). Bookkeeping may merge unattended when it only
@@ -74,9 +134,10 @@ export function bookkeepingOnly(files) {
     if (name === '.claude/LESSONS.md') {
       if (f.status !== 'modified' && f.status !== 'added') return false;
       if (removed.length) return false;
-      // Append only: one hunk, at the end of the file, at most 40 new lines per run.
+      // Append only: one hunk, at the end of the file, at most 120 new lines per PR (a day's
+      // bookkeeping PR collects several runs; a run adds 1 to 3 lessons of 1 to 3 lines).
       const hunks = String(f.patch).split('\n').filter((l) => l.startsWith('@@'));
-      if (hunks.length > 1 || added.length > 40) return false;
+      if (hunks.length > 1 || added.length > 120) return false;
       const after = String(f.patch).split(/^@@[^\n]*@@[^\n]*\n?/m)[1] || '';
       const lines = after.split('\n').filter((l) => l !== '' && l !== '\\ No newline at end of file');
       const firstAdded = lines.findIndex((l) => l.startsWith('+'));
@@ -160,13 +221,37 @@ export function evaluateGate(root, c, pr, { run = null, humanApproved = false, r
   const need = ['rb-verifier'];
   if (tierRank(tier) >= 1) need.push('rb-auditor');
   if (body.security) need.push('rb-security-reviewer');
+  // A verifier pass on the current head may name the head the other reviewers saw:
+  // `identical-to=<sha>` (no touched file changed since; the verifier ran its identity check) or
+  // `app-identical-to=<sha>` (only test files changed; the verifier re-verified them). Auditor and
+  // security lines on that older head then still hold, once the gate itself confirms the class
+  // through GitHub (DESIGN 8.3).
+  // Both keys may appear when the auditor and the security review sit on different heads.
+  // test-only carries the auditor (it judged the running app, unchanged) but never the security
+  // review: test code runs in CI with the workflow's secrets and was not looked at.
+  const ver = body.status['rb-verifier'];
+  const verOk = ver && ver.outcome === 'pass' && shaMatches(ver.head, head);
+  const carryFor = (stage, lineHead) => {
+    if (!verOk) return null;
+    if (ver['identical-to'] && sameSha(lineHead, ver['identical-to'])) return { from: ver['identical-to'], allowed: ['identical'] };
+    if (ver['app-identical-to'] && sameSha(lineHead, ver['app-identical-to'])) return { from: ver['app-identical-to'], allowed: stage === 'rb-security-reviewer' ? ['identical'] : ['identical', 'test-only'] };
+    return null;
+  };
+  const identity = new Map();
   for (const stage of need) {
     const s = body.status[stage];
     if (!s) no('status-line', `missing ${stage} line`);
     // needs-local: the auditor could not observe a criterion in the cloud; the human checked it on
     // their machine and asked for the merge in the current conversation.
     else if (s.outcome !== 'pass' && !(stage === 'rb-auditor' && s.outcome === 'needs-local' && humanApproved)) no('status-line', `${stage} outcome=${s.outcome}`);
-    else if (!shaMatches(s.head, head)) no('stale-head', `${stage} reviewed ${s.head || '?'}, PR head is ${head}`);
+    else if (!shaMatches(s.head, head)) {
+      const carry = stage !== 'rb-verifier' ? carryFor(stage, s.head) : null;
+      if (carry) {
+        if (!identity.has(carry.from)) identity.set(carry.from, reviewedChange(c, view.base.ref, carry.from, head));
+        const id = identity.get(carry.from);
+        if (!carry.allowed.includes(id.class)) no('stale-head', `${stage} reviewed ${s.head}; the verifier carries it forward, but the gate finds the change ${id.class} (${id.detail}): re-review`);
+      } else no('stale-head', `${stage} reviewed ${s.head || '?'}, PR head is ${head}`);
+    }
   }
 
   // 5. Checks on the head SHA, rockbuilt-ci among them.
@@ -177,6 +262,7 @@ export function evaluateGate(root, c, pr, { run = null, humanApproved = false, r
     no('checks', `could not read checks: ${e.message}`);
   }
   if (!ciPassed(checks)) no('ci', `no successful ${CI_CHECK} check run from GitHub Actions on ${String(head).slice(0, 7)}: no CI, no automatic merge`);
+  e2eRequired(root, checks, no);
   for (const x of checks) {
     if (x.status !== 'completed') no('checks', `${x.name} is ${x.status}`);
     else if (!OK_CONCLUSIONS.includes(x.conclusion)) no('checks', `${x.name} concluded ${x.conclusion}`);

@@ -25,8 +25,9 @@ alcance, `SPEC.md`; para las reglas que siguen los agentes, `AGENTS.md`.
 Una sola vez: en GitHub, Settings > Pages > Build and deployment > Source: "GitHub Actions".
 
 Después, cada merge a `main` publica solo (workflow `pages`). Para publicar a mano: Actions >
-pages > Run workflow. El sitio queda en https://ragarciaga.github.io/3d_brain/ (español en
-`/3d_brain/es`, inglés en `/3d_brain/en`).
+pages > Run workflow. El sitio queda en https://brain.maysasp.com/ (español en
+`/es`, inglés en `/en`). El dominio es `brain.maysasp.com` (docs/adr/0014-dominio-propio.md); el
+enlace viejo de github.io redirige solo al nuevo.
 
 Si el workflow falla en "configure-pages" con "Not Found", Pages no está activado.
 
@@ -61,14 +62,40 @@ Abre http://localhost:3000. El número de cuadros por segundo aparece arriba a l
 Abre el sitio con `?medir=1` al final de la dirección, en cada equipo (iPad, celular, PC):
 
 ```
-https://ragarciaga.github.io/3d_brain/es?medir=1
+https://brain.maysasp.com/es?medir=1
 ```
 
-Aparece un panel con el equipo, la tarjeta gráfica, cuánto tardó el código, la descarga del modelo
-3D, la preparación del modelo, cuándo se vio el cerebro y los cuadros por segundo de los 10 s
-siguientes. Al final dice qué fue lo más lento. "Copiar resultados" copia todo como texto para
-pegarlo en el issue 6 o en el chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo
-quita. No envía nada a ningún servidor.
+Aparece un panel con el equipo, la densidad de píxeles del visor, la tarjeta gráfica, cuánto tardó
+el código, la descarga del modelo 3D, la preparación del modelo, cuándo se vio el cerebro y los
+cuadros por segundo. "Copiar resultados" copia todo como texto para pegarlo en el issue 6 o en el
+chat. El panel sigue mientras navegas en esa pestaña; "Cerrar" lo quita. No envía nada a ningún
+servidor.
+
+La preparación del modelo viene desglosada en tres partes que suman el total: "Leer el modelo"
+(parseo y decodificación), "Índice de toque" (los árboles BVH que hacen rápido el toque) y "Armar
+las piezas" (piezas, cajas y centros). Si falta alguna marca, esa parte sigue en "midiendo..." en
+el panel y dice "sin dato" en el informe copiado.
+
+Los cuadros por segundo cuentan solo de 1 a 10 s después de que se ve el cerebro: el primer segundo
+es arranque y compilación de sombreadores, y no dice qué tan fluido va el visor. Por eso los
+promedios de antes del issue 85 no se comparan con los nuevos. "Lo más lento" solo aparece si el
+cerebro tardó más de 3 s en verse; si no, no hace falta señalar nada.
+
+Para comparar el mismo equipo con distinta densidad de píxeles, agrega `dpr=<n>` a la dirección:
+
+```
+https://brain.maysasp.com/es?medir=1&dpr=1
+https://brain.maysasp.com/es?medir=1&dpr=1.5
+```
+
+Se aceptan valores de 0.5 a 3, con punto decimal; cualquier otro valor se ignora y queda el modo
+automático. El valor vale mientras navegas en esa pestaña y se pierde si recargas sin él. El panel
+y el informe copiado dicen la densidad en uso ("fija con ?dpr" o "automática").
+
+Sin `?dpr`, la app ajusta la densidad sola: si el equipo va a menos de 30 cuadros/s durante unos 3 s
+con el modelo cargado, baja la densidad un paso (a 1,5 y luego a 1); si va holgado (55 o más durante
+10 s), la sube, como máximo dos veces por visita. En ese modo, la "Fluidez (de 1 a 10 s tras el primer cuadro)" puede mezclar
+cuadros de antes y de después del ajuste, por eso las comparaciones se hacen con `?dpr`.
 
 Mide dos veces en cada equipo: la primera vez (el modelo se descarga) y recargando la página (el
 modelo sale de la memoria del navegador). Si quieres una medición limpia, abre una pestaña privada.

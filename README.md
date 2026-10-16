@@ -2,14 +2,14 @@
 
 Atlas 3D web, público, gratuito y bilingüe (español e inglés) del cerebro y el nervio vago, para
 estudiantes de psicología y ciencias de la salud. Se desarma en piezas, cada pieza tiene ficha con
-fuente, nivel de evidencia y revisor visible, y se vuelve a armar sin perder la posición exacta.
+fuente, nivel de evidencia y revisión docente visible, y se vuelve a armar sin perder la posición exacta.
 
 **Uso educativo. No es una herramienta clínica ni de diagnóstico.**
 
 Estado: hito 1, piloto con docentes. Las 236 fichas están escritas con fuentes verificadas y
 siguen en borrador hasta que las revisen docentes. Hito 2 en construcción: planos de corte (F8).
 
-**Sitio:** https://ragarciaga.github.io/3d_brain/ · **Todos los enlaces del proyecto:**
+**Sitio:** https://brain.maysasp.com/ · **Todos los enlaces del proyecto:**
 [docs/enlaces.md](docs/enlaces.md)
 
 ## Correrlo en local
@@ -23,8 +23,8 @@ Abre http://localhost:3000. Requiere Node.js 22.18 o superior (recomendado 24 LT
 
 ## Qué trae
 
-- Modo estudio: el cerebro a pantalla completa; un riel abre el árbol, los grupos de estudio y la
-  búsqueda (Ctrl+K) solo cuando se piden.
+- Modo estudio: el cerebro a pantalla completa; un riel abre el árbol, los grupos de estudio, los
+  planos de corte (sagital, coronal y axial) y la búsqueda (Ctrl+K) solo cuando se piden.
 - Búsqueda bilingüe (español, inglés, latín y sinónimos, tolerante a tildes y errores).
 - Ficha por estructura a la izquierda: qué es, función, ubicación, relaciones, relevancia en
   psicología con nivel de evidencia, recursos, búsquedas de artículos científicos y fuentes.

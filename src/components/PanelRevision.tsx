@@ -1,10 +1,28 @@
-// Modo revisión docente (F24): avance, fichas pendientes y envío por formulario de Google.
+// Modo revisión docente (F24): avance, fichas pendientes, autorización y guardado automático por el canal de retorno
+// (con `urlCanal`), con el formulario de Google como respaldo si el canal no confirma en 10 min; sin `urlCanal`, envío
+// por formulario. Con canal, la casilla del vago (Acciones) filtra los trazos y las rutas trazadas (R5).
 import { get, set } from 'idb-keyval';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
+import { autorizacionVigente, canalConfigurado, ErrorCanal, guardar, leer } from '../lib/canal';
+import {
+  armarLotes,
+  AVISO_RESPALDO_MS,
+  claveConfirmacion,
+  confirmarRecibidas,
+  ESPERA_ENVIO_MS,
+  estadoInicial,
+  fusionarConCanal,
+  marcarPendientes,
+  ofrecerRespaldo,
+  porEnviar,
+  trasEnvio,
+  type EstadoCola,
+  type ResultadoEnvio,
+} from '../lib/colaGuardado';
 import { nombre, nombrePendiente } from '../lib/nombres';
 import { avanceDeFicha, avanceGlobal, ordenDeRevision } from '../lib/prioridad';
 import {
@@ -20,8 +38,8 @@ import {
   type ParteEnvio,
   type Respuesta,
 } from '../lib/revision';
-import { crearRespaldo, leerRespaldo, MAX_RESPALDO_CARACTERES, type ErrorRespaldo } from '../lib/respaldo';
-import { useAtlas } from '../store/useAtlas';
+import { useAtlas, vagoVisible } from '../store/useAtlas';
+import DialogoAutorizacion from './DialogoAutorizacion';
 import SeccionTrazos from './SeccionTrazos';
 import { useMovil } from './useMovil';
 
@@ -30,6 +48,7 @@ const versionActual = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-fi
 const claveGuia = (codigo: string) => `atlas:guia-vista:${codigo}`;
 type Vista = 'que' | 'como' | 'enviar' | null;
 const ID_TITULO = 'dialogo-revision-titulo'; // solo hay un diálogo abierto a la vez
+const idEstructuraValido = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
 
 function guiaVista(codigo: string): boolean {
   try {
@@ -47,15 +66,6 @@ function marcarGuiaVista(codigo: string) {
   }
 }
 
-function descargarArchivo(nombre: string, texto: string) {
-  const url = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nombre;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export default function PanelRevision({
   idioma,
   alElegir,
@@ -71,25 +81,75 @@ export default function PanelRevision({
   const botonAcciones = useRef<HTMLButtonElement>(null);
   const revisor = useAtlas((s) => s.revisor);
   const respuestas = useAtlas((s) => s.respuestas);
+  const autorizacion = useAtlas((s) => s.autorizacion);
+  const lecturaCanal = useAtlas((s) => s.lecturaCanal);
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
   const rutas = useAtlas((s) => s.rutas);
+  const vago = useAtlas(vagoVisible);
   const [confirmadas, setConfirmadas] = useState<Record<string, string>>({});
+  const confirmadasRef = useRef(confirmadas);
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   const [aviso, setAviso] = useState('');
   const [envio, setEnvio] = useState<{ partes: ParteEnvio[]; estados: EstadoParte[] } | null>(null);
+  // Casilla del vago (R5.3): el valor en vuelo mientras `autorizar` responde, y el aviso si falla.
+  const [cambiandoVago, setCambiandoVago] = useState<boolean | null>(null);
+  const [errorVago, setErrorVago] = useState(false);
 
   useEffect(() => {
     if (!revisor) return;
     let vigente = true;
     get(claveIdb(revisor))
-      .then((guardado: { respuestas?: Record<string, Respuesta>; confirmadas?: Record<string, string> } | undefined) => {
+      .then(
+        (
+          guardado:
+            | { respuestas?: Record<string, Respuesta>; confirmadas?: Record<string, string>; autorizacion?: unknown }
+            | undefined,
+        ) => {
+          if (!vigente) return;
+          useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
+          const guardadas = guardado?.confirmadas ?? {}; // el `enviadas` de versiones anteriores se ignora
+          confirmadasRef.current = guardadas;
+          setConfirmadas(guardadas);
+          useAtlas.getState().setAutorizacion(autorizacionVigente(guardado?.autorizacion)); // copia local: entrada no confiable
+          setEnvio(null);
+        },
+      )
+      .catch(() => {
+        // Sin la copia local de este código, lo que haya en memoria es de otro código: nunca se envía con este.
         if (!vigente) return;
-        useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
-        setConfirmadas(guardado?.confirmadas ?? {}); // el `enviadas` de versiones anteriores se ignora
+        useAtlas.getState().cargarRespuestas({});
+        confirmadasRef.current = {};
+        setConfirmadas({});
         setEnvio(null);
       })
-      .catch(() => undefined)
-      .finally(() => vigente && setCargadoDe(revisor));
+      .finally(() => {
+        if (!vigente) return;
+        setCargadoDe(revisor);
+        if (!canalConfigurado()) return;
+        // Lectura inicial del canal: sus respuestas se fusionan con las locales por fecha (gana la más reciente; con
+        // empate, la local) y las versiones del canal que quedan se marcan como guardadas, para no reenviarlas (R4.1,
+        // R4.2). Su autorización manda sobre la copia local, también cuando es null.
+        leer(revisor, idEstructuraValido).then(
+          ({ respuestas: delCanal, autorizacion }) => {
+            if (!vigente) return;
+            if (delCanal.length > 0) {
+              // Se lee al resolver, no al pedir: entran las ediciones hechas mientras `leer` estaba en vuelo. La ref
+              // se actualiza antes de pasar a `hecha`, así que la cola nunca reenvía lo traído.
+              const antes = useAtlas.getState().respuestas;
+              confirmadasRef.current = fusionarConCanal(antes, confirmadasRef.current, delCanal).confirmadas;
+              setConfirmadas((c) => fusionarConCanal(antes, c, delCanal).confirmadas);
+              useAtlas.getState().importarRespuestas(delCanal);
+            }
+            useAtlas.getState().setAutorizacion(autorizacion);
+            useAtlas.getState().setLecturaCanal('hecha');
+          },
+          (e: unknown) => {
+            if (!vigente) return;
+            // Si falla, se queda la copia local de la autorización.
+            useAtlas.getState().setLecturaCanal(e instanceof ErrorCanal && e.tipo === 'codigo_no_activo' ? 'inactivo' : 'fallida');
+          },
+        );
+      });
     return () => {
       vigente = false;
     };
@@ -97,8 +157,106 @@ export default function PanelRevision({
 
   useEffect(() => {
     if (!revisor || cargadoDe !== revisor) return;
-    set(claveIdb(revisor), { respuestas, confirmadas }).catch(() => undefined);
-  }, [revisor, respuestas, confirmadas, cargadoDe]);
+    set(claveIdb(revisor), { respuestas, confirmadas, autorizacion }).catch(() => undefined);
+  }, [revisor, respuestas, confirmadas, autorizacion, cargadoDe]);
+
+  // Guardado automático por el canal (R3.1 a R3.5). Solo con `urlCanal`, con la lectura del canal resuelta y con una
+  // autorización vigente: sin ellas no se programa ni se envía nada, y con `inactivo` tampoco. El panel se monta una
+  // vez por código (`key` en Pagina), así que la cola vive y muere con el código.
+  const listo =
+    canalConfigurado() && cargadoDe === revisor && (lecturaCanal === 'hecha' || lecturaCanal === 'fallida') && autorizacion !== null;
+  const [fallos, setFallos] = useState(0);
+  // Ventana del respaldo por formulario (R7.1): `abierta` es la que vio el último render, `vencida` que pasaron 10 min
+  // sin confirmación en ella y `ronda` sube con cada confirmación del canal para reprogramar el temporizador.
+  const [respaldo, setRespaldo] = useState({ abierta: false, vencida: false, ronda: 0 });
+  const colaRef = useRef<EstadoCola>(estadoInicial());
+  const enVuelo = useRef(false);
+  const noAntesDe = useRef(0); // fin (ms epoch) de la espera de reintento; 0 si no hay
+  const reintento = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const vivo = useRef(false);
+
+  useEffect(() => {
+    vivo.current = true;
+    return () => {
+      vivo.current = false;
+      clearTimeout(reintento.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    confirmadasRef.current = confirmadas;
+  }, [confirmadas]);
+
+  // Un solo lote en vuelo: lo editado mientras tanto queda pendiente y sale en la vuelta siguiente. Lo que hay por
+  // enviar y las condiciones se leen del store en cada vuelta, no de lo capturado al programar.
+  const enviar = useCallback(
+    async function enviar(): Promise<void> {
+      if (!revisor || enVuelo.current) return;
+      enVuelo.current = true;
+      try {
+        for (;;) {
+          const s = useAtlas.getState();
+          const puede =
+            vivo.current &&
+            s.revisor === revisor &&
+            s.autorizacion !== null &&
+            (s.lecturaCanal === 'hecha' || s.lecturaCanal === 'fallida');
+          if (!puede) return;
+          const lista = porEnviar(Object.values(s.respuestas), confirmadasRef.current, colaRef.current.rechazadas);
+          const lote = armarLotes(revisor, lista, colaRef.current.tope)[0];
+          if (!lote) return;
+          let resultado: ResultadoEnvio;
+          try {
+            resultado = { ok: true, recibidas: await guardar(revisor, lote) };
+          } catch (e) {
+            resultado = { ok: false, error: e instanceof ErrorCanal ? e.tipo : 'red' };
+          }
+          if (!vivo.current) return;
+          const { estado, espera } = trasEnvio({ ...colaRef.current, confirmadas: confirmadasRef.current }, lote, resultado, Date.now());
+          colaRef.current = estado;
+          setFallos(estado.fallos);
+          if (resultado.ok) {
+            // Solo queda guardado lo que el canal devolvió con la misma clave y fecha.
+            const { recibidas } = resultado;
+            confirmadasRef.current = confirmarRecibidas(confirmadasRef.current, lote, recibidas);
+            setConfirmadas((c) => confirmarRecibidas(c, lote, recibidas));
+            if (lote.some((r) => recibidas.has(claveConfirmacion(r)))) setRespaldo((r) => ({ ...r, vencida: false, ronda: r.ronda + 1 }));
+          }
+          if (!resultado.ok && resultado.error === 'sin_autorizacion') {
+            // La hoja ya no tiene la autorización (por ejemplo, el editor la borró por una supresión): se deja en
+            // null, vuelve el diálogo con `pedirAutorizacion` y la cola sigue sola cuando `listo` vuelva a ser true.
+            noAntesDe.current = 0;
+            if (useAtlas.getState().revisor === revisor) useAtlas.getState().setAutorizacion(null);
+            return;
+          }
+          if (estado.inactivo) {
+            useAtlas.getState().setLecturaCanal('inactivo');
+            return;
+          }
+          if (espera === null) return;
+          if (espera > 0) {
+            noAntesDe.current = Date.now() + espera;
+            clearTimeout(reintento.current);
+            reintento.current = setTimeout(() => void enviar(), espera);
+            return;
+          }
+          noAntesDe.current = 0;
+        }
+      } finally {
+        enVuelo.current = false;
+      }
+    },
+    [revisor],
+  );
+
+  // Espera de ESPERA_ENVIO_MS desde el último cambio de respuestas (o de que todo esté listo, al recargar). Es menor que
+  // ESPERA_CANAL_MS: el texto llega al store 500 ms después de la última tecla y R3.1 cuenta desde la tecla.
+  useEffect(() => {
+    if (!listo) return;
+    if (porEnviar(Object.values(respuestas), confirmadasRef.current, colaRef.current.rechazadas).length === 0) return;
+    const id = setTimeout(() => void enviar(), Math.max(ESPERA_ENVIO_MS, noAntesDe.current - Date.now()));
+    return () => clearTimeout(id);
+  }, [listo, respuestas, enviar]);
 
   const porEstructura = useMemo(() => {
     const m = new Map<string, Respuesta[]>();
@@ -112,12 +270,40 @@ export default function PanelRevision({
     [respuestas],
   );
 
+  // Autorización (R2.1): se pide al haber algo por guardar, sin autorización vigente y con la lectura del canal
+  // resuelta. Escape o "Cerrar" la descartan solo hasta el siguiente cambio de respuestas.
+  const [descartadaCon, setDescartadaCon] = useState<Record<string, Respuesta> | null>(null);
+  const hayPorGuardar = useMemo(() => pendientesDeEnvio(Object.values(respuestas), confirmadas).length > 0, [respuestas, confirmadas]);
+  // Respaldo por formulario (R7.1): con pendientes y 10 min sin ninguna confirmación del canal se ofrece el formulario
+  // de hoy. La ventana se abre al aparecer pendientes, se mueve con cada confirmación (`trasEnvio`) y se cierra sin
+  // pendientes. Las rechazadas solas cuentan como pendientes, así que también salen por aquí.
+  const ventanaAbierta = listo && hayPorGuardar;
+  if (respaldo.abierta !== ventanaAbierta) setRespaldo({ abierta: ventanaAbierta, vencida: false, ronda: respaldo.ronda });
+  useEffect(() => {
+    colaRef.current = marcarPendientes(colaRef.current, ventanaAbierta, Date.now());
+    const desde = colaRef.current.ultimaConfirmacion;
+    if (!ventanaAbierta || desde === null) return;
+    const id = setTimeout(
+      () => {
+        if (ofrecerRespaldo(colaRef.current.ultimaConfirmacion, Date.now(), true)) setRespaldo((r) => (r.abierta ? { ...r, vencida: true } : r));
+      },
+      Math.max(0, desde + AVISO_RESPALDO_MS - Date.now()),
+    );
+    return () => clearTimeout(id);
+  }, [ventanaAbierta, respaldo.ronda]);
+  const pedirAutorizacion =
+    !!revisor &&
+    canalConfigurado() &&
+    cargadoDe === revisor &&
+    (lecturaCanal === 'hecha' || lecturaCanal === 'fallida') &&
+    autorizacion === null &&
+    hayPorGuardar &&
+    descartadaCon !== respuestas;
+
   // La primera vez que un docente entra con su código, la guía se abre sola.
   const vista: Vista = !revisor ? null : elegida === 'ninguna' ? null : (elegida ?? (guiaVista(revisor) ? null : 'como'));
   const titulo = useRef<HTMLHeadingElement>(null);
   const botones = useRef<Partial<Record<'que' | 'como' | 'enviar', HTMLButtonElement | null>>>({});
-  const [avisoRespaldo, setAvisoRespaldo] = useState('');
-  const entradaRespaldo = useRef<HTMLInputElement>(null);
 
   // Al abrir un diálogo, el foco va a su título: así se anuncia y Escape queda a un toque.
   useEffect(() => {
@@ -126,9 +312,9 @@ export default function PanelRevision({
 
   // Escape (Pagina) cierra el diálogo; solo la confirmación de salida va antes.
   useEffect(() => {
-    useAtlas.getState().setDialogoRevision(vista !== null);
+    useAtlas.getState().setDialogoRevision(vista !== null || pedirAutorizacion);
     return () => useAtlas.getState().setDialogoRevision(false);
-  }, [vista]);
+  }, [vista, pedirAutorizacion]);
 
   const cerrar = useCallback(
     (devolverFoco: boolean) => {
@@ -144,10 +330,11 @@ export default function PanelRevision({
   );
 
   useEffect(() => {
-    const alCerrar = () => cerrar(true);
+    // La autorización es modal y va primero: Escape la cierra sin aceptar (el foco lo devuelve el diálogo al desmontarse).
+    const alCerrar = () => (pedirAutorizacion ? setDescartadaCon(respuestas) : cerrar(true));
     window.addEventListener('atlas:cerrar-revision', alCerrar);
     return () => window.removeEventListener('atlas:cerrar-revision', alCerrar);
-  }, [cerrar]);
+  }, [cerrar, pedirAutorizacion, respuestas]);
 
   if (!revisor) return null;
   const abrir = (v: Vista) => {
@@ -156,16 +343,79 @@ export default function PanelRevision({
   };
   const lista = Object.values(respuestas);
   const viejas = desactualizadas(lista, versionActual);
-  const secciones = ordenDeRevision(respondidas, idioma, rutas);
-  const global = avanceGlobal(respondidas, idioma, rutas);
+  const secciones = ordenDeRevision(respondidas, idioma, rutas, vago);
+  const global = avanceGlobal(respondidas, idioma, rutas, vago);
   const totalPendientes = secciones.reduce((n, x) => n + x.ids.length, 0);
   const alternar = (v: Vista) => abrir(vista === v ? null : v);
   const configurado = formularioConfigurado(configRevision);
   const pendientes = pendientesDeEnvio(lista, confirmadas);
   const clavesPendientes = new Set(pendientes.map(claveRespuesta));
   const hayCompletas = lista.some(respuestaCompleta);
-  // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra.
-  const trazosUI = <SeccionTrazos alAbrir={() => abrir(null)} />;
+  const conCanal = canalConfigurado();
+  // Estado del guardado (solo con canal). Llamadas literales a `t` para que check:i18n las vea. Sin autorización
+  // (diálogo descartado) no dice nada: el diálogo vuelve con el siguiente cambio.
+  const estadoGuardado =
+    lecturaCanal === 'inactivo'
+      ? t('revision.guardado.inactivo')
+      : cargadoDe !== revisor || autorizacion === null
+        ? ''
+        : pendientes.length > 0
+          ? fallos > 0
+            ? t('revision.guardado.sinConexion')
+            : t('revision.guardado.guardando')
+          : hayCompletas
+            ? t('revision.guardado.listo')
+            : '';
+  // No abre nada solo: cada parte se abre con su propio enlace y solo se confirma a mano.
+  const enviarTodo = () => {
+    const partes = partesEnvio(configRevision, revisor, pendientes);
+    setEnvio({ partes, estados: partes.map((): EstadoParte => 'sin_abrir') });
+  };
+  const ofrecerFormulario = ventanaAbierta && respaldo.abierta && respaldo.vencida;
+  const enviarPorFormulario = () => {
+    enviarTodo();
+    abrir('enviar');
+  };
+  const estadoUI = conCanal ? (
+    <>
+      {estadoGuardado && ' · '}
+      <span role="status" data-testid="estado-guardado">
+        {estadoGuardado}
+      </span>
+      {ofrecerFormulario && (
+        <>
+          {' '}
+          <button
+            type="button"
+            className="boton-primario"
+            data-testid="enviar-por-formulario"
+            ref={(el) => { botones.current.enviar = el; }}
+            onClick={enviarPorFormulario}
+          >
+            {t('revision.enviarPorFormulario')}
+          </button>
+        </>
+      )}
+    </>
+  ) : null;
+  // Igual que la lista de fichas: cierra el diálogo sin devolver el foco a la barra. Sin la casilla del vago (con
+  // canal) no hay sección de trazos (R5.1).
+  const trazosUI = vago ? <SeccionTrazos alAbrir={() => abrir(null)} /> : null;
+
+  // El filtro (`vago`) solo cambia cuando el canal confirma; mientras tanto la casilla muestra el valor pedido y queda
+  // deshabilitada; si falla, vuelve al confirmado. Con `codigo_no_activo` el store ya marca `inactivo`: el estado de
+  // guardado lo dice y la casilla desaparece.
+  const cambiarVago = async (nuevo: boolean) => {
+    setCambiandoVago(nuevo);
+    setErrorVago(false);
+    try {
+      await useAtlas.getState().cambiarAutorizacion(nuevo);
+    } catch (e) {
+      if (vivo.current && !(e instanceof ErrorCanal && e.tipo === 'codigo_no_activo')) setErrorVago(true);
+    } finally {
+      if (vivo.current) setCambiandoVago(null);
+    }
+  };
 
   const copiarODescargar = async (carga: string, archivo: string) => {
     try {
@@ -182,12 +432,6 @@ export default function PanelRevision({
     }
   };
 
-  // No abre nada solo: cada parte se abre con su propio enlace y solo se confirma a mano.
-  const enviarTodo = () => {
-    const partes = partesEnvio(configRevision, revisor, pendientes);
-    setEnvio({ partes, estados: partes.map((): EstadoParte => 'sin_abrir') });
-  };
-
   const marcar = (i: number, estado: EstadoParte) =>
     setEnvio((e) =>
       e && { ...e, estados: e.estados.map((x, k) => (k === i && x !== 'confirmada' ? estado : x)) },
@@ -197,31 +441,14 @@ export default function PanelRevision({
     const parte = envio?.partes[i];
     if (!parte) return;
     marcar(i, 'confirmada');
-    setConfirmadas((c) => confirmarParte(c, parte));
-  };
-
-  const descargarRespaldo = () =>
-    descargarArchivo(`respaldo-revision-${revisor}-${new Date().toISOString().slice(0, 10)}.json`, crearRespaldo(revisor, respuestas));
-
-  // Llamadas literales a `t` para que check:i18n las vea.
-  const mensajeError = (e: ErrorRespaldo) =>
-    e === 'version' ? t('revision.respaldoErrorVersion') : e === 'otroRevisor' ? t('revision.respaldoErrorRevisor') : t('revision.respaldoErrorArchivo');
-
-  // El archivo es entrada externa: leerRespaldo lo valida y solo entra lo que pasa; se fusiona con lo local.
-  const cargarArchivo = async (input: HTMLInputElement) => {
-    const archivo = input.files?.[0];
-    input.value = ''; // deja volver a elegir el mismo archivo
-    if (!archivo) return;
-    if (archivo.size > MAX_RESPALDO_CARACTERES) return setAvisoRespaldo(mensajeError('grande'));
-    const texto = await archivo.text().catch(() => null);
-    if (texto === null) return setAvisoRespaldo(mensajeError('formato'));
-    const s = useAtlas.getState();
-    if (s.revisor !== revisor) return; // salió del modo revisión mientras se leía el archivo
-    const l = leerRespaldo(texto, { revisor, idOk: (id) => typeof id === 'string' && Object.hasOwn(estructuras, id) });
-    if (!l.ok) return setAvisoRespaldo(mensajeError(l.error));
-    const f = s.importarRespuestas(l.respuestas);
-    const resumen = t('revision.respaldoCargado', { agregadas: f.agregadas, actualizadas: f.actualizadas, sinCambio: f.sinCambio });
-    setAvisoRespaldo(l.descartadas > 0 ? `${resumen} ${t('revision.respaldoOmitidas', { count: l.descartadas })}` : resumen);
+    if (!conCanal) {
+      setConfirmadas((c) => confirmarParte(c, parte));
+      return;
+    }
+    // Con canal solo el canal confirma (R3.3, R4.1): las respuestas siguen pendientes y la cola las manda cuando vuelva.
+    // Se reinicia la ventana de 10 min para no ofrecer el formulario otra vez con las mismas versiones.
+    colaRef.current = { ...colaRef.current, ultimaConfirmacion: Date.now() };
+    setRespaldo((r) => ({ ...r, vencida: false, ronda: r.ronda + 1 }));
   };
 
   // Elegir una acción del menú de celular lo cierra y abre (o cierra) el diálogo de esa acción.
@@ -230,29 +457,11 @@ export default function PanelRevision({
     alternar(v);
   };
 
-  // Respaldo (#60). No usan `elegir`: en celular el menú sigue abierto y se ve el resultado. El input de
-  // archivo va fuera del menú (en la raíz de la barra) para que sobreviva si el menú se desmonta.
-  const accionesRespaldo = (
-    <>
-      <button type="button" disabled={lista.length === 0} onClick={descargarRespaldo}>
-        {t('revision.descargarRespaldo')}
-      </button>
-      <button type="button" disabled={cargadoDe !== revisor} onClick={() => entradaRespaldo.current?.click()}>
-        {t('revision.cargarRespaldo')}
-      </button>
-    </>
-  );
-  const notasRespaldo = (
-    <>
-      <p className="aviso-local recurso-nota" data-testid="aviso-local">
-        {t('revision.soloEsteNavegador')}
-      </p>
-      {avisoRespaldo && (
-        <p className="aviso-respaldo" role="status" data-testid="aviso-respaldo">
-          {avisoRespaldo}
-        </p>
-      )}
-    </>
+  // Solo sin canal las respuestas viven únicamente en este navegador; con canal, el estado de guardado dice dónde están.
+  const avisoLocal = conCanal ? null : (
+    <p className="aviso-local recurso-nota" data-testid="aviso-local">
+      {t('revision.soloEsteNavegador')}
+    </p>
   );
 
   // Las acciones se escriben una sola vez: en línea en escritorio, dentro del menú "Acciones" en celular.
@@ -264,22 +473,39 @@ export default function PanelRevision({
       <button type="button" ref={(el) => { botones.current.como = el; }} aria-expanded={vista === 'como'} onClick={() => elegir('como')}>
         {t('revision.comoRevisar')}
       </button>
-      <button
-        type="button"
-        ref={(el) => { botones.current.enviar = el; }}
-        className="boton-primario"
-        aria-expanded={vista === 'enviar'}
-        onClick={() => elegir('enviar')}
-      >
-        {t('revision.enviar')}
-      </button>
-      {accionesRespaldo}
+      {!conCanal && (
+        <button
+          type="button"
+          ref={(el) => { botones.current.enviar = el; }}
+          className="boton-primario"
+          aria-expanded={vista === 'enviar'}
+          onClick={() => elegir('enviar')}
+        >
+          {t('revision.enviar')}
+        </button>
+      )}
+      {listo && (
+        <label data-testid="casilla-vago">
+          <input
+            type="checkbox"
+            checked={cambiandoVago ?? autorizacion?.vago === true}
+            disabled={cambiandoVago !== null}
+            onChange={(e) => void cambiarVago(e.currentTarget.checked)}
+          />{' '}
+          {t('revision.autorizacion.vago')}
+        </label>
+      )}
+      {errorVago && (
+        <span role="alert" className="etiqueta-aviso">
+          {t('revision.vagoSinConexion')}
+        </span>
+      )}
     </>
   );
   const notas = (
     <>
       {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
-      {notasRespaldo}
+      {avisoLocal}
     </>
   );
 
@@ -292,6 +518,7 @@ export default function PanelRevision({
             <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span> ·{' '}
             <span data-testid="avance-global">{t('revision.avanceGlobal', { completas: global.completas, total: global.total })}</span> ·{' '}
             {t('revision.codigo', { codigo: revisor })}
+            {estadoUI}
           </span>
           <button
             type="button"
@@ -329,19 +556,12 @@ export default function PanelRevision({
             <strong>{t('revision.titulo')}</strong> · {t('revision.codigo', { codigo: revisor })} ·{' '}
             <span data-testid="total-respuestas">{t('revision.respuestas', { count: lista.length })}</span> ·{' '}
             <span data-testid="avance-global">{t('revision.avanceGlobal', { completas: global.completas, total: global.total })}</span>
+            {estadoUI}
           </span>
           {acciones}
           {notas}
         </>
       )}
-      <input
-        ref={entradaRespaldo}
-        type="file"
-        accept=".json,application/json"
-        hidden
-        data-testid="entrada-respaldo"
-        onChange={(e) => void cargarArchivo(e.currentTarget)}
-      />
       {vista === 'que' && (
         <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO} data-testid="que-revisar">
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
@@ -372,7 +592,7 @@ export default function PanelRevision({
                         {nombrePendiente(estructuras[id], idioma) && <span className="etiqueta-aviso"> {t('revision.nombrePendiente')}</span>}
                         <span className="recurso-nota" data-testid="avance-ficha">
                           {' '}
-                          · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas))}
+                          · {t('revision.avanceFicha', avanceDeFicha(id, respondidas, idioma, rutas, vago))}
                         </span>
                       </li>
                     ))}
@@ -396,14 +616,25 @@ export default function PanelRevision({
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
             {t('revision.comoRevisar')}
           </h2>
-          {(['intro', 'responder', 'idiomas', 'dudas', 'nombres', 'marcadores', 'trazos', 'recorridos', 'enviar', 'privacidad'] as const).map((k) => (
+          {/* La guía no menciona registro, envío ni respaldo en ningún modo (R10.3). El registro y el envío sin canal
+              se explican en el diálogo de envío (vista 'enviar'), y el respaldo por formulario (R7.1), que sale del
+              botón de la barra a los 10 min sin confirmación, en su propio diálogo. Con canal, la guía dice que todo
+              se guarda solo y que se sigue en otro equipo con el mismo enlace. */}
+          {(
+            [
+              'intro',
+              'responder',
+              ...(conCanal ? (['guardado', 'otroEquipo'] as const) : []),
+              'idiomas',
+              'dudas',
+              'nombres',
+              'marcadores',
+              // Sin la casilla del vago (con canal) esas secciones no existen: la guía explica cómo activarla (R5).
+              ...(vago ? (['trazos', 'recorridos'] as const) : (['vagoCasilla'] as const)),
+              ...(conCanal ? (['privacidad'] as const) : []),            ] as const
+          ).map((k) => (
             <p key={k}>{t(`revision.guia.${k}`)}</p>
           ))}
-          <p>
-            <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer" className="boton-primario enlace-boton">
-              {t('revision.guia.registrarme')}
-            </a>
-          </p>
           <div className="dialogo-pie">
             <button type="button" onClick={() => cerrar(true)}>
               {t('comun.cerrar')}
@@ -414,14 +645,20 @@ export default function PanelRevision({
       {vista === 'enviar' && (
         <div className="dialogo-revision" role="dialog" aria-labelledby={ID_TITULO}>
           <h2 id={ID_TITULO} ref={titulo} tabIndex={-1} className="dialogo-titulo">
-            {t('revision.enviar')}
+            {conCanal ? t('revision.enviarPorFormulario') : t('revision.enviar')}
           </h2>
-          <p>{t('revision.consentimiento')}</p>
-          <p>
-            <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
-              {t('revision.guia.registrarme')}
-            </a>
-          </p>
+          {conCanal ? (
+            <p>{t('revision.respaldoExplica')}</p>
+          ) : (
+            <>
+              <p>{t('revision.consentimiento')}</p>
+              <p>
+                <a href={configRevision.urlRegistro} target="_blank" rel="noopener noreferrer">
+                  {t('revision.registrarme')}
+                </a>
+              </p>
+            </>
+          )}
           {!configurado && <p className="etiqueta-aviso">{t('revision.sinFormulario')}</p>}
           <p data-testid="pendientes-envio">
             {pendientes.length > 0
@@ -453,7 +690,7 @@ export default function PanelRevision({
           </button>
           {envio && envio.partes.length > 0 && (
             <div>
-              <p>{t('revision.confirmaAyuda')}</p>
+              <p>{conCanal ? t('revision.confirmaAyudaCanal') : t('revision.confirmaAyuda')}</p>
               {envio.partes.length > 1 && <p>{t('revision.largaExplica')}</p>}
               <ul data-testid="partes-envio">
                 {envio.partes.map((parte, i) => {
@@ -503,6 +740,9 @@ export default function PanelRevision({
             </button>
           </div>
         </div>
+      )}
+      {pedirAutorizacion && (
+        <DialogoAutorizacion alAceptar={(vago) => useAtlas.getState().cambiarAutorizacion(vago)} alCerrar={() => setDescartadaCon(respuestas)} />
       )}
     </div>
   );

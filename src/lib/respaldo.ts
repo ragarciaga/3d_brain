@@ -1,20 +1,6 @@
-// Respaldo del modo revisión (F24): el avance vive solo en IndexedDB, así que el docente puede bajarlo a un
-// archivo y recuperarlo. El archivo es entrada externa: se valida como una fila del formulario público.
-import { claveRespuesta, esObjeto, respuestaValida, REVISOR_VALIDO, type Respuesta } from './revision';
-
-export const FORMATO_RESPALDO = 'atlas-revision-respaldo';
-/** Tope de bytes del archivo y de caracteres del texto leído. */
-export const MAX_RESPALDO_CARACTERES = 10_000_000;
-export const MAX_RESPALDO_RESPUESTAS = 50_000;
-const MAX_FECHA = 40;
-const CLAVES_RESPUESTA = ['estructura', 'campo', 'idioma', 'veredicto', 'propuesta', 'comentario', 'posicion', 'malla', 'ramo', 'version', 'fecha'] as const;
-
-export type ErrorRespaldo = 'grande' | 'json' | 'formato' | 'version' | 'otroRevisor';
-
-/** Texto del archivo de respaldo. No lleva el estado de envío. */
-export function crearRespaldo(revisor: string, respuestas: Record<string, Respuesta>, ahora = new Date()): string {
-  return JSON.stringify({ formato: FORMATO_RESPALDO, v: 1, revisor, exportado: ahora.toISOString(), respuestas: Object.values(respuestas) }, null, 2);
-}
+// Fusión de respuestas del modo revisión (F24, spec 03). Une las locales con las que trae el canal al abrir, por fecha
+// más reciente (R4.2), y dice qué piezas propuestas siguen valiendo.
+import { claveRespuesta, type Respuesta } from './revision';
 
 /** Milisegundos de una fecha; una que no se puede leer vale -Infinity, así cualquier fecha válida la reemplaza. */
 const tiempo = (fecha: string) => {
@@ -22,42 +8,7 @@ const tiempo = (fecha: string) => {
   return Number.isFinite(t) ? t : -Infinity;
 };
 
-/** Copia solo las claves conocidas, propias y definidas: nada inesperado llega a IndexedDB ni al formulario. */
-function limpiar(r: Respuesta): Respuesta {
-  const copia: Record<string, unknown> = {};
-  for (const k of CLAVES_RESPUESTA) if (Object.hasOwn(r, k) && r[k] !== undefined) copia[k] = r[k];
-  return copia as unknown as Respuesta;
-}
-
-/** Valida el texto de un respaldo. Las respuestas inválidas se omiten y se cuentan; el resto del archivo se rechaza entero. */
-export function leerRespaldo(
-  texto: string,
-  o: { revisor: string; idOk: (id: unknown) => boolean },
-): { ok: true; respuestas: Respuesta[]; descartadas: number } | { ok: false; error: ErrorRespaldo } {
-  if (texto.length > MAX_RESPALDO_CARACTERES) return { ok: false, error: 'grande' };
-  let d: unknown;
-  try {
-    d = JSON.parse(texto);
-  } catch {
-    return { ok: false, error: 'json' };
-  }
-  if (!esObjeto(d) || d['formato'] !== FORMATO_RESPALDO || !Array.isArray(d['respuestas'])) return { ok: false, error: 'formato' };
-  if (d['v'] !== 1) return { ok: false, error: 'version' };
-  const revisor = d['revisor'];
-  if (typeof revisor !== 'string' || !REVISOR_VALIDO.test(revisor)) return { ok: false, error: 'formato' };
-  if (revisor !== o.revisor) return { ok: false, error: 'otroRevisor' };
-  if (d['respuestas'].length > MAX_RESPALDO_RESPUESTAS) return { ok: false, error: 'grande' };
-  const respuestas: Respuesta[] = [];
-  let descartadas = 0;
-  for (const r of d['respuestas'] as unknown[]) {
-    const fecha = esObjeto(r) ? r['fecha'] : undefined;
-    if (respuestaValida(r, o.idOk) && typeof fecha === 'string' && fecha.length <= MAX_FECHA && tiempo(fecha) > -Infinity) respuestas.push(limpiar(r));
-    else descartadas++;
-  }
-  return { ok: true, respuestas, descartadas };
-}
-
-/** Une las respuestas importadas (respaldo) o traídas del canal (`fusionarConCanal`) con las actuales: por clave gana la `fecha` estrictamente más nueva. No muta. */
+/** Une las respuestas que trae el canal al abrir (`importarRespuestas` en el store; `fusionarConCanal` para `confirmadas`) con las actuales: por clave gana la `fecha` estrictamente más nueva. No muta. */
 export function fusionarRespuestas(
   actuales: Record<string, Respuesta>,
   nuevas: Respuesta[],

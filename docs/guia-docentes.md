@@ -10,11 +10,12 @@ cambiando el código por el suyo:
 Hola, [nombre]. Gracias por ayudarnos a revisar Maysa Brain, un atlas 3D gratuito del cerebro y el
 nervio vago para estudiantes de psicología y ciencias de la salud.
 
-Tu enlace personal (no lo compartas, atribuye las revisiones a tu nombre):
-https://ragarciaga.github.io/3d_brain/es/revision?r=TU_CODIGO
+Tu enlace personal (no lo compartas: es la llave de tu revisión):
+https://brain.maysasp.com/es/revision?r=TU_CODIGO
 
-Al abrirlo verás una guía corta. Antes de tu primera revisión, regístrate una sola vez con el botón
-"Registrarme" de esa guía. Después, el botón "Qué revisar" te muestra por dónde empezar: primero las
+Al abrirlo verás una guía corta. La primera vez que marques una respuesta, el atlas te pide una sola
+vez tu autorización, sin nombre ni correo. Todo se guarda solo y no hay que enviar nada. Para seguir
+en otro equipo, abre el mismo enlace. El botón "Qué revisar" te muestra por dónde empezar: primero las
 preguntas que más necesitan tu criterio.
 
 Funciona en computador, tableta y celular; para revisar con calma, mejor computador o tableta.
@@ -22,6 +23,12 @@ Funciona en computador, tableta y celular; para revisar con calma, mejor computa
 ---
 
 Notas para el editor:
+- El canal está conectado desde T13 (#99): `urlCanal` está llena en `src/config/revision.ts`. Manda
+  este mensaje solo cuando el sitio publicado ya tenga ese cambio y la prueba en ventana de incógnito,
+  con un código de prueba, haya dado "Guardado ✓": si el canal no responde, el docente vería pasos
+  que este mensaje no explica. Los pasos de montaje están en `docs/revision-docente.md`.
 - Los códigos y enlaces de cada docente están en la carpeta privada del Drive, nunca aquí.
-- Si un docente dice que alguien más tiene su enlace, se le crea un código nuevo
+- Cada código debe estar activo (`sí`) en la pestaña `Padrón` de la hoja del canal; si no, la app le
+  dice al docente que escriba al editor.
+- Si un enlace se filtra, el código viejo pasa a `no` en `Padrón` y se crea uno nuevo
   (`docs/revision-docente.md`).

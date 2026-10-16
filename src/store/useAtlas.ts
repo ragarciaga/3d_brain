@@ -21,13 +21,22 @@ import {
   type Cortes,
   type Plano,
 } from '../lib/cortes';
+import { VERSION_AUTORIZACION } from '../config/revision';
+import { autorizar, canalConfigurado, ErrorCanal, type Autorizacion } from '../lib/canal';
 import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
+import { vagoRevisable } from '../lib/prioridad';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
 import type { RutaTrazada } from '../lib/rutas';
 import { fusionarRespuestas, piezasQueSiguen } from '../lib/respaldo';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 import { ENTRADA_VAGO } from '../lib/trazos';
+
+/**
+ * Estado de la lectura inicial del canal. `inactivo`: el canal respondió `codigo_no_activo` a `leer`, `autorizar`
+ * o `guardar` para el revisor actual; con ese valor no se guarda nada en el canal.
+ */
+export type LecturaCanal = 'pendiente' | 'hecha' | 'fallida' | 'inactivo';
 
 /** Grupos que se mueven como bloque al separar por lóbulos. */
 const BLOQUES_LOBULO = new Set([
@@ -112,6 +121,8 @@ interface Estado {
   camara: PedidoCamara | null;
   // Modo revisión (F24)
   revisor: string | null;
+  autorizacion: Autorizacion | null; // vigente para el revisor actual; null es "falta autorizar o no se sabe"
+  lecturaCanal: LecturaCanal; // estado del canal para el revisor actual: la lectura inicial `leer`, y `inactivo` también por `autorizar` o `guardar`
   respuestas: Record<string, Respuesta>;
   piezaPropuesta: Record<string, string>; // estructura -> id de la pieza tocada al proponer su posición; solo en esta sesión, no se envía
   dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra (después de la confirmación de salida)
@@ -148,6 +159,13 @@ interface Estado {
   reensamblarTodo(): void;
   pedirCamara(p: Omit<PedidoCamara, 't'>): void;
   setRevisor(codigo: string | null): void;
+  setAutorizacion(a: Autorizacion | null): void;
+  setLecturaCanal(l: LecturaCanal): void;
+  /**
+   * Registra en el canal si el revisor puede revisar el vago; la autorización solo cambia si el canal confirma.
+   * Falla con ErrorCanal; ante `codigo_no_activo`, además marca `lecturaCanal: 'inactivo'`.
+   */
+  cambiarAutorizacion(vago: boolean): Promise<void>;
   responder(r: Respuesta): void;
   borrarRespuesta(clave: string): void;
   cargarRespuestas(r: Record<string, Respuesta>, piezas?: Record<string, string>): void;
@@ -172,6 +190,11 @@ interface Estado {
 /** Si hay algo que "Mostrar todo" deshacer: piezas ocultas, aislamiento o un grupo de estudio activo. */
 export function hayFiltros(s: Pick<Estado, 'ocultas' | 'aislar' | 'grupoActivo'>): boolean {
   return s.ocultas.size > 0 || !!s.aislar || !!s.grupoActivo;
+}
+
+/** Selector del filtro del vago (spec 03, R5) para `useAtlas(vagoVisible)`: usa la autorización confirmada por el canal. */
+export function vagoVisible(s: Pick<Estado, 'autorizacion'>): boolean {
+  return vagoRevisable(canalConfigurado(), s.autorizacion);
 }
 
 export function piezasVisibles(s: Pick<Estado, 'ocultas' | 'aislar'>): string[] {
@@ -227,6 +250,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   cargado: false,
   camara: null,
   revisor: null,
+  autorizacion: null,
+  lecturaCanal: 'pendiente',
   respuestas: {},
   piezaPropuesta: {},
   dialogoRevision: false,
@@ -365,16 +390,35 @@ export const useAtlas = create<Estado>((set, get) => ({
     set(recalcularBase(get()));
   },
   pedirCamara: (p) => set({ camara: { ...p, t: Date.now() + Math.random() } }),
-  setRevisor: (codigo) => set({ revisor: codigo }),
+  // Otro código es otro revisor: su autorización y su lectura del canal se vuelven a obtener.
+  setRevisor: (codigo) => {
+    if (codigo === get().revisor) return;
+    set({ revisor: codigo, autorizacion: null, lecturaCanal: 'pendiente' });
+  },
+  setAutorizacion: (a) => set({ autorizacion: a }),
+  setLecturaCanal: (l) => set({ lecturaCanal: l }),
+  // La usan el diálogo de autorización al aceptar y la casilla del vago del menú Acciones (spec 03, R5.3).
+  cambiarAutorizacion: async (vago) => {
+    const codigo = get().revisor;
+    if (!codigo) throw new ErrorCanal('red');
+    try {
+      await autorizar(codigo, { version: VERSION_AUTORIZACION, vago });
+    } catch (e) {
+      // Un código que el canal no tiene activo no guarda nada: el panel lo muestra y la cola no envía.
+      if (e instanceof ErrorCanal && e.tipo === 'codigo_no_activo' && get().revisor === codigo) set({ lecturaCanal: 'inactivo' });
+      throw e;
+    }
+    if (get().revisor === codigo) set({ autorizacion: { version: VERSION_AUTORIZACION, vago } });
+  },
   responder: (r) => set({ respuestas: { ...get().respuestas, [claveRespuesta(r)]: r } }),
   borrarRespuesta: (clave) => {
     const respuestas = { ...get().respuestas };
     delete respuestas[clave];
     set({ respuestas });
   },
-  // Sin `piezas` se olvidan las piezas tocadas (#61); importar un respaldo pasa las que siguen valiendo.
+  // Sin `piezas` se olvidan las piezas tocadas (#61); `importarRespuestas` pasa las que siguen valiendo.
   cargarRespuestas: (r, piezas = {}) => set({ respuestas: r, piezaPropuesta: piezas, cargaRespuestas: get().cargaRespuestas + 1 }),
-  // Respaldo (#60): se fusiona con lo local; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
+  // Respuestas que trae el canal al abrir (spec 03, R4.1): se fusionan con lo local por fecha; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
   importarRespuestas: (nuevas) => {
     const { respuestas, piezaPropuesta } = get();
     const { respuestas: fusion, ...conteo } = fusionarRespuestas(respuestas, nuevas);

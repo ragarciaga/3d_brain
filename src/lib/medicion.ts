@@ -6,6 +6,10 @@
 export const MARCA_INICIO_APP = 'atlas:inicio-app';
 export const MARCA_MODELO_LISTO = 'atlas:modelo-listo';
 export const MARCA_PRIMER_CUADRO = 'atlas:primer-cuadro';
+/** El visor recibió el modelo ya leído (parseado y decodificado). */
+export const MARCA_MODELO_LEIDO = 'atlas:modelo-leido';
+/** Terminó de construir el índice de toque (árboles BVH) de las mallas. */
+export const MARCA_INDICE_TOQUE = 'atlas:indice-toque';
 
 /** Lo que interesa de cada recurso descargado (PerformanceResourceTiming). */
 export interface Recurso {
@@ -14,6 +18,8 @@ export interface Recurso {
   responseEnd: number;
   transferSize: number;
   decodedBodySize: number;
+  /** Cuerpo comprimido: vale lo mismo en frío y desde la memoria del navegador. */
+  encodedBodySize: number;
 }
 
 export interface DatosCarga {
@@ -35,9 +41,15 @@ export interface ResumenCarga {
   modeloEsperaMs: number | null;
   /**
    * Preparar el modelo desde que estaban listos el modelo y el código: descomprimir, armar las
-   * piezas y sus cajas.
+   * piezas y sus cajas. Es la suma de `leerModeloMs`, `indiceToqueMs` y `armarPiezasMs`.
    */
   procesamientoMs: number | null;
+  /** Parseo y decodificación, hasta que el visor recibe el modelo leído. */
+  leerModeloMs: number | null;
+  /** Construcción de los árboles BVH del toque. */
+  indiceToqueMs: number | null;
+  /** El resto hasta que el modelo está listo: piezas, cajas y centros. */
+  armarPiezasMs: number | null;
   modeloListoMs: number | null;
   primerCuadroMs: number | null;
 }
@@ -56,18 +68,26 @@ export function resumirCarga(d: DatosCarga): ResumenCarga {
   const modelo = entradasModelo.find((r) => r.decodedBodySize > 0) ?? entradasModelo.at(-1);
   const modeloListo = d.marcas[MARCA_MODELO_LISTO];
   const codigoListo = d.marcas[MARCA_INICIO_APP] ?? (codigo.length ? Math.max(...codigo.map((r) => r.responseEnd)) : undefined);
+  const leido = d.marcas[MARCA_MODELO_LEIDO];
+  const indice = d.marcas[MARCA_INDICE_TOQUE];
+  const inicioPreparacion = modelo ? Math.max(modelo.responseEnd, codigoListo ?? modelo.responseEnd) : undefined;
   return {
     codigoListoMs: redondo(codigoListo),
-    codigoKB: kb(codigo.reduce((s, r) => s + (r.transferSize || r.decodedBodySize), 0)),
+    // Cuerpo comprimido: igual en frío y desde la memoria del navegador (decodedBodySize inflaría la cifra).
+    codigoKB: kb(codigo.reduce((s, r) => s + (r.encodedBodySize || r.transferSize), 0)),
     modeloInicioMs: redondo(modelo?.startTime),
     modeloDescargaMs: modelo ? redondo(modelo.responseEnd - modelo.startTime) : null,
     modeloKB: kb(modelo ? modelo.transferSize || modelo.decodedBodySize : 0),
     modeloDesdeCache: !!modelo && modelo.transferSize === 0 && modelo.decodedBodySize > 0,
     modeloEsperaMs: modelo && codigoListo !== undefined ? redondo(Math.max(0, modelo.responseEnd - codigoListo)) : null,
     procesamientoMs:
-      modelo && modeloListo !== undefined
-        ? redondo(Math.max(0, modeloListo - Math.max(modelo.responseEnd, codigoListo ?? modelo.responseEnd)))
+      inicioPreparacion !== undefined && modeloListo !== undefined
+        ? redondo(Math.max(0, modeloListo - inicioPreparacion))
         : null,
+    leerModeloMs:
+      inicioPreparacion !== undefined && leido !== undefined ? redondo(Math.max(0, leido - inicioPreparacion)) : null,
+    indiceToqueMs: leido !== undefined && indice !== undefined ? redondo(Math.max(0, indice - leido)) : null,
+    armarPiezasMs: indice !== undefined && modeloListo !== undefined ? redondo(Math.max(0, modeloListo - indice)) : null,
     modeloListoMs: redondo(modeloListo),
     primerCuadroMs: redondo(d.marcas[MARCA_PRIMER_CUADRO]),
   };
@@ -95,6 +115,8 @@ export interface Equipo {
   nucleos: number | null;
   memoriaGB: number | null;
   gpu: string;
+  /** Densidad de píxeles del visor (issue 84); null mientras no hay dato. */
+  densidad: { valor: number; fija: boolean } | null;
 }
 
 export interface Fluidez {
@@ -114,6 +136,48 @@ export function resumirFluidez(muestras: number[]): Fluidez | null {
   };
 }
 
+/**
+ * Ventana de la fluidez, en ms después del primer cuadro. El primer segundo es arranque y compilación
+ * de sombreadores: no habla de qué tan fluido va el visor.
+ */
+export const FLUIDEZ_DESDE_MS = 1_000;
+export const FLUIDEZ_HASTA_MS = 10_000;
+
+/** Una muestra cuenta si su intervalo [desde, hasta] cae entero dentro de la ventana de fluidez. */
+export function muestraEnVentana(desde: number, hasta: number, primerCuadro: number): boolean {
+  return desde >= primerCuadro + FLUIDEZ_DESDE_MS && hasta <= primerCuadro + FLUIDEZ_HASTA_MS;
+}
+
+/** Lo que lleva la fluidez entre lecturas: cuándo fue la lectura anterior y las muestras que cuentan. */
+export interface EstadoFluidez {
+  anterior: number;
+  muestras: number[];
+}
+
+/**
+ * Decide qué hace una lectura de cuadros por segundo con la fluidez. Cada lectura nueva (cambia
+ * `muestras`, aunque el valor de `fps` se repita) es una muestra que cubre el intervalo desde la
+ * lectura anterior hasta `ahora`; cuenta solo si ese intervalo cae entero en la ventana.
+ */
+export function acumularFluidez(
+  estado: EstadoFluidez,
+  s: { fps: number; muestras: number },
+  antes: { fps: number; muestras: number },
+  ahora: number,
+  primerCuadro: number | undefined,
+): void {
+  if (s.muestras === antes.muestras) return;
+  if (primerCuadro !== undefined && muestraEnVentana(estado.anterior, ahora, primerCuadro)) estado.muestras.push(s.fps);
+  estado.anterior = ahora;
+}
+
+/** "Lo más lento" solo se dice si el cerebro tardó más de esto en verse (primer cuadro). */
+export const UMBRAL_LENTO_MS = 3_000;
+
+export function cargaLenta(r: ResumenCarga): boolean {
+  return r.primerCuadroMs !== null && r.primerCuadroMs > UMBRAL_LENTO_MS;
+}
+
 const ms = (n: number | null) => (n === null ? 'sin dato' : `${n} ms`);
 const CUELLO: Record<Cuello, string> = {
   codigo: 'la descarga del código',
@@ -128,13 +192,17 @@ export function informe(r: ResumenCarga, e: Equipo, f: Fluidez | null, fecha: st
     `Maysa Brain, medición de carga (${fecha})`,
     `Navegador: ${e.navegador}`,
     `Pantalla: ${e.pantalla}`,
+    `Densidad de píxeles del visor: ${e.densidad ? `${String(e.densidad.valor).replace('.', ',')} ${e.densidad.fija ? '(fija con ?dpr)' : '(automática)'}` : 'sin dato'}`,
     `Núcleos: ${e.nucleos ?? 'sin dato'} · Memoria: ${e.memoriaGB === null ? 'sin dato' : `${e.memoriaGB} GB`}`,
     `GPU: ${e.gpu || 'sin dato'}`,
     `Código listo: ${ms(r.codigoListoMs)} (${r.codigoKB} KB)`,
     `Modelo 3D: empezó a los ${ms(r.modeloInicioMs)}, descarga ${ms(r.modeloDescargaMs)} (${r.modeloDesdeCache ? 'desde la memoria del navegador' : `${r.modeloKB} KB`}), espera después del código ${ms(r.modeloEsperaMs)}`,
     `Preparar el modelo: ${ms(r.procesamientoMs)}`,
+    `  Leer el modelo (parseo y decodificación): ${ms(r.leerModeloMs)}`,
+    `  Índice de toque (árboles BVH): ${ms(r.indiceToqueMs)}`,
+    `  Armar las piezas y sus cajas: ${ms(r.armarPiezasMs)}`,
     `Modelo listo: ${ms(r.modeloListoMs)} · Primer cuadro: ${ms(r.primerCuadroMs)}`,
-    `Cuadros por segundo (10 s): ${f ? `promedio ${f.promedio}, mínimo ${f.minimo}` : 'midiendo'}`,
-    `Lo más lento: ${c ? CUELLO[c] : 'sin dato'}`,
+    `Cuadros por segundo (de 1 a 10 s tras el primer cuadro): ${f ? `promedio ${f.promedio}, mínimo ${f.minimo}` : 'midiendo'}`,
+    ...(cargaLenta(r) ? [`Lo más lento: ${c ? CUELLO[c] : 'sin dato'}`] : []),
   ].join('\n');
 }

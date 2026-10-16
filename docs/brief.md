@@ -121,5 +121,5 @@ See docs/v2.md. Hard non-goals:
 - BLOCKING para el piloto (no para construir): nombres de los docentes revisores (SPEC 15.2).
 - DEFERRED: dirección visual del SPEC sección 11 (tipografías Atkinson Hyperlegible y Source Serif 4, color por lóbulo en árbol y ficha, barra con pestañas en celular). Hoy la app usa tipografías del sistema y el color por lóbulo solo en el visor (docs/v2.md).
 - DECIDED: nombre, **Maysa Brain** (SPEC §15.3).
-- DEFERRED: dominio y analítica (antes del hito 2, docs/v2.md).
+- DECIDED: dominio brain.maysasp.com (docs/adr/0014-dominio-propio.md) y analítica sin cookies con Cloudflare Web Analytics (docs/adr/0015-analitica-sin-cookies.md).
 - DEFERRED: completar geometría faltante con SPL/NAC, BodyParts3D o SPARC (fase 2, docs/v2.md).

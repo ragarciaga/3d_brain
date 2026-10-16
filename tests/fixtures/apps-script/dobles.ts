@@ -4,6 +4,7 @@
 // También guarda las tablas de casos que se pasan al script y a la app, para que exijan el mismo veredicto.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { VERSION_AUTORIZACION } from '../../../src/config/revision';
 import { CLAVES_V2, cargaRevisionV2, type Respuesta } from '../../../src/lib/revision';
 
 export const RUTA_SCRIPT = 'apps-script/Codigo.js';
@@ -108,6 +109,8 @@ export interface Opciones {
   padron?: string[][];
   ahora?: number;
   sinPestana?: NombreHoja;
+  /** Códigos con una fila en `Autorizaciones` con la versión de la app. Por defecto ninguno, como un código nuevo. */
+  autorizados?: string[];
 }
 
 export interface Salida {
@@ -132,6 +135,7 @@ export function crearEntorno(op: Opciones = {}) {
     Padrón: new HojaDoble(CABECERAS.Padrón, candado),
   };
   hojas.Padrón.filas.push(...(op.padron ?? PADRON_PRUEBA).map((f) => [...f]));
+  hojas.Autorizaciones.filas.push(...(op.autorizados ?? []).map((c) => [c, '2026-10-14T09:00:00.000Z', VERSION_AUTORIZACION, 'no']));
 
   let flushes = 0;
   const SpreadsheetApp = {

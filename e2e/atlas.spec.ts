@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { configRevision } from '../src/config/revision';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 async function abrir(page: Page, ruta: string, conAviso = false) {
   if (!conAviso) await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
@@ -242,7 +245,14 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   await expect(page.getByTestId('medicion-modelo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-codigo')).toHaveText(/\d+ ms/);
   await expect(page.getByTestId('medicion-primer-cuadro')).toHaveText(/\d+ ms/);
-  await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
+  // El desglose de "Preparar el modelo" sale con las tres partes.
+  await expect(page.getByTestId('medicion-leer')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-indice')).toHaveText(/\d+ ms/);
+  await expect(page.getByTestId('medicion-armar')).toHaveText(/\d+ ms/);
+  // "Lo más lento" solo sale si el cerebro tardó más de 3 s en verse.
+  const primerCuadro = Number(/(\d+) ms/.exec((await page.getByTestId('medicion-primer-cuadro').textContent()) ?? '')![1]);
+  if (primerCuadro > 3000) await expect(page.getByTestId('medicion-cuello')).toHaveText(/Lo más lento fue/);
+  else expect(await page.getByTestId('medicion-cuello').count()).toBe(0);
   // Sigue al navegar dentro de la app.
   await (await campoBusqueda(page)).fill('hipocampo');
   await page.keyboard.press('Enter');
@@ -253,6 +263,8 @@ test('con ?medir=1 sale el panel de medición con tiempos reales, se copia el in
   const copiado = await page.evaluate(() => navigator.clipboard.readText());
   expect(copiado).toContain('Maysa Brain, medición de carga');
   expect(copiado).toMatch(/Modelo 3D: empezó a los \d+ ms/);
+  expect(copiado).toMatch(/Leer el modelo \(parseo y decodificación\): \d+ ms/);
+  expect(copiado).toMatch(/Índice de toque \(árboles BVH\): \d+ ms/);
   // Cerrar lo quita también al recargar.
   await panel.getByRole('button', { name: 'Cerrar' }).click();
   await expect(panel).toHaveCount(0);
@@ -342,6 +354,43 @@ test('URL por estructura e idioma: cambiar de idioma conserva la estructura', as
   await expect(page.locator('#ficha-titulo')).toHaveText('Hippocampus');
   await expect(page.getByTestId('idioma-actual')).toHaveText('EN');
   await expect(segmentos).toHaveText(['ES', 'EN']);
+});
+
+test('revisado por un docente universitario: la ficha verificada muestra la fecha y nunca el nombre ni el alias del revisor (R9.1, R9.2)', async ({ page }) => {
+  // La ficha no depende del modelo 3D: no se espera a que cargue (atlas.spec.ts es el piso de tiempo del CI).
+  await abrir(page, '/es');
+  await expect(page.getByTestId('idioma-actual')).toBeVisible();
+  // Se inyecta en el mismo módulo que usa la app (el servidor de desarrollo lo sirve por ruta): inglés
+  // verificado con un nombre como revisor, español en borrador.
+  await page.evaluate(async () => {
+    const atlas = '/src/data/atlas.ts';
+    const { estructuras } = await import(/* @vite-ignore */ atlas);
+    estructuras.hippocampus.ficha.revision.en = { estado: 'verificado', revisado_por: 'Ana Docente Prueba', fecha: '2026-09-30' };
+    window.dispatchEvent(new CustomEvent('atlas:elegir', { detail: { entrada: 'hippocampus' } }));
+  });
+  await expect(page).toHaveURL(/\/es\/hipocampo$/);
+  await expect(page.locator('#ficha-titulo')).toHaveText('Hipocampo');
+  // Idioma visible sin verificar y el otro verificado: no se anuncia revisión, se avisa del otro idioma.
+  await expect(page.getByTestId('estado-revision')).toHaveText('Borrador: aún no revisado por docentes');
+  await expect(page.getByTestId('ficha')).not.toContainText('Revisado por un docente universitario');
+  await expect(page.getByTestId('ficha')).toContainText('Esta ficha está verificada en el otro idioma');
+  await expect(page.locator('body')).not.toContainText('Ana Docente Prueba');
+  // Verificado en inglés: texto y fecha de ese idioma, sin el nombre.
+  await page.getByTestId('cambiar-idioma').click();
+  await expect(page).toHaveURL(/\/en\/hippocampus$/);
+  await expect(page.getByTestId('estado-revision')).toHaveText('Reviewed by a university teacher · 2026-09-30');
+  await expect(page.locator('body')).not.toContainText('Ana Docente Prueba');
+  // Verificado en español con un alias: tampoco se ve el alias.
+  await page.evaluate(async () => {
+    const atlas = '/src/data/atlas.ts';
+    const { estructuras } = await import(/* @vite-ignore */ atlas);
+    estructuras.hippocampus.ficha.revision.es = { estado: 'verificado', revisado_por: 'D97', fecha: '2026-10-01' };
+  });
+  await page.getByTestId('cambiar-idioma').click();
+  await expect(page).toHaveURL(/\/es\/hipocampo$/);
+  await expect(page.getByTestId('estado-revision')).toHaveText('Revisado por un docente universitario · 2026-10-01');
+  await expect(page.locator('body')).not.toContainText('D97');
+  await expect(page.locator('body')).not.toContainText('Ana Docente Prueba');
 });
 
 test('árbol y grupos: ocultar un grupo y filtrar el sistema límbico', async ({ page }) => {
@@ -464,6 +513,9 @@ test('modo revisión: el docente marca campos y el contador sube', async ({ page
   await (await campoBusqueda(page)).fill('tálamo');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/es\/talamo$/);
+  // La URL cambia antes que la ficha (react-router actualiza la ubicación en una transición de React). Con la ficha del
+  // hipocampo aún en pantalla, "Corregir" caería en su campo `que_es.es`, que ya está marcado, y lo desmarcaría.
+  await expect(page.locator('#ficha-titulo')).toHaveText('Tálamo');
   await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Corregir' }).click();
   await expect(page.locator('[data-campo="que_es.es"]').getByRole('textbox', { name: 'Cambio propuesto' })).toHaveValue('');
   await expect(page.getByTestId('total-respuestas')).toHaveText('3 respuestas');
@@ -1133,10 +1185,11 @@ test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el rev
 test('el docente ve la guía al entrar, "Qué revisar" pone las dudas primero y la duda está en la ficha, con avance por ficha (F24)', async ({ page }) => {
   await abrir(page, '/es/revision?r=GUIA01');
   await modeloCargado(page);
-  // La primera vez, la guía se abre sola, con el enlace al registro.
+  // La primera vez, la guía se abre sola, sin enlaces al registro ni a formularios.
   const guia = page.getByTestId('como-revisar');
   await expect(guia).toBeVisible();
-  await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', /docs\.google\.com\/forms/);
+  await expect(guia.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveCount(0);
+  await expect(guia.locator('a[href*="docs.google.com/forms"]')).toHaveCount(0);
   await guia.getByRole('button', { name: 'Cerrar' }).click();
   await expect(guia).toHaveCount(0);
   // "Qué revisar": primero las dudas abiertas.
@@ -1200,11 +1253,12 @@ test('textos de la revisión docente: botones en la guía inglesa, registro en e
   await expect(page.getByTestId('como-revisar')).toContainText('pulsa EN en el encabezado');
   await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
 
-  // Envío: el nombre solo aparece si se autorizó en el registro, con enlace al registro y sin jerga.
+  // Envío: remite al registro, dice que las fichas no muestran el nombre y no usa jerga.
   await page.getByRole('button', { name: 'Enviar revisión' }).click();
   const envio = page.getByRole('dialog', { name: 'Enviar revisión' });
   await expect(envio.getByRole('link', { name: 'Registrarme (una sola vez)' })).toHaveAttribute('href', configRevision.urlRegistro);
-  await expect(envio).toContainText('solo si lo autorizaste en el registro');
+  await expect(envio).toContainText('Las fichas no muestran tu nombre');
+  await expect(envio).not.toContainText('Tu nombre aparece');
   await expect(envio).toContainText('en un solo formulario');
   await expect(envio).not.toContainText('Al enviar, aceptas');
   await expect(envio).not.toContainText('Se envía una revisión por estructura');
@@ -1221,7 +1275,8 @@ test('textos de la revisión docente: botones en la guía inglesa, registro en e
   await modeloCargado(page);
   await page.getByRole('button', { name: 'Send review' }).click();
   const envioEn = page.getByRole('dialog', { name: 'Send review' });
-  await expect(envioEn).toContainText('only if you authorised it in the registration form');
+  await expect(envioEn).toContainText('The entries never show your name');
+  await expect(envioEn).not.toContainText('Your name appears');
   await expect(envioEn).toContainText('in a single form');
   await expect(envioEn).not.toContainText('By sending, you agree');
   await expect(envioEn).not.toContainText('One review is sent per structure');

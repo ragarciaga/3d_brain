@@ -36,6 +36,16 @@ export function IconoCompartir() {
   );
 }
 
+/** Cortes: un rectángulo (el cerebro) atravesado por una línea punteada que sobresale a los dos lados. */
+export function IconoCortes() {
+  return (
+    <svg {...base}>
+      <rect x="6" y="4" width="12" height="16" rx="3" />
+      <path d="M2 12h20" strokeDasharray="3 3" />
+    </svg>
+  );
+}
+
 /** Lupa. */
 export function IconoBuscar() {
   return (

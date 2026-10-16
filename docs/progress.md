@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-14 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente)
+Updated: 2026-10-16 (revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -12,7 +12,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 ## Current state
 - Revisión docente dentro de la web (PR #31): todo se ve como lo verá el público y el docente suma
-  los botones. Guía ("Cómo revisar", se abre sola la primera vez, con el botón de registro), "Qué
+  los botones. Guía ("Cómo revisar", se abre sola la primera vez), "Qué
   revisar" con prioridad (24 dudas abiertas en 31 fichas, vago, grupos del lanzamiento, resto),
   dudas dentro de cada ficha con su campo `duda.N`, sinónimos visibles y revisables, nombres con su
   etiqueta, descripción de los grupos sin pasar el mouse y 5 marcadores del encéfalo con posición
@@ -30,7 +30,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   arco aórtico y el bronquio derecho, así que el ADR 0010 decide trazar también el tramo torácico de
   los dos lados y no publicar el escaneado de ese tramo. `pipeline/anclajes-vago.json` entra con esa
   implementación (con el modelo actual, la prueba de asimetrías falla, como debe).
-- Publicado: https://ragarciaga.github.io/3d_brain/ (español en `/es`, inglés en `/en`). Cada merge
+- Publicado: https://brain.maysasp.com/ (español en `/es`, inglés en `/en`). Cada merge
   a `main` se publica solo con el workflow `pages`.
 - Nombre y marca: **Maysa Brain**, con logo propio (`public/marca/`) y paleta de Maysa; modo claro y
   oscuro con botón.
@@ -40,7 +40,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   Ctrl+K. Paneles laterales plegables. Se quitó "Armar pieza por pieza".
 - F8 (planos de corte) en construcción: listas la lógica pura (`src/lib/cortes.ts`, PR #54), el
   estado en el store con las guardas de explosión y Separar (PR #70) y la lista medida de mallas
-  cerradas, 191 de 253, que `check:modelo` verifica (PR #57). Todavía no hay interfaz de cortes.
+  cerradas, 191 de 253, que `check:modelo` verifica (PR #57). El visor ya recorta el encéfalo,
+  con fantasma y toque recortado (PR #123), y los cortes viajan en el enlace (PR #128); todavía no hay
+  panel de cortes (T8 y T9).
 - Works: typecheck, lint, más de 400 pruebas unitarias, check:i18n, check:modelo (341 mallas, 287
   piezas, 6,53 MB) y build; unas 60 E2E. F1 a F7, F9, F10, F11, F24, el recorrido del vago (F14) y F25 sin
   geometría trazada todavía. Sin "Ambos idiomas" (quitado el 2026-10-13); selector ES | EN claro. Bugs #16 (Reintentar) y #19 (Separar)
@@ -48,7 +50,8 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 - Medición: `?medir=1` abre un panel con tiempos de código, descarga y preparación del modelo,
   primer cuadro, cuadros por segundo y GPU, con botón para copiar (docs/operacion.md). Medido en el
   entorno de Claude: código 1,1 s, descarga del modelo 2,4 s, preparación 1 s, cerebro a los 4,5 s;
-  la descarga del modelo empieza cuando termina el código. En los equipos de referencia (#6, editor,
+  la descarga del modelo empezaba cuando terminaba el código; desde #117 (#83) el modelo se pide con el
+  HTML, en paralelo con el código. En los equipos de referencia (#6, editor,
   2026-10-13): iPhone y PC cumplen; el Android de gama baja (Tecno Spark 8C, PowerVR GE8300) da 21 a
   23 cuadros/s con el cerebro armado girando y 8,9 s hasta ver el cerebro.
 - Content: 236 de 236 fichas en borrador con fuentes verificadas (#7, PR #22; el lóbulo grácil se
@@ -76,6 +79,31 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   "Acciones" y salir con confirmación (#63), respaldo descargable y código recordado (#60), trazos
   del vago en "Qué revisar" con "Siguiente trazo" y propuesta de la auditoría (#62), y "Enviar todo"
   en un solo formulario con "Sí, lo envié" (#58, PR #78, fusionado el 2026-10-13).
+- Corrida nocturna cycle-79c539f-qbnz (2026-10-14, merges de nivel C autorizados por el editor solo
+  esa noche): fusionados #110 (03-T3, fecha en la carga e importador), #111 (03-T1, página y script
+  para probar el canal) y #112 (02-T1, rutas torácicas del vago en el generador). Abiertos con
+  revisiones aprobadas: #113 (04-T1), #114 (03-T4), #115 (03-T5), #116 (03-T2, Apps Script completo)
+  y #117 (#83, precarga del modelo). 04-T2 (#102) quedó bloqueada tras 2 devoluciones y espera tu
+  respuesta. Segunda corrida (cycle-d52a895-vxmo): fusionados #113 (04-T1), #115 (03-T5) y #121 (e2e
+  con 2 workers en CI); abiertos #114, #116, #117, #119 (02-T2); 01-T4 (cortes en el visor) en
+  revisión. El e2e de CI quedó al borde de su tope de 30 min (escalado en #1). Tercera corrida
+  (cycle-97d0089-tqje): fusionados #114 (03-T4), #117 (#83), #123 (01-T4, cortes en el visor),
+  #116 (03-T2, Apps Script completo) y #119 (02-T2); 03-T6 (#92, autorización en la app) en revisión
+  tras una devolución. Cuarta corrida (cycle-026d53f-mxwp): fusionados #124 (02-T3, revisión por
+  ruta), #126 (03-T6, autorización Ley 1581 en la app), #128 (01-T5, cortes por enlace) y #129 (#84,
+  densidad de píxeles adaptativa); #127 (02-T4, corte del tronco en el pipeline) espera la prueba de
+  Blender del editor (#49); 03-T7 (guardado automático) en revisión. Quinta corrida
+  (cycle-197b7e3-pqzw): #131 (03-T7) con las tres revisiones aprobadas, frenado solo por el tope de
+  30 min del e2e de CI; 03-T8 (traer lo guardado al abrir y retirar el respaldo por archivo)
+  implementado sobre #131 y en revisión. Sexta corrida (cycle-197b7e3-hjkt): Rockbuilt 0.5.0 con el e2e en 3
+  shards (#134, el CI vuelve a caber); fusionados #131 (03-T7, guardado automático) y #135 (03-T8, traer lo
+  guardado al abrir y retirar el respaldo por archivo). Séptima corrida (cycle-032bd1e-wqnz):
+  fusionados #137 (03-T9, formulario de respaldo cuando el canal falla) y #138 (03-T11, "Revisado
+  por un docente universitario" sin datos personales); 03-T10 (filtrar trazos según la casilla)
+  planificado en #96. Octava corrida (cycle-75748b5-tfkd): fusionado #140 (03-T10, filtro del vago
+  según la casilla); #141 (03-T12, guías del docente y del editor) con las revisiones aprobadas y en
+  espera de tu prueba local del montaje del Apps Script (#98, R10.2); 01-T6 (relleno del corte,
+  #38) en revisión.
 - Pending (hito 2): F8 cortes (spec aprobado, tareas #33 a #42), F12 reportar error (#10), trazos del
   vago con docentes (#11).
 
@@ -121,25 +149,72 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   revisión (#8)
 
 ## Next steps
-1. Canal de retorno (spec 03 en main, PR #100): construir #87 a #99. T1 necesita una prueba del
-   editor en su navegador con el Apps Script publicado, y T13 la URL del script.
+1. Canal de retorno (spec 03): T1 a T13 en main y verificada la función completa (#158: seguridad y e2e en PASS;
+   lo fusiona el editor). El hallazgo mayor de seguridad (guardar sin autorización registrada) está corregido en
+   la app (#159) y en el script desplegado (#157, versión 2); la prueba en el sitio publicado pasó el 2026-10-16.
 2. Propuestas para la sesión docente (spec 04, `docs/specs/04-teacher-review-proposals/`): reglas y
    ubicador de marcadores, corrida real sobre Z-Anatomy, evidencia de los 28 trazos y "Correcto" con
-   un toque. Los datos llegan en PR de nivel C que fusiona el editor.
+   un toque. Los datos llegan en PR de nivel C que fusiona el editor. T1 en main; T2 hecha en la rama
+   `rb/T2-reglas-ubicador-v2` salvo dos casos de prueba (#102, escalada: se recomienda una ronda más).
 3. Revisión docente: cuando 1 y 2 estén en main, mandar el mensaje a los 10 docentes.
-4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
-5. Carga (#6, medición hecha; tareas #83 a #85): pedir el modelo desde el inicio, junto con el
+4. Vago (ADR 0010): spec aprobado en `docs/specs/02-thoracic-vagus-tracing/`. T1, T2 y T3 en main (PR #112, #119 y #124); T4 en PR #127, espera la prueba de Blender del editor (#49). Se trazan los tramos torácicos, el pipeline corta el tronco escaneado en espejo, la prueba de asimetrías mide lo publicado y la revisión docente pasa a ser por ruta. Auditoría hecha (`docs/research/vago/auditoria-vago.md`); los nombres propuestos de los trazos van a los docentes con F24.
+5. Carga (#6, medición hecha; tareas #83 a #85, #85 fusionado en #154: el panel desglosa "Preparar el modelo"): pedir el modelo desde el inicio, junto con el
    código, y bajar la densidad de píxeles solo cuando el equipo va lento, más un desglose de
-   "preparar el modelo" en el panel de medición. No se abre F19.
-6. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1, T2 y T3; la próxima corrida sigue con T4 (visor) y después T5 y T6; las capturas del relleno (prototipo de #9) salen de T6 y T7. Después F12 y fichas verificadas. Issue de control: #1.
+   "preparar el modelo" en el panel de medición. No se abre F19. #83 en PR #117; sigue #84.
+6. Sitio: dominio propio `https://brain.maysasp.com` (PR #146, ADR 0014; HTTPS forzado). Analítica
+   sin cookies de Cloudflare Web Analytics en #150 (el editor eligió la opción 1 para gitleaks; falta unir los commits, CI y fusionar) (ADR 0015; no se carga en modo revisión).
+7. Hito 2: F8 con spec aprobado (`docs/specs/01-cutting-planes/`, ADR 0011) y 10 tareas (#33 a #42; T1 a T9 tier B, T10 medición manual del editor). El spec ya está en main (PR #43). Hechas T1 a T9 (T8 en #145, T9 en #160: cajón de cortes en celular y controles bloqueados con cortes); falta T10, la medición manual del editor en los equipos de referencia, y después la verificación de la función. Después F12 y fichas verificadas. Issue de control: #1.
+
+## Pendientes del editor (al 2026-10-16)
+Hecho el 2026-10-16: `Codigo.js` redesplegado como versión 2 de la misma implementación (#157 cerrado) y la prueba del canal en el sitio publicado pasó (guardado, `Respuestas`, `Autorizaciones` y revocación). #150: el editor eligió la opción 1 (token público con `gitleaks:allow` en un solo commit); lo toma la próxima corrida.
+
+Sigue, en este orden:
+1. **Limpiar el código de prueba:** borrar sus filas en `Respuestas` y `Autorizaciones` y ponerlo en `no` en `Padrón`. Hasta entonces sigue activo.
+2. **Cierres en Google:** cerrar el formulario de registro externo y archivar la implementación de `apps-script/prueba-canal.js` (T1) si sigue activa.
+3. **Decisiones:**
+   - #102 (issue de 04-T2): ¿una ronda más solo para dos casos de prueba (recomendado) o abrir el PR como está?
+   - Texto de autorización: el diálogo no dice que las propuestas del docente pueden aparecer, con su alias (D01, no su nombre), en issues públicos de GitHub cuando el editor las importa. ¿Se agrega? Cuesta subir `VERSION_AUTORIZACION` en la app y en `Codigo.js` y volver a desplegar el script; como ningún docente ha autorizado todavía, nadie tendría que volver a aceptar. Conviene decidirlo antes de mandar los enlaces.
+4. **PR que fusiona el editor:** #158 (verificación del spec 03) y #127 (02-T4, espera #49).
+5. **Pruebas en sus equipos:** #49 (Blender), 01-T10 (#42, medición de los cortes), `?medir=1` en el Tecno con el desglose pegado en #6, capturas del relleno y el contorno para #9, y una mirada a la ficha con el cajón de cortes en un celular de pantalla baja (390 x 667).
+6. Después de 1 y 3 (texto de autorización): mandar el mensaje a los docentes (`docs/guia-docentes.md`).
+
+## Seguimientos abiertos (sin decisión pendiente)
+- Seguridad del canal (`docs/specs/03-review-return-channel/security-report.md`): S2 casilla del vago no exigida en el servidor ni en el importador; S3 inundación con códigos inventados (Padrón en `CacheService`); S4 código en la query de `leer`; S5 `?r=` en la barra tras entrar; S6 llaves locales con el código en claro. Nuevo de #157: tocar la casilla del vago con una autorización vieja en caché vuelve a autorizar sin mostrar las condiciones. #149 agrupa S5, S6 y el aviso de la analítica.
+- Pruebas: F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas; una respuesta del canal con un campo inventado con formato válido se acepta (pregunta para R6.6).
+- Cortes: el encuadre en celular no descuenta el cajón de cortes; el recorrido del vago puede tapar el cajón.
+- Spec 01: tras T10, correr la verificación de la función completa (`/rb-verify docs/specs/01-cutting-planes/`).
+- Mejoras del harness Rockbuilt observadas en estas corridas (puntos 1 a 15): comentario en el issue de control #1 del 2026-10-16; se llevan al repositorio de Rockbuilt, no se implementan aquí.
 
 ## Timing
 <!-- rb:timing:start -->
-| Task | plan | implement | check | verify | audit | fix | pr | merge | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| T1 | 3.8 | 2.8 | 0.4 | 1.8 | 2.7 |  | 0.4 | 0.8 | 12.8 |
-| T3 | 4.4 | 2.3 | 0.5 | 3.7 | 3.3 | 0.9 | 0.5 | 0.9 | 16.5 |
-| T2 | 3.0 | 2.3 | 0.6 | 3.3 | 12.0 | 1.4 | 0.5 | 0.8 | 24.0 |
+| Task | plan | implement | Total |
+|---|---:|---:|---:|
+| T3 | 5.8 | 5.1 | 10.9 |
+| T1 | 5.8 |  | 5.8 |
+| T1 |  |  | 0.0 |
+| T1 |  |  | 0.0 |
+| T4 | 7.2 |  | 7.2 |
+| T5 | 2.8 | 14.2 | 17.0 |
+| T2 | 17.1 |  | 17.1 |
+| i83 |  |  | 0.0 |
+| T2 |  |  | 0.0 |
+| i120 |  |  | 0.0 |
+| T4 |  |  | 0.0 |
+| T3 |  |  | 0.0 |
+| T6 | 9.5 |  | 9.5 |
+| T4 |  |  | 0.0 |
+| T5 |  |  | 0.0 |
+| i84 |  |  | 0.0 |
+| T7 | 9.3 |  | 9.3 |
+| T8 | 8.5 |  | 8.5 |
+| T9 |  |  | 0.0 |
+| T11 | 4.9 |  | 4.9 |
+| T10 |  |  | 0.0 |
+| T12 | 8.5 |  | 8.5 |
+| T6 |  |  | 0.0 |
+| T8 |  |  | 0.0 |
+| T7 |  |  | 0.0 |
 
 Minutes per phase.
+Open (started, not ended): T5/implement, T4/implement, i84/implement, T7/implement, T8/implement, T9/implement.
 <!-- rb:timing:end -->

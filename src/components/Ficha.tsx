@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { dudas, esFragmentable, estructuras, origenDe, grupos, marcadorPorId, nodos, padreDeEntrada, piezasDeEntrada, PENDIENTE } from '../data/atlas';
 import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
+import { hayCortes } from '../lib/cortes';
 import { campoTrazado } from '../lib/rutas';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
@@ -17,7 +18,7 @@ import {
   type Veredicto,
 } from '../lib/revision';
 import { camposDeFicha } from '../lib/prioridad';
-import { useAtlas } from '../store/useAtlas';
+import { useAtlas, vagoVisible } from '../store/useAtlas';
 import { colorDePieza } from './colores';
 import RevisionTrazo from './RevisionTrazo';
 import { CONSULTA_MOVIL } from './useMovil';
@@ -172,6 +173,7 @@ function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idiom
 function MarcarTodo({ id, idioma, version }: { id: string; idioma: Idioma; version: string }) {
   const { t } = useTranslation();
   const rutas = useAtlas((s) => s.rutas);
+  const vago = useAtlas(vagoVisible);
   const respuestas = useAtlas((s) => s.respuestas);
   const [confirmando, setConfirmando] = useState(false);
   const [hechos, setHechos] = useState<number | null>(null);
@@ -188,14 +190,14 @@ function MarcarTodo({ id, idioma, version }: { id: string; idioma: Idioma; versi
     else if (destino === 'estado') refEstado.current?.focus();
   }, [confirmando, hechos]);
 
-  const campos = camposDeFicha(id, idioma, rutas);
+  const campos = camposDeFicha(id, idioma, rutas, vago);
   // La fecha real se pone al confirmar; aquí solo importa cuántas faltan.
   const pendientes = pendientesComoCorrectas(campos, respuestas, version, '');
   const incompletas = campos.filter((k) => respuestas[k] && !respuestaCompleta(respuestas[k])).length;
 
   const confirmar = () => {
     const vigente = useAtlas.getState();
-    const nuevas = pendientesComoCorrectas(camposDeFicha(id, idioma, vigente.rutas), vigente.respuestas, version, new Date().toISOString());
+    const nuevas = pendientesComoCorrectas(camposDeFicha(id, idioma, vigente.rutas, vagoVisible(vigente)), vigente.respuestas, version, new Date().toISOString());
     for (const r of nuevas) vigente.responder(r);
     siguienteFoco.current = 'estado';
     setHechos(nuevas.length);
@@ -337,6 +339,9 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
   const conContexto = useAtlas((st) => estadoAislar(st.aislar, 'contexto', piezas));
   const separado = useAtlas((st) => estadoSeparar(st.separadas, st.devueltas, piezas));
   const oculto = useAtlas((st) => estadoOcultar(st.ocultas, piezas));
+  // Con cortes no se separa (el store ya lo ignora): el botón queda deshabilitado y se dice por qué.
+  const conCortes = useAtlas((st) => hayCortes(st.cortes));
+  const idNota = useId();
   if (!piezas.length) {
     return (
       <div className="acciones">
@@ -376,6 +381,8 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
         <button
           type="button"
           {...propsPulsado(separado)}
+          disabled={conCortes}
+          aria-describedby={conCortes ? idNota : undefined}
           onClick={() => {
             if (accionAlPulsar(separado) === 'desactivar') s().devolver(piezas);
             else s().separar(piezas);
@@ -386,6 +393,11 @@ function Acciones({ id, alCompartir }: { id: string; alCompartir: () => void }) 
         >
           {t('acciones.separar')}
         </button>
+      )}
+      {!nervio && conCortes && (
+        <p id={idNota} className="cortes-bloqueados acciones-nota" data-testid="separar-bloqueado">
+          {t('cortes.bloqueados')}
+        </p>
       )}
       {/* Segundo toque: las vuelve a mostrar. */}
       <button type="button" {...propsPulsado(oculto)} onClick={() => s().alternarVisibles(piezas, accionAlPulsar(oculto) === 'desactivar')}>
@@ -450,6 +462,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const revisor = useAtlas((s) => s.revisor);
   const ubicando = useAtlas((s) => s.ubicando);
   const rutas = useAtlas((s) => s.rutas);
+  // Filtro del vago (spec 03, R5): sin la casilla (con canal) no se muestran el control de trazo ni el de rutas trazadas.
+  const vago = useAtlas(vagoVisible);
   const enfocar = useAtlas((s) => s.enfocarFicha);
   const respuestas = useAtlas((s) => s.respuestas);
   const piezaPropuesta = useAtlas((s) => s.piezaPropuesta);
@@ -509,6 +523,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const marcador = marcadorPorId(id);
   const rutasDeLaEntrada = rutas.filter((r) => r.entrada === id);
   const estadoIdioma = f?.revision[idioma]?.estado ?? 'borrador';
+  // R9.2: la ficha dice que un docente la revisó y cuándo; nunca quién (ni su nombre ni su alias).
+  const fechaIdioma = f?.revision[idioma]?.fecha ?? null;
   const estadoOtro = f?.revision[otro(idioma)]?.estado ?? 'borrador';
   const titulo = seleccion.pieza ? nombrePieza(seleccion.pieza, idioma, t) : nombre(e, idioma);
   const latin = latinVisible(e, t);
@@ -554,9 +570,9 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       )}
       <div className="ficha-meta">
         {f && (
-          <span className={`estado estado-${estadoIdioma}`}>
-            {t(`estado.${estadoIdioma}`)}
-            {f.revision[idioma]?.revisado_por ? ` · ${f.revision[idioma]!.revisado_por}, ${f.revision[idioma]!.fecha}` : ''}
+          <span className={`estado estado-${estadoIdioma}`} data-testid="estado-revision">
+            {estadoIdioma === 'verificado' ? t('ficha.revisadoDocente') : t(`estado.${estadoIdioma}`)}
+            {estadoIdioma === 'verificado' && fechaIdioma ? ` · ${fechaIdioma}` : ''}
           </span>
         )}
         <span className="ficha-fuente-nombre">
@@ -564,7 +580,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         </span>
       </div>
       <GruposDeLaEntrada id={id} idioma={idioma} />
-      {revisor && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} idioma={idioma} />}
+      {revisor && vago && seleccion.malla && <RevisionTrazo malla={seleccion.malla} version={version} idioma={idioma} />}
       {revisor && f && <MarcarTodo key={`${id}|${idioma}`} id={id} idioma={idioma} version={version} />}
       {revisor && dudas[id] && (
         <section className="ficha-campo ficha-dudas" data-testid="dudas">
@@ -598,8 +614,8 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         <section key={r.id} className="ficha-campo revision-ruta" data-testid={`ruta-${campoTrazado(r)}`}>
           <h3>{t('revision.trazadoTitulo', { nombre: r.nombre[idioma] })}</h3>
           <p className="recurso-nota">{t(`revision.trazadoEstado_${r.revision.estado}`)}</p>
-          {revisor && <p>{t('revision.trazadoAyuda')}</p>}
-          {rev(campoTrazado(r))}
+          {revisor && vago && <p>{t('revision.trazadoAyuda')}</p>}
+          {vago && rev(campoTrazado(r))}
         </section>
       ))}
 
