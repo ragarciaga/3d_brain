@@ -12,6 +12,7 @@ import {
   parsearCsv,
   resumenConsolidado,
   resumenMarkdown,
+  seccionSinAutorizacion,
   separarSinVago,
   ultimasRespuestas,
   type Envio,
@@ -784,9 +785,18 @@ describe('casilla del vago (S2, #163)', () => {
   const FRASE_SIN_ARCHIVO = 'No se pasó el CSV de Autorizaciones (--autorizaciones): ninguna respuesta del vago entra al resumen.';
   const cabeceraAut = 'Código,Fecha,Versión,Vago';
   const filasDe = (md: string, alias: string) => md.split('\n').filter((l) => l.startsWith(`| \`${alias}\` |`));
-  /** Lo que queda antes de la sección de descartadas (o todo el texto si no hay sección). */
-  const normal = (md: string) => (md.includes(TITULO_SECCION) ? md.slice(0, md.indexOf(TITULO_SECCION)) : md);
+  const TITULO_SIN_AUT = '## Descartadas: sin autorización';
+  /** Lo que queda antes de la primera sección de descartadas (o todo el texto si no hay ninguna). */
+  const normal = (md: string) => (md.includes('\n## Descartadas') ? md.slice(0, md.indexOf('\n## Descartadas')) : md);
+  /** La sección del vago, que va al final. */
   const descartadas = (md: string) => (md.includes(TITULO_SECCION) ? md.slice(md.indexOf(TITULO_SECCION)) : '');
+  /** La sección "sin autorización": desde su título hasta la del vago o el final. */
+  const sinAut = (md: string) => {
+    const i = md.indexOf(TITULO_SIN_AUT);
+    if (i < 0) return '';
+    const j = md.indexOf(TITULO_SECCION, i);
+    return j < 0 ? md.slice(i) : md.slice(i, j);
+  };
   const camposDe = (lineas: string[]) => lineas.map((l) => l.split('|')[2]!.trim()).sort();
   const respVago = (campo: string, extra: Record<string, unknown> = {}) => ({ c: campo, d: 'correcto', s: '0.1.0', ...extra });
   const trazoD = (extra: Record<string, unknown> = {}) => respVago('trazo:Vagus_nerve.R#t01', { m: 'Vagus_nerve.R#t01', a: 'no_se', ...extra });
@@ -803,13 +813,14 @@ describe('casilla del vago (S2, #163)', () => {
       expect(camposDe(filasDe(sec, 'D92'))).toEqual(['`trazado_laringeo_recurrente_derecho`', '`trazo:Vagus_nerve.R#t01`']);
     });
 
-    it('sin autorización (D93, no está en el CSV): lo mismo', () => {
+    it('sin autorización (D93, no está en el CSV): todo, también el vago, sale solo en "sin autorización"', () => {
       const { archivos } = importar(hojaVago, estructurasVago, padronVago, autorizaciones);
       const resumen = archivos.get('resumen.md')!;
-      expect(camposDe(filasDe(archivos.get('vagus-nerve-x.md')!, 'D93'))).toEqual(['`nombre`']);
+      expect(filasDe(archivos.get('vagus-nerve-x.md')!, 'D93')).toEqual([]);
       expect(filasDe(archivos.get('m-recurrent-laryngeal-nerve.md')!, 'D93')).toEqual([]);
-      expect(camposDe(filasDe(normal(resumen), 'D93'))).toEqual(['`nombre`']);
-      expect(camposDe(filasDe(descartadas(resumen), 'D93'))).toEqual(['`trazado_laringeo_recurrente_derecho`', '`trazo:Vagus_nerve.R#t01`']);
+      expect(filasDe(normal(resumen), 'D93')).toEqual([]);
+      expect(filasDe(descartadas(resumen), 'D93')).toEqual([]);
+      expect(camposDe(filasDe(sinAut(resumen), 'D93'))).toEqual(['`nombre`', '`trazado_laringeo_recurrente_derecho`', '`trazo:Vagus_nerve.R#t01`']);
     });
 
     it('la última fila de cada código manda: no y luego sí incluye (D91), sí y luego no descarta (D92)', () => {
@@ -825,14 +836,14 @@ describe('casilla del vago (S2, #163)', () => {
       expect(filasDe(descartadas(inv), 'D92')).toEqual([]);
     });
 
-    it('cuenta 4 respuestas únicas con los fixtures y un reenvío de la misma clave cuenta una vez', () => {
+    it('cuenta 2 respuestas únicas con los fixtures (las de D93 van a "sin autorización") y un reenvío de la misma clave cuenta una vez', () => {
       const r = importar(hojaVago, estructurasVago, padronVago, autorizaciones);
-      expect(r.sinVago).toBe(4);
-      expect(descartadas(r.archivos.get('resumen.md')!)).toContain('4 respuestas de trazos y rutas del vago');
+      expect(r.sinVago).toBe(2);
+      expect(descartadas(r.archivos.get('resumen.md')!)).toContain('2 respuestas de trazos y rutas del vago');
       const [cab, vago01, novago01, sinaut01] = hojaVago.trim().split('\n');
       const reenviado = [cab, vago01, novago01, novago01, sinaut01].join('\n');
       const r2 = importar(reenviado, estructurasVago, padronVago, autorizaciones);
-      expect(r2.sinVago).toBe(4);
+      expect(r2.sinVago).toBe(2);
       expect(r2.validos).toBe(r.validos + 3);
     });
 
@@ -937,9 +948,9 @@ describe('casilla del vago (S2, #163)', () => {
       expect(con.desconocidos).toBe(sin.desconocidos);
     });
 
-    it('el título de resumen.md cuenta solo las respuestas normales', () => {
+    it('el título de resumen.md cuenta solo las respuestas normales, sin las apartadas por vago ni por falta de autorización', () => {
       const { archivos, validos } = importar(hojaVago, estructurasVago, padronVago, autorizaciones);
-      expect(archivos.get('resumen.md')).toContain('# Revisiones docentes (6 respuestas, 3 estructuras)');
+      expect(archivos.get('resumen.md')).toContain('# Revisiones docentes (5 respuestas, 3 estructuras)');
       expect(validos).toBe(7);
     });
   });
@@ -967,6 +978,12 @@ describe('casilla del vago (S2, #163)', () => {
       }
       const sinArchivo = importar(hojaVago, estructurasVago, padronVago, null);
       for (const md of sinArchivo.archivos.values()) expect(md).not.toContain('VAGO01');
+      // Con un CSV de solo cabecera todo sale en la sección "sin autorización": tampoco ahí hay códigos.
+      const soloCabecera = importar(hojaVago, estructurasVago, padronVago, `${cabeceraAut}\n`);
+      expect(soloCabecera.archivos.get('resumen.md')).toContain(TITULO_SIN_AUT);
+      for (const md of soloCabecera.archivos.values()) {
+        for (const x of ['VAGO01', 'NOVAGO01', 'SINAUT01']) expect(md).not.toContain(x);
+      }
     });
 
     it.each([
@@ -979,7 +996,10 @@ describe('casilla del vago (S2, #163)', () => {
       expect(() => {
         r = importar(hojaVago, estructurasVago, padronVago, `${cabeceraAut}\n${filaAut}\n`);
       }).not.toThrow();
-      expect(r.sinVago).toBe(6);
+      // Los tres alias quedan sin fila: todo sale en "sin autorización", nada en las tablas ni en la del vago.
+      expect(r.sinVago).toBe(0);
+      expect(r.sinAutorizacion).toBe(10);
+      expect(filasDe(sinAut(r.archivos.get('resumen.md')!), 'D91').some((l) => l.includes('`trazo:'))).toBe(true);
       expect(normal(r.archivos.get('resumen.md')!)).not.toContain('trazo:');
       expect(leerAutorizaciones(parsearCsv(`${cabeceraAut}\n${filaAut}\n`)).get('VAGO01')).toBeUndefined();
     });
@@ -1009,7 +1029,7 @@ describe('casilla del vago (S2, #163)', () => {
     it('la primera fila siempre se salta, como en el script', () => {
       const sinCabecera = 'VAGO01,2026-10-15T10:00:00.000Z,1,sí\n';
       expect(leerAutorizaciones(parsearCsv(sinCabecera)).size).toBe(0);
-      expect(importar(hojaVago, estructurasVago, padronVago, sinCabecera).sinVago).toBe(6);
+      expect(importar(hojaVago, estructurasVago, padronVago, sinCabecera).sinVago).toBe(0);
     });
 
     it('lee la última fila de cada código y devuelve un Map', () => {
@@ -1045,10 +1065,11 @@ describe('casilla del vago (S2, #163)', () => {
       expect(r.autorizaciones).toBe(2);
     });
 
-    it('un CSV con solo la cabecera da autorizaciones = 0 y descarta todo', () => {
+    it('un CSV con solo la cabecera da autorizaciones = 0 y aparta todo en "sin autorización"', () => {
       const r = importar(hojaVago, estructurasVago, padronVago, `${cabeceraAut}\n`);
       expect(r.autorizaciones).toBe(0);
-      expect(r.sinVago).toBe(6);
+      expect(r.sinVago).toBe(0);
+      expect(r.sinAutorizacion).toBe(10);
       expect(r.archivos.get('resumen.md')).not.toContain(FRASE_SIN_ARCHIVO);
     });
 
@@ -1057,82 +1078,192 @@ describe('casilla del vago (S2, #163)', () => {
     });
   });
 
-  describe('S1: respuestas de revisores sin ninguna autorización (#166)', () => {
-    const LINEA = (n: number) => `Hay ${n} respuestas de revisores sin ninguna autorización en \`Autorizaciones\`.`;
+  describe('S1: respuestas de revisores sin ninguna autorización (#166, #190)', () => {
+    const FRASE = (n: number) =>
+      `${n} respuestas de revisores sin ninguna autorización en \`Autorizaciones\`. No se aplican y, sin autorización de tratamiento de datos, aquí solo van el alias, el campo, el idioma y la estructura.`;
     const filaAut = (codigo: string, vago: string) => `${codigo},2026-10-15T10:00:00.000Z,1,${vago}`;
     const [cab, vago01, novago01] = hojaVago.trim().split('\n') as [string, string, string];
     const nombreVago = { c: 'nombre', i: 'es', d: 'correcto', s: '0.1.0' };
     const ubicacion = { c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0' };
     const hojaSinaut = (...recibidos: string[]) =>
       `Recibido,Código,Estructuras,Carga\n${recibidos.map((t) => filaHoja({ r: 'SINAUT01', e: { 'vagus-nerve-x': [nombreVago], hippocampus: [ubicacion] } }, t)).join('\n')}\n`;
+    const soloArchivos = (r: ReturnType<typeof importar>) => [...r.archivos.keys()];
 
-    it('con los fixtures cuenta 1 (el nombre de D93), no lo aparta y deja la línea antes de las tablas', () => {
+    it('(a) con los fixtures aparta las 3 respuestas de D93: ni en <id>.md ni en las tablas, solo en la sección nueva', () => {
       const r = importar(hojaVago, estructurasVago, padronVago, autorizaciones);
-      expect(r.sinAutorizacion).toBe(1);
+      expect(r.sinAutorizacion).toBe(3);
       expect(r.aliasSinAutorizacion).toEqual(['D93']);
-      expect(camposDe(filasDe(r.archivos.get('vagus-nerve-x.md')!, 'D93'))).toEqual(['`nombre`']);
       const resumen = r.archivos.get('resumen.md')!;
-      expect(resumen).toContain(LINEA(1));
-      expect(resumen.indexOf(LINEA(1))).toBeLessThan(resumen.indexOf('## Revisiones de'));
-      expect(resumen).not.toContain('Siguen en las tablas');
-      for (const [nombre, md] of r.archivos) if (nombre !== 'resumen.md') expect(md, nombre).not.toContain('sin ninguna autorización');
+      expect(resumen).toContain(FRASE(3));
+      expect(resumen).not.toContain('Hay 3 respuestas');
+      expect(resumen).not.toContain('Hay 1 respuestas');
+      expect(filasDe(normal(resumen), 'D93')).toEqual([]);
+      expect(filasDe(descartadas(resumen), 'D93')).toEqual([]);
+      expect(filasDe(sinAut(resumen), 'D93')).toHaveLength(3);
+      for (const [nombre, md] of r.archivos) {
+        if (nombre === 'resumen.md') continue;
+        expect(md, nombre).not.toContain('sin ninguna autorización');
+        expect(md, nombre).not.toContain('`D93`');
+      }
     });
 
-    it('solo cuenta al alias sin fila: con fila no o sí da 0 y no hay línea', () => {
+    it('(b) la sección va después de las tablas normales y antes de la del vago', () => {
+      const md = importar(hojaVago, estructurasVago, padronVago, autorizaciones).archivos.get('resumen.md')!;
+      expect(md.indexOf('## Revisiones de')).toBeGreaterThanOrEqual(0);
+      expect(md.indexOf('## Revisiones de')).toBeLessThan(md.indexOf(TITULO_SIN_AUT));
+      expect(md.indexOf(TITULO_SIN_AUT)).toBeGreaterThan(md.lastIndexOf('Siguiente paso'));
+      expect(md.indexOf(TITULO_SIN_AUT)).toBeLessThan(md.indexOf(TITULO_SECCION));
+      expect(sinAut(md)).not.toContain('Siguiente paso');
+    });
+
+    it('(c) una fila por respuesta con 4 columnas, ordenadas por estructura, alias, campo e idioma', () => {
+      const sec = sinAut(importar(hojaVago, estructurasVago, padronVago, autorizaciones).archivos.get('resumen.md')!);
+      const lineas = sec.split('\n');
+      expect(lineas).toContain('| Revisor (alias) | Campo | Idioma | Estructura |');
+      expect(lineas).toContain('|---|---|---|---|');
+      const filas = lineas.filter((l) => l.startsWith('| `D'));
+      expect(filas).toHaveLength(3);
+      for (const f of filas) expect(f.split('|')).toHaveLength(6);
+      expect(filas.map((f) => f.split('|').map((c) => c.trim()).slice(1, 5))).toEqual([
+        ['`D93`', '`trazado_laringeo_recurrente_derecho`', '', '`m-recurrent-laryngeal-nerve`'],
+        ['`D93`', '`nombre`', 'es', '`vagus-nerve-x`'],
+        ['`D93`', '`trazo:Vagus_nerve.R#t01`', '', '`vagus-nerve-x`'],
+      ]);
+    });
+
+    it('(c) el orden es por estructura, después alias, campo e idioma, sin depender del orden de entrada', () => {
+      const env = (revisor: string, estructura: string, campo: string, idioma?: 'es' | 'en'): Envio => ({
+        revisor,
+        estructura,
+        marcaTemporal: 'x',
+        respuestas: [{ ...base, estructura, campo, idioma, veredicto: 'correcto' }],
+      });
+      const entrada = [env('D02', 'b', 'a', 'es'), env('D01', 'b', 'z', 'es'), env('D01', 'b', 'a', 'es'), env('D01', 'a', 'z', 'en'), env('D01', 'a', 'z', 'es')];
+      const filas = seccionSinAutorizacion(entrada).split('\n').filter((l) => l.startsWith('| `D'));
+      expect(filas).toEqual([
+        '| `D01` | `z` | en | `a` |',
+        '| `D01` | `z` | es | `a` |',
+        '| `D01` | `a` | es | `b` |',
+        '| `D01` | `z` | es | `b` |',
+        '| `D02` | `a` | es | `b` |',
+      ]);
+    });
+
+    it('(d) ninguno: con fila no o sí da 0, sin alias y sin sección; sin respuestas la sección es vacía', () => {
       const soloNovago = importar([cab, novago01].join('\n'), estructurasVago, padronVago, `${cabeceraAut}\n${filaAut('NOVAGO01', 'no')}\n`);
       expect(soloNovago.sinAutorizacion).toBe(0);
       expect(soloNovago.aliasSinAutorizacion).toEqual([]);
-      expect(soloNovago.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+      expect(soloNovago.archivos.get('resumen.md')).not.toContain('Descartadas: sin autorización');
       const soloVago = importar([cab, vago01].join('\n'), estructurasVago, padronVago, `${cabeceraAut}\n${filaAut('VAGO01', 'sí')}\n`);
       expect(soloVago.sinAutorizacion).toBe(0);
-      expect(soloVago.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+      expect(soloVago.archivos.get('resumen.md')).not.toContain('Descartadas: sin autorización');
+      expect(seccionSinAutorizacion([])).toBe('');
     });
 
-    it('cuenta respuestas únicas: dos respuestas dan 2 y un reenvío de la misma clave sigue dando 2', () => {
+    it('(e) una sola respuesta: "1 respuestas" y una fila', () => {
+      const csv = `Recibido,Código,Estructuras,Carga\n${filaHoja({ r: 'SINAUT01', e: { 'vagus-nerve-x': [nombreVago] } }, '2026-10-15 11:10:00')}\n`;
+      const r = importar(csv, estructurasVago, padronVago, autorizaciones);
+      expect(r.sinAutorizacion).toBe(1);
+      const resumen = r.archivos.get('resumen.md')!;
+      expect(resumen).toContain(FRASE(1));
+      expect(filasDe(sinAut(resumen), 'D93')).toHaveLength(1);
+    });
+
+    it('(f) cuenta respuestas únicas: un reenvío de la misma clave sigue dando 2 y una estructura solo con apartadas no genera <id>.md', () => {
       const una = importar(hojaSinaut('2026-10-15 11:10:00'), estructurasVago, padronVago, autorizaciones);
       expect(una.sinAutorizacion).toBe(2);
-      expect(una.archivos.get('resumen.md')).toContain(LINEA(2));
+      expect(una.archivos.get('resumen.md')).toContain(FRASE(2));
+      expect(soloArchivos(una)).toEqual(['resumen.md']);
       const reenvio = importar(hojaSinaut('2026-10-15 11:10:00', '2026-10-15 12:00:00'), estructurasVago, padronVago, autorizaciones);
       expect(reenvio.sinAutorizacion).toBe(2);
+      expect(reenvio.archivos.get('resumen.md')).toContain(FRASE(2));
+      expect(soloArchivos(reenvio)).toEqual(['resumen.md']);
+      expect(reenvio.archivos.get('resumen.md')).toContain('(0 respuestas, 0 estructuras)');
     });
 
-    it('un CSV con solo la cabecera cuenta todas las respuestas normales (4)', () => {
-      const r = importar(hojaVago, estructurasVago, padronVago, `${cabeceraAut}\n`);
-      expect(r.sinAutorizacion).toBe(4);
-      expect(r.aliasSinAutorizacion).toEqual(['D91', 'D92', 'D93']);
-      expect(r.archivos.get('resumen.md')).toContain('(4 respuestas, 2 estructuras)');
-      expect(r.archivos.get('resumen.md')).toContain(LINEA(4));
+    it('(g) la sección no trae código, veredicto, propuesta, comentario ni marca temporal', () => {
+      const csv = `Recibido,Código,Estructuras,Carga\n${filaHoja(
+        {
+          r: 'SINAUT01',
+          e: {
+            hippocampus: [{ c: 'ubicacion', i: 'es', d: 'corregir', s: '0.1.0', p: 'PROPUESTA_PRIVADA', k: 'COMENTARIO_PRIVADO' }],
+            'vagus-nerve-x': [trazoD({ d: 'corregir', p: 'PROPUESTA_PRIVADA', k: 'COMENTARIO_PRIVADO' })],
+          },
+        },
+        'MARCA_PRIVADA',
+      )}\n`;
+      const r = importar(csv, estructurasVago, padronVago, autorizaciones);
+      expect(r.sinAutorizacion).toBe(2);
+      const resumen = r.archivos.get('resumen.md')!;
+      const filas = filasDe(sinAut(resumen), 'D93');
+      expect(filas).toHaveLength(2);
+      for (const f of filas) expect(f).not.toContain('corregir');
+      for (const md of r.archivos.values()) {
+        for (const x of ['PROPUESTA_PRIVADA', 'COMENTARIO_PRIVADO', 'MARCA_PRIVADA', 'SINAUT01']) expect(md).not.toContain(x);
+      }
+      // Control: sin el CSV el mismo envío sí lleva esos textos a las tablas, así que la prueba no es vacía.
+      const sin = importar(csv, estructurasVago, padronVago, null).archivos.get('resumen.md')!;
+      for (const x of ['PROPUESTA_PRIVADA', 'COMENTARIO_PRIVADO', 'MARCA_PRIVADA']) expect(sin).toContain(x);
     });
 
-    it('sin CSV da null, sin alias y sin la línea', () => {
+    it('(h) un alias hostil de un padrón sin validar sale como código en línea y sin menciones', () => {
+      const r = importar(hojaSinaut('2026-10-15 11:10:00'), estructurasVago, { SINAUT01: '[x](y) @a' }, autorizaciones);
+      const sec = sinAut(r.archivos.get('resumen.md')!);
+      expect(sec).toContain('| `[x](y) @​a` |');
+      expect(sec).not.toMatch(/@(?!\u200B)/);
+    });
+
+    it('(i) sin CSV nada cambia: null, sin alias, sin sección, <id>.md como resumenMarkdown y la frase vieja del vago', () => {
       const r = importar(hojaVago, estructurasVago, padronVago, null);
       expect(r.sinAutorizacion).toBeNull();
       expect(r.aliasSinAutorizacion).toEqual([]);
-      expect(r.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
+      const resumen = r.archivos.get('resumen.md')!;
+      expect(resumen).not.toContain(TITULO_SIN_AUT);
+      expect(resumen).not.toContain('sin ninguna autorización');
+      const envios = separarSinVago(aplicarPadron(leerEnvios(parsearCsv(hojaVago), new Set(Object.keys(estructurasVago))).envios, padronVago).envios, () => false).envios;
+      const delVago = envios.filter((e) => e.estructura === 'vagus-nerve-x');
+      expect(r.archivos.get('vagus-nerve-x.md')).toBe(resumenMarkdown('vagus-nerve-x', delVago, '0.1.0'));
+      expect(camposDe(filasDe(r.archivos.get('vagus-nerve-x.md')!, 'D93'))).toEqual(['`nombre`']);
+      expect(descartadas(resumen)).toContain('o que no tienen autorización. No se aplican.');
     });
 
-    it('un código fuera del padrón no cuenta', () => {
+    it('(j) con el CSV la frase del vago ya no habla de "no tienen autorización"', () => {
+      const resumen = importar(hojaVago, estructurasVago, padronVago, autorizaciones).archivos.get('resumen.md')!;
+      expect(descartadas(resumen)).toContain('2 respuestas de trazos y rutas del vago de revisores cuya última autorización no marca la casilla del vago. No se aplican.');
+      expect(descartadas(resumen)).not.toContain('o que no tienen autorización');
+    });
+
+    it('(k) un código fuera del padrón no cuenta', () => {
       const r = importar(hojaVago, estructurasVago, { VAGO01: 'D91', NOVAGO01: 'D92' }, autorizaciones);
       expect(r.desconocidos).toBeGreaterThan(0);
       expect(r.sinAutorizacion).toBe(0);
       expect(r.archivos.get('resumen.md')).not.toContain('sin ninguna autorización');
     });
 
-    it('un alias repetido cuenta si basta uno de sus códigos sin fila, sin depender del orden del padrón', () => {
+    it('(l) un alias repetido se aparta entero si basta uno de sus códigos sin fila, sin depender del orden del padrón', () => {
       for (const repetido of [{ VAGO01: 'D91', SINAUT01: 'D91' }, { SINAUT01: 'D91', VAGO01: 'D91' }]) {
         const r = importar(hojaVago, estructurasVago, repetido, autorizaciones);
-        expect(r.sinAutorizacion).toBe(1); // nombre de vagus-nerve-x de los dos códigos: la misma clave
+        expect(r.sinAutorizacion).toBe(3); // las respuestas de los dos códigos comparten clave: trazo, nombre y trazado
         expect(r.aliasSinAutorizacion).toEqual(['D91']);
+        const resumen = r.archivos.get('resumen.md')!;
+        expect(filasDe(normal(resumen), 'D91')).toEqual([]);
+        expect(filasDe(descartadas(resumen), 'D91')).toEqual([]);
+        expect(filasDe(sinAut(resumen), 'D91')).toHaveLength(3);
+        expect(soloArchivos(r)).toEqual(['resumen.md']);
+        expect(r.sinVago).toBe(0);
       }
     });
 
-    it('en resumen.md el aviso de desconocidos va antes que el de sin autorización y los dos antes de las tablas', () => {
+    it('(m) en resumen.md el aviso de desconocidos va antes de las tablas y estas antes de la sección sin autorización', () => {
       const md = importar(hojaVago, estructurasVago, { VAGO01: 'D91', SINAUT01: 'D93' }, autorizaciones).archivos.get('resumen.md')!;
+      const titulo = md.indexOf('# Revisiones docentes');
       const desconocidos = md.indexOf('Se descartaron');
-      const sinAut = md.indexOf(LINEA(1));
-      expect(desconocidos).toBeGreaterThan(md.indexOf('# Revisiones docentes'));
-      expect(sinAut).toBeGreaterThan(desconocidos);
-      expect(md.indexOf('## Revisiones de')).toBeGreaterThan(sinAut);
+      const tablas = md.indexOf('## Revisiones de');
+      const seccion = md.indexOf(TITULO_SIN_AUT);
+      expect(titulo).toBeGreaterThanOrEqual(0);
+      expect(desconocidos).toBeGreaterThan(titulo);
+      expect(tablas).toBeGreaterThan(desconocidos);
+      expect(seccion).toBeGreaterThan(tablas);
     });
   });
 

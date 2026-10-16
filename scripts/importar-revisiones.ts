@@ -8,10 +8,11 @@
 // El padrón (código -> alias) es privado: por defecto pipeline/revisores.local.json, ignorado por
 // git. Los envíos con un código fuera del padrón se descartan y los issues solo muestran el alias.
 // --autorizaciones: CSV de la pestaña Autorizaciones. Las respuestas de trazos y rutas del vago de un
-// revisor sin la casilla del vago (o sin autorización) no entran al resumen normal: salen en la sección
-// "Descartadas: sin la casilla del vago". Sin esa bandera el script corre, avisa y descarta todas las
-// respuestas del vago. Con la bandera cuenta además las respuestas de revisores sin ninguna autorización
-// (ninguna fila en Autorizaciones): siguen en las tablas, pero la consola dice cuántas son y de qué alias.
+// revisor sin la casilla del vago no entran al resumen normal: salen en la sección "Descartadas: sin la
+// casilla del vago". Las de un revisor sin ninguna fila en Autorizaciones (también las del vago) salen
+// solo en "Descartadas: sin autorización", con alias, campo, idioma y estructura, y la consola dice cuántas
+// son y de qué alias. Sin esa bandera el script corre, avisa y descarta todas las respuestas del vago; las
+// demás respuestas entran a las tablas sin saber quién autorizó.
 // Nunca imprime un código.
 // La lógica vive en scripts/lib/revisiones.ts (importar); aquí solo se lee y se escribe.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -90,5 +91,5 @@ console.log(
   `${validos} envíos válidos, ${invalidas} filas descartadas, ${desconocidos} con código fuera del padrón, ${sinVago} respuestas del vago sin la casilla${sinAut}. Resumen: ${join(salida, 'resumen.md')}`,
 );
 if (aliasSinAutorizacion.length) {
-  console.log(`Alias con respuestas sin ninguna autorización: ${aliasSinAutorizacion.join(', ')}`);
+  console.log(`Alias con respuestas sin ninguna autorización (van solo a "Descartadas: sin autorización"): ${aliasSinAutorizacion.join(', ')}`);
 }
