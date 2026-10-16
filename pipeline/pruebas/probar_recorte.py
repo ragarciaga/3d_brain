@@ -15,8 +15,10 @@ Parte B (con .blend): `cortar_banda` sobre `Vagus nerve (X).r#t02` y `.l#t02` re
      menos de un borde de la banda y a 0,1 mm o menos de una intersección arista-plano de la fuente;
   2. cada vértice fuente fuera de la banda tiene su pareja a 0,1 mm o menos (nada se perdió ni se movió);
   3. ningún vértice queda dentro de la banda;
-  4. derecho: queda malla arriba y abajo; izquierdo: solo arriba;
-  5. hay vértices nuevos y borrados (el corte no pasa por construcción);
+  4. derecho: queda malla arriba y abajo, la de arriba empieza en y_max y la de abajo termina en y_min
+     (a 1 µm); izquierdo: solo arriba, empezando en y_max;
+  5. hay vértices nuevos y borrados (el corte no pasa por construcción), y hay vértices nuevos en
+     cada borde de la banda, no solo en alguno;
   6. no quedan vértices sueltos."""
 import hashlib
 import importlib.util
@@ -80,6 +82,20 @@ def dentro(z, y_max, y_min, tol=TOL_PLANO):
     return z < y_max - tol and (y_min is None or z > y_min + tol)
 
 
+def comprobar_extremos(zs, y_max, y_min, lado, que):
+    """Lo que queda arriba empieza justo en y_max; en el derecho, lo de abajo termina justo en y_min;
+    en el izquierdo no queda nada por debajo de y_max. `zs`: las Z de los vértices que dejó el corte."""
+    arriba = [z for z in zs if z >= y_max - TOL_PLANO]
+    afirmar(arriba, f"{que}: no queda nada por encima de y_max")
+    afirmar(abs(min(arriba) - y_max) <= TOL_PLANO, f"{que}: lo de arriba empieza en z = {min(arriba)}, no en y_max = {y_max}")
+    if lado == "derecho":
+        abajo = [z for z in zs if z <= y_min + TOL_PLANO]
+        afirmar(abajo, f"{que}: el derecho no conserva nada por debajo de y_min")
+        afirmar(abs(max(abajo) - y_min) <= TOL_PLANO, f"{que}: lo de abajo termina en z = {max(abajo)}, no en y_min = {y_min}")
+    else:
+        afirmar(all(z >= y_max - TOL_PLANO for z in zs), f"{que}: el izquierdo conserva algo por debajo de y_max")
+
+
 def verificar(fuente, cortada, y_max, y_min, lado, que):
     """Compara la malla cortada con su fuente (ambas de `instantanea`). Devuelve (nuevos, borrados)."""
     planos = [y_max] if y_min is None else [y_max, y_min]
@@ -97,10 +113,12 @@ def verificar(fuente, cortada, y_max, y_min, lado, que):
 
     # 1. Cada vértice de la cortada es original o un cruce arista-plano sobre el borde.
     nuevos = 0
+    z_nuevos = []
     for co in cortada["v"]:
         if arbol_fuente.find(co)[2] <= TOL_VERTICE:
             continue
         nuevos += 1
+        z_nuevos.append(co[2])
         afirmar(min(abs(co[2] - z) for z in planos) <= TOL_PLANO, f"{que}: vértice nuevo {co} fuera de los bordes de la banda")
         afirmar(arbol_cruces.find(co)[2] <= TOL_VERTICE, f"{que}: vértice nuevo {co} no está sobre la superficie original")
 
@@ -121,11 +139,11 @@ def verificar(fuente, cortada, y_max, y_min, lado, que):
 
     # 4. Lo que debe quedar queda.
     zs = [co[2] for co in cortada["v"]]
-    afirmar(any(z >= y_max - TOL_PLANO for z in zs), f"{que}: no queda nada por encima de y_max")
-    if lado == "derecho":
-        afirmar(any(z <= y_min + TOL_PLANO for z in zs), f"{que}: el derecho no conserva nada por debajo de y_min")
-    else:
-        afirmar(all(z >= y_max - TOL_PLANO for z in zs), f"{que}: el izquierdo conserva algo por debajo de y_max")
+    comprobar_extremos(zs, y_max, y_min, lado, que)
+    # Cada borde de la banda tiene su propio corte: sin el de y_min, las caras que lo cruzan se borran
+    # enteras y la parte de abajo empieza en el primer anillo original, no en y_min.
+    for z in planos:
+        afirmar(any(abs(zn - z) <= TOL_PLANO for zn in z_nuevos), f"{que}: ningún vértice nuevo en el borde z = {z}")
 
     # 5. El corte hizo algo.
     afirmar(nuevos > 0, f"{que}: el corte no creó vértices nuevos en el borde")
@@ -276,11 +294,7 @@ def verificar_exportada(me, y_max, y_min, lado, que):
     zs = [v.co.z for v in me.vertices]
     adentro = [z for z in zs if dentro(z, y_max, y_min)]
     afirmar(not adentro, f"{que}: main() dejó {len(adentro)} vértice(s) dentro de la banda {lado}, el primero en z = {adentro[0] if adentro else ''}")
-    afirmar(any(z >= y_max - TOL_PLANO for z in zs), f"{que}: main() no dejó nada por encima de y_max del {lado}")
-    if lado == "derecho":
-        afirmar(any(z <= y_min + TOL_PLANO for z in zs), f"{que}: main() no dejó nada por debajo de y_min del derecho")
-    else:
-        afirmar(all(z >= y_max - TOL_PLANO for z in zs), f"{que}: main() dejó algo por debajo de y_max del izquierdo")
+    comprobar_extremos(zs, y_max, y_min, lado, f"{que} (tras main())")
 
 
 def parte_b():
