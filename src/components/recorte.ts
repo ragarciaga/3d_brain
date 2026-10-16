@@ -106,9 +106,12 @@ export function seVeConRecorte(p: THREE.Vector3, planos: readonly THREE.Plane[] 
   return interseccion ? planos.some((pl) => pl.distanceToPoint(p) >= 0) : planos.every((pl) => pl.distanceToPoint(p) >= 0);
 }
 
-/** Planos de una pieza: los de corte solo para el encéfalo con cortes; el vago lleva el del recorrido; el resto, ninguno. */
-export function planosDePieza(pieza: string, conCortes: boolean): THREE.Plane[] | null {
-  if (conCortes && esEncefalo(pieza)) return PLANOS_CORTE;
+/**
+ * Planos de una pieza: los de corte solo para la pieza del encéfalo cruzada por un plano o entera del lado oculto
+ * (`'cruzada'` o `'fuera'`); la entera del lado visible va sin planos. El vago lleva el del recorrido; el resto, ninguno.
+ */
+export function planosDePieza(pieza: string, lado: LadoCorte): THREE.Plane[] | null {
+  if (esEncefalo(pieza) && (lado === 'cruzada' || lado === 'fuera')) return PLANOS_CORTE;
   return esFragmentable(pieza) ? null : PLANOS_RECORRIDO;
 }
 
@@ -201,17 +204,50 @@ type EstadoCortada = Omit<EstadoFantasma, 'fantasmaCorte'>;
 /** `rellenoApagado`: el relleno se apagó en este equipo (R8.2, R3.4); todas las piezas cortadas pasan a contorno. */
 export type EstadoRelleno = EstadoCortada & { rellenoApagado: boolean };
 
+/** Dónde queda una pieza frente a los planos de corte: sin cortes o no es del encéfalo, entera del lado oculto, entera del visible o cruzada. */
+export type LadoCorte = 'sin' | 'fuera' | 'dentro' | 'cruzada';
+
+/**
+ * Lado de la caja en reposo de la pieza (la que guarda el store) frente a los planos activos, con la unión de R1.4:
+ * `'fuera'` si algún plano deja toda la caja del lado oculto, aunque otro la cruce; `'dentro'` si todos los planos la
+ * dejan entera del lado visible; `'cruzada'` en otro caso. Sigue la regla de `seVeConRecorte` (se ve con d >= 0) y es
+ * conservadora en el borde: un plano justo sobre una cara de la caja deja la pieza `'cruzada'`. Una pieza del encéfalo
+ * sin caja también es `'cruzada'`.
+ */
+export function ladoDeCorte(pieza: string, s: { cortes: Cortes; cajas: Record<string, Caja> }): LadoCorte {
+  if (!hayCortes(s.cortes) || !esEncefalo(pieza)) return 'sin';
+  const c = s.cajas[pieza];
+  if (!c) return 'cruzada';
+  const rango = rangoActual(s.cajas);
+  let dentro = true;
+  for (const pl of PLANOS) {
+    if (!s.cortes[pl].activo) continue;
+    const { normal, constante } = planoDe(pl, s.cortes[pl], rango);
+    const e = EJE[pl];
+    const a = c[0][e]! * normal[e]! + constante;
+    const b = c[1][e]! * normal[e]! + constante;
+    if (Math.max(a, b) < 0) return 'fuera';
+    if (Math.min(a, b) <= 0) dentro = false;
+  }
+  return dentro ? 'dentro' : 'cruzada';
+}
+
+/** Mientras la pieza vuelve a su sitio su caja no es la de reposo: se dibuja como `'cruzada'` (con los 3 planos), como antes. */
+export function ladoAlDibujar(lado: LadoCorte, enSitio: boolean): LadoCorte {
+  return lado === 'sin' || enSitio ? lado : 'cruzada';
+}
+
 /**
  * Pieza cortada y visible: es del encéfalo, hay cortes activos, se ve (ni oculta, ni fuera del aislamiento, ni
- * aproximada con solo escaneada) y algún plano activo cruza su caja (cruce estricto). Mismo filtro que el fantasma.
- * Es la base del relleno y del contorno.
+ * aproximada con solo escaneada), algún plano activo cruza su caja (cruce estricto) y ningún plano activo la deja
+ * entera del lado oculto. Mismo filtro que el fantasma. Es la base del relleno y del contorno.
  */
 function piezaCortadaVisible(pieza: string, s: EstadoCortada): boolean {
   if (!hayCortes(s.cortes) || !esEncefalo(pieza)) return false;
   if (s.ocultas.has(pieza)) return false;
   if (s.aislar && !s.aislar.piezas.has(pieza)) return false;
   if (origenDe(pieza) === 'aproximada' && s.soloEscaneada) return false;
-  return piezasCruzadas(s.cajas, [pieza], s.cortes, rangoActual(s.cajas)).length > 0;
+  return piezasCruzadas(s.cajas, [pieza], s.cortes, rangoActual(s.cajas)).length > 0 && ladoDeCorte(pieza, s) !== 'fuera';
 }
 
 /**

@@ -48,6 +48,7 @@ if (import.meta.env.DEV) {
       rellenos(pieza?: string): number;
       contornos(pieza?: string): number;
       geometrias(): number;
+      recortePorVertices(): Record<string, { dibujada: boolean; planos: number; vertices: number; ocultos: number }>;
     };
     __puntoCorte(pieza: string, lado?: 'corte' | 'oculto'): { x: number; y: number } | null;
   };
@@ -62,6 +63,7 @@ if (import.meta.env.DEV) {
     rellenos: (p) => cortesVisor.rellenos?.(p) ?? 0,
     contornos: (p) => cortesVisor.contornos?.(p) ?? 0,
     geometrias: () => cortesVisor.geometrias?.() ?? 0,
+    recortePorVertices: () => cortesVisor.recortePorVertices?.() ?? {},
   };
   w.__puntoCorte = (p, lado) => cortesVisor.puntoCorte?.(p, lado) ?? null;
   // Costura del canal: `addInitScript` deja `__urlCanalInicial` antes de la primera carga ('' anula el canal);

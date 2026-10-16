@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GRUPO_VAGO, nodos, piezasBajo, todasLasPiezas } from '../src/data/atlas';
-import { actualizarPlanos, alCuadro, alErrorShaderRelleno, alMuestraFps, configurarRenderer, construirBvh, crearLineaContorno, crearMallaFantasma, crearMallaRelleno, liberarContornos, mallasDeContorno, mallasDeRelleno, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasConContorno, piezasFantasmaCorte, PLANOS_CORTE, PLANOS_FANTASMA, PLANOS_RECORRIDO, planosActivos, planosDePieza, puntoDeCorte, raycastCorte, raycastNulo, refrescarContorno, segmentosDeCorte, seVeConRecorte, vistaDeMarcador, type EstadoFantasma, type EstadoRelleno } from '../src/components/recorte';
+import { actualizarPlanos, alCuadro, ladoAlDibujar, ladoDeCorte, type LadoCorte, alErrorShaderRelleno, alMuestraFps, configurarRenderer, construirBvh, crearLineaContorno, crearMallaFantasma, crearMallaRelleno, liberarContornos, mallasDeContorno, mallasDeRelleno, OPACIDAD_FANTASMA_CORTE, piezaConRelleno, piezasConContorno, piezasFantasmaCorte, PLANOS_CORTE, PLANOS_FANTASMA, PLANOS_RECORRIDO, planosActivos, planosDePieza, puntoDeCorte, raycastCorte, raycastNulo, refrescarContorno, segmentosDeCorte, seVeConRecorte, vistaDeMarcador, type EstadoFantasma, type EstadoRelleno } from '../src/components/recorte';
 import { cortesApagados, EJE, esEncefalo, ocultoPorCortes, piezasCruzadas, PLANOS, rangoCerebro, type Cortes, type EstadoCuadros, type Plano } from '../src/lib/cortes';
 import { useAtlas } from '../src/store/useAtlas';
 import type { Vec3 } from '../src/lib/explosion';
@@ -41,16 +41,24 @@ function caja(lado: number, c: Vec3, material: THREE.Material = new THREE.MeshBa
 }
 
 describe('planos de corte: quién los lleva (R2.1, R8.3)', () => {
-  it('con cortes, PLANOS_CORTE solo para las piezas del encéfalo; el vago el del recorrido; el órgano nada', () => {
-    expect(todasLasPiezas.filter((p) => planosDePieza(p, true) === PLANOS_CORTE)).toEqual(todasLasPiezas.filter(esEncefalo));
-    expect(planosDePieza(vago, true)).toBe(PLANOS_RECORRIDO);
+  it('con cortes, PLANOS_CORTE solo para la pieza del encéfalo cruzada o entera del lado oculto; el vago el del recorrido; el órgano nada', () => {
+    expect(todasLasPiezas.filter((p) => planosDePieza(p, 'cruzada') === PLANOS_CORTE)).toEqual(todasLasPiezas.filter(esEncefalo));
+    expect(planosDePieza(vago, 'cruzada')).toBe(PLANOS_RECORRIDO);
     expect(PLANOS_RECORRIDO.some((p) => PLANOS_CORTE.includes(p))).toBe(false);
-    expect(planosDePieza(organo, true)).toBeNull();
+    expect(planosDePieza(organo, 'cruzada')).toBeNull();
+  });
+  it('la pieza del encéfalo entera del lado oculto conserva los planos y la entera del lado visible va sin ellos (D3)', () => {
+    expect(todasLasPiezas.filter((p) => planosDePieza(p, 'fuera') === PLANOS_CORTE)).toEqual(todasLasPiezas.filter(esEncefalo));
+    expect(todasLasPiezas.filter(esEncefalo).filter((p) => planosDePieza(p, 'dentro') !== null)).toEqual([]);
+  });
+  it.each(['sin', 'fuera', 'dentro', 'cruzada'] as const)('con el lado %s el vago lleva siempre el recorrido y el órgano nada (R2.1, R8.3)', (lado) => {
+    expect(planosDePieza(vago, lado)).toBe(PLANOS_RECORRIDO);
+    expect(planosDePieza(organo, lado)).toBeNull();
   });
   it('sin cortes el encéfalo y los órganos no llevan planos y el vago conserva el suyo', () => {
-    expect(planosDePieza(A, false)).toBeNull();
-    expect(planosDePieza(organo, false)).toBeNull();
-    expect(planosDePieza(vago, false)).toBe(PLANOS_RECORRIDO);
+    expect(planosDePieza(A, 'sin')).toBeNull();
+    expect(planosDePieza(organo, 'sin')).toBeNull();
+    expect(planosDePieza(vago, 'sin')).toBe(PLANOS_RECORRIDO);
   });
   it('sin cortes no hay fantasma aunque fantasmaCorte sea true, ni con un plano inactivo', () => {
     const base: EstadoFantasma = { cortes: cortesApagados(), fantasmaCorte: true, ocultas: new Set(), aislar: null, soloEscaneada: false, cajas };
@@ -612,6 +620,94 @@ describe('contorno del corte: qué piezas (R3.3, R3.4, R8.3)', () => {
     expect(mallasDeContorno(['M'], false, new Set(['M']))).toEqual([]);
     expect(mallasDeContorno(['M'], true, new Set(['M']))).toEqual(['M']);
     expect(mallasDeContorno(['M#toque'], true, new Set(['M#toque']))).toEqual([]);
+  });
+});
+
+describe('recorte por caja (#177)', () => {
+  // A va en x de -0,07 a 0 y B de 0 a 0,07 (cajas de arriba); el centro es (0; 1,56; -0,005).
+  const estado = (cortes: Cortes) => ({ cortes, cajas });
+  const lado = (pieza: string, cortes: Cortes) => ladoDeCorte(pieza, estado(cortes));
+  const inactivo = (p: Plano, mm: number, invertido = false): Partial<Cortes> => ({ [p]: { activo: false, mm, invertido } });
+
+  describe('ladoDeCorte (D1)', () => {
+    it('es "sin" sin cortes, con solo planos inactivos y para el vago y el órgano aunque un plano cruce su caja', () => {
+      expect(lado(A, cortesApagados())).toBe('sin');
+      expect(lado(A, { ...cortesApagados(), ...inactivo('sagital', -10) })).toBe('sin');
+      // El axial en -10 mm cruza la caja del vago (0,5 a 1,6 m).
+      expect(lado(vago, con({ axial: { mm: -10 } }))).toBe('sin');
+      expect(lado(organo, con({ axial: { mm: -10 } }))).toBe('sin');
+    });
+    it('un plano: cruzada, entera del lado oculto y entera del lado visible', () => {
+      // Sagital en -10 mm (oculta x > -0,01): A lo cruza y B queda entera del lado oculto.
+      expect(lado(A, con({ sagital: { mm: -10 } }))).toBe('cruzada');
+      expect(lado(B, con({ sagital: { mm: -10 } }))).toBe('fuera');
+      // En +10 mm (oculta x > 0,01): A queda entera del lado visible y B la cruza.
+      expect(lado(A, con({ sagital: { mm: 10 } }))).toBe('dentro');
+      expect(lado(B, con({ sagital: { mm: 10 } }))).toBe('cruzada');
+      // Invertido, A queda entera del lado oculto.
+      expect(lado(A, con({ sagital: { mm: 10, invertido: true } }))).toBe('fuera');
+      expect(lado(B, con({ sagital: { mm: 10, invertido: true } }))).toBe('cruzada');
+    });
+    it('unión (R1.4): basta un plano que oculte la caja entera, aunque otro la deje entera del lado visible o la cruce', () => {
+      expect(lado(A, con({ sagital: { mm: 10 } }))).toBe('dentro');
+      expect(lado(A, con({ sagital: { mm: 10 }, coronal: { mm: 55, invertido: true } }))).toBe('fuera');
+      expect(lado(A, con({ sagital: { mm: -10 } }))).toBe('cruzada');
+      expect(lado(A, con({ sagital: { mm: -10 }, coronal: { mm: 55, invertido: true } }))).toBe('fuera');
+    });
+    it('"dentro" exige estar del lado visible de todos los planos activos', () => {
+      expect(lado(A, con({ sagital: { mm: 10 }, axial: { mm: 10 } }))).toBe('dentro');
+      expect(lado(A, con({ sagital: { mm: 10 }, axial: { mm: -30 } }))).toBe('cruzada');
+    });
+    it('un plano justo sobre una cara de la caja deja la pieza cruzada, sin relleno (borde)', () => {
+      const cortes = con({ sagital: { mm: 0 } });
+      expect(lado(A, cortes)).toBe('cruzada'); // mínimo 0: no es "dentro"
+      expect(lado(B, cortes)).toBe('cruzada'); // máximo 0: no es "fuera"
+      const s: EstadoRelleno = { cortes, ocultas: new Set(), aislar: null, soloEscaneada: false, cajas, rellenoApagado: false };
+      expect(mallasDeRelleno(A, [nodos[A]!.malla!], s, new Set([nodos[A]!.malla!]))).toEqual([]);
+    });
+    it('un plano inactivo que ocultaría la pieza no cuenta', () => {
+      const cortes = { ...con({ sagital: { mm: -10 } }), ...inactivo('coronal', 55, true) };
+      expect(lado(A, cortes)).toBe('cruzada');
+    });
+    it('una pieza del encéfalo sin caja con un corte activo es cruzada', () => {
+      const sinCaja = piezasBajo('g-brain').find((p) => !(p in cajas))!;
+      expect(sinCaja).toBeDefined();
+      expect(lado(sinCaja, con({ sagital: { mm: -10 } }))).toBe('cruzada');
+      expect(lado(sinCaja, cortesApagados())).toBe('sin');
+    });
+  });
+
+  describe('ladoAlDibujar (D2)', () => {
+    const lados: LadoCorte[] = ['sin', 'fuera', 'dentro', 'cruzada'];
+    it.each(lados)('en sitio devuelve el lado %s', (l) => {
+      expect(ladoAlDibujar(l, true)).toBe(l);
+    });
+    it.each(lados)('fuera de sitio devuelve "sin" si el lado es "sin" y "cruzada" si no (lado %s)', (l) => {
+      expect(ladoAlDibujar(l, false)).toBe(l === 'sin' ? 'sin' : 'cruzada');
+    });
+  });
+
+  describe('relleno y contorno (D4)', () => {
+    const mA = nodos[A]!.malla!;
+    const cerradas = new Set([mA]);
+    const estadoR = (cortes: Cortes, rellenoApagado = false): EstadoRelleno => ({ cortes, ocultas: new Set(), aislar: null, soloEscaneada: false, cajas, rellenoApagado });
+    // Sagital en -10 cruza A; el coronal en +55 invertido deja A entera del lado oculto (z hasta 0 < 0,05).
+    const cruzaA = con({ sagital: { mm: -10 } });
+    const cruzaYOculta = con({ sagital: { mm: -10 }, coronal: { mm: 55, invertido: true } });
+
+    it('una pieza cruzada por un plano y entera del lado oculto de otro no lleva relleno', () => {
+      expect(mallasDeRelleno(A, [mA], estadoR(cruzaA), cerradas)).toEqual([mA]); // control
+      expect(piezaConRelleno(A, estadoR(cruzaA))).toBe(true);
+      expect(mallasDeRelleno(A, [mA], estadoR(cruzaYOculta), cerradas)).toEqual([]);
+      expect(piezaConRelleno(A, estadoR(cruzaYOculta))).toBe(false);
+    });
+    it('con el relleno apagado tampoco lleva contorno', () => {
+      const ninguna = new Set<string>();
+      expect(piezasConContorno(estadoR(cruzaA, true), ninguna)).toEqual([A]); // control
+      // El coronal en +55 invertido oculta a A y a B (z hasta 0,08 cruza el plano en 0,05): solo B lo cruza.
+      expect(piezasConContorno(estadoR(con({ coronal: { mm: 55, invertido: true } }), true), ninguna)).toEqual([B]);
+      expect(piezasConContorno(estadoR(cruzaYOculta, true), ninguna)).toEqual([]);
+    });
   });
 });
 
