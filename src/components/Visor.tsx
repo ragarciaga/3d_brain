@@ -701,8 +701,10 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     if (camaraInicial && camaraInicial.length === 6) {
       const [a, b, c, d, e, f] = camaraInicial as [number, number, number, number, number, number];
       void controles.current?.setLookAt(a, b, c, d, e, f, false);
+      useAtlas.getState().setVistaActiva(null);
       return;
     }
+    useAtlas.getState().setVistaActiva(vistaInicial ?? null);
     const encefalo = piezasDeEntrada('g-brain');
     mirar(DIRECCIONES[vistaInicial ?? 'inicio'], cajaDe(encefalo), false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -739,7 +741,9 @@ function ControlCamara({ vistaInicial, camaraInicial }: { vistaInicial?: Vista; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedido]);
 
-  return <CameraControls ref={controles} makeDefault minDistance={0.01} maxDistance={3} dollySpeed={0.6} />;
+  // `control` solo lo emite la persona (arrastrar, rueda, pellizco); `setLookAt` no lo emite.
+  const alMoverAMano = () => useAtlas.getState().setVistaActiva(null);
+  return <CameraControls ref={controles} makeDefault minDistance={0.01} maxDistance={3} dollySpeed={0.6} onControl={alMoverAMano} />;
 }
 
 /** Baja el plano del recorrido hasta el nivel de la parada, con una animación corta. */

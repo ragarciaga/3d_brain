@@ -159,6 +159,9 @@ interface Estado {
   devolver(piezas: string[]): void;
   reensamblarTodo(): void;
   pedirCamara(p: Omit<PedidoCamara, 't'>): void;
+  /** La vista de la brújula en la que está la cámara; null cuando la persona la movió a mano. */
+  vistaActiva: Vista | null;
+  setVistaActiva(v: Vista | null): void;
   setRevisor(codigo: string | null): void;
   setRevisionBloqueada(v: boolean): void;
   setAutorizacion(a: Autorizacion | null): void;
@@ -251,6 +254,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   cajas: {},
   cargado: false,
   camara: null,
+  vistaActiva: null,
   revisor: null,
   revisionBloqueada: false,
   autorizacion: null,
@@ -392,7 +396,12 @@ export const useAtlas = create<Estado>((set, get) => ({
     set({ explosion: 0, separadas: {}, devueltas: new Set() });
     set(recalcularBase(get()));
   },
-  pedirCamara: (p) => set({ camara: { ...p, t: Date.now() + Math.random() } }),
+  // Una vista pedida queda marcada; encuadrar o ir a una malla conserva la dirección y, con ella, la marca;
+  // una pose libre (`camara`) la borra.
+  pedirCamara: (p) => set({ camara: { ...p, t: Date.now() + Math.random() }, vistaActiva: p.vista ?? (p.camara ? null : get().vistaActiva) }),
+  setVistaActiva: (v) => {
+    if (get().vistaActiva !== v) set({ vistaActiva: v });
+  },
   // Otro código es otro revisor: su autorización y su lectura del canal se vuelven a obtener.
   setRevisor: (codigo) => {
     if (codigo === get().revisor) return;
