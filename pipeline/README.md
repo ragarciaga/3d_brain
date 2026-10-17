@@ -115,8 +115,10 @@ npm test                                        # tests/asimetrias.test.ts: las 
 - La app dibuja las rutas como tubos punteados en tiempo de ejecución (no van al GLB), con aviso,
   leyenda y filtro (SPEC F25). Lo que sí toca el GLB es el recorte del tramo torácico escaneado
   (ADR 0010), con el pipeline y `check:modelo`.
-- `pipeline/anclajes-vago.json` entra al repositorio junto con la implementación del ADR 0010: con
-  el modelo actual, la prueba de asimetrías falla (el espejo), como debe.
+- `pipeline/anclajes-vago.json` ya está en el repositorio, generado por `auditar-vago.py` desde el
+  commit fijado de Z-Anatomy (idéntico byte a byte en dos corridas). Con el tronco recortado y las
+  cinco rutas publicadas, las cuatro asimetrías pasan en `npm test`; sobre el escaneado solo, la 4 falla
+  (el espejo).
 
 En Windows (PowerShell), desde la carpeta del repositorio:
 
