@@ -1,6 +1,6 @@
 // Panel del trazo del vago (F24): qué ramo es la malla seleccionada, con la propuesta de la auditoría
-// del modelo (cuando es una sola opción de la lista) y su confianza, evidencia y fuente, un comentario
-// opcional y "Siguiente trazo".
+// del modelo (cuando es una sola opción de la lista) y su confianza, o "Sin propuesta"; la evidencia y la
+// fuente de la regla salen con o sin propuesta. Después, un comentario opcional y "Siguiente trazo".
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras } from '../data/atlas';

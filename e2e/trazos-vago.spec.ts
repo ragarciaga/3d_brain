@@ -70,7 +70,9 @@ const nombreDePropuesta = (id: string) => {
   const n = estructurasJson[id]!.nombre;
   return n.es !== 'PENDIENTE' ? n.es : n.en;
 };
-const tituloDe = (malla: string) => `Trazo ${/#t(\d+)$/.exec(malla)![1]} del vago ${malla.includes('.l#') ? 'izquierdo' : 'derecho'}`;
+/** Lo mismo en inglés (revision.noEsRamo de en.json, o `nombre.en` del marcador). */
+const nombreDePropuestaEn = (id: string) => (id === 'no_es_ramo' ? 'Not a branch (trunk or rootlet)' : estructurasJson[id]!.nombre.en);
+const tituloDe =(malla: string) => `Trazo ${/#t(\d+)$/.exec(malla)![1]} del vago ${malla.includes('.l#') ? 'izquierdo' : 'derecho'}`;
 
 async function abrir(page: Page, ruta: string) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
@@ -281,7 +283,7 @@ test('el panel del trazo muestra la propuesta con confianza, evidencia y fuente 
   await expect(page.getByTestId('trazo-evidencia')).toHaveText(con.evidencia!.en);
   await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confidence: ${confianzaEn[con.confianza!]}`);
   await expect(page.getByTestId('trazo-fuente')).toHaveText(`Rule source: ${con.fuente}`);
-  await expect(panel(page).getByText(/^The model audit proposes: /)).toBeVisible();
+  await expect(panel(page).getByText(`The model audit proposes: ${nombreDePropuestaEn(con.propuesta!)}`, { exact: true })).toBeVisible();
   await expect(page.getByTestId('trazo-evidencia')).not.toContainText(con.evidencia!.es);
 
   // Sin propuesta: evidencia y "Sin propuesta", sin línea de confianza ni botón "Correcto, es lo propuesto".
