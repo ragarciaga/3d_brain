@@ -99,7 +99,7 @@ Eje anterior medido: +Z (centro de la tráquea en z = −1,8 mm, del esófago en
 
 | # | Qué se comprueba | Escaneado (`npm test`) | Borrador (`generar-ramas-vago.py --borrador`) | Publicado (`rutas-vago.json` y tronco recortado) |
 |---|---|---|---|---|
-| 1 | Recurrente derecho bajo la subclavia derecha | no aplica (ruta trazada) | pasa: 5,6 mm por debajo y sube 51,2 mm | pasa: 5,6 mm por debajo de la subclavia derecha y sube 51,2 mm |
+| 1 | Recurrente derecho bajo la subclavia derecha | no aplica (ruta trazada) | pasa: 5,6 mm por debajo y sube 51,2 mm | pasa: 4,7 mm por debajo de la subclavia derecha y sube 46,0 mm (el paso pasa por la subclavia junto al origen de la carótida común derecha, `punto: cerca_de`; el punto más bajo de toda la malla de la subclavia es su extremo lateral, a casi 8 cm de la línea media, lejos del vago) |
 | 2 | Recurrente izquierdo rodea el arco junto al ligamento | no aplica (ruta trazada) | pasa: 13,3 mm por debajo del arco, sube 87,6 mm, a 13,1 mm del ganglio del ligamento | pasa: 13,5 mm por debajo del arco aórtico, sube 87,6 mm, a 14,4 mm del ganglio del ligamento arterioso |
 | 3 | Vago izquierdo delante del arco y detrás del bronquio izquierdo | no aplica (necesita la ruta distal) | falla: cruza el arco 0,5 mm "por detrás"; sí pasa detrás del bronquio izquierdo | pasa: cruza el arco 34,1 mm por delante; pasa por detrás del bronquio principal izquierdo |
 | 4 | Vago derecho detrás del bronquio derecho y del esófago | falla | falla (es la misma geometría escaneada) | pasa: por detrás del bronquio principal derecho; por detrás del esófago 5 cm sobre su final |

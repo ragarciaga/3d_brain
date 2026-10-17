@@ -96,9 +96,14 @@ rutas:
       - desde_ruta:
           ruta: vago_toracico_derecho
           a_la_altura_de: { anclaje: "Right subclavian artery", punto: mas_alto }
-      # Pasa por debajo de la subclavia derecha (asimetría 1).
+      # Pasa por debajo de la subclavia derecha (asimetría 1), en su primer tramo, junto al origen de la
+      # carótida común derecha, que es donde el vago derecho la cruza. No se usa el punto más bajo de toda
+      # la malla de la subclavia: en el modelo es su extremo lateral, a casi 8 cm de la línea media, lejos
+      # del vago. Fuentes: las de la lista `fuentes` de este archivo (Allen y Fakoya, StatPearls). La
+      # posición exacta sobre la arteria queda pendiente de revisión docente.
       - anclaje: "Right subclavian artery"
-        punto: mas_bajo
+        punto: cerca_de
+        cerca_de: "Right common carotid artery"
         rodear: debajo
       # Sube por el surco traqueoesofágico derecho.
       - surco: derecho
