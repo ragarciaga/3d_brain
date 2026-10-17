@@ -38,6 +38,20 @@ describe('docs/guia-docentes.md', () => {
   });
 });
 
+describe('docs/guia-docentes.md: equipo compartido (#149)', () => {
+  // La frase puede partirse en varias líneas: se compara con los saltos de línea como espacios.
+  const texto = leer('docs/guia-docentes.md').replace(/\s+/g, ' ');
+
+  it('aconseja salir con "Borrar también de este equipo" y nombra historial, formulario de Google, Descargas y portapapeles', () => {
+    expect(texto).toContain('"Salir del modo revisión" marcando "Borrar también de este equipo"');
+    for (const parte of ['historial del navegador', 'páginas del formulario de Google', 'Descargas', 'portapapeles']) expect(texto, parte).toContain(parte);
+  });
+
+  it('la ventana privada se sugiere solo para revisar y dice que no borra las descargas ni el portapapeles', () => {
+    expect(texto).toContain('Una ventana privada sirve para revisar, pero tampoco borra las descargas ni el portapapeles');
+  });
+});
+
 describe('docs/revision-docente.md', () => {
   const texto = leer('docs/revision-docente.md');
 

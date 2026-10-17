@@ -23,13 +23,16 @@ import {
   type EstadoCola,
   type ResultadoEnvio,
 } from '../lib/colaGuardado';
+import { claveGuiaVista, claveRevisionIdb } from '../lib/huella';
 import { nombre, nombrePendiente } from '../lib/nombres';
+import { codigoRetirado } from '../lib/persistencia';
 import { avanceDeFicha, avanceGlobal, ordenDeRevision } from '../lib/prioridad';
 import {
   claveRespuesta,
   confirmarParte,
   desactualizadas,
   formularioConfigurado,
+  nombreArchivoParte,
   partesEnvio,
   pendientesDeEnvio,
   respuestaCompleta,
@@ -43,24 +46,23 @@ import DialogoAutorizacion from './DialogoAutorizacion';
 import SeccionTrazos from './SeccionTrazos';
 import { useMovil } from './useMovil';
 
-const claveIdb = (codigo: string) => `revision:${codigo}`;
 const versionActual = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
-const claveGuia = (codigo: string) => `atlas:guia-vista:${codigo}`;
 type Vista = 'que' | 'como' | 'enviar' | null;
 const ID_TITULO = 'dialogo-revision-titulo'; // solo hay un diálogo abierto a la vez
 const idEstructuraValido = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
 
 function guiaVista(codigo: string): boolean {
   try {
-    return localStorage.getItem(claveGuia(codigo)) === '1';
+    return localStorage.getItem(claveGuiaVista(codigo)) === '1';
   } catch {
     return true; // sin almacenamiento no se insiste: la guía queda a un toque
   }
 }
 
 function marcarGuiaVista(codigo: string) {
+  if (codigoRetirado(codigo)) return; // otra pestaña salió y borró: no se recrea la llave
   try {
-    localStorage.setItem(claveGuia(codigo), '1');
+    localStorage.setItem(claveGuiaVista(codigo), '1');
   } catch {
     /* nada que guardar */
   }
@@ -98,7 +100,7 @@ export default function PanelRevision({
   useEffect(() => {
     if (!revisor) return;
     let vigente = true;
-    get(claveIdb(revisor))
+    get(claveRevisionIdb(revisor))
       .then(
         (
           guardado:
@@ -157,7 +159,8 @@ export default function PanelRevision({
 
   useEffect(() => {
     if (!revisor || cargadoDe !== revisor) return;
-    set(claveIdb(revisor), { respuestas, confirmadas, autorizacion }).catch(() => undefined);
+    if (codigoRetirado(revisor)) return; // otra pestaña salió y borró: no se recrea el registro
+    set(claveRevisionIdb(revisor), { respuestas, confirmadas, autorizacion }).catch(() => undefined);
   }, [revisor, respuestas, confirmadas, autorizacion, cargadoDe]);
 
   // Guardado automático por el canal (R3.1 a R3.5). Solo con `urlCanal`, con la lectura del canal resuelta y con una
@@ -737,7 +740,7 @@ export default function PanelRevision({
                         <button
                           type="button"
                           onClick={async () => {
-                            await copiarODescargar(parte.carga, `revision-${revisor}-parte-${i + 1}.json`);
+                            await copiarODescargar(parte.carga, nombreArchivoParte(i + 1));
                             marcar(i, 'abierta');
                           }}
                         >

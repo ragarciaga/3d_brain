@@ -177,6 +177,15 @@ export function cargaRevisionV2(codigo: string, respuestas: Respuesta[]): string
 }
 
 /**
+ * Nombre del archivo que se descarga con una parte de la revisión. No lleva el código (#149): el nombre queda en
+ * Descargas y en el historial de descargas. El contenido (`cargaRevisionV2`) sí conserva `r`, porque `expandirV2`
+ * de `scripts/lib/revisiones.ts` lo exige.
+ */
+export function nombreArchivoParte(n: number): string {
+  return `revision-parte-${n}.json`;
+}
+
+/**
  * URL prellenada con una carga `v:2`. El campo Estructura lleva los ids únicos separados por coma.
  * No revisa el largo y supone el formulario configurado.
  */

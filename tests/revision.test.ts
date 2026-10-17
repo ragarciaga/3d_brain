@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   cambiosDeTexto,
@@ -11,6 +12,7 @@ import {
   ESPERA_GUARDADO_MS,
   fechaValida,
   MAX_URL,
+  nombreArchivoParte,
   partesEnvio,
   pendientesComoCorrectas,
   pendientesDeEnvio,
@@ -444,5 +446,25 @@ describe('fechaValida (entrada externa)', () => {
     ['un texto ilegible', 'ayer'],
   ])('rechaza %s', (_n, valor) => {
     expect(fechaValida(valor)).toBe(false);
+  });
+});
+
+describe('nombre del archivo de una parte (#149)', () => {
+  it('no lleva el código: revision-parte-<n>.json', () => {
+    expect(nombreArchivoParte(2)).toBe('revision-parte-2.json');
+    expect(nombreArchivoParte(1)).toBe('revision-parte-1.json');
+  });
+
+  it('PanelRevision.tsx lo usa y no arma el nombre con el código', () => {
+    const fuente = readFileSync('src/components/PanelRevision.tsx', 'utf8');
+    expect(fuente).toContain('nombreArchivoParte(i + 1)');
+    expect(fuente).not.toContain('revision-${revisor}');
+    expect(fuente).not.toMatch(/`revision-\$\{[^}]*\}-parte/);
+  });
+
+  it('el contenido sigue llevando el código (r), que el importador exige', () => {
+    const carga = JSON.parse(cargaRevisionV2('ABC', [r('que_es.es')])) as { v: number; r: string };
+    expect(carga.v).toBe(2);
+    expect(carga.r).toBe('ABC');
   });
 });

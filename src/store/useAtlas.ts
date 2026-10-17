@@ -121,6 +121,7 @@ interface Estado {
   camara: PedidoCamara | null;
   // Modo revisión (F24)
   revisor: string | null;
+  revisionBloqueada: boolean; // la app no pudo abrir el modo revisión en esta pestaña (beacon que no se quitó con una recarga)
   autorizacion: Autorizacion | null; // vigente para el revisor actual; null es "falta autorizar o no se sabe"
   lecturaCanal: LecturaCanal; // estado del canal para el revisor actual: la lectura inicial `leer`, y `inactivo` también por `autorizar` o `guardar`
   respuestas: Record<string, Respuesta>;
@@ -159,6 +160,7 @@ interface Estado {
   reensamblarTodo(): void;
   pedirCamara(p: Omit<PedidoCamara, 't'>): void;
   setRevisor(codigo: string | null): void;
+  setRevisionBloqueada(v: boolean): void;
   setAutorizacion(a: Autorizacion | null): void;
   setLecturaCanal(l: LecturaCanal): void;
   /**
@@ -250,6 +252,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   cargado: false,
   camara: null,
   revisor: null,
+  revisionBloqueada: false,
   autorizacion: null,
   lecturaCanal: 'pendiente',
   respuestas: {},
@@ -395,6 +398,9 @@ export const useAtlas = create<Estado>((set, get) => ({
     if (codigo === get().revisor) return;
     set({ revisor: codigo, autorizacion: null, lecturaCanal: 'pendiente' });
   },
+  setRevisionBloqueada: (v) => {
+    if (get().revisionBloqueada !== v) set({ revisionBloqueada: v });
+  },
   setAutorizacion: (a) => set({ autorizacion: a }),
   setLecturaCanal: (l) => set({ lecturaCanal: l }),
   // La usan el diálogo de autorización al aceptar y la casilla del vago del menú Acciones (spec 03, R5.3).
@@ -485,6 +491,14 @@ export const useAtlas = create<Estado>((set, get) => ({
     if (get().panelRecorrido !== px) set({ panelRecorrido: px });
   },
 }));
+
+/** Sale del modo revisión en memoria: sin código, sin respuestas y sin ubicación pendiente. No toca almacenes. */
+export function dejarModoRevision(): void {
+  const s = useAtlas.getState();
+  s.setRevisor(null);
+  s.cargarRespuestas({});
+  s.setUbicando(null);
+}
 
 /** Piezas que resalta la selección actual. */
 export function piezasSeleccionadas(s: Seleccion): string[] {
