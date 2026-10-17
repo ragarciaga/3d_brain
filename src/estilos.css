@@ -915,6 +915,10 @@ a {
 
 .brujula .b-centro {
   grid-area: 2 / 2;
+}
+
+/* La vista en la que está la cámara; se apaga cuando la persona la mueve a mano (#213). */
+.brujula button.activo {
   background: var(--acento);
   color: var(--acento-texto);
   border-color: var(--acento);
