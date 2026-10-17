@@ -174,6 +174,28 @@ describe('textos de los botones de revisión', () => {
       expect(revision.salirTexto).toContain(idioma === 'es' ? 'quedan guardadas en este navegador' : 'stay saved in this browser');
     });
 
+    it(`la salida (${idioma}) ofrece "Borrar también de este equipo" y advierte de historial, Descargas, formulario y portapapeles`, () => {
+      const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
+      const ayuda = revision.salirBorrarAyuda!;
+      if (idioma === 'es') {
+        expect(revision.salirBorrar).toBe('Borrar también de este equipo');
+        for (const parte of ['historial', 'Descargas', 'formulario de Google', 'portapapeles', 'ventana privada']) expect(ayuda, parte).toContain(parte);
+        expect(ayuda).toMatch(/No borra[^:]*historial[^:]*Descargas[^:]*portapapeles/);
+        expect(ayuda).toMatch(/ventana privada[^.]*tampoco borra las descargas ni el portapapeles/);
+      } else {
+        expect(revision.salirBorrar).toBe('Also delete from this device');
+        for (const parte of ['history', 'Downloads', 'Google Form', 'clipboard', 'private window']) expect(ayuda, parte).toContain(parte);
+        expect(ayuda).toMatch(/does not delete your link from the browser history[^:]*Downloads[^:]*clipboard/);
+        expect(ayuda).toMatch(/private window[^.]*does not delete the downloads or the clipboard either/);
+      }
+      expect(revision.bloqueadaBeacon?.trim()).toBeTruthy();
+      if (idioma === 'es') expect(revision.bloqueadaBeacon).toContain('No pudimos abrir el modo revisión en esta pestaña');
+      for (const clave of ['salirBorrar', 'salirBorrarAyuda', 'bloqueadaBeacon']) {
+        expect(revision[clave], clave).not.toMatch(/irreversible|no se puede recuperar|cannot be recovered|secret/i);
+        expect(revision[clave], clave).not.toContain('\u2014');
+      }
+    });
+
     it(`el título de la confirmación (${idioma}) nombra la acción del botón`, () => {
       const { revision } = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as { revision: Revision };
       expect(revision.salirTitulo!.toLowerCase()).toContain(revision.salir!.toLowerCase());
@@ -287,6 +309,22 @@ describe('página Privacidad (#168)', () => {
 
     it(`(${idioma}) dice qué recoge Cloudflare de los visitantes y que no usa cookies`, () => {
       dice('visitas', 'Cloudflare', 'referrer', 'cookies', ...(es ? ['dirección IP', 'agente de usuario'] : ['IP address', 'user agent']));
+    });
+
+    it(`(${idioma}) el aviso del conteo vale por página y no promete lo que no cumple (#149)`, () => {
+      const v = p['visitas']!;
+      if (es) {
+        expect(v).toContain(
+          'Este conteo no se carga en las páginas que abres en modo revisión ni mientras tu navegador recuerde tu código. Una página del atlas que ya estaba abierta antes de abrir tu enlace de revisión puede enviar su conteo, también al cerrarla o recargarla.',
+        );
+        expect(v).not.toMatch(/está o estuvo|mientras tu navegador esté en modo revisión/);
+      } else {
+        expect(v).toContain(
+          'This counting is not loaded on pages you open in review mode or while your browser remembers your code. An atlas page that was already open before you opened your review link may send its count, including when you close or reload it.',
+        );
+        expect(v).not.toMatch(/is or was|while your browser is in review mode/);
+      }
+      expect(v).not.toMatch(/irreversible|no se puede recuperar|cannot be recovered/i);
     });
 
     it(`(${idioma}) dice qué recoge de los revisores y cómo se publica`, () => {

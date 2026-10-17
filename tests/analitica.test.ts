@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { Plugin } from 'vite';
 import { afterEach, describe, expect, it } from 'vitest';
+import { ATRIBUTO_BEACON, ATRIBUTO_DOCUMENTO, beaconCargado, decidirAdopcion, MARCA_RECARGA, SELECTOR_BEACON } from '../src/lib/analitica';
 import config from '../vite.config.ts';
 
 const raiz = resolve('.');
@@ -43,6 +44,12 @@ interface Creado {
   setAttribute(nombre: string, valor: string): void;
 }
 
+interface Ejecucion {
+  scripts: Creado[];
+  /** Atributos que el cargador puso en `<html>`. */
+  html: Record<string, string>;
+}
+
 interface Entorno {
   /** Valor de `atlas:revisor` en localStorage; `'lanza'` hace que el acceso al almacén lance. */
   local?: string | 'lanza';
@@ -51,8 +58,9 @@ interface Entorno {
 }
 
 /** Corre el cargador contra `location`, `document` y `window` falsos y devuelve los `<script>` que habría agregado al head. */
-function ejecutar(codigo: string, pathname: string, search: string, entorno: Entorno = {}): Creado[] {
+function ejecutarCompleto(codigo: string, pathname: string, search: string, entorno: Entorno = {}): Ejecucion {
   const agregados: Creado[] = [];
+  const html: Record<string, string> = {};
   const documento = {
     referrer: entorno.referrer ?? '',
     createElement: () => {
@@ -65,6 +73,11 @@ function ejecutar(codigo: string, pathname: string, search: string, entorno: Ent
       return el;
     },
     head: { appendChild: (el: Creado) => agregados.push(el) },
+    documentElement: {
+      setAttribute: (nombre: string, valor: string) => {
+        html[nombre] = valor;
+      },
+    },
   };
   const almacen = (valor: string | undefined) => {
     if (valor === 'lanza') throw new Error('almacenamiento bloqueado');
@@ -79,7 +92,11 @@ function ejecutar(codigo: string, pathname: string, search: string, entorno: Ent
     },
   };
   new Function('location', 'document', 'window', codigo)({ pathname, search }, documento, ventana);
-  return agregados;
+  return { scripts: agregados, html };
+}
+
+function ejecutar(codigo: string, pathname: string, search: string, entorno: Entorno = {}): Creado[] {
+  return ejecutarCompleto(codigo, pathname, search, entorno).scripts;
 }
 
 describe('beacon de Cloudflare Web Analytics (D1)', () => {
@@ -117,7 +134,7 @@ describe('beacon de Cloudflare Web Analytics (D1)', () => {
     expect(ejecutar(cargadorInline(transformar(HTML_FALSO)), pathname, search)).toHaveLength(0);
   });
 
-  describe('navegador que es o fue modo revisión (el código no sale hacia Cloudflare)', () => {
+  describe('navegador que recuerda un código de revisor (el código no sale hacia Cloudflare)', () => {
     const cargador = () => cargadorInline(transformar(HTML_FALSO));
 
     it('con un revisor recordado en localStorage no carga el beacon, ni en una ruta normal', () => {
@@ -141,7 +158,7 @@ describe('beacon de Cloudflare Web Analytics (D1)', () => {
       expect(ejecutar(cargador(), '/es', '', { local: 'lanza', session: 'ABC123' })).toHaveLength(0);
     });
 
-    it('con un referrer que trae ?r= no carga el beacon (pestaña nueva desde la URL de revisión)', () => {
+    it('con un referrer completo que trae ?r= no carga el beacon (defensa de reserva: strict-origin lo reduce al origen)', () => {
       expect(ejecutar(cargador(), '/es/licencia', '', { referrer: 'https://brain.maysasp.com/es/hipocampo?r=ABC123' })).toHaveLength(0);
     });
 
@@ -155,6 +172,26 @@ describe('beacon de Cloudflare Web Analytics (D1)', () => {
       expect(ejecutar(cargador(), '/es', '', { referrer: 'https://www.google.com/' })).toHaveLength(1);
       expect(ejecutar(cargador(), '/es', '', { referrer: '' })).toHaveLength(1);
       expect(ejecutar(cargador(), '/es', '', { referrer: 'no es una url' })).toHaveLength(1);
+    });
+  });
+
+  describe('marca en <html> y vínculo con src/lib/analitica.ts (#149)', () => {
+    const cargador = () => cargadorInline(transformar(HTML_FALSO));
+
+    it('al crear el script marca <html> con data-beacon-cargado="1", con los nombres que lee la app', () => {
+      const { scripts, html } = ejecutarCompleto(cargador(), '/es', '');
+      expect(scripts).toHaveLength(1);
+      expect(Object.keys(scripts[0]!.attrs)).toContain(ATRIBUTO_BEACON);
+      expect(html[ATRIBUTO_DOCUMENTO]).toBe('1');
+      expect(ATRIBUTO_BEACON).toBe('data-cf-beacon');
+      expect(ATRIBUTO_DOCUMENTO).toBe('data-beacon-cargado');
+      expect(SELECTOR_BEACON).toBe(`script[${ATRIBUTO_BEACON}]`);
+    });
+
+    it('si no crea el script (ruta de revisión, ?r= o código recordado), tampoco marca <html>', () => {
+      expect(ejecutarCompleto(cargador(), '/es/revision', '').html).toEqual({});
+      expect(ejecutarCompleto(cargador(), '/es', '?r=X').html).toEqual({});
+      expect(ejecutarCompleto(cargador(), '/es', '', { local: 'ABC123' }).html).toEqual({});
     });
   });
 
@@ -197,5 +234,120 @@ describe('solo en producción (D2)', () => {
   it('index.html fuente pide strict-origin como referrer, para que el código de revisión no viaje en él', () => {
     const html = readFileSync(join(raiz, 'index.html'), 'utf8');
     expect(html).toMatch(/<meta name="referrer" content="strict-origin" \/>/);
+  });
+});
+
+describe('beaconCargado (#149)', () => {
+  const doc = (script: boolean, atributo: string | null) => ({
+    querySelector: (sel: string) => (script && sel === SELECTOR_BEACON ? ({} as Element) : null),
+    documentElement: { getAttribute: (n: string) => (n === ATRIBUTO_DOCUMENTO ? atributo : null) } as unknown as HTMLElement,
+  });
+  it('true con el script del beacon', () => {
+    expect(beaconCargado(doc(true, null))).toBe(true);
+  });
+  it('true con solo la marca en <html>', () => {
+    expect(beaconCargado(doc(false, '1'))).toBe(true);
+  });
+  it('false sin ninguna de las dos o con otro valor', () => {
+    expect(beaconCargado(doc(false, null))).toBe(false);
+    expect(beaconCargado(doc(false, '0'))).toBe(false);
+  });
+  it('false sin documento', () => {
+    expect(beaconCargado(null)).toBe(false);
+  });
+});
+
+describe('decidirAdopcion (#149)', () => {
+  const sesion = (inicial: Record<string, string> = {}) => {
+    const m = new Map(Object.entries(inicial));
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) };
+  };
+  it('sin beacon adopta y borra la marca de recarga', () => {
+    const s = sesion({ [MARCA_RECARGA]: '1' });
+    expect(decidirAdopcion(false, s)).toBe('adoptar');
+    expect(s.getItem(MARCA_RECARGA)).toBeNull();
+  });
+  it('sin beacon adopta aunque la sesión sea null o lance', () => {
+    expect(decidirAdopcion(false, null)).toBe('adoptar');
+    const peta = () => {
+      throw new Error('bloqueado');
+    };
+    expect(decidirAdopcion(false, { getItem: peta, setItem: peta, removeItem: peta })).toBe('adoptar');
+  });
+  it('con beacon y sin marca recarga y deja la marca en 1', () => {
+    const s = sesion();
+    expect(decidirAdopcion(true, s)).toBe('recargar');
+    expect(s.getItem(MARCA_RECARGA)).toBe('1');
+  });
+  it('con beacon y la marca ya puesta bloquea (una sola recarga)', () => {
+    expect(decidirAdopcion(true, sesion({ [MARCA_RECARGA]: '1' }))).toBe('bloquear');
+  });
+  it('con beacon y setItem que lanza, o que no deja la marca, bloquea', () => {
+    expect(
+      decidirAdopcion(true, {
+        getItem: () => null,
+        setItem: () => {
+          throw new Error('lleno');
+        },
+        removeItem: () => undefined,
+      }),
+    ).toBe('bloquear');
+    expect(decidirAdopcion(true, { getItem: () => null, setItem: () => undefined, removeItem: () => undefined })).toBe('bloquear');
+  });
+  it('con beacon y sin sessionStorage bloquea', () => {
+    expect(decidirAdopcion(true, null)).toBe('bloquear');
+  });
+  it('un intento nuevo (tras adoptar sin beacon) vuelve a poder recargar una vez', () => {
+    const s = sesion();
+    expect(decidirAdopcion(true, s)).toBe('recargar');
+    expect(decidirAdopcion(true, s)).toBe('bloquear');
+    expect(decidirAdopcion(false, s)).toBe('adoptar');
+    expect(decidirAdopcion(true, s)).toBe('recargar');
+  });
+});
+
+describe('ADR 0015 dice lo que el código hace (#149)', () => {
+  const adr = readFileSync(join(raiz, 'docs/adr/0015-analitica-sin-cookies.md'), 'utf8').replace(/\s+/g, ' ');
+  const design = readFileSync(join(raiz, 'docs/specs/03-review-return-channel/design.md'), 'utf8');
+
+  it('ya no promete que el beacon nunca se carga en el navegador de un revisor ni que no se mide nada', () => {
+    expect(adr).not.toContain('nunca se carga en un navegador que está o estuvo en modo revisión');
+    expect(adr).not.toContain('en las visitas de ese navegador mientras sea revisor no se mide nada');
+    expect(adr).not.toContain('y el navegador de un revisor no lo carga');
+    expect(adr).not.toContain('hasta que sale del modo revisión');
+  });
+
+  it('dice el alcance por página, la recarga con tope y la URL sin código', () => {
+    expect(adr).toContain('Alcance por página');
+    expect(adr).toContain('una página abierta antes conserva su beacon');
+    expect(adr).toContain('puede enviar su conteo final al cerrarse o recargarse, también por la recarga');
+    expect(adr).toContain('como mucho una recarga por intento de adopción');
+    expect(adr).toContain('Atrás no vuelve a la URL con el código, pero el historial del navegador conserva la URL visitada');
+    expect(adr).toContain('desde la siguiente carga de página el beacon vuelve a cargarse');
+  });
+
+  it('la confianza aceptada admite que un script viejo puede leer el código recordado', () => {
+    expect(adr).toContain('puede leer el código recordado');
+    expect(adr).toContain('cerrar las pestañas viejas');
+  });
+
+  it('el referrer es solo una defensa de reserva y Revisit when reconoce el GET de leer', () => {
+    expect(adr).toContain('solo una defensa de reserva');
+    expect(adr).toContain('`leer` iba por GET');
+    expect(adr).toContain('desde #169 va por POST');
+  });
+
+  it('ni el ADR ni el diseño dicen que la huella sea irreversible o secreta', () => {
+    expect(adr).not.toMatch(/irreversible|es secreta/i);
+    const lineaHuella = design.split('\n').find((l) => l.includes('huella'))!;
+    expect(lineaHuella).toContain('no es secreta');
+    expect(lineaHuella).not.toMatch(/irreversible/i);
+  });
+
+  it('no usa el guion largo ni la frase retirada sobre la barra y el historial', () => {
+    for (const texto of [adr, design]) {
+      expect(texto).not.toContain('\u2014');
+      expect(texto).not.toContain('el código no queda en la barra ni en el historial');
+    }
   });
 });

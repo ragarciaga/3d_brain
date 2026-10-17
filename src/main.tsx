@@ -9,7 +9,8 @@ import { configRevision } from './config/revision';
 import { camaraActual, cortesVisor, marcadoresDePrueba } from './components/Visor';
 import { alturaRecorte } from './components/recorte';
 import i18n, { idiomaDelNavegador } from './i18n';
-import { useAtlas } from './store/useAtlas';
+import { escucharRetiroDelCodigo } from './lib/persistencia';
+import { dejarModoRevision, useAtlas } from './store/useAtlas';
 import './estilos.css';
 import { MARCA_INICIO_APP } from './lib/medicion';
 import { esPrivacidad } from './lib/paginas';
@@ -73,6 +74,9 @@ if (import.meta.env.DEV) {
   };
   if (typeof w.__urlCanalInicial === 'string') configRevision.urlCanal = w.__urlCanalInicial;
 }
+
+// Salir o cambiar de código en otra pestaña saca a esta del modo revisión (#149, S3).
+escucharRetiroDelCodigo(() => useAtlas.getState().revisor, dejarModoRevision);
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 

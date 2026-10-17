@@ -1,6 +1,7 @@
 // Modo revisión: código recordado y almacenamiento persistente (#60). Helpers propios para no depender de
 // atlas.spec.ts.
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { claveRevisionIdb } from '../src/lib/huella';
 import { protegerCanalReal } from './canal-real';
 
 protegerCanalReal();
@@ -25,12 +26,12 @@ const guardadas = (page: Page, codigo: string) =>
         abrirDb.onsuccess = () => {
           const db = abrirDb.result;
           if (!db.objectStoreNames.contains('keyval')) return resolver(null);
-          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(c);
           pedido.onsuccess = () => resolver(pedido.result?.respuestas ?? null);
           pedido.onerror = () => resolver(null);
         };
       }),
-    codigo,
+    claveRevisionIdb(codigo),
   );
 
 const persistencias = (page: Page) => page.evaluate(() => (window as unknown as { __persistencia: number }).__persistencia);
