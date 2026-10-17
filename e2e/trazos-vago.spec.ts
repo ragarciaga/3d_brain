@@ -31,12 +31,42 @@ interface VentanaAtlas {
 const mallas = Object.keys((JSON.parse(readFileSync('pipeline/cajas.json', 'utf8')) as { cajas: Record<string, unknown> }).cajas);
 const trazos = mallas.filter((n) => /#t\d+$/.test(n)).sort();
 const TOTAL = trazos.length;
-const L00 = 'Vagus nerve (X).l#t00';
-const L01 = 'Vagus nerve (X).l#t01';
-const L02 = 'Vagus nerve (X).l#t02';
 const R20 = 'Vagus nerve (X).r#t20';
 const claveDe = (malla: string) => `vagus-nerve-x|trazo:${malla}|`;
-const FARINGEO = 'm-pharyngeal-branch-of-vagus-nerve';
+
+// Los trazos que prueba el recorrido salen de los datos que aprueba el editor, no de nombres escritos aquí: la
+// auditoría de pipeline/auditar-vago.py decide cuál no tiene propuesta, cuál tiene un ramo y cuál no es ramo.
+const datosTrazos = (JSON.parse(readFileSync('src/data/trazos-vago.json', 'utf8')) as { trazos: { malla: string; propuesta: string | null }[] }).trazos;
+const estructurasJson = (
+  JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as { estructuras: Record<string, { nombre: { es: string; en: string } }> }
+).estructuras;
+const NO_ES_RAMO = 'No es un ramo (tronco o raicilla)'; // revision.noEsRamo en es.json
+const enOrden = (malla: string) => datosTrazos.find((t) => t.malla === malla)!;
+/** Falla con un mensaje claro si los datos no traen el trazo que el recorrido necesita. */
+function exigir(malla: string | undefined, cual: string): string {
+  if (malla === undefined) throw new Error(`src/data/trazos-vago.json no trae ${cual}: el recorrido de trazos lo necesita`);
+  return malla;
+}
+const SIN = exigir(
+  trazos.find((m) => enOrden(m).propuesta === null),
+  'ningún trazo sin propuesta',
+);
+const NO_ES = exigir(
+  trazos.find((m) => enOrden(m).propuesta === 'no_es_ramo'),
+  'ningún trazo con propuesta no_es_ramo',
+);
+// Con un ramo de la lista; si la corrida no trae ninguno, el siguiente no_es_ramo.
+const CON = exigir(
+  trazos.find((m) => ![null, 'no_es_ramo'].includes(enOrden(m).propuesta)) ?? trazos.find((m) => m !== NO_ES && enOrden(m).propuesta === 'no_es_ramo'),
+  'ningún trazo con un ramo de la lista ni un segundo no_es_ramo',
+);
+/** Lo que la interfaz escribe tras "La auditoría del modelo propone:" para una propuesta, en español. */
+const nombreDePropuesta = (id: string) => {
+  if (id === 'no_es_ramo') return NO_ES_RAMO;
+  const n = estructurasJson[id]!.nombre;
+  return n.es !== 'PENDIENTE' ? n.es : n.en;
+};
+const tituloDe = (malla: string) => `Trazo ${/#t(\d+)$/.exec(malla)![1]} del vago ${malla.includes('.l#') ? 'izquierdo' : 'derecho'}`;
 
 async function abrir(page: Page, ruta: string) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
@@ -93,6 +123,18 @@ async function entrar(page: Page, codigo: string) {
   await expect(page.getByTestId('como-revisar')).toHaveCount(0);
 }
 
+/** Pulsa "Siguiente trazo" hasta que el trazo seleccionado sea `malla`; como mucho TOTAL pulsaciones. */
+async function avanzarHasta(page: Page, malla: string) {
+  const siguiente = panel(page).getByRole('button', { name: 'Siguiente trazo' });
+  for (let i = 0; i < TOTAL; i++) {
+    const actual = (await seleccion(page)).malla;
+    if (actual === malla) return;
+    await siguiente.click();
+    await expect.poll(async () => (await seleccion(page)).malla).not.toBe(actual);
+  }
+  await expect.poll(async () => (await seleccion(page)).malla).toBe(malla);
+}
+
 /** Abre "Qué revisar" y la sección de trazos (cerrada por defecto). */
 async function abrirSeccion(page: Page) {
   // En celular los botones de la barra están en el menú "Acciones".
@@ -125,16 +167,18 @@ test('trazos del vago desde "Qué revisar": se abren, se recorren con "Siguiente
   await expect(queRevisar(page)).toHaveCount(0);
   await expect(page).toHaveURL(/\/es\/nervio-vago-x$/);
   await expect(page.locator('#ficha-titulo')).toBeFocused();
-  await expect.poll(async () => (await seleccion(page)).malla).toBe(L00);
+  await expect.poll(async () => (await seleccion(page)).malla).toBe(trazos[0]);
   expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().aislar?.modo)).toBe('contexto');
-  expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().camara?.malla)).toBe(L00);
+  expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().camara?.malla)).toBe(trazos[0]);
   await hastaPedidoAplicado(page, pedidosAntes);
   await camaraQuieta(page);
   expect(await distancia(page)).toBeLessThan(antes);
 
-  // D3 y D9: el panel del trazo va primero en la ficha, con su contador y el select con etiqueta visible.
+  // D3 y D9: el panel del trazo va primero en la ficha, con su contador y el select con etiqueta visible. Se prueba
+  // con un trazo sin propuesta de la auditoría: no hay botón "Correcto, es lo propuesto".
+  await avanzarHasta(page, SIN);
   await expect(page.getByTestId('ficha').locator('.ficha-campo').first()).toHaveAttribute('data-testid', 'revision-trazo');
-  await expect(panel(page).getByRole('heading', { name: 'Trazo 00 del vago izquierdo' })).toBeVisible();
+  await expect(panel(page).getByRole('heading', { name: tituloDe(SIN) })).toBeVisible();
   await expect(contador(page)).toHaveText(`Trazos por revisar: ${TOTAL} de ${TOTAL}`);
   await expect(panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' })).toHaveCount(0);
   await expect(panel(page).locator('label', { hasText: /^Elige el ramo$/ })).toBeVisible();
@@ -155,11 +199,11 @@ test('trazos del vago desde "Qué revisar": se abren, se recorren con "Siguiente
   // Sin salir del campo: solo lo guarda la pausa de escritura (500 ms). El visor dibuja con WebGL por software y
   // un cuadro puede bloquear la página varios segundos (se midió hasta 5 s con PerformanceObserver 'longtask');
   // ese bloqueo atrasa el temporizador y también la lectura del estado, así que el tope es holgado.
-  await expect.poll(async () => (await respuesta(page, L00))?.comentario, { timeout: 30_000 }).toBe('revisar en disección');
-  expect(await respuesta(page, L00)).toMatchObject({ veredicto: 'corregir', ramo: 'no_se', malla: L00 });
+  await expect.poll(async () => (await respuesta(page, SIN))?.comentario, { timeout: 30_000 }).toBe('revisar en disección');
+  expect(await respuesta(page, SIN)).toMatchObject({ veredicto: 'corregir', ramo: 'no_se', malla: SIN });
   await select.selectOption('no_es_ramo');
-  await expect.poll(async () => (await respuesta(page, L00))?.ramo).toBe('no_es_ramo');
-  expect(await respuesta(page, L00)).toMatchObject({ comentario: 'revisar en disección', veredicto: 'corregir' });
+  await expect.poll(async () => (await respuesta(page, SIN))?.ramo).toBe('no_es_ramo');
+  expect(await respuesta(page, SIN)).toMatchObject({ comentario: 'revisar en disección', veredicto: 'corregir' });
 
   // Salir del campo guarda al instante, sin esperar la pausa: escribir y salir en una sola tarea de la página
   // (el temporizador de 500 ms no puede correr en medio), y leer el estado en esa misma tarea.
@@ -170,47 +214,48 @@ test('trazos del vago desde "Qué revisar": se abren, se recorren con "Siguiente
     campo.dispatchEvent(new Event('input', { bubbles: true }));
     campo.blur();
     return (window as unknown as VentanaAtlas).__atlas.getState().respuestas[clave]?.comentario ?? null;
-  }, claveDe(L00));
+  }, claveDe(SIN));
   expect(guardadoAlSalir).toBe('texto al salir');
-  expect(await respuesta(page, L00)).toMatchObject({ veredicto: 'corregir', ramo: 'no_es_ramo', malla: L00 });
+  expect(await respuesta(page, SIN)).toMatchObject({ veredicto: 'corregir', ramo: 'no_es_ramo', malla: SIN });
 
   // D4: "Siguiente trazo" conserva el foco y no arrastra valores del trazo anterior.
   const siguiente = panel(page).getByRole('button', { name: 'Siguiente trazo' });
   await siguiente.click();
   await expect(siguiente).toBeFocused();
-  await expect.poll(async () => (await seleccion(page)).malla).toBe(L01);
+  await expect.poll(async () => (await seleccion(page)).malla).toBe(trazos[(trazos.indexOf(SIN) + 1) % TOTAL]);
   await expect(select).toHaveValue('');
   await expect(panel(page).getByLabel('Comentario (opcional)')).toHaveCount(0);
 
-  // D6: la auditoría propone el ramo faríngeo; confirmarlo guarda "correcto" con ese ramo.
-  await expect(panel(page).getByText('La auditoría del modelo propone: Ramo faríngeo del nervio vago')).toBeVisible();
+  // D6: la auditoría propone un ramo de la lista (o que no es ramo); confirmarlo guarda "correcto" con esa propuesta.
+  await avanzarHasta(page, CON);
+  const propuestaCon = enOrden(CON).propuesta!;
+  await expect(panel(page).getByText(`La auditoría del modelo propone: ${nombreDePropuesta(propuestaCon)}`)).toBeVisible();
   const correcto = panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' });
   await expect(correcto).toHaveAttribute('aria-pressed', 'false');
   await correcto.click();
   await expect(correcto).toHaveAttribute('aria-pressed', 'true');
-  await expect(select).toHaveValue(FARINGEO);
-  expect(await respuesta(page, L01)).toMatchObject({ veredicto: 'correcto', ramo: FARINGEO, malla: L01 });
+  await expect(select).toHaveValue(propuestaCon);
+  expect(await respuesta(page, CON)).toMatchObject({ veredicto: 'correcto', ramo: propuestaCon, malla: CON });
   await expect(contador(page)).toHaveText(`Trazos por revisar: ${TOTAL - 2} de ${TOTAL}`);
 
   // Elegir en el select el mismo valor de la propuesta también es "correcto"; otro valor es "corregir".
-  await siguiente.click();
-  await expect.poll(async () => (await seleccion(page)).malla).toBe(L02);
-  await expect(panel(page).getByText('La auditoría del modelo propone: No es un ramo (tronco del vago)')).toBeVisible();
+  await avanzarHasta(page, NO_ES);
+  await expect(panel(page).getByText(`La auditoría del modelo propone: ${NO_ES_RAMO}`)).toBeVisible();
   await select.selectOption('no_es_ramo');
-  await expect.poll(async () => (await respuesta(page, L02))?.veredicto).toBe('correcto');
+  await expect.poll(async () => (await respuesta(page, NO_ES))?.veredicto).toBe('correcto');
   await expect(panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' })).toHaveAttribute('aria-pressed', 'true');
   await expect(contador(page)).toHaveText(`Trazos por revisar: ${TOTAL - 3} de ${TOTAL}`);
   await select.selectOption('no_se');
-  await expect.poll(async () => (await respuesta(page, L02))?.veredicto).toBe('corregir');
+  await expect.poll(async () => (await respuesta(page, NO_ES))?.veredicto).toBe('corregir');
   await expect(panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' })).toHaveAttribute('aria-pressed', 'false');
 
   // Un segundo toque en "Correcto, es lo propuesto" borra la respuesta.
   await panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' }).click();
-  await expect.poll(async () => (await respuesta(page, L02))?.veredicto).toBe('correcto');
+  await expect.poll(async () => (await respuesta(page, NO_ES))?.veredicto).toBe('correcto');
   await panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' }).click();
-  await expect.poll(async () => await respuesta(page, L02)).toBeNull();
+  await expect.poll(async () => await respuesta(page, NO_ES)).toBeNull();
   await select.selectOption('no_es_ramo');
-  await expect.poll(async () => (await respuesta(page, L02))?.veredicto).toBe('correcto');
+  await expect.poll(async () => (await respuesta(page, NO_ES))?.veredicto).toBe('correcto');
 
   // D1: al reabrir "Qué revisar", el resumen refleja lo respondido.
   await barra(page).getByRole('button', { name: /Qué revisar/ }).click();

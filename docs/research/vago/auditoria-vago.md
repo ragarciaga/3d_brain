@@ -8,6 +8,8 @@ Propuestas para revisión docente: ningún nombre es definitivo.
 |---|---|---|
 | Medulla oblongata.l | presente | MESH |
 | Medulla oblongata.r | presente | MESH |
+| Olive.l | presente | MESH |
+| Olive.r | presente | MESH |
 | Internal jugular vein.l | presente | CURVE |
 | Internal jugular vein.r | presente | CURVE |
 | Laryngopharynx | presente | MESH |
@@ -27,41 +29,50 @@ Propuestas para revisión docente: ningún nombre es definitivo.
 | Right main bronchus | presente | CURVE |
 | Diaphragm | presente | MESH |
 | Stomach | presente | MESH |
+| Liver | presente | MESH |
 
 ## Trazos
 
-Altura en mm sobre el origen del modelo (Y arriba). Cercanos: distancia del extremo inferior a la superficie de los dos anclajes más próximos.
+Altura en mm sobre el origen del modelo (Y arriba). Cercanos: las dos piezas más próximas a cada extremo del trazo (arriba / abajo), a su superficie. Los umbrales de cada regla están en `pipeline/reglas_vago.py` y las fuentes, en `docs/research/marcadores/fuentes.md`.
 
-| Trazo | Altura (mm) | Largo (mm) | Cercanos | Propuesta | Por qué |
-|---|---|---|---|---|---|
-| Vagus nerve (X).l#t00 | 1471 a 1455 | 17 | Left common carotid artery 3 mm, Internal jugular vein.l 12 mm | sin candidato | extremo inferior a 3 mm de la superficie de Left common carotid artery |
-| Vagus nerve (X).l#t01 | 1538 a 1525 | 38 | Laryngopharynx 19 mm, Internal jugular vein.l 32 mm | candidato: ramo faríngeo | extremo inferior a 19 mm de la superficie de Laryngopharynx |
-| Vagus nerve (X).l#t02 | 1573 a 1347 | 291 | Thoracic aorta 5 mm, Oesophagus 11 mm | tronco del vago | el trazo más largo del lado |
-| Vagus nerve (X).l#t03 | 1576 a 1572 | 16 | Medulla oblongata.l 4 mm, Internal jugular vein.l 16 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).l#t04 | 1572 a 1569 | 16 | Medulla oblongata.l 5 mm, Medulla oblongata.r 5 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).l#t05 | 1572 a 1571 | 15 | Medulla oblongata.l 4 mm, Medulla oblongata.r 4 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).l#t06 | 1572 a 1572 | 6 | Medulla oblongata.l 4 mm, Medulla oblongata.r 7 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).r#t00 | 1471 a 1455 | 17 | Right common carotid artery 4 mm, Internal jugular vein.r 12 mm | sin candidato | extremo inferior a 4 mm de la superficie de Right common carotid artery |
-| Vagus nerve (X).r#t01 | 1538 a 1525 | 38 | Laryngopharynx 19 mm, Internal jugular vein.r 32 mm | candidato: ramo faríngeo | extremo inferior a 19 mm de la superficie de Laryngopharynx |
-| Vagus nerve (X).r#t02 | 1573 a 1128 | 601 | Stomach 5 mm, Diaphragm 31 mm | tronco del vago | el trazo más largo del lado |
-| Vagus nerve (X).r#t03 | 1140 a 1130 | 19 | Stomach 6 mm, Diaphragm 40 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 69 mm debajo del final del esófago, a 6 mm de la superficie del estómago |
-| Vagus nerve (X).r#t04 | 1133 a 1131 | 13 | Stomach 7 mm, Diaphragm 44 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 68 mm debajo del final del esófago, a 7 mm de la superficie del estómago |
-| Vagus nerve (X).r#t05 | 1131 a 1130 | 5 | Stomach 6 mm, Diaphragm 45 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 68 mm debajo del final del esófago, a 6 mm de la superficie del estómago |
-| Vagus nerve (X).r#t06 | 1141 a 1137 | 15 | Stomach 5 mm, Diaphragm 37 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 61 mm debajo del final del esófago, a 5 mm de la superficie del estómago |
-| Vagus nerve (X).r#t07 | 1184 a 1164 | 29 | Stomach 3 mm, Diaphragm 14 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 35 mm debajo del final del esófago, a 3 mm de la superficie del estómago |
-| Vagus nerve (X).r#t08 | 1171 a 1168 | 8 | Stomach 3 mm, Diaphragm 15 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 31 mm debajo del final del esófago, a 3 mm de la superficie del estómago |
-| Vagus nerve (X).r#t09 | 1218 a 1211 | 46 | Stomach 3 mm, Diaphragm 19 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | extremo inferior a 3 mm de la superficie de Stomach |
-| Vagus nerve (X).r#t10 | 1211 a 1190 | 32 | Stomach 2 mm, Diaphragm 38 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 8 mm debajo del final del esófago, a 2 mm de la superficie del estómago |
-| Vagus nerve (X).r#t11 | 1207 a 1203 | 20 | Stomach 2 mm, Diaphragm 31 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | extremo inferior a 2 mm de la superficie de Stomach |
-| Vagus nerve (X).r#t12 | 1216 a 1111 | 123 | Stomach 17 mm, Diaphragm 28 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | extremo inferior a 17 mm de la superficie de Stomach |
-| Vagus nerve (X).r#t13 | 1151 a 1105 | 50 | Stomach 24 mm, Diaphragm 24 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | extremo inferior a 24 mm de la superficie de Stomach |
-| Vagus nerve (X).r#t14 | 1154 a 1143 | 52 | Diaphragm 8 mm, Stomach 30 mm | sin candidato | extremo inferior a 8 mm de la superficie de Diaphragm |
-| Vagus nerve (X).r#t15 | 1188 a 1150 | 46 | Stomach 3 mm, Diaphragm 19 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 49 mm debajo del final del esófago, a 3 mm de la superficie del estómago |
-| Vagus nerve (X).r#t16 | 1155 a 1148 | 48 | Stomach 1 mm, Diaphragm 25 mm | candidato: ramo abdominal (gástrico, hepático o celíaco) | termina 51 mm debajo del final del esófago, a 1 mm de la superficie del estómago |
-| Vagus nerve (X).r#t17 | 1576 a 1572 | 16 | Medulla oblongata.r 4 mm, Internal jugular vein.r 16 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).r#t18 | 1572 a 1569 | 16 | Medulla oblongata.r 5 mm, Medulla oblongata.l 5 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).r#t19 | 1572 a 1571 | 15 | Medulla oblongata.r 4 mm, Medulla oblongata.l 4 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
-| Vagus nerve (X).r#t20 | 1572 a 1572 | 6 | Medulla oblongata.r 4 mm, Medulla oblongata.l 7 mm | raicilla (sale del bulbo) | corto y a la altura del bulbo |
+| Trazo | Altura (mm) | Largo (mm) | Cercanos (arriba / abajo) | Propuesta | Regla | Confianza | Fuente |
+|---|---|---|---|---|---|---|---|
+| Vagus nerve (X).l#t00 | 1471 a 1455 | 17 | Left common carotid artery 1 mm, Internal jugular vein.l 5 mm / Left common carotid artery 3 mm, Internal jugular vein.l 12 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).l#t01 | 1538 a 1525 | 38 | Internal jugular vein.l 2 mm, Medulla oblongata.l 32 mm / Laryngopharynx 19 mm, Internal jugular vein.l 32 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).l#t02 | 1573 a 1347 | 291 | Olive.l 2 mm, Medulla oblongata.l 6 mm / Thoracic aorta 5 mm, Oesophagus 11 mm | tronco del vago | tronco | alta | In2026 |
+| Vagus nerve (X).l#t03 | 1576 a 1572 | 16 | Olive.l 2 mm, Medulla oblongata.l 4 mm / Medulla oblongata.l 4 mm, Olive.l 4 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).l#t04 | 1572 a 1570 | 16 | Medulla oblongata.l 4 mm, Olive.l 4 mm / Olive.l 2 mm, Medulla oblongata.l 6 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).l#t05 | 1572 a 1571 | 15 | Medulla oblongata.l 4 mm, Olive.l 4 mm / Medulla oblongata.l 4 mm, Medulla oblongata.r 4 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).l#t06 | 1572 a 1572 | 6 | Olive.l 2 mm, Medulla oblongata.l 4 mm / Medulla oblongata.l 2 mm, Medulla oblongata.r 2 mm | raicilla (sale del bulbo) | raicilla | baja | Kim2022 |
+| Vagus nerve (X).r#t00 | 1471 a 1455 | 17 | Right common carotid artery 1 mm, Internal jugular vein.r 5 mm / Right common carotid artery 4 mm, Internal jugular vein.r 12 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t01 | 1538 a 1525 | 38 | Internal jugular vein.r 2 mm, Medulla oblongata.r 32 mm / Laryngopharynx 19 mm, Internal jugular vein.r 32 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t02 | 1573 a 1128 | 601 | Olive.r 2 mm, Medulla oblongata.r 6 mm / Stomach 5 mm, Diaphragm 31 mm | tronco del vago | tronco | alta | In2026 |
+| Vagus nerve (X).r#t03 | 1140 a 1130 | 19 | Stomach 2 mm, Diaphragm 28 mm / Stomach 6 mm, Diaphragm 40 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t04 | 1133 a 1131 | 12 | Stomach 6 mm, Diaphragm 40 mm / Stomach 7 mm, Diaphragm 44 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t05 | 1131 a 1130 | 5 | Stomach 6 mm, Diaphragm 43 mm / Stomach 7 mm, Diaphragm 45 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t06 | 1141 a 1137 | 15 | Stomach 6 mm, Diaphragm 48 mm / Stomach 5 mm, Diaphragm 37 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | alta | Guo2024 |
+| Vagus nerve (X).r#t07 | 1184 a 1164 | 29 | Stomach 1 mm, Diaphragm 21 mm / Stomach 3 mm, Diaphragm 14 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | alta | Guo2024 |
+| Vagus nerve (X).r#t08 | 1171 a 1168 | 8 | Stomach 4 mm, Diaphragm 11 mm / Stomach 3 mm, Diaphragm 15 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | alta | Guo2024 |
+| Vagus nerve (X).r#t09 | 1218 a 1211 | 46 | Stomach 2 mm, Diaphragm 20 mm / Liver 2 mm, Stomach 2 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t10 | 1211 a 1190 | 32 | Stomach 2 mm, Liver 14 mm / Stomach 2 mm, Diaphragm 38 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | alta | Guo2024 |
+| Vagus nerve (X).r#t11 | 1207 a 1202 | 20 | Stomach 3 mm, Liver 25 mm / Stomach 2 mm, Diaphragm 31 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | alta | Guo2024 |
+| Vagus nerve (X).r#t12 | 1216 a 1111 | 124 | Liver 2 mm, Stomach 2 mm / Stomach 17 mm, Diaphragm 28 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t13 | 1151 a 1105 | 50 | Stomach 5 mm, Diaphragm 9 mm / Stomach 24 mm, Diaphragm 24 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t14 | 1154 a 1143 | 52 | Diaphragm 7 mm, Stomach 7 mm / Diaphragm 4 mm, Liver 24 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t15 | 1188 a 1150 | 46 | Stomach 2 mm, Diaphragm 6 mm / Stomach 3 mm, Diaphragm 19 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | alta | Guo2024 |
+| Vagus nerve (X).r#t16 | 1155 a 1148 | 48 | Stomach 2 mm, Diaphragm 38 mm / Diaphragm 7 mm, Stomach 7 mm | candidato: ramo gástrico posterior | abdominal_gastrico_posterior | media | Guo2024 |
+| Vagus nerve (X).r#t17 | 1576 a 1572 | 16 | Olive.r 2 mm, Medulla oblongata.r 4 mm / Medulla oblongata.r 4 mm, Olive.r 4 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t18 | 1572 a 1570 | 16 | Medulla oblongata.r 4 mm, Olive.r 4 mm / Olive.r 2 mm, Medulla oblongata.r 6 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t19 | 1572 a 1571 | 15 | Medulla oblongata.r 4 mm, Olive.r 4 mm / Medulla oblongata.r 4 mm, Medulla oblongata.l 4 mm | sin candidato | sin_regla | - | Bahadir2026 |
+| Vagus nerve (X).r#t20 | 1572 a 1572 | 6 | Olive.r 2 mm, Medulla oblongata.r 4 mm / Medulla oblongata.r 2 mm, Medulla oblongata.l 2 mm | raicilla (sale del bulbo) | raicilla | baja | Kim2022 |
+
+## Reglas de la spec 04
+
+Las secciones Anclajes y Trazos salen de la corrida del 17 de octubre de 2026 (Z-Anatomy, commit `9de5d6912a1b0df9cab739d57f00e036b0496ddc`, bpy 5.2.2) con las reglas de la spec 04.
+Las reglas viven en `pipeline/reglas_vago.py` y sus fuentes, en `docs/research/marcadores/fuentes.md` (sección "Trazos sin nombre del vago: cómo distinguirlos").
+Los umbrales marcados "(derivado)" y la cara decidida por el centro z de la caja no salen de una fuente: el editor los aprueba en este PR.
+Cada propuesta es para revisión docente. Si una regla no distingue el trazo, queda `sin_regla`, sin propuesta.
+La fecha de "Cómo se generó" y la sección "Propuestas de `candidato()` que cambiaron" describen la corrida y la regla anteriores, no estas tablas.
 
 ## Cómo se generó
 

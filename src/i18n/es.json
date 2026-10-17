@@ -194,7 +194,7 @@
     "trazosPorRevisar": "Trazos por revisar: {{pendientes}} de {{total}}",
     "trazoPropuesta": "La auditoría del modelo propone: {{nombre}}",
     "trazoCorrecto": "Correcto, es lo propuesto",
-    "noEsRamo": "No es un ramo (tronco del vago)",
+    "noEsRamo": "No es un ramo (tronco o raicilla)",
     "noSe": "No sé",
     "enviar": "Enviar revisión",
     "enviarPorFormulario": "Enviar por formulario",

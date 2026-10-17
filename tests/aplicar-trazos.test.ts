@@ -294,7 +294,10 @@ describe('lo que no cambia (R6.2)', () => {
     while (a[a.length - 1 - sufijo] === b[b.length - 1 - sufijo]) sufijo++;
     expect(prefijo).toBeGreaterThanOrEqual(inicio);
     expect(sufijo).toBeGreaterThanOrEqual(a.length - fin);
-    expect(b.length).toBeGreaterThan(a.length);
+    // Cada clave que el trazo real aún no tenía agrega líneas: 4 por `evidencia` (la clave y su es, su en y el cierre)
+    // y 1 por `confianza`. Si ya las trae, el objeto cambia de valores, no de largo.
+    const antes = real.trazos.find((t) => t.malla === MALLA_REAL)!;
+    expect(b.length - a.length).toBe((antes.evidencia === undefined ? 4 : 0) + (antes.confianza === undefined ? 1 : 0));
   });
 
   it('aplicar dos veces la misma medición no cambia nada la segunda vez', () => {
