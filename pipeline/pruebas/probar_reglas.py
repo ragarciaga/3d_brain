@@ -262,11 +262,11 @@ def anclas_tienen_piezas():
     con_ancla = {i: r["ancla"] for i, r in reglas.items() if "ancla" in r}
     for id_, ancla in con_ancla.items():
         assert piezas_de_ancla(ancla), f"{id_}: el ancla {ancla} no tiene piezas en arbol.json"
-    # Las anclas que marcadores.json ya tiene no cambian; la única nueva es la del accumbens (design.md:
-    # "se agrega donde la regla tiene una pieza principal").
+    # Las anclas que marcadores.json ya tiene no cambian; la del accumbens es la única que puede ser nueva
+    # (design.md: "se agrega donde la regla tiene una pieza principal"). Una vez aplicada ya no es nueva.
     actuales = {m["id"]: m["ancla"] for m in marcadores if m.get("ancla")}
     assert {i: a for i, a in con_ancla.items() if i in actuales} == actuales, (con_ancla, actuales)
-    assert set(con_ancla) - set(actuales) == {"m-nucleus-accumbens"}, set(con_ancla) - set(actuales)
+    assert set(con_ancla) - set(actuales) <= {"m-nucleus-accumbens"}, set(con_ancla) - set(actuales)
     # Los marcadores del vago no llevan ancla: el vago no se fragmenta.
     assert not [i for i in ("m-jugular-foramen", "m-recurrent-laryngeal-nerve") if "ancla" in reglas[i]]
 
