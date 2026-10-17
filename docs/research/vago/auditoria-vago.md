@@ -99,9 +99,9 @@ Eje anterior medido: +Z (centro de la tráquea en z = −1,8 mm, del esófago en
 
 | # | Qué se comprueba | Escaneado (`npm test`) | Borrador (`generar-ramas-vago.py --borrador`) | Publicado (`rutas-vago.json` y tronco recortado) |
 |---|---|---|---|---|
-| 1 | Recurrente derecho bajo la subclavia derecha | no aplica (ruta trazada) | pasa: 5,6 mm por debajo y sube 51,2 mm | pasa: 4,7 mm por debajo de la subclavia derecha y sube 46,0 mm (el paso pasa por la subclavia junto al origen de la carótida común derecha, `punto: cerca_de`; el punto más bajo de toda la malla de la subclavia es su extremo lateral, a casi 8 cm de la línea media, lejos del vago) |
-| 2 | Recurrente izquierdo rodea el arco junto al ligamento | no aplica (ruta trazada) | pasa: 13,3 mm por debajo del arco, sube 87,6 mm, a 13,1 mm del ganglio del ligamento | pasa: 13,5 mm por debajo del arco aórtico, sube 87,6 mm, a 14,4 mm del ganglio del ligamento arterioso |
-| 3 | Vago izquierdo delante del arco y detrás del bronquio izquierdo | no aplica (necesita la ruta distal) | falla: cruza el arco 0,5 mm "por detrás"; sí pasa detrás del bronquio izquierdo | pasa: cruza el arco 34,1 mm por delante; pasa por detrás del bronquio principal izquierdo |
+| 1 | Recurrente derecho bajo la subclavia derecha | no aplica (ruta trazada) | pasa: 5,6 mm por debajo y sube 51,2 mm | pasa: 3,3 mm por debajo de la subclavia derecha y sube 44,7 mm (el paso pasa por la subclavia junto al origen de la carótida común derecha, `punto: cerca_de`; el punto más bajo de toda la malla de la subclavia es su extremo lateral, a casi 8 cm de la línea media, lejos del vago) |
+| 2 | Recurrente izquierdo rodea el arco junto al ligamento | no aplica (ruta trazada) | pasa: 13,3 mm por debajo del arco, sube 87,6 mm, a 13,1 mm del ganglio del ligamento | pasa: 15,2 mm por debajo del arco aórtico, sube 95,9 mm, a 30,8 mm del ganglio del ligamento arterioso (el asa baja por detrás y por debajo del arco, hasta y = 1362,5 mm; el límite de la prueba es el radio del arco más 25 mm, 37,5 mm) |
+| 3 | Vago izquierdo delante del arco y detrás del bronquio izquierdo | no aplica (necesita la ruta distal) | falla: cruza el arco 0,5 mm "por detrás"; sí pasa detrás del bronquio izquierdo | pasa: cruza el arco 2,8 mm por delante; pasa por detrás del bronquio principal izquierdo (antes del despeje cruzaba 34,1 mm por delante, 30 mm adelante de la tráquea y atravesando la carótida común izquierda y el bronquio) |
 | 4 | Vago derecho detrás del bronquio derecho y del esófago | falla | falla (es la misma geometría escaneada) | pasa: por detrás del bronquio principal derecho; por detrás del esófago 5 cm sobre su final |
 
 ### Por qué fallan la 3 y la 4: el vago del tórax es un espejo
@@ -150,6 +150,64 @@ Marcadores de `src/data/marcadores.json` (26 en total) con una posición dentro 
 | `m-pulmonary-plexus` | izquierdo / derecho | 1325,5 / 1353,7 | 41,5 / 5,8 mm |
 
 `m-thoracic-cardiac-branches-of-vagus-nerve` queda a menos de 1 mm del tramo escaneado que ya no se publica, así que ahora flota donde no hay vago: se vuelve a ubicar sobre el tramo trazado en una tarea aparte (`reglas-marcadores.yaml` ya lo prevé). Los demás de la tabla están a 5 mm o más del tronco retirado, salvo el cervical superior (0,4 mm, en el borde de la banda izquierda). Esta medición solo se reporta: no mueve ningún marcador ni corta ningún otro trazo.
+
+## Despeje: las rutas no pasan por dentro de un órgano
+
+Una auditoría ciega encontró que las rutas publicadas atravesaban órganos: los dos recurrentes subían por dentro de la tráquea, el esófago y el cricoides y se juntaban en la línea media (3,35 mm entre ellos); el recurrente izquierdo cruzaba la luz del arco; el torácico izquierdo hacía un bucle de 30 mm por delante de la tráquea a través de la carótida común y del bronquio izquierdo; el torácico derecho tocaba el esófago. Las causas, medidas en `anclajes-vago.json`:
+
+1. `surco` era un solo punto a la altura de la cima de la tráquea. Esa franja es una lámina de 0,03 mm de alto (y de 1460,539 a 1460,566 mm, x de −2,0 a 1,5 mm) y el punto salía casi en la línea media, así que la curva cortaba en diagonal la mitad de la tráquea.
+2. El último control del surco quedaba más arriba que el del cricoides, y la curva subía a la línea media y volvía a bajar.
+3. `rodear: anterior` del arco usaba la franja de 1382,5 mm, que abarca las dos ramas del arco (z de −33,7 a 32,7 mm): "delante" quedaba delante de la aorta ascendente (z = 33,4 mm).
+4. El control `rodear: posterior` del bronquio derecho caía 0,79 mm dentro de la caja del esófago, porque bronquio y esófago se tocan ahí.
+
+Qué cambió en `generar-ramas-vago.py` (el YAML conserva sus pasos, salvo `surco`, que ahora recorre el tramo entre dos pasos):
+
+- Las franjas de menos de 1 mm de alto se ignoran (`corte`, `mas_alto`, `mas_bajo`).
+- `surco` da un punto cada 5 mm en el orden del nervio; cada punto es el sitio libre más cercano al costado de la tráquea, buscado en una rejilla de 0,5 mm.
+- `rodear anterior/posterior` sobre un tubo cuya franja abarca dos ramas parte de la línea central más el radio, proyectado perpendicular al eje del tubo. Con el arco, el control de la ruta torácica izquierda pasa de (31,7; 1384,4; 33,4) a (31,0; 1384,5; 2,2) mm.
+- Dos cambios que la plan no decía, hechos al ver los datos reales: (a) el control que devuelve `rodear` se empuja fuera de cualquier órgano vecino en el que haya caído (`_empujar`); sin eso el control del bronquio derecho quedaba 0,79 mm dentro del esófago y pasó a x = −8,9 mm; (b) los anclajes medidos por cajas (tráquea, esófago, cricoides, tiroides) nunca usan la regla de la línea central, porque el esófago es una curva de radio 2,3 mm pero sus franjas miden unos 18 por 10 mm, y con la regla literal habría cambiado el tramo distal.
+- `despejar` saca de los órganos los puntos de la curva (sin mover los controles) y parte por la mitad todo tramo que el empuje estiró a más de 2,5 mm. Si algún punto sigue más adentro que su tolerancia, el tramo entre los dos controles que lo contienen se rehace por un camino libre (A* sobre una rejilla de 0,5 mm en x y z y de 1 mm en y; hasta 3 veces). Si no hay camino, el generador lanza `Atraviesa` nombrando ruta, órgano y altura, y no escribe nada. Este camino solo se usó en el recurrente izquierdo, entre el asa y el surco: la curva directa pasa por una estrechez entre la esquina de la tráquea, la cara del esófago y el arco, y el camino libre baja por debajo del arco (hasta y = 1362,5 mm) y sube por detrás.
+
+Modelo de obstáculos (`Modelo.profundidad` y `scripts/lib/despeje.ts`, dos implementaciones independientes): trece órganos. Cajas por franja de altura para la tráquea, el esófago y los cartílagos cricoides y tiroides; donde tráquea y esófago se tocan (la cara posterior de la tráquea queda detrás de la anterior del esófago), las dos caras se mueven a su punto medio. Tubos (línea central y radio) para el arco, la aorta torácica, el tronco braquiocefálico, las dos carótidas comunes, las dos subclavias y los dos bronquios principales. La profundidad es positiva dentro del órgano.
+
+**Tolerancia (decisión del editor, 2026-10-17).** 0,5 mm (el radio del nervio) contra arterias, bronquios y cartílagos. 1 mm (dos radios) solo contra la tráquea y el esófago: el recurrente va en el surco traqueoesofágico, en contacto con sus paredes. El modelo de cajas es conservador en las esquinas y no equivale a una prueba de rayos sobre el GLB. Lo que se vigila: ningún punto de ninguna ruta, ni los puntos medios entre dos puntos seguidos, queda más adentro que esa tolerancia.
+
+Profundidad máxima por ruta y obstáculo, en mm (positiva = dentro) y la altura en que ocurre. Solo se listan los obstáculos a menos de 3 mm de la ruta:
+
+| Ruta | Obstáculo | Máxima (mm) | y (mm) |
+|---|---|---|---|
+| Torácico derecho | Tráquea | −0,37 | 1368,7 |
+| Torácico derecho | Esófago | −0,21 | 1355,9 |
+| Torácico derecho | Bronquio principal derecho | −0,79 | 1362,8 |
+| Torácico izquierdo | Arco aórtico | −0,75 | 1382,5 |
+| Torácico izquierdo | Aorta torácica | −2,38 | 1344,3 |
+| Torácico izquierdo | Subclavia izquierda | −2,54 | 1410,1 |
+| Torácico izquierdo | Carótida común izquierda | −3,02 | 1417,4 |
+| Torácico izquierdo | Bronquio principal izquierdo | −0,75 | 1346,2 |
+| Recurrente derecho | Tráquea | −0,75 | 1422,1 |
+| Recurrente derecho | Esófago | −2,99 | 1458,4 |
+| Recurrente derecho | Cricoides | −0,59 | 1457,7 |
+| Recurrente derecho | Subclavia derecha | −0,75 | 1413,8 |
+| Recurrente izquierdo | Tráquea | +0,75 | 1367,1 |
+| Recurrente izquierdo | Esófago | +0,50 | 1370,7 |
+| Recurrente izquierdo | Cricoides | −0,03 | 1457,5 |
+| Recurrente izquierdo | Arco aórtico | −0,01 | 1367,7 |
+| Recurrente izquierdo | Carótida común izquierda | −2,95 | 1447,6 |
+| Recurrente izquierdo | Bronquio principal izquierdo | −0,59 | 1362,7 |
+| Vago izquierdo distal | Esófago | −0,05 | 1338,0 |
+| Vago izquierdo distal | Aorta torácica | −2,38 | 1344,3 |
+| Vago izquierdo distal | Bronquio principal izquierdo | −1,38 | 1344,3 |
+
+Las dos únicas profundidades positivas están dentro de la tolerancia de 1 mm: el recurrente izquierdo contra la tráquea y contra el esófago, en la estrechez del arco.
+
+Otras medidas del resultado publicado:
+
+- Separación mínima entre los dos recurrentes: 23,0 mm (antes 3,35 mm); la prueba exige 15 mm o más.
+- El asa del recurrente derecho: punto más bajo en x = −26,1, y = 1413,8, z = 0,5 mm, a 11,7 mm en planta del vago derecho publicado a esa altura (la prueba exige 20 mm o menos).
+- Rango de x de cada ruta, en mm: torácico derecho −16,6 a −6,1; torácico izquierdo 16,5 a 31,0; recurrente derecho −26,2 a −11,4; recurrente izquierdo 6,3 a 30,9; vago izquierdo distal −0,2 a 19,1.
+- Las bandas `reemplaza`, `atlas.glb`, `pipeline/cajas.json` y `pipeline/anclajes-vago.json` no cambiaron.
+
+Limitaciones: la estrechez del recurrente izquierdo (la tráquea, el esófago y el arco están pegados en el modelo) es lo más ajustado; las rutas siguen en `en_revision`, y es un docente quien juzga si el recorrido por debajo y por detrás del arco es el correcto.
 
 ## Propuestas de `candidato()` que cambiaron
 

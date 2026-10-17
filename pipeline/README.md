@@ -115,6 +115,11 @@ npm test                                        # tests/asimetrias.test.ts: las 
 - La app dibuja las rutas como tubos punteados en tiempo de ejecución (no van al GLB), con aviso,
   leyenda y filtro (SPEC F25). Lo que sí toca el GLB es el recorte del tramo torácico escaneado
   (ADR 0010), con el pipeline y `check:modelo`.
+- Despeje: `generar-ramas-vago.py` no deja que ninguna ruta pase por dentro de la tráquea, el esófago, los
+  cartílagos cricoides y tiroides, las arterias ni los bronquios (0,5 mm de tolerancia; 1 mm contra la
+  tráquea y el esófago, por decisión del editor del 2026-10-17). Si no puede, se detiene sin escribir
+  (`Atraviesa`). `tests/rutas-vago-despeje.test.ts` lo comprueba sobre los archivos reales con un modelo
+  propio (`scripts/lib/despeje.ts`). El detalle está en `docs/research/vago/auditoria-vago.md`, "Despeje".
 - `pipeline/anclajes-vago.json` ya está en el repositorio, generado por `auditar-vago.py` desde el
   commit fijado de Z-Anatomy (idéntico byte a byte en dos corridas). Con el tronco recortado y las
   cinco rutas publicadas, las cuatro asimetrías pasan en `npm test`; sobre el escaneado solo, la 4 falla

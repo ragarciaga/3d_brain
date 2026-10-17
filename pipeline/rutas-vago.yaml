@@ -19,10 +19,17 @@
 #                     de la altura de desde a la de hasta (hasta: null es hasta abajo). Sale de medir
 #                     los anclajes; el generador la publica como reemplaza: {lado, y_max, y_min}.
 #   rodear           el nervio pasa por ese lado del anclaje: debajo, encima, anterior, posterior
-#   surco             surco traqueoesofágico de ese lado (entre la tráquea y el esófago)
+#   surco             recorre el surco traqueoesofágico de ese lado (entre la tráquea y el esófago) entre el paso
+#                     anterior y el siguiente, un punto cada 5 mm, en el orden del nervio. Cada punto es el sitio
+#                     libre más cercano al costado de la tráquea: nunca dentro de un órgano. No lleva altura
 #   seguir            el nervio acompaña la cara indicada del anclaje entre el paso anterior y el siguiente
 #   a_la_altura_de    la altura de un punto de otro anclaje (mas_alto, mas_bajo, centro)
 #   cara_lateral      con rodear anterior o posterior: por la esquina de ese lado (posterolateral)
+#
+# Despeje: el generador no deja que ninguna ruta pase por dentro de la tráquea, el esófago, los cartílagos
+# cricoides y tiroides, las arterias ni los bronquios (0,5 mm de tolerancia; 1 mm contra la tráquea y el esófago,
+# donde va el recurrente). Si un paso lo obligaría, el generador rehace ese tramo por un camino libre o se
+# detiene sin escribir. Los pasos de este archivo no cambian por eso: siguen siendo nombres de anclajes.
 #
 # Las cuatro asimetrías que no se pueden equivocar se prueban solas (tests/asimetrias.test.ts):
 #   1. El laríngeo recurrente derecho pasa por debajo de la arteria subclavia derecha.
@@ -105,9 +112,9 @@ rutas:
         punto: cerca_de
         cerca_de: "Right common carotid artery"
         rodear: debajo
-      # Sube por el surco traqueoesofágico derecho.
+      # Sube por el surco traqueoesofágico derecho, desde el asa hasta el cricoides, por fuera de la tráquea
+      # y del esófago.
       - surco: derecho
-        a_la_altura_de: { anclaje: "Trachea", punto: mas_alto }
       # Entra en la laringe por debajo del cartílago cricoides.
       - anclaje: "Cricoid cartilage"
         punto: mas_bajo
@@ -133,11 +140,9 @@ rutas:
         punto: cerca_de
         cerca_de: "Node of ligamentum arteriosum"
         rodear: debajo
-      # Sube por el surco traqueoesofágico izquierdo; por eso es más largo que el derecho.
+      # Sube por el surco traqueoesofágico izquierdo, desde el asa hasta el cricoides, por fuera de la tráquea
+      # y del esófago; por eso es más largo que el derecho.
       - surco: izquierdo
-        a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
-      - surco: izquierdo
-        a_la_altura_de: { anclaje: "Trachea", punto: mas_alto }
       - anclaje: "Cricoid cartilage"
         punto: mas_bajo
         rodear: posterior

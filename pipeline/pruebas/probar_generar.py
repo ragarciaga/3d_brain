@@ -187,4 +187,171 @@ for fuera in (1.0 + 1e-3, 0.5 - 1e-3):
     except g.FaltaAnclaje as e:
         assert "ruta_x" in str(e), e
 
-print("generar-ramas-vago.py: 11 pruebas en verde")
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Despeje (kickback de T5): ningún punto de una ruta dentro de un órgano.
+# ---------------------------------------------------------------------------------------------------------
+H = modelo.radio_nervio * g.HOLGURA
+
+# 12. corte() y punto() ignoran las franjas de menos de 1 mm de alto (láminas sueltas).
+con_lamina = copy.deepcopy(datos)
+traquea = con_lamina["anclas"]["Trachea"]
+buena_alta = traquea["cortes"][-1]["caja"]
+lamina = [[-0.05, buena_alta[1][1] + 0.0002, -0.05], [0.05, buena_alta[1][1] + 0.00023, 0.05]]
+traquea["cortes"].append({"y": round(buena_alta[1][1] + 0.0025, 4), "caja": lamina})
+m_lamina = g.Modelo(con_lamina)
+assert m_lamina.corte("Trachea", lamina[0][1]) != lamina, "corte() eligió una lámina de 0,03 mm"
+assert abs(m_lamina.punto("Trachea", "mas_alto")[1] - modelo.punto("Trachea", "mas_alto")[1]) < 1e-12, \
+    "mas_alto de una malla sin puntos tomó la lámina"
+solo_laminas = copy.deepcopy(datos)
+solo_laminas["anclas"]["Trachea"]["cortes"] = [{"y": 1.4, "caja": lamina}]
+try:
+    g.Modelo(solo_laminas).corte("Trachea", 1.4)
+    raise AssertionError("debió fallar si todas las franjas son láminas")
+except g.FaltaAnclaje as e:
+    assert "Trachea" in str(e), e
+
+# 13. surco recorre el tramo: un punto cada 5 mm en el orden del nervio, sin alturas a menos de 2,5 mm de los extremos.
+subida = modelo.surco_tramo("derecho", 1.40, 1.46)
+alturas = [p[1] for p in subida]
+assert len(alturas) == 11 and all(abs(a - (1.40 + 0.005 * (i + 1))) < 1e-9 for i, a in enumerate(alturas)), alturas
+assert all(abs(a - 1.40) >= 0.0025 and abs(a - 1.46) >= 0.0025 for a in alturas), alturas
+bajada = modelo.surco_tramo("izquierdo", 1.46, 1.40)
+assert [p[1] for p in bajada] == sorted([p[1] for p in bajada], reverse=True) and len(bajada) == 11, "debe ir del paso anterior al siguiente"
+assert modelo.surco_tramo("derecho", 1.40, 1.4074) == [] and len(modelo.surco_tramo("derecho", 1.40, 1.41)) == 1
+for p in subida + bajada:
+    assert modelo.exceso(p) <= 0, f"un punto del surco queda dentro de un órgano: {p}"
+assert all(p[0] < 0 for p in subida) and all(p[0] > 0 for p in bajada), "el surco derecho va en x negativa, el izquierdo en positiva"
+# surco con a_la_altura_de se rechaza; y un surco sin vecino fijo, también.
+con_altura = copy.deepcopy(rutas)
+con_altura["rutas"]["laringeo_recurrente_derecho"]["pasos"][2]["a_la_altura_de"] = {"anclaje": "Trachea", "punto": "mas_alto"}
+try:
+    g.generar(datos, con_altura)
+    raise AssertionError("debió rechazar surco con a_la_altura_de")
+except ValueError as e:
+    assert "surco recorre el tramo" in str(e), e
+sin_vecino = copy.deepcopy(rutas)
+sin_vecino["rutas"]["laringeo_recurrente_derecho"]["pasos"].pop()
+try:
+    g.generar(datos, sin_vecino)
+    raise AssertionError("debió rechazar un surco sin paso fijo después")
+except ValueError as e:
+    assert "surco" in str(e), e
+
+# 14. rodear anterior sobre un doble corte (una franja que abarca las dos ramas del tubo) parte de la línea central;
+# sobre un corte simple da lo mismo que antes.
+def con_arco(z0, z1):
+    c = copy.deepcopy(datos)
+    c["anclas"]["Aortic arch"] = {
+        "tipo": "CURVE", "radio": 0.01,
+        "puntos": [[-0.03, 1.0, 0.0], [-0.01, 1.01, 0.0], [0.0, 1.012, 0.0], [0.01, 1.01, 0.0], [0.03, 1.0, 0.0]],
+        "caja": [[-0.03, 1.0, z0], [0.03, 1.012, z1]],
+        "cortes": [{"y": 1.0125, "caja": [[-0.03, 1.0, z0], [0.03, 1.012, z1]]}],
+    }
+    return g.Modelo(c)
+
+
+cima = [0.0, 1.012, 0.0]
+doble = con_arco(-0.04, 0.04)
+q = doble.rodear("Aortic arch", cima, "anterior")
+assert abs(q[2] - (0.01 + H)) < 1e-9 and abs(q[0]) < 1e-9 and abs(q[1] - 1.012) < 1e-9, f"doble corte: {q}"
+q = doble.rodear("Aortic arch", cima, "posterior")
+assert abs(q[2] + (0.01 + H)) < 1e-9, f"doble corte posterior: {q}"
+simple = con_arco(-0.0105, 0.0105)
+assert simple.rodear("Aortic arch", cima, "anterior")[2] == 0.0105 + H, "corte simple: debe seguir la regla de la caja"
+assert simple.rodear("Aortic arch", cima, "posterior")[2] == -0.0105 - H
+# Si la dirección casi coincide con el eje del tubo, se detiene en lugar de inventar un lado.
+eje_z = copy.deepcopy(datos)
+eje_z["anclas"]["Aortic arch"] = {"tipo": "CURVE", "radio": 0.01, "puntos": [[0.0, 1.012, -0.03], [0.0, 1.012, 0.0], [0.0, 1.012, 0.03]],
+                                  "caja": [[-0.01, 1.0, -0.04], [0.01, 1.012, 0.04]], "cortes": [{"y": 1.0125, "caja": [[-0.01, 1.0, -0.04], [0.01, 1.012, 0.04]]}]}
+try:
+    g.Modelo(eje_z).rodear("Aortic arch", cima, "anterior")
+    raise AssertionError("debió fallar con la dirección sobre el eje")
+except ValueError as e:
+    assert "Aortic arch" in str(e), e
+# Los órganos medidos por cajas (esófago, tráquea) no usan la línea central aunque su franja sea ancha.
+ancho = copy.deepcopy(datos)
+ancho["anclas"]["Oesophagus"]["cortes"] = [{"y": 1.3, "caja": [[-0.05, 1.29, -0.05], [0.05, 1.31, 0.05]]}]
+m_ancho = g.Modelo(ancho)
+assert m_ancho._por_linea_central("Oesophagus", [0.0, 1.3, 0.0], 1, None) is None
+assert m_ancho.rodear("Oesophagus", [0.0, 1.3, 0.0], "anterior")[2] == 0.05 + H
+
+# 15. Profundidad: caja por franja con pared común, tubo con eje y radio, y una tolerancia propia por órgano.
+def libre_de_otros(c):
+    """Franja de la tráquea sintética cuyo centro y cuya cara lateral no tocan ningún otro órgano."""
+    y = (c["caja"][0][1] + c["caja"][1][1]) / 2
+    z = (c["caja"][0][2] + c["caja"][1][2]) / 2
+    pts = [[(c["caja"][0][0] + c["caja"][1][0]) / 2, y, z], [c["caja"][1][0] - 0.0008, y, z]]
+    return all(modelo.profundidad(n, p) < -0.002 for p in pts for n in g.OBSTACULOS_CAJA + g.OBSTACULOS_TUBO if n != "Trachea")
+
+
+cj = next(c for c in datos["anclas"]["Trachea"]["cortes"] if c["caja"][1][1] - c["caja"][0][1] >= g.CORTE_MINIMO and libre_de_otros(c))
+y_c = (cj["caja"][0][1] + cj["caja"][1][1]) / 2
+x_c = (cj["caja"][0][0] + cj["caja"][1][0]) / 2
+z_c = (cj["caja"][0][2] + cj["caja"][1][2]) / 2
+assert modelo.profundidad("Trachea", [x_c, y_c, z_c]) > 0.004
+assert modelo.profundidad("Trachea", [x_c + 1.0, y_c, z_c]) < 0
+assert modelo.profundidad("Trachea", [x_c, 5.0, z_c]) == -math.inf, "sin franja a esa altura no hay órgano"
+eje_arco = datos["anclas"]["Aortic arch"]["puntos"][3]
+assert abs(modelo.profundidad("Aortic arch", eje_arco) - datos["anclas"]["Aortic arch"]["radio"]) < 1e-9
+assert g.tolerancia_de("Trachea") == g.tolerancia_de("Oesophagus") == 0.001
+for otro in ("Cricoid cartilage", "Thyroid cartilage", "Aortic arch", "Left main bronchus", "Right subclavian artery"):
+    assert g.tolerancia_de(otro) == 0.0005, otro
+# 0,8 mm adentro de la cara lateral de la tráquea se tolera (límite de 1 mm); 0,8 mm adentro de la superficie de una arteria, no.
+p_traquea = [cj["caja"][1][0] - 0.0008, y_c, z_c]
+assert modelo.profundidad("Trachea", p_traquea) > 0 and modelo.excede(p_traquea) is None
+arteria = datos["anclas"]["Right subclavian artery"]
+e0 = arteria["puntos"][len(arteria["puntos"]) // 2]
+p_arteria = [e0[0], e0[1], e0[2] + arteria["radio"] - 0.0008]
+n_arteria, d_arteria = modelo.excede(p_arteria)
+assert n_arteria == "Right subclavian artery" and d_arteria > 0.0005
+
+# 16. _empujar saca un punto de un tubo (radial hasta radio + h) y de una caja (por la cara más cercana hasta cara + h).
+dentro_tubo = [eje_arco[0], eje_arco[1], eje_arco[2] + 0.003]
+fuera = g._empujar(modelo, dentro_tubo)
+assert abs(modelo.profundidad("Aortic arch", fuera) + H) < 1e-9, modelo.profundidad("Aortic arch", fuera)
+dentro_caja = [x_c, y_c, z_c]
+fuera = g._empujar(modelo, dentro_caja)
+assert modelo.profundidad("Trachea", fuera) <= -H + 1e-9 or modelo.exceso(fuera) <= 0
+# El control que sale de rodear queda fuera de un órgano vecino: el resolver lo empuja (aquí, la cara anterior de
+# la tráquea cae dentro del arco).
+paso_dentro = {"lado": "derecho", "pasos": [{"anclaje": "Trachea", "punto": "mas_bajo", "rodear": "anterior"}]}
+cr = modelo.punto("Trachea", "mas_bajo")
+crudo = modelo.rodear("Trachea", cr, "anterior")
+assert modelo.exceso(crudo) > 0, "el caso de prueba ya no cae dentro de otro órgano"
+assert modelo.exceso(g.resolver(modelo, paso_dentro, {})[0]) <= 0, "resolver no sacó el control rodeado del órgano vecino"
+
+# 17. Un camino libre rodea un órgano; si no hay holgura posible, devuelve None.
+a_, b_ = [-0.02, 1.40, 0.012], [0.02, 1.40, 0.012]
+assert any(modelo.profundidad("Trachea", [a_[0] + (b_[0] - a_[0]) * k / 40, 1.40, 0.012]) > 0 for k in range(41)), "la recta debe cruzar la tráquea"
+camino = g.camino_libre(modelo, a_, b_, 0.0)
+assert camino, "debió haber un camino libre alrededor de la tráquea"
+assert all(modelo.exceso(p) <= 1e-12 for p in camino), "el camino pasa por dentro de un órgano"
+assert g.camino_libre(modelo, a_, b_, 10.0) is None
+rehecho = g.reenrutar(modelo, [a_, b_], [0.0, 1.40, 0.012], "x")
+assert rehecho and rehecho[0] == a_ and rehecho[-1] == b_ and len(rehecho) > 2
+
+# 18. Una ruta forzada a pasar por el centro de la tráquea se rechaza nombrando ruta, órgano y altura, y no escribe nada.
+forzada = copy.deepcopy(rutas)
+forzada["rutas"]["laringeo_recurrente_derecho"]["pasos"].insert(2, {"anclaje": "Trachea", "punto": "centro"})
+with tempfile.TemporaryDirectory() as tmp:
+    destino = Path(tmp) / "rutas-vago.json"
+    try:
+        g.generar_y_escribir(datos, forzada, destino)
+        raise AssertionError("debió fallar una ruta que atraviesa la tráquea")
+    except g.Atraviesa as e:
+        texto_e = str(e)
+        assert "laringeo_recurrente_derecho" in texto_e and "Trachea" in texto_e and re.search(r"y = \d+\.\d mm", texto_e), texto_e
+        assert re.search(r"pasa \d+\.\d\d mm dentro de", texto_e), texto_e
+    assert not destino.exists(), "escribió el archivo aunque la ruta atravesaba la tráquea"
+    g.generar_y_escribir(datos, rutas, destino)
+    assert destino.exists(), "control positivo: con las rutas buenas sí escribe"
+
+# 19. Las rutas buenas no pasan de la tolerancia de ningún órgano ni dejan saltos de más de 2,5 mm.
+for id_ruta, r in salida["rutas"].items():
+    for p in r["puntos"]:
+        assert modelo.excede(p) is None, f"{id_ruta}: {p} dentro de {modelo.excede(p)}"
+    assert max(math.dist(a, b) for a, b in zip(r["puntos"], r["puntos"][1:])) <= g.SALTO_MAXIMO + 1e-12, id_ruta
+
+print("generar-ramas-vago.py: pruebas en verde")
