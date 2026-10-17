@@ -90,12 +90,21 @@ export interface Marcador {
   fuente_ubicacion: Bilingue; // vacío ("") si no hay fuente escrita
 }
 
-/** Propuesta de la auditoría del modelo para un trazo del vago (docs/research/vago/auditoria-vago.md). Copia literal, no definitiva. */
+/** Qué tan firme es la propuesta de un trazo, según la medición (pipeline/reglas_vago.py). */
+export type ConfianzaTrazo = 'alta' | 'media' | 'baja';
+
+/**
+ * Propuesta de la auditoría del modelo para un trazo del vago (docs/research/vago/auditoria-vago.md).
+ * La escribe `scripts/aplicar-trazos.ts` a partir de la medición de `pipeline/auditar-vago.py`: es una
+ * propuesta para revisión docente, no una asignación definitiva.
+ */
 export interface PropuestaTrazo {
   malla: string; // nombre de la malla, igual que en el GLB
-  auditoria: string; // columna "Propuesta" de la tabla, tal cual
-  propuesta: string | null; // id de marcador o 'no_es_ramo' cuando la auditoría propone una sola opción de la lista; null si no
-  fuente: string;
+  auditoria: string; // texto de la propuesta que da la regla
+  propuesta: string | null; // id de marcador o 'no_es_ramo' cuando la regla propone una sola opción de la lista; null si no
+  fuente: string; // clave de la bibliografía de docs/research/marcadores/fuentes.md (spec 04)
+  evidencia?: Bilingue; // medidas del trazo, regla aplicada y razón de la confianza, en es y en
+  confianza?: ConfianzaTrazo | null; // null cuando la regla no distingue entre ramos
 }
 
 export interface GrupoEstudio {

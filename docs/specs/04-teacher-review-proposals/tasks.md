@@ -61,6 +61,7 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 - 2026-10-14 ronda 1: la salida del pipeline no entra al PR (`.gitignore`); el determinismo se prueba con `cmp` explícito; pruebas de datos (a) a (d) concretas.
 - 2026-10-14 ronda 2: (b) comprueba el motivo de los `sin_ubicar` en el resumen, que es donde lo escribe T3 (antes pedía `fuente_ubicacion`, que T3 no toca para esos casos); (c) se formula sobre el estado real de hoy.
 - 2026-10-14 ronda 3: se agregan `e2e/atlas.spec.ts` y la aserción de PAG (rompían con el nuevo `fuente_ubicacion`), el YAML como archivo corregible tras la corrida real, y (b) admite la `aproximada` sin posición que T3 conserva.
+- 2026-10-17: PR #204 con verificador y auditor en verde (una devolución por afirmaciones viejas en SPEC.md y docs/v2.md); espera la aprobación del editor.
 
 ## T5: Agregar a la auditoría del vago las reglas de raicillas, cuello y abdomen
 - Purpose: que la auditoría deje para cada trazo su evidencia medida y, cuando la regla lo distingue, un ramo propuesto con confianza: raicillas detrás de la oliva, faríngeo frente a laríngeo superior, y ramos abdominales por su destino (hígado, cara anterior o posterior del estómago, aorta bajo el hiato). Las reglas y la escritura de `trazos-medidos.json` viven en un módulo sin `bpy` para probarlas sin Blender.
@@ -90,6 +91,7 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 
 ### Decision log
 - 2026-10-14 ronda 1: partida de la antigua T6 (código aparte de los datos, como T3 y T4); depende de T1 porque las dos editan `src/data/tipos.ts`.
+- 2026-10-17: PR #203 con verificador y auditor en verde (una devolución: la evidencia dice exactamente lo que mide la regla); espera al editor.
 
 ## T7: Medir los trazos reales y escribir la evidencia y las propuestas en los 28 trazos
 - Purpose: correr la auditoría con las reglas nuevas sobre el modelo completo de Z-Anatomy y dejar en `src/data/trazos-vago.json` la evidencia, la confianza, la fuente y la propuesta de cada uno de los 28 trazos, listos para que el editor los apruebe.
@@ -105,6 +107,7 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 - 2026-10-14 ronda 1: partida de la antigua T6; cubre R6.1 para trazos con `resumen-trazos.md`; único dueño de `docs/research/vago/auditoria-vago.md`.
 - 2026-10-14 ronda 2: se agrega el e2e de trazos (fija propuestas de `l#t00` a `l#t02`), las aserciones de `propuestaDeTrazo` por malla, la comprobación de `fuente` contra la bibliografía y el manejo de `pipeline/anclajes-vago.json` (no entra al PR y se borra antes de las pruebas).
 - 2026-10-14 ronda 3: no se pisa el resto de `auditoria-vago.md` (spec 02), se permite corregir las reglas tras la corrida real y se fija `confianza` frente a `propuesta`.
+- 2026-10-17: corrida real de Blender dos veces con `trazos-medidos.json` idéntico; PR #206 encima de #203, con verificador y auditor en verde (una devolución: una prueba ata cada propuesta a su regla); espera al editor. Resultado: 17 de 28 sin propuesta, 7 gástricos posteriores, 2 tronco y 2 raicillas.
 
 ## T8: Mostrar la evidencia al docente y dejarlo confirmar con un toque
 - Purpose: que en modo revisión el docente vea, junto a cada trazo, la propuesta, la confianza, la evidencia y la fuente, y junto a cada marcador ubicado el método y la fuente de su posición (con el desacuerdo de fuentes si lo hay), y confirme con un solo toque ("Correcto" en el trazo ya existe y se conserva; se agrega "Correcto" para la posición de un marcador).
@@ -118,3 +121,4 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 
 ### Decision log
 - 2026-10-14 ronda 1: lector nuevo en `src/lib/trazos.ts`; "Correcto" de marcador con forma definida (clave compartida con "Proponer posición", no pisa una propuesta, se deshace); se aclara qué ya existe para no rehacerlo; no cambia `camposDeFicha`.
+- 2026-10-17: plan publicado en #108 (nivel B); se implementa sobre T4 y T7 y se fusiona después de ellos.
