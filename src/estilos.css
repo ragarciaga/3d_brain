@@ -1016,6 +1016,27 @@ a {
   width: 100%;
 }
 
+/* Escritorio, #197: con la barra de revisión, la nota de cortes y "Mostrar todo" el dock bajaba sobre la
+   brújula en 1280 x 720. Con cortes la explosión vale 0 y el deslizador está bloqueado: su pista se acorta a
+   3rem y las marcas se ocultan, porque ya no hay nada que leer en ellas. Sin cortes, con poca altura
+   (820 px o menos), el deslizador baja a 6rem y conserva sus marcas, que siguen sin cruzarse. En celular
+   nada de esto aplica: el dock y el deslizador se redefinen en la media query de 900 px, más abajo. */
+@media (min-width: 901px) and (max-height: 820px) {
+  .dock-deslizador {
+    height: 6rem;
+  }
+}
+
+@media (min-width: 901px) {
+  .dock-deslizador:has(input:disabled) {
+    height: 3rem;
+  }
+
+  .dock-deslizador:has(input:disabled) .dock-marcas {
+    display: none;
+  }
+}
+
 .visor {
   position: relative;
   flex: 1;
