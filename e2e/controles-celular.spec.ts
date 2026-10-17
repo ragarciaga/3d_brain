@@ -26,6 +26,7 @@ interface Medida {
   deslizador: R;
   marcas: Control[];
   marcasPosicion: string;
+  marcasDisplay: string;
   brujula: { caja: R; radioInterior: number; padding: number };
   botones: Control[];
   centro: R;
@@ -109,6 +110,7 @@ const medir = (page: Page): Promise<Medida> =>
       deslizador: caja(dock.querySelector('[data-testid="explosion"]')!.getBoundingClientRect()),
       marcas,
       marcasPosicion: getComputedStyle(dock.querySelector('.dock-marcas')!).position,
+      marcasDisplay: getComputedStyle(dock.querySelector('.dock-marcas')!).display,
       brujula: { caja: bb, radioInterior: (bb.w - 2 * borde) / 2, padding: parseFloat(cb.paddingTop) },
       botones,
       centro: caja(document.querySelector('.centro')!.getBoundingClientRect()),
@@ -237,15 +239,24 @@ for (const { w, h } of [TAMANOS[0]!, TAMANOS[3]!]) {
   });
 }
 
-// Escritorio: el dock no cambia; la brújula achica sus celdas a 2rem y sube el padding a 0,95rem para que
-// Post (esquina) quepa en el círculo sin crecer (134,8 px, igual que antes) y sin chocar con el dock.
-for (const alto of [720, 800]) {
-  test(`escritorio 1280x${alto}: el dock sigue igual y la brújula contiene sus seis botones (#194)`, async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: alto });
-    const etiqueta = `1280x${alto} 100 % es base`;
+// Escritorio: el ancho del dock no cambia; la brújula achica sus celdas a 2rem y sube el padding a 0,95rem
+// para que Post (esquina) quepa en el círculo sin crecer (134,8 px, igual que antes) y sin chocar con el
+// dock. Sin cortes el deslizador mide 6rem (96 px) cuando el alto es de 820 px o menos y 9rem (144 px) si
+// hay más alto (#197); las marcas siguen visibles y absolutas.
+for (const { w, h: alto, deslizador } of [
+  { w: 1280, h: 720, deslizador: 96 },
+  { w: 1280, h: 800, deslizador: 96 },
+  { w: 1440, h: 900, deslizador: 144 },
+]) {
+  test(`escritorio ${w}x${alto}: el ancho del dock sigue igual, el deslizador mide ${deslizador} px y la brújula contiene sus seis botones (#194, #197)`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: alto });
+    const etiqueta = `${w}x${alto} 100 % es base`;
     await preparar(page, '/es', false);
     const m = await medir(page);
     comprobarTexto(m, etiqueta, false);
+    // #197: sin cortes el deslizador está habilitado y conserva sus marcas.
+    expect.soft(Math.abs(m.deslizador.h - deslizador), `${etiqueta}: deslizador de ${deslizador} px ${fmt(m.deslizador)}`).toBeLessThanOrEqual(TOL);
+    expect.soft(m.marcasDisplay, `${etiqueta}: las marcas siguen visibles`).not.toBe('none');
     // D8: el dock no cambia.
     // Chromium redondea el ancho calculado a 1/64 px (105.594px): se compara con tolerancia, no como texto.
     expect.soft(Math.abs(parseFloat(m.dock.ancho) - 105.6), `${etiqueta}: ancho calculado del dock (${m.dock.ancho})`).toBeLessThanOrEqual(0.1);
@@ -286,7 +297,12 @@ test('escritorio 1280x720: con un corte y un filtro el dock y la brújula no se 
   await page.setViewportSize({ width: 1280, height: 720 });
   await preparar(page, '/es', false);
   await conCortesYFiltro(page);
-  comprobarEscritorio(await medir(page), '1280x720 100 % es con corte y filtro');
+  const m = await medir(page);
+  const etiqueta = '1280x720 100 % es con corte y filtro';
+  comprobarEscritorio(m, etiqueta);
+  // #197: con cortes la explosión vale 0 y el deslizador bloqueado baja a 3rem sin marcas.
+  expect.soft(Math.abs(m.deslizador.h - 48), `${etiqueta}: deslizador de 48 px ${fmt(m.deslizador)}`).toBeLessThanOrEqual(TOL);
+  expect.soft(m.marcasDisplay, `${etiqueta}: marcas ocultas`).toBe('none');
 });
 
 test('escritorio 1280x720 en modo revisión: el dock y la brújula no se cruzan (#194)', async ({ page }) => {
@@ -295,26 +311,66 @@ test('escritorio 1280x720 en modo revisión: el dock y la brújula no se cruzan 
   comprobarEscritorio(await medir(page), '1280x720 100 % es revisión base');
 });
 
-// Con la barra de revisión, la nota de cortes y "Mostrar todo", el dock mide 438,5 px y baja hasta y 624,6;
-// la brújula (134,8 px, top 541,7) ya se cruzaba con él antes de #194 (medido con el CSS de la base). No se
-// mueve el dock: aquí solo se vigila que la brújula no empeore (mismo tamaño y misma posición) y que los dos
-// sigan dentro de `.centro`. El cruce queda como seguimiento.
-test('escritorio 1280x720 en modo revisión con un corte y un filtro: la brújula no empeora y los dos caben en .centro (#194)', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await abrirRevision(page);
-  await conCortesYFiltro(page);
-  const m = await medir(page);
-  const etiqueta = '1280x720 100 % es revisión con corte y filtro';
-  comprobarDock(m, etiqueta);
-  comprobarBrujula(m, etiqueta);
-  expect.soft(Math.abs(m.brujula.caja.w - 134.8) + Math.abs(m.brujula.caja.h - 134.8), `${etiqueta}: brújula de 134,8 px ${fmt(m.brujula.caja)}`).toBeLessThanOrEqual(0.2);
-  expect.soft(m.brujula.caja.y, `${etiqueta}: la brújula no sube sobre el dock (y ${m.brujula.caja.y.toFixed(1)})`).toBeGreaterThanOrEqual(541.5);
-  expect.soft(exceso(m.dock.caja, m.centro), `${etiqueta}: el dock dentro de .centro ${fmt(m.centro)}`).toBeLessThanOrEqual(TOL);
-  expect.soft(exceso(m.brujula.caja, m.centro), `${etiqueta}: la brújula dentro de .centro ${fmt(m.centro)}`).toBeLessThanOrEqual(TOL);
-});
+/** Solo un filtro (sin corte): aparece "Mostrar todo" y el deslizador sigue habilitado. */
+async function soloFiltro(page: Page) {
+  await page.evaluate(() => {
+    (window as unknown as { __atlas: { setState(p: object): void } }).__atlas.setState({ ocultas: new Set(['thalamus-r']) });
+  });
+  await expect(page.getByTestId('mostrar-todo')).toBeVisible();
+  await expect(page.getByTestId('explosion-bloqueada')).toHaveCount(0);
+}
 
-test('escritorio 1280x720 en inglés: la brújula contiene sus seis botones y sus textos (#194)', async ({ page }) => {
+// Antes de #197, con la barra de revisión, la nota de cortes y "Mostrar todo", el dock medía 438,5 px y
+// bajaba hasta y 624,6: se cruzaba unos 83 px con la brújula (134,8 px, top 541,7), medido con el CSS de la
+// base. Con cortes la explosión vale 0 y el deslizador está bloqueado: baja a 3rem y oculta sus marcas
+// (96 px menos), así que el dock cabe sobre la brújula sin moverla.
+for (const { w, h } of [
+  { w: 1280, h: 720 },
+  { w: 1280, h: 800 },
+  { w: 1366, h: 768 },
+  { w: 1440, h: 900 },
+]) {
+  test(`escritorio ${w}x${h} en modo revisión con un corte y un filtro: el dock y la brújula no se cruzan (#197)`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await abrirRevision(page);
+    await conCortesYFiltro(page);
+    const m = await medir(page);
+    const etiqueta = `${w}x${h} 100 % es revisión con corte y filtro`;
+    comprobarEscritorio(m, etiqueta);
+    expect.soft(Math.abs(m.brujula.caja.w - 134.8) + Math.abs(m.brujula.caja.h - 134.8), `${etiqueta}: brújula de 134,8 px ${fmt(m.brujula.caja)}`).toBeLessThanOrEqual(0.2);
+    expect.soft(Math.abs(m.deslizador.h - 48), `${etiqueta}: deslizador de 48 px ${fmt(m.deslizador)}`).toBeLessThanOrEqual(TOL);
+    expect.soft(m.marcasDisplay, `${etiqueta}: marcas ocultas`).toBe('none');
+  });
+}
+
+// Solo un filtro (sin corte): el deslizador sigue habilitado y "Mostrar todo" suma alto al dock. En escritorio
+// de poca altura (820 px o menos) el deslizador baja a 6rem con sus marcas a la vista para que el dock
+// quepa sobre la brújula (#197). Con más alto conserva sus 9rem.
+for (const { w, h, deslizador, filtro } of [
+  { w: 1280, h: 720, deslizador: 96, filtro: true },
+  { w: 1366, h: 768, deslizador: 96, filtro: true },
+  { w: 1280, h: 800, deslizador: 96, filtro: false },
+  { w: 1440, h: 900, deslizador: 144, filtro: false },
+]) {
+  const caso = filtro ? 'con solo un filtro' : 'sin filtro';
+  test(`escritorio ${w}x${h} en modo revisión ${caso}: el dock y la brújula no se cruzan y el deslizador mide ${deslizador} px (#197)`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await abrirRevision(page);
+    if (filtro) await soloFiltro(page);
+    const m = await medir(page);
+    const etiqueta = `${w}x${h} 100 % es revisión ${caso}`;
+    comprobarEscritorio(m, etiqueta);
+    comprobarMarcas(m, etiqueta);
+    expect.soft(Math.abs(m.deslizador.h - deslizador), `${etiqueta}: deslizador de ${deslizador} px ${fmt(m.deslizador)}`).toBeLessThanOrEqual(TOL);
+    expect.soft(m.marcasDisplay, `${etiqueta}: las marcas siguen visibles`).not.toBe('none');
+  });
+}
+
+test('escritorio 1280x720 en inglés: la brújula contiene sus seis botones, sus textos y las marcas (#194, #197)', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await preparar(page, '/en', false);
-  comprobarEscritorio(await medir(page), '1280x720 100 % en base');
+  const m = await medir(page);
+  comprobarEscritorio(m, '1280x720 100 % en base');
+  // #197: "Assembled" es la marca más ancha; se valida con el deslizador de 96 px.
+  comprobarMarcas(m, '1280x720 100 % en base');
 });
