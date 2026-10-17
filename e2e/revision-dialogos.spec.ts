@@ -1,5 +1,6 @@
 // Revisión docente: foco y Escape en los diálogos, cierre visible en celular, guardado mientras se escribe
 // y respuestas "Corregir" sin texto. Helpers propios para no depender de atlas.spec.ts.
+import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { configRevision } from '../src/config/revision';
 import { claveRevisionIdb } from '../src/lib/huella';
@@ -26,20 +27,34 @@ async function entrar(page: Page, codigo: string) {
   await expect(barra(page)).toContainText(codigo);
 }
 
-/** Abre la ficha del hipocampo con la búsqueda (solo la ruta /revision activa el modo revisión). */
-async function irAlHipocampo(page: Page) {
-  await page.keyboard.press('Control+k');
-  await page.getByRole('combobox', { name: /Buscar|Search/ }).fill('hipocampo');
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/es\/hipocampo$/);
-}
+// Nombre y slug de cada estructura, leídos de los datos (oráculo de solo lectura): la prueba no adivina literales.
+const estructuras = (JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as {
+  estructuras: Record<string, { nombre: { es: string }; slug: { es: string } }>;
+}).estructuras;
 
-/** Como `irAlHipocampo`, pero con cualquier búsqueda y ruta. */
-async function irA(page: Page, busqueda: string, ruta: RegExp) {
+/**
+ * Busca una estructura y espera a que su ficha esté en pantalla, no solo la URL: la URL cambia primero y la
+ * selección (la ficha) se actualiza después, a veces segundos después con WebGL por software. Un clic en ese
+ * intervalo cae en la ficha anterior (#208). Solo la ruta /revision activa el modo revisión.
+ */
+async function irA(page: Page, busqueda: string, entrada: string) {
+  const { nombre, slug } = estructuras[entrada]!;
   await page.keyboard.press('Control+k');
   await page.getByRole('combobox', { name: /Buscar|Search/ }).fill(busqueda);
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(ruta);
+  await expect(page).toHaveURL(new RegExp(`/es/${slug.es}$`));
+  await expect(page.getByTestId('ficha')).toHaveAttribute('data-entrada', entrada);
+  await expect(page.locator('#ficha-titulo')).toHaveText(nombre.es);
+}
+
+/** Abre la ficha del hipocampo con la búsqueda. */
+const irAlHipocampo = (page: Page) => irA(page, 'hipocampo', 'hippocampus');
+
+/** Pulsa un veredicto de un campo de la ficha abierta y espera a que quede pulsado antes de seguir. */
+async function marcar(page: Page, campo: string, veredicto: 'Correcto' | 'Corregir' | 'No es mi área') {
+  const boton = page.locator(`[data-campo="${campo}"]`).getByRole('button', { name: veredicto });
+  await boton.click();
+  await expect(boton).toHaveAttribute('aria-pressed', 'true');
 }
 
 async function cerrarGuia(page: Page) {
@@ -115,7 +130,7 @@ test('Escape cierra el diálogo aunque el foco esté en un campo de la ficha', a
   await cerrarGuia(page);
   await irAlHipocampo(page);
   const control = page.locator('[data-campo="que_es.es"]');
-  await control.getByRole('button', { name: 'Corregir' }).click();
+  await marcar(page, 'que_es.es', 'Corregir');
   const propuesta = control.getByLabel('Cambio propuesto');
   await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
   await expect(enviarDialogo(page)).toBeVisible();
@@ -249,7 +264,7 @@ test('la propuesta se guarda mientras se escribe y sobrevive a recargar', async 
   await cerrarGuia(page);
   await irAlHipocampo(page);
   const control = page.locator('[data-campo="que_es.es"]');
-  await control.getByRole('button', { name: 'Corregir' }).click();
+  await marcar(page, 'que_es.es', 'Corregir');
 
   const propuesta = control.getByLabel('Cambio propuesto');
   await expect(propuesta).toBeVisible();
@@ -277,7 +292,7 @@ test('"Corregir" sin texto queda incompleto y no se envía', async ({ page }) =>
   await cerrarGuia(page);
   await irAlHipocampo(page);
   const control = page.locator('[data-campo="que_es.es"]');
-  await control.getByRole('button', { name: 'Corregir' }).click();
+  await marcar(page, 'que_es.es', 'Corregir');
   await expect(control.getByTestId('revision-incompleta')).toContainText('Incompleto');
   await expect(control.getByLabel('Cambio propuesto')).toHaveAttribute('aria-invalid', 'true');
 
@@ -315,8 +330,8 @@ test('lo que se envía lleva solo las respuestas completas de la ficha', async (
   await entrar(page, 'ENVIO01');
   await cerrarGuia(page);
   await irAlHipocampo(page);
-  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Correcto' }).click();
-  await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Corregir' }).click();
+  await marcar(page, 'que_es.es', 'Correcto');
+  await marcar(page, 'ubicacion.es', 'Corregir');
 
   await barra(page).getByRole('button', { name: 'Enviar revisión' }).click();
   const fila = enviarDialogo(page).getByRole('listitem').filter({ hasText: 'Hipocampo' });
@@ -356,10 +371,10 @@ test('envío: abrir una parte no la marca enviada hasta confirmar (#58)', async 
   await entrar(page, 'ENVIO02');
   await cerrarGuia(page);
   await irAlHipocampo(page);
-  await page.locator('[data-campo="ubicacion.es"]').getByRole('button', { name: 'Correcto' }).click();
-  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Correcto' }).click();
-  await irA(page, 'tálamo', /\/es\/talamo$/);
-  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'Correcto' }).click();
+  await marcar(page, 'ubicacion.es', 'Correcto');
+  await marcar(page, 'que_es.es', 'Correcto');
+  await irA(page, 'tálamo', 'thalamus');
+  await marcar(page, 'que_es.es', 'Correcto');
 
   await abrirEnvio();
   await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('3 respuestas sin enviar');
@@ -413,7 +428,7 @@ test('envío: abrir una parte no la marca enviada hasta confirmar (#58)', async 
   await expect(dialogo()).toHaveCount(0);
 
   // Editar una respuesta confirmada la devuelve a pendiente.
-  await page.locator('[data-campo="que_es.es"]').getByRole('button', { name: 'No es mi área' }).click();
+  await marcar(page, 'que_es.es', 'No es mi área');
   await abrirEnvio();
   await expect(dialogo().getByTestId('pendientes-envio')).toHaveText('1 respuesta sin enviar');
   await expect(dialogo().getByRole('listitem').filter({ hasText: 'Tálamo' }).getByTestId('sin-enviar')).toContainText('1 sin enviar');
