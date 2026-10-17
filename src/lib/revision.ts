@@ -1,4 +1,6 @@
 // Modo revisión docente (F24): cada respuesta se refiere a una unidad revisable concreta.
+import type { Marcador } from '../data/tipos';
+
 export type Veredicto = 'correcto' | 'corregir' | 'no_es_mi_area';
 
 export interface Respuesta {
@@ -69,6 +71,14 @@ export function propuestaDePosicion(
   const respuesta = respuestas[claveRespuesta({ estructura, campo: 'posicion' })];
   if (!respuesta || !respuesta.posicion) return null;
   return { respuesta, pieza: piezas[estructura] ?? null };
+}
+
+/**
+ * Si el docente puede confirmar con un toque la posición de un marcador: solo la `aproximada` que ya
+ * tiene una posición propia que mostrar. Sin posición (o `sin_ubicar` o `validada`) no hay nada que confirmar.
+ */
+export function posicionConfirmable(m: Pick<Marcador, 'estado' | 'posicion'> | undefined): boolean {
+  return m !== undefined && m.estado === 'aproximada' && m.posicion !== null;
 }
 
 /** Inversa de `claveRespuesta`. Lanza si la clave no tiene tres partes o el idioma no es '', 'es' ni 'en'. */

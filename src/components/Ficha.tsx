@@ -13,6 +13,7 @@ import {
   claveRespuesta,
   ESPERA_GUARDADO_MS,
   pendientesComoCorrectas,
+  posicionConfirmable,
   propuestaDePosicion,
   respuestaCompleta,
   type Veredicto,
@@ -163,6 +164,30 @@ function PropuestaPosicion({ entrada, idioma }: { entrada: string; idioma: Idiom
         onChange={(ev) => useAtlas.getState().responder({ ...p.respuesta, comentario: ev.target.value || undefined })}
       />
     </div>
+  );
+}
+
+/**
+ * "Correcto" para la posición aproximada de un marcador (F24): un toque guarda `posicion/correcto` sin
+ * coordenadas, con la misma clave que "Proponer posición"; otro toque la borra.
+ */
+function PosicionCorrecta({ id, version }: { id: string; version: string }) {
+  const { t } = useTranslation();
+  const clave = claveRespuesta({ estructura: id, campo: 'posicion' });
+  const activo = useAtlas((s) => s.respuestas[clave]?.veredicto === 'correcto');
+  const alPulsar = () => {
+    const st = useAtlas.getState();
+    if (activo) {
+      st.borrarRespuesta(clave);
+      return;
+    }
+    st.responder({ estructura: id, campo: 'posicion', veredicto: 'correcto', version, fecha: new Date().toISOString() });
+    if (st.ubicando === id) st.setUbicando(null);
+  };
+  return (
+    <button type="button" data-testid="posicion-correcta" className={`chip chip-correcto${activo ? ' activo' : ''}`} aria-pressed={activo} onClick={alPulsar}>
+      {t('revision.posicionCorrecta')}
+    </button>
   );
 }
 
@@ -623,12 +648,19 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
         <section className="ficha-campo">
           <h3>{t('marcador.titulo')}</h3>
           <p>{t(`marcador.explica_${marcador.estado}`)}</p>
-          {marcador.fuente_ubicacion[idioma] && <p className="recurso-nota">{marcador.fuente_ubicacion[idioma]}</p>}
+          {!revisor && marcador.fuente_ubicacion[idioma] && <p className="recurso-nota">{marcador.fuente_ubicacion[idioma]}</p>}
           {revisor && (
             <>
+              {marcador.fuente_ubicacion[idioma] && (
+                <div className="revision-control" data-testid="fuente-posicion">
+                  <h4>{t('revision.fuentePosicion')}</h4>
+                  <p>{marcador.fuente_ubicacion[idioma]}</p>
+                </div>
+              )}
               <PropuestaPosicion key={id} entrada={id} idioma={idioma} />
               {!yaPropuesta && (
                 <>
+                  {posicionConfirmable(marcador) && <PosicionCorrecta id={id} version={version} />}
                   <button type="button" className="boton-primario" onClick={() => useAtlas.getState().setUbicando(ubicando === id ? null : id)}>
                     {ubicando === id ? t('revision.cancelarUbicar') : t('revision.proponerPosicion')}
                   </button>

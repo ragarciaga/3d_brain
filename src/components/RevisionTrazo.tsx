@@ -1,12 +1,13 @@
 // Panel del trazo del vago (F24): qué ramo es la malla seleccionada, con la propuesta de la auditoría
-// del modelo cuando es una sola opción de la lista, un comentario opcional y "Siguiente trazo".
+// del modelo (cuando es una sola opción de la lista) y su confianza, evidencia y fuente, un comentario
+// opcional y "Siguiente trazo".
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { nombre } from '../lib/nombres';
 import { ESPERA_GUARDADO_MS } from '../lib/revision';
-import { avanceTrazos, claveTrazo, ENTRADA_VAGO, propuestaDeTrazo, ramosDeTrazo, siguienteTrazo } from '../lib/trazos';
+import { auditoriaDeTrazo, avanceTrazos, claveTrazo, ENTRADA_VAGO, propuestaDeTrazo, ramosDeTrazo, siguienteTrazo } from '../lib/trazos';
 import { useAtlas } from '../store/useAtlas';
 import { irATrazo } from './irATrazo';
 
@@ -57,6 +58,7 @@ export default function RevisionTrazo({ malla, version, idioma }: { malla: strin
   const trazos = useAtlas((s) => s.trazos);
   const cargaRespuestas = useAtlas((s) => s.cargaRespuestas);
   const propuesta = propuestaDeTrazo(malla);
+  const auditoria = auditoriaDeTrazo(malla);
   const { pendientes, total } = avanceTrazos(trazos, respuestas);
   const siguiente = siguienteTrazo(trazos, respuestas, malla);
   const lado = malla.includes('.l#') ? t('lado.izquierdo') : t('lado.derecho');
@@ -82,6 +84,26 @@ export default function RevisionTrazo({ malla, version, idioma }: { malla: strin
       <p data-testid="trazos-pendientes">{t('revision.trazosPorRevisar', { pendientes, total })}</p>
       {propuesta !== null && (
         <p>{t('revision.trazoPropuesta', { nombre: propuesta === 'no_es_ramo' ? t('revision.noEsRamo') : nombre(estructuras[propuesta], idioma) })}</p>
+      )}
+      {propuesta !== null && auditoria?.confianza && (
+        <p className="recurso-nota" data-testid="trazo-confianza">
+          {t('revision.trazoConfianza', { nivel: t(`revision.confianza_${auditoria.confianza}`) })}
+        </p>
+      )}
+      {propuesta === null && (
+        <p className="recurso-nota" data-testid="trazo-sin-propuesta">
+          {t('revision.trazoSinPropuesta')}
+        </p>
+      )}
+      {auditoria?.evidencia && (
+        <p className="recurso-nota" data-testid="trazo-evidencia">
+          {auditoria.evidencia[idioma]}
+        </p>
+      )}
+      {auditoria?.fuente && (
+        <p className="recurso-nota" data-testid="trazo-fuente">
+          {t('revision.trazoFuente', { fuente: auditoria.fuente })}
+        </p>
       )}
       <label htmlFor={idSelect}>{t('revision.trazoPregunta')}</label>
       <select id={idSelect} value={r?.ramo ?? ''} onChange={(e) => responder(e.target.value, e.target.value === propuesta ? 'correcto' : 'corregir')}>
