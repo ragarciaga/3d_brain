@@ -42,6 +42,8 @@ interface VentanaAtlas {
     objetivoEnPantalla: (() => Punto) | null;
     leer: (() => number[]) | null;
     piezaEnPantalla: ((pieza: string) => { casa: Punto; actual: Punto } | null) | null;
+    desfase: (() => number) | null;
+    pedidosAplicados: number;
   };
 }
 
@@ -54,6 +56,12 @@ const objetivoY = (page: Page) =>
 
 /** Posición y objetivo de la cámara: [px, py, pz, tx, ty, tz]; vacío si el visor aún no la da. */
 const leerCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.leer?.() ?? []);
+
+/** Cuánto le falta a la cámara real para llegar a su destino. `leer` da el destino, que no cambia mientras la cámara se mueve. */
+const desfaseCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.desfase?.() ?? Infinity);
+const pedidosAplicados = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.pedidosAplicados);
+/** El visor aplica el pedido de cámara en el siguiente render: antes de eso el destino que se lee es el del pedido anterior. */
+const hastaPedidoAplicado = (page: Page, antes: number) => expect.poll(() => pedidosAplicados(page)).toBeGreaterThan(antes);
 
 /** Distancia de la cámara a su objetivo y la dirección (unitaria) desde la que mira. */
 async function vistaDeCamara(page: Page) {
@@ -107,6 +115,9 @@ async function camaraQuieta(page: Page) {
       { timeout: 30_000 },
     )
     .toBeLessThan(1e-4);
+  // `leer` da el destino: con pocos cuadros por segundo (CPU lenta, índice de toque armándose) el destino ya es el final
+  // pero la cámara que dibuja y que usan los rayos sigue en camino, y un punto proyectado así cae al lado de lo que se toca.
+  await expect.poll(() => desfaseCamara(page)).toBeLessThan(1e-4);
 }
 
 /**
@@ -153,7 +164,9 @@ async function prepararTalamos(page: Page) {
   await page.getByTestId('ficha').getByRole('button', { name: 'Aislar', exact: true }).click();
   await page.getByTestId('explosion').fill('70');
   await page.waitForTimeout(2500);
+  const pedidosAntes = await pedidosAplicados(page);
   await page.locator('[data-vista="anterior"]').click();
+  await hastaPedidoAplicado(page, pedidosAntes);
   await camaraQuieta(page);
 }
 
@@ -971,12 +984,14 @@ test('modo revisión: "Proponer posición" acepta un toque sobre un órgano de r
   await page.getByRole('button', { name: 'Proponer posición' }).click();
   await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toBeVisible();
   // El estómago es un órgano de referencia: se aísla (solo él recibe el toque), se encuadra y se toca en el centro del visor o cerca.
+  const pedidosAntes = await pedidosAplicados(page);
   await page.evaluate(() => {
     const s = (window as unknown as VentanaAtlas).__atlas.getState();
     s.aislarPiezas(['stomach'], 'solo');
     s.pedirCamara({ encuadrar: ['stomach'] });
   });
   await page.waitForTimeout(2500);
+  await hastaPedidoAplicado(page, pedidosAntes);
   await camaraQuieta(page);
   const caja = (await page.getByTestId('visor').locator('canvas').boundingBox())!;
   const centro = { x: caja.x + caja.width / 2, y: caja.y + caja.height / 2 };
@@ -1024,12 +1039,14 @@ test('modo revisión: "Proponer posición" acepta un toque sobre un órgano de r
   await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toBeVisible();
   await expect(page.getByTestId('posicion-propuesta')).toHaveCount(0);
   // Elegir otras estructuras movió la cámara y el aislamiento: se vuelve a encuadrar el estómago antes de tocar.
+  const pedidosAntes2 = await pedidosAplicados(page);
   await page.evaluate(() => {
     const s = (window as unknown as VentanaAtlas).__atlas.getState();
     s.aislarPiezas(['stomach'], 'solo');
     s.pedirCamara({ encuadrar: ['stomach'] });
   });
   await page.waitForTimeout(2500);
+  await hastaPedidoAplicado(page, pedidosAntes2);
   await camaraQuieta(page);
   await tocarHastaRegistrar(page, centro, '1 respuesta');
   await expect(page.getByTestId('posicion-propuesta')).toContainText('Posición propuesta sobre Estómago');
@@ -1357,7 +1374,9 @@ test('el doble clic sobre una pieza separada la devuelve y el toque la seleccion
   await page.getByTestId('reensamblar').click();
   await page.waitForTimeout(600);
   await page.getByTestId('ficha').getByRole('button', { name: 'Separar', exact: true }).click();
+  const pedidosAntes = await pedidosAplicados(page);
   await page.locator('[data-vista="anterior"]').click();
+  await hastaPedidoAplicado(page, pedidosAntes);
   await camaraQuieta(page);
   const sep = await enPantalla(page, 'thalamus-l');
   await page.mouse.dblclick(sep.actual.x, sep.actual.y);

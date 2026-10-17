@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-17 (corrida cycle-4889aa8-pwzk, segunda parte: fusionados #189 (bookkeeping), #191 (importador aparta las respuestas sin autorización, #190), #192 (SPEC paso 9, #56), #193 (seguridad del modo revisión, #149), #196 (controles en celular, #194) y #199 (panel de fragmentar y brújula en escritorio, #197); abierto #198 (Rockbuilt 0.9.0, espera al editor); primera parte: fusionados #172 (04-T3), #173 (Rockbuilt 0.7.0), #174 (privacidad, autorización v3), #175 (04-T5), #179 (script cerrado antes del despliegue), #180 (medición de cortes, #42), #181 (importador), #182 (marcadores con cortes), #183 (índice de toque después del primer cuadro), #184 (pausa del reloj en e2e), #186 (seguimientos), #187 (recorte por caja en los cortes) y #188 (SPEC y diseño de cortes al día); corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
+Updated: 2026-10-17 (corrida cycle-4889aa8-pwzk, segunda parte: fusionados #198 (Rockbuilt 0.9.0) y #202 (cámara quieta en e2e, #201); abiertos para el editor #203 (04-T6), #204 (04-T4), #206 (04-T7) y #205 (verificación de F8); antes: fusionados #189 (bookkeeping), #191 (importador aparta las respuestas sin autorización, #190), #192 (SPEC paso 9, #56), #193 (seguridad del modo revisión, #149), #196 (controles en celular, #194) y #199 (panel de fragmentar y brújula en escritorio, #197); primera parte: fusionados #172 (04-T3), #173 (Rockbuilt 0.7.0), #174 (privacidad, autorización v3), #175 (04-T5), #179 (script cerrado antes del despliegue), #180 (medición de cortes, #42), #181 (importador), #182 (marcadores con cortes), #183 (índice de toque después del primer cuadro), #184 (pausa del reloj en e2e), #186 (seguimientos), #187 (recorte por caja en los cortes) y #188 (SPEC y diseño de cortes al día); corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -41,8 +41,9 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 - F8 (planos de corte) en construcción: listas la lógica pura (`src/lib/cortes.ts`, PR #54), el
   estado en el store con las guardas de explosión y Separar (PR #70) y la lista medida de mallas
   cerradas, 191 de 253, que `check:modelo` verifica (PR #57). El visor ya recorta el encéfalo,
-  con fantasma y toque recortado (PR #123), y los cortes viajan en el enlace (PR #128); todavía no hay
-  panel de cortes (T8 y T9).
+  con fantasma y toque recortado (PR #123), y los cortes viajan en el enlace (PR #128). Panel,
+  cajón en celular, marcadores con cortes y recorte por caja en main; verificación de F8 (2026-10-17,
+  #205): seguridad sin hallazgos y E2E 28 de 28.
 - Works: typecheck, lint, más de 400 pruebas unitarias, check:i18n, check:modelo (341 mallas, 287
   piezas, 6,53 MB) y build; unas 60 E2E. F1 a F7, F9, F10, F11, F24, el recorrido del vago (F14) y F25 sin
   geometría trazada todavía. Sin "Ambos idiomas" (quitado el 2026-10-13); selector ES | EN claro. Bugs #16 (Reintentar) y #19 (Separar)
@@ -157,23 +158,23 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 - 2026-10-16: importador (#190, opción A del editor): con `--autorizaciones`, las respuestas de alias sin ninguna autorización van solo a "Descartadas: sin autorización" (alias, campo, idioma, estructura), sin texto libre, porque `resumen.md` se vuelve issue público.
 - 2026-10-16: modo revisión (#149): las llaves locales llevan una huella SHA-256 del código (no es secreta, solo evita el código en claro), sin migración; "Borrar también de este equipo" desmarcada por defecto; una página con el beacon recarga una vez antes de adoptar un código y, si sigue con beacon, no lo adopta; el aviso de privacidad dice lo que pasa por página (texto aprobado por el editor). El código recordado solo se escribe al abrir un enlace con `?r=`.
+- 2026-10-17: el lanzamiento a docentes espera las propuestas de la spec 04 (T4, T6, T7 y T8 en main), para que cada docente confirme o corrija en vez de ubicar desde cero (decisión del editor).
 - 2026-10-17: controles (#194, #197): en celular el panel de fragmentar toma el ancho de su contenido y la brújula tiene más relleno para que Post quepa; en escritorio la brújula conserva su tamaño con celdas de 2rem, y con cortes o con poca altura el deslizador se acorta para no cruzarse con la brújula en modo revisión.
 
 ## Next steps
-1. Revisión docente: con el script desplegado (versión 3) y #149 fusionado (#193), mandar el mensaje a los 10 docentes (`docs/guia-docentes.md`).
-2. Rockbuilt 0.9.0 (#198): fusionarlo cuando el editor lo apruebe; trae la cola de fusiones.
-3. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
-4. Propuestas para la sesión docente (spec 04): T1 a T5 en main; siguen T4 (#104, marcadores en `src/data`, nivel C), T6 a T8.
-5. F8 cortes: T10 hecho (#42); falta `/rb-verify docs/specs/01-cutting-planes/`.
-6. Vago: T5 a T7 (#50 a #52).
+1. Propuestas para la sesión docente (spec 04): T1 a T3 y T5 en main; T4 (#204), T6 (#203) y T7 (#206, encima de #203) esperan al editor; T8 (#108, lo que ve el docente y "Correcto" en la posición de un marcador) en implementación, se fusiona después de T4 y T7.
+2. Revisión docente: cuando estén T4, T6, T7 y T8 en main, mandar el mensaje a los 10 docentes (`docs/guia-docentes.md`).
+3. F8 cortes: verificación hecha (#205, la fusiona el editor).
+4. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
+5. Vago: T5 a T7 (#50 a #52).
 
 ## Pendientes del editor (al 2026-10-17)
-Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42), texto legal de #149 revisado y aprobado.
+Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42), texto legal de #149 revisado y aprobado. Hecho el 2026-10-17: controles revisados en el iPhone (#194), Rockbuilt 0.9.0 aprobado (#198).
 
 Sigue, en este orden:
-1. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado (2026-10-16), la hoja quedó limpia y #149 ya está en main.
-2. Abrir https://brain.maysasp.com/es en el iPhone y confirmar que los controles de fragmentar y "Post" quedan dentro de su recuadro y que no aparece la barra blanca (#194, la barra blanca solo se veía en Safari).
-3. Aprobar o no la actualización a Rockbuilt 0.9.0 (#198).
+1. Revisar y fusionar los PR de datos de la spec 04: #204 (posiciones de los 26 marcadores), #203 (aplicador de trazos) y después #206 (evidencia y propuestas de los 28 trazos: 17 sin propuesta, `l#t01` y `r#t01` pierden el faríngeo, solo 2 de 8 raicillas se clasifican, y los umbrales "(derivado)" se aprueban ahí).
+2. Revisar y fusionar #205 (verificación de F8).
+3. Con T8 en main, mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado y la hoja quedó limpia.
 
 ## Seguimientos abiertos (sin decisión pendiente)
 - Modo revisión (#149): no hay prueba e2e de dos pestañas con el modelo cargado (el CI no tiene CPU para dibujarlo dos veces por software); el nombre del archivo de descarga ya no lleva el código, pero el contenido y las URL prellenadas del formulario de respaldo sí (por diseño; la ayuda y la guía lo advierten).
@@ -182,8 +183,10 @@ Sigue, en este orden:
 - Canal: `public/probar-canal.html` con `apps-script/prueba-canal.js` todavía lee por GET con una marca de prueba (no con un código); design.md de spec 03 dice que un código no puede empezar con `-` y `REVISOR_VALIDO` lo permite (la defensa real es el formato `@`).
 - Visor: con cortes, al tocar una pieza no aparece su etiqueta 3D flotante (sin cortes sí); no se comparó con el comportamiento anterior. Los marcadores de la línea media (x = 0) se esconden con el sagital en 0 por quedar unas centésimas de micra del lado oculto.
 - Índice de toque: árboles en modo `indirect` para evitar el pico de memoria de GPU al clonar índices, o un worker propio, solo si el editor nota trabas.
-- Pruebas: `e2e/cortes-marcadores.spec.ts` paso (2) falló una vez en CI (el toque en el marcador de prueba no lo seleccionó en 60 s) y pasó al relanzar y 4 de 4 en local; vigilar. F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas.
+- Pruebas: F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas.
 - Cortes: el encuadre en celular no descuenta el cajón de cortes; el recorrido del vago puede tapar el cajón.
+- Pruebas de F8 (informe de #205, no bloquean): F3-E2 comprueba "translúcido" por la lista de fantasmas y no por la opacidad del material; cinco esperas fijas negativas en `cortes-panel`, `cortes-movil`, `cortes-marcadores` y `cortes-relleno` se pueden cambiar por `cuadros()` con control positivo.
+- Spec 04: los marcadores torácicos se vuelven a ubicar cuando se trace el vago torácico (spec 02); `evidencia` y `confianza` de `PropuestaTrazo` siguen opcionales en `src/data/tipos.ts` aunque los 28 trazos ya las traen; el docstring de `pipeline/auditar-vago.py` y `pipeline/README.md` todavía dicen que la medición "la leerá" `scripts/aplicar-trazos.ts`; SPEC.md F24 no menciona "Correcto" para la posición de un marcador (T8), lo agrega el editor (ruta sensible).
 - Harness: actualizar una rama con un commit de main que solo cambia documentación obliga a correr todo el CI otra vez; Rockbuilt 0.9.0 (#198) trae la cola de fusiones para eso. `rb vendor` crea `e2e/smoke.spec.ts` en proyectos que ya tienen suite (ragarciaga/rockbuilt#22).
 
 ## Timing

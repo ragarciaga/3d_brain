@@ -20,7 +20,7 @@ interface VentanaCortes {
   };
   __puntoCorte(p: string): { x: number; y: number } | null;
   __recorte: () => number | null;
-  __camara: { leer: (() => number[]) | null };
+  __camara: { leer: (() => number[]) | null; desfase: (() => number) | null; pedidosAplicados: number };
 }
 
 // Copias de los ayudantes de atlas.spec.ts: este archivo no los comparte para que cada prueba sea independiente.
@@ -33,6 +33,11 @@ async function abrir(page: Page, ruta: string) {
 }
 
 const leerCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaCortes).__camara.leer?.() ?? []);
+/** Cuánto le falta a la cámara real para llegar a su destino. `leer` da el destino, que no cambia mientras la cámara se mueve. */
+const desfaseCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaCortes).__camara.desfase?.() ?? Infinity);
+const pedidosAplicados = (page: Page) => page.evaluate(() => (window as unknown as VentanaCortes).__camara.pedidosAplicados);
+/** El visor aplica el pedido de cámara en el siguiente render: antes de eso el destino que se lee es el del pedido anterior. */
+const hastaPedidoAplicado = (page: Page, antes: number) => expect.poll(() => pedidosAplicados(page)).toBeGreaterThan(antes);
 async function camaraQuieta(page: Page) {
   await expect
     .poll(
@@ -45,6 +50,9 @@ async function camaraQuieta(page: Page) {
       { timeout: 30_000 },
     )
     .toBeLessThan(1e-4);
+  // `leer` da el destino: con pocos cuadros por segundo (CPU lenta, índice de toque armándose) el destino ya es el final
+  // pero la cámara que dibuja y que usan los rayos sigue en camino, y un punto proyectado así cae al lado de lo que se toca.
+  await expect.poll(() => desfaseCamara(page)).toBeLessThan(1e-4);
 }
 
 const planosDe = (page: Page, pieza: string) => page.evaluate((p) => (window as unknown as VentanaCortes).__cortes.planosDe(p), pieza);
@@ -139,7 +147,9 @@ test('cortes en el visor: planos solo en el encéfalo, fantasma con ocultas y ai
   });
 
   await test.step('(5) __puntoCorte da un punto sobre la cara del corte, dentro del lienzo (D1)', async () => {
+    const pedidosAntes = await pedidosAplicados(page);
     await accion(page, 'pedirCamara', { vista: 'anterior', encuadrar: ['thalamus-l'] });
+    await hastaPedidoAplicado(page, pedidosAntes);
     await camaraQuieta(page);
     const lienzo = await page.getByTestId('visor').locator('canvas').boundingBox();
     let p: { x: number; y: number } | null = null;
