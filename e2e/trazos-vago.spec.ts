@@ -24,7 +24,7 @@ interface VentanaAtlas {
       rutas: unknown[];
     };
   };
-  __camara: { leer: (() => number[]) | null };
+  __camara: { leer: (() => number[]) | null; desfase: (() => number) | null; pedidosAplicados: number };
 }
 
 // El total sale del modelo medido en Blender, sin escribirlo a mano.
@@ -84,6 +84,12 @@ const seleccion = (page: Page) => page.evaluate(() => (window as unknown as Vent
 
 const leerCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.leer?.() ?? []);
 
+/** Cuánto le falta a la cámara real para llegar a su destino. `leer` da el destino, que no cambia mientras la cámara se mueve. */
+const desfaseCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.desfase?.() ?? Infinity);
+const pedidosAplicados = (page: Page) => page.evaluate(() => (window as unknown as VentanaAtlas).__camara.pedidosAplicados);
+/** El visor aplica el pedido de cámara en el siguiente render: antes de eso el destino que se lee es el del pedido anterior. */
+const hastaPedidoAplicado = (page: Page, antes: number) => expect.poll(() => pedidosAplicados(page)).toBeGreaterThan(antes);
+
 async function distancia(page: Page) {
   const c = await leerCamara(page);
   return c.length === 6 ? Math.hypot(c[0]! - c[3]!, c[1]! - c[4]!, c[2]! - c[5]!) : -1;
@@ -103,6 +109,9 @@ async function camaraQuieta(page: Page) {
       { timeout: 30_000 },
     )
     .toBeLessThan(1e-4);
+  // `leer` da el destino: con pocos cuadros por segundo (CPU lenta, índice de toque armándose) el destino ya es el final
+  // pero la cámara que dibuja y que usan los rayos sigue en camino, y un punto proyectado así cae al lado de lo que se toca.
+  await expect.poll(() => desfaseCamara(page)).toBeLessThan(1e-4);
 }
 
 /** Entra en modo revisión con un código propio, cierra la guía que se abre sola y espera el modelo. */
@@ -153,6 +162,7 @@ test('trazos del vago desde "Qué revisar": se abren, se recorren con "Siguiente
 
   // D2: abrir el primer pendiente cierra el diálogo, abre la ficha del vago, lo resalta y lo encuadra.
   await seccion(page).locator('summary').click();
+  const pedidosAntes = await pedidosAplicados(page);
   await seccion(page).getByRole('button', { name: 'Abrir el primer trazo pendiente' }).click();
   await expect(queRevisar(page)).toHaveCount(0);
   await expect(page).toHaveURL(/\/es\/nervio-vago-x$/);
@@ -160,6 +170,7 @@ test('trazos del vago desde "Qué revisar": se abren, se recorren con "Siguiente
   await expect.poll(async () => (await seleccion(page)).malla).toBe(trazos[0]);
   expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().aislar?.modo)).toBe('contexto');
   expect(await page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().camara?.malla)).toBe(trazos[0]);
+  await hastaPedidoAplicado(page, pedidosAntes);
   await camaraQuieta(page);
   expect(await distancia(page)).toBeLessThan(antes);
 

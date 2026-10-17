@@ -22,7 +22,7 @@ interface VentanaMarcadores {
     enPantalla: ((pos: Vec) => { x: number; y: number }) | null;
   };
   __cortes: { planosDe(p: string): number };
-  __camara: { leer: (() => number[]) | null };
+  __camara: { leer: (() => number[]) | null; desfase: (() => number) | null; pedidosAplicados: number };
 }
 
 // Copias de los ayudantes de cortes-visor.spec.ts: este archivo no los comparte para que cada prueba sea independiente.
@@ -35,6 +35,9 @@ async function abrir(page: Page, ruta: string) {
 }
 
 const leerCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaMarcadores).__camara.leer?.() ?? []);
+/** Cuánto le falta a la cámara real para llegar a su destino. `leer` da el destino, que no cambia mientras la cámara se mueve. */
+const desfaseCamara = (page: Page) => page.evaluate(() => (window as unknown as VentanaMarcadores).__camara.desfase?.() ?? Infinity);
+const pedidosAplicados = (page: Page) => page.evaluate(() => (window as unknown as VentanaMarcadores).__camara.pedidosAplicados);
 async function camaraQuieta(page: Page) {
   await expect
     .poll(
@@ -47,6 +50,10 @@ async function camaraQuieta(page: Page) {
       { timeout: 30_000 },
     )
     .toBeLessThan(1e-4);
+  // `leer` da el destino: con pocos cuadros por segundo (CPU lenta, índice de toque armándose) el destino ya es el final
+  // pero la cámara que dibuja y que usan los rayos sigue en camino. Un punto proyectado así cae unos píxeles al lado de
+  // la esfera del marcador (de unos 5 px de radio) y el toque puede no alcanzarla.
+  await expect.poll(() => desfaseCamara(page)).toBeLessThan(1e-4);
 }
 
 /** Llama una acción del store (solo pruebas, con `window.__atlas` de DEV). */
@@ -121,7 +128,10 @@ test('marcadores con cortes: el lado oculto no se dibuja ni se toca, el fantasma
   };
 
   await test.step('(1) encuadre y marcadores inyectados', async () => {
+    const pedidosAntes = await pedidosAplicados(page);
     await accion(page, 'pedirCamara', { vista: 'anterior', encuadrar: encefalo });
+    // El visor aplica el pedido en el siguiente render: antes de eso el destino que se lee es el del pedido anterior.
+    await expect.poll(() => pedidosAplicados(page)).toBeGreaterThan(pedidosAntes);
     await camaraQuieta(page);
     await inyectar(page, inyectados);
     await expect.poll(async () => (await puntos(page)).filter((p) => ids.includes(p.id)).length).toBe(3);
