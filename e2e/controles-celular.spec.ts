@@ -248,7 +248,7 @@ for (const { w, h: alto, deslizador } of [
   { w: 1280, h: 800, deslizador: 96 },
   { w: 1440, h: 900, deslizador: 144 },
 ]) {
-  test(`escritorio ${w}x${alto}: el dock sigue igual y la brújula contiene sus seis botones (#194, #197)`, async ({ page }) => {
+  test(`escritorio ${w}x${alto}: el ancho del dock sigue igual, el deslizador mide ${deslizador} px y la brújula contiene sus seis botones (#194, #197)`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: alto });
     const etiqueta = `${w}x${alto} 100 % es base`;
     await preparar(page, '/es', false);
@@ -366,8 +366,11 @@ for (const { w, h, deslizador, filtro } of [
   });
 }
 
-test('escritorio 1280x720 en inglés: la brújula contiene sus seis botones y sus textos (#194)', async ({ page }) => {
+test('escritorio 1280x720 en inglés: la brújula contiene sus seis botones, sus textos y las marcas (#194, #197)', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await preparar(page, '/en', false);
-  comprobarEscritorio(await medir(page), '1280x720 100 % en base');
+  const m = await medir(page);
+  comprobarEscritorio(m, '1280x720 100 % en base');
+  // #197: "Assembled" es la marca más ancha; se valida con el deslizador de 96 px.
+  comprobarMarcas(m, '1280x720 100 % en base');
 });
