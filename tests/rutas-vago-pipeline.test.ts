@@ -1,6 +1,8 @@
-// Rutas del vago que calcula pipeline/generar-ramas-vago.py sobre el modelo sintético (ADR 0010):
-// los tramos torácicos, los empalmes con el tronco escaneado y con los ramos, y la banda que
-// reemplazan. Mide sobre tests/fixtures/vago-sintetico/ (lo escribe pipeline/pruebas/vago_sintetico.py).
+// Rutas del vago que calcula pipeline/generar-ramas-vago.py (ADR 0010): los tramos torácicos, los
+// empalmes con el tronco escaneado y con los ramos, y la banda que reemplazan. Las mismas aserciones
+// (casosDeRutas) corren sobre el modelo sintético (tests/fixtures/vago-sintetico/, lo escribe
+// pipeline/pruebas/vago_sintetico.py) y sobre el modelo real (pipeline/anclajes-vago.json y
+// public/modelos/rutas-vago.json). El bloque real no se salta: si falta un archivo, falla.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { tronco, type Anclajes, type P } from '../scripts/lib/asimetrias.ts';
@@ -60,10 +62,50 @@ function ruta(s: Salida, id: string): RutaGenerada {
   return r;
 }
 
+/** Aserciones R1.2, R1.3, R1.4 y R2.4: valen igual para el modelo sintético y para el real. */
+function casosDeRutas(anclajes: Anclajes, salida: Salida): void {
+  // Perezosas: si falta una ruta, falla la prueba que la usa y nombra la ruta que falta.
+  const derecho = () => ruta(salida, 'vago_toracico_derecho');
+  const izquierdo = () => ruta(salida, 'vago_toracico_izquierdo');
+  const distal = () => ruta(salida, 'vago_izquierdo_distal');
+
+  it('R1.2: el torácico derecho va de la subclavia derecha al bronquio principal derecho, sobre el tronco', () => {
+    const primero = derecho().puntos[0]!;
+    const ultimo = derecho().puntos.at(-1)!;
+    expect(Math.abs(primero[1] - alturaAncla(anclajes, 'Right subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
+    expect(Math.abs(ultimo[1] - alturaAncla(anclajes, 'Right main bronchus', 'mas_bajo'))).toBeLessThanOrEqual(1e-6);
+    expect(distanciaAPolilinea(primero, tronco(anclajes, 'derecho'))).toBeLessThanOrEqual(EMPALME);
+    expect(distanciaAPolilinea(ultimo, tronco(anclajes, 'derecho'))).toBeLessThanOrEqual(EMPALME);
+  });
+
+  it('R1.3: el torácico izquierdo arranca en la subclavia izquierda y el distal sigue donde termina', () => {
+    const primero = izquierdo().puntos[0]!;
+    expect(Math.abs(primero[1] - alturaAncla(anclajes, 'Left subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
+    expect(distanciaAPolilinea(primero, tronco(anclajes, 'izquierdo'))).toBeLessThanOrEqual(EMPALME);
+    expect(dist(distal().puntos[0]!, izquierdo().puntos.at(-1)!)).toBeLessThanOrEqual(EMPALME);
+  });
+
+  it('R1.4: cada recurrente sale del tramo torácico de su lado', () => {
+    expect(distanciaAPolilinea(ruta(salida, 'laringeo_recurrente_derecho').puntos[0]!, derecho().puntos)).toBeLessThanOrEqual(EMPALME);
+    expect(distanciaAPolilinea(ruta(salida, 'laringeo_recurrente_izquierdo').puntos[0]!, izquierdo().puntos)).toBeLessThanOrEqual(EMPALME);
+  });
+
+  it('R2.4: la banda que reemplaza cada torácica sale de los anclajes', () => {
+    expect(derecho().reemplaza?.lado).toBe('derecho');
+    expect(Math.abs(derecho().reemplaza!.y_max - alturaAncla(anclajes, 'Right subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
+    expect(Math.abs(derecho().reemplaza!.y_min! - alturaAncla(anclajes, 'Right main bronchus', 'mas_bajo'))).toBeLessThanOrEqual(1e-6);
+    expect(izquierdo().reemplaza?.lado).toBe('izquierdo');
+    expect(Math.abs(izquierdo().reemplaza!.y_max - alturaAncla(anclajes, 'Left subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
+    expect(izquierdo().reemplaza!.y_min).toBeNull();
+    for (const id of ['laringeo_recurrente_derecho', 'laringeo_recurrente_izquierdo', 'vago_izquierdo_distal']) {
+      expect(ruta(salida, id).reemplaza, id).toBeUndefined();
+    }
+  });
+}
+
 describe('rutas del vago con el modelo sintético', () => {
   const derecho = ruta(salida, 'vago_toracico_derecho');
   const izquierdo = ruta(salida, 'vago_toracico_izquierdo');
-  const distal = ruta(salida, 'vago_izquierdo_distal');
 
   it('publica exactamente las cinco rutas', () => {
     expect(Object.keys(salida.rutas).sort()).toEqual(IDS);
@@ -89,27 +131,6 @@ describe('rutas del vago con el modelo sintético', () => {
     expect(enBloque.test('pasos:\n  - 0.5')).toBe(true);
   });
 
-  it('R1.2: el torácico derecho va de la subclavia derecha al bronquio principal derecho, sobre el tronco', () => {
-    const primero = derecho.puntos[0]!;
-    const ultimo = derecho.puntos.at(-1)!;
-    expect(Math.abs(primero[1] - alturaAncla(anclajes, 'Right subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
-    expect(Math.abs(ultimo[1] - alturaAncla(anclajes, 'Right main bronchus', 'mas_bajo'))).toBeLessThanOrEqual(1e-6);
-    expect(distanciaAPolilinea(primero, tronco(anclajes, 'derecho'))).toBeLessThanOrEqual(EMPALME);
-    expect(distanciaAPolilinea(ultimo, tronco(anclajes, 'derecho'))).toBeLessThanOrEqual(EMPALME);
-  });
-
-  it('R1.3: el torácico izquierdo arranca en la subclavia izquierda y el distal sigue donde termina', () => {
-    const primero = izquierdo.puntos[0]!;
-    expect(Math.abs(primero[1] - alturaAncla(anclajes, 'Left subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
-    expect(distanciaAPolilinea(primero, tronco(anclajes, 'izquierdo'))).toBeLessThanOrEqual(EMPALME);
-    expect(dist(distal.puntos[0]!, izquierdo.puntos.at(-1)!)).toBeLessThanOrEqual(EMPALME);
-  });
-
-  it('R1.4: cada recurrente sale del tramo torácico de su lado', () => {
-    expect(distanciaAPolilinea(ruta(salida, 'laringeo_recurrente_derecho').puntos[0]!, derecho.puntos)).toBeLessThanOrEqual(EMPALME);
-    expect(distanciaAPolilinea(ruta(salida, 'laringeo_recurrente_izquierdo').puntos[0]!, izquierdo.puntos)).toBeLessThanOrEqual(EMPALME);
-  });
-
   it('control negativo: un empalme movido 3 mm se detecta', () => {
     const movida = copia(salida);
     const d = ruta(movida, 'vago_toracico_derecho').puntos[0]!;
@@ -120,15 +141,18 @@ describe('rutas del vago con el modelo sintético', () => {
     expect(distanciaAPolilinea(r, ruta(movida, 'vago_toracico_izquierdo').puntos)).toBeGreaterThan(EMPALME);
   });
 
-  it('R2.4: la banda que reemplaza cada torácica sale de los anclajes', () => {
-    expect(derecho.reemplaza?.lado).toBe('derecho');
-    expect(Math.abs(derecho.reemplaza!.y_max - alturaAncla(anclajes, 'Right subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
-    expect(Math.abs(derecho.reemplaza!.y_min! - alturaAncla(anclajes, 'Right main bronchus', 'mas_bajo'))).toBeLessThanOrEqual(1e-6);
-    expect(izquierdo.reemplaza?.lado).toBe('izquierdo');
-    expect(Math.abs(izquierdo.reemplaza!.y_max - alturaAncla(anclajes, 'Left subclavian artery', 'mas_alto'))).toBeLessThanOrEqual(1e-6);
-    expect(izquierdo.reemplaza!.y_min).toBeNull();
-    for (const id of ['laringeo_recurrente_derecho', 'laringeo_recurrente_izquierdo', 'vago_izquierdo_distal']) {
-      expect(ruta(salida, id).reemplaza, id).toBeUndefined();
-    }
+  casosDeRutas(anclajes, salida);
+});
+
+describe('rutas del vago con el modelo real', () => {
+  // Sin guarda: si falta uno de los dos archivos, readFileSync lanza y la prueba falla.
+  const anclajesReales = leer<Anclajes>('pipeline/anclajes-vago.json');
+  const publicadas = leer<Salida>('public/modelos/rutas-vago.json');
+
+  it('publica exactamente las cinco rutas, todas en revisión', () => {
+    expect(Object.keys(publicadas.rutas).sort()).toEqual(IDS);
+    for (const id of IDS) expect(ruta(publicadas, id).revision.estado, id).toBe('en_revision');
   });
+
+  casosDeRutas(anclajesReales, publicadas);
 });

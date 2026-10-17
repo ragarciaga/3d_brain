@@ -311,8 +311,19 @@ describe('asimetrías del vago con el modelo real', () => {
     }
   });
 
-  it.runIf(existsSync(rutaAnclajes))('el modelo medido y las rutas publicadas cumplen las asimetrías', () => {
+  // Nunca se salta: si falta el archivo de anclajes o las rutas publicadas no son las cinco, falla.
+  it('el modelo medido y las cinco rutas publicadas cumplen las cuatro asimetrías', () => {
+    expect(existsSync(rutaAnclajes), `${rutaAnclajes}: corre pipeline/auditar-vago.py`).toBe(true);
+    expect(Object.keys(publicadas.rutas).sort()).toEqual([
+      'laringeo_recurrente_derecho',
+      'laringeo_recurrente_izquierdo',
+      'vago_izquierdo_distal',
+      'vago_toracico_derecho',
+      'vago_toracico_izquierdo',
+    ]);
     const d = leer<Anclajes>(rutaAnclajes);
-    for (const res of comprobar(d, hayRutas ? publicadas : null)) expect(res.ok, `asimetría ${res.asimetria}: ${res.detalle}`).toBe(true);
+    const res = comprobar(d, publicadas);
+    expect(res.map((r) => r.asimetria)).toEqual([1, 2, 3, 4]);
+    for (const r of res) expect(r.ok, `asimetría ${r.asimetria}: ${r.detalle}`).toBe(true);
   });
 });

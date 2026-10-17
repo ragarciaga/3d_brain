@@ -63,7 +63,7 @@ describe('rutas trazadas: archivo publicado', () => {
     expect(leerRutas(malo).map((r) => r.id).sort()).toEqual(otras);
   });
 
-  it('el archivo publicado hoy es válido (aunque esté vacío)', () => {
+  it('el archivo publicado es válido', () => {
     const publicado = JSON.parse(readFileSync('public/modelos/rutas-vago.json', 'utf8')) as unknown;
     expect(Array.isArray(leerRutas(publicado))).toBe(true);
   });

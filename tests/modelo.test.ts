@@ -116,7 +116,7 @@ describe('tronco del vago fuera de la banda (check:modelo)', () => {
     expect(comprobarBandas(bandas(rutas), v)).toHaveLength(2);
   });
 
-  it('con rutas vacías (el archivo publicado hoy) no vigila nada', () => {
+  it('con rutas vacías no vigila nada', () => {
     const v = con(R, 1.4, 1.3);
     expect(comprobarBandas(bandas({ rutas: {} }), v)).toEqual([]);
   });
