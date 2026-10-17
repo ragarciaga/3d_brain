@@ -883,10 +883,14 @@ a {
   right: 0.8rem;
   bottom: 0.8rem;
   display: grid;
-  grid-template-columns: repeat(3, 2.4rem);
-  grid-template-rows: repeat(3, 2.4rem);
+  grid-template-columns: repeat(3, 2rem);
+  grid-template-rows: repeat(3, 2rem);
   gap: 0.2rem;
-  padding: 0.35rem;
+  /* Para que la esquina (Post) quepa en el círculo, el padding debe ser al menos
+     (√2 - 1) x (celda + espacio) = 0,41 x 2,2rem = 0,91rem; 0,95rem deja 0,6 px de holgura. Las celdas
+     de 2rem (antes 2,4rem) mantienen el tamaño total en 8,3rem (134,8 px): una brújula más grande
+     chocaba con el dock en 1280 x 720 con la barra de revisión (#194). */
+  padding: 0.95rem;
   border-radius: 50%;
   background: var(--panel);
   border: 1px solid var(--borde);
@@ -1821,13 +1825,33 @@ body:has(.pagina-texto) {
     top: 0.5rem;
     right: auto;
     left: 0.4rem;
-    width: 5.4rem;
+    /* El ancho sale del contenido (la palabra más larga de los botones y la columna de marcas más el
+       deslizador). Con un ancho fijo, la pista `auto` de la grid crecía hasta el min-content y los
+       botones se salían por la derecha, más con la fuente ancha de iOS o con "Assembled" (#194). */
+    width: min-content;
     gap: 0.4rem;
     padding: 0.45rem 0.35rem;
   }
 
   .dock-deslizador {
     height: 6.5rem;
+    justify-content: space-between;
+    gap: 0.3rem;
+  }
+
+  /* Las marcas pasan al flujo para que ocupen su propia columna y no se pisen con el deslizador.
+     Las tres comparten una celda; el `bottom` en línea (100 %, 70 % y 0 %) las coloca con
+     posición relativa y el `translateY(50%)` de la regla base las centra en su punto. */
+  .dock-marcas {
+    position: static;
+    display: grid;
+    margin: 0.45rem 0;
+  }
+
+  .dock-marcas li {
+    grid-area: 1 / 1;
+    align-self: end;
+    position: relative;
   }
 
   .brujula {
@@ -1836,7 +1860,9 @@ body:has(.pagina-texto) {
     right: 0.4rem;
     grid-template-columns: repeat(3, 1.75rem);
     grid-template-rows: repeat(3, 1.75rem);
-    padding: 0.25rem;
+    /* Para que la esquina (Post) quepa en el círculo, el padding debe ser al menos
+       (√2 - 1) x (celda + espacio) = 0,41 x 1,95rem = 0,81rem; 0,9rem deja 1,5 px de holgura (#194). */
+    padding: 0.9rem;
   }
 
   /* Cortes: el botón del encabezado abre un cajón inferior (queda montado; cerrado está inert y oculto). */
