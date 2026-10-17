@@ -229,14 +229,21 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
     }
   });
 
-  it('la propuesta sigue a la regla: tronco y raicilla no son ramo, el resto es un ramo de la lista, y sin_regla ninguno', () => {
-    const ramos = ramosDeTrazo();
+  it('la propuesta de cada trazo es la que la regla de su fila da en pipeline/reglas_vago.py (PROPUESTA)', () => {
+    // El mapa regla -> propuesta se lee del código que la decide, sin copiarlo: `"regla": "id"` o `"regla": None`.
+    const py = readFileSync('pipeline/reglas_vago.py', 'utf8');
+    const bloque = /^PROPUESTA = \{([^}]*)\}/m.exec(py)?.[1] ?? '';
+    const porRegla = new Map([...bloque.matchAll(/"(\w+)":\s*(?:"([^"]+)"|None)/g)].map((m) => [m[1]!, m[2] ?? null]));
+    expect(porRegla.size).toBeGreaterThan(0);
+    expect(porRegla.get('sin_regla')).toBeNull();
+    expect(porRegla.get('raicilla')).toBe('no_es_ramo');
     for (const t of trazosAuditados) {
       const regla = filaDe(t.malla).regla;
-      if (regla === 'sin_regla') expect(t.propuesta, t.malla).toBeNull();
-      else if (regla === 'tronco' || regla === 'raicilla') expect(t.propuesta, t.malla).toBe('no_es_ramo');
-      else expect(ramos, `${t.malla} (${regla})`).toContain(t.propuesta);
+      expect(porRegla.has(regla), `${t.malla}: regla ${regla} sin propuesta en reglas_vago.py`).toBe(true);
+      expect(t.propuesta, `${t.malla} (${regla})`).toBe(porRegla.get(regla));
     }
+    const ramos = ramosDeTrazo();
+    for (const [regla, id] of porRegla) if (id !== null && id !== 'no_es_ramo') expect(ramos, regla).toContain(id);
     const validas = [...ramos, 'no_es_ramo'];
     for (const t of trazosAuditados) if (t.propuesta !== null) expect(validas).toContain(t.propuesta);
   });
