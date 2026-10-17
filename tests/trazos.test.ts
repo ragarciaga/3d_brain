@@ -137,49 +137,134 @@ describe('ramosDeTrazo', () => {
 });
 
 describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
+  // Tabla de docs/research/vago/auditoria-vago.md: Trazo | Altura | Largo | Cercanos | Propuesta | Regla | Confianza | Fuente.
   const tabla = readFileSync('docs/research/vago/auditoria-vago.md', 'utf8')
     .split('\n')
     .filter((l) => l.startsWith('| Vagus nerve (X).'))
     .map((l) => {
       const c = l.split('|').map((x) => x.trim());
-      return { malla: c[1]!, propuesta: c[5]! };
+      expect(c, l).toHaveLength(10);
+      // Las piezas de "Cercanos (arriba / abajo)": "Pieza 3 mm, Otra 5 mm / Pieza 4 mm, Otra 6 mm".
+      const piezas = c[4]!.split(/ \/ |, /).map((p) => p.replace(/ \d+ mm$/, ''));
+      return { malla: c[1]!, piezas, propuesta: c[5]!, regla: c[6]!, confianza: c[7]!, fuente: c[8]! };
     });
+  const filaDe = (malla: string) => tabla.find((f) => f.malla === malla)!;
+  const conRegla = (regla: string) => trazosAuditados.filter((t) => filaDe(t.malla).regla === regla);
 
-  it('trae un registro por trazo del modelo y por fila de la tabla, con la columna Propuesta tal cual', () => {
+  // Claves de la bibliografía: las líneas "- [Clave] ..." que siguen a "## Referencias".
+  const fuentes = readFileSync('docs/research/marcadores/fuentes.md', 'utf8');
+  const claves = fuentes
+    .slice(fuentes.indexOf('\n## Referencias'))
+    .split('\n')
+    .flatMap((l) => /^- \[([^\]]+)\]/.exec(l)?.[1] ?? []);
+
+  it('trae un registro por trazo del modelo y por fila de la tabla, en el mismo orden', () => {
     expect(tabla).toHaveLength(TOTAL);
+    expect(trazosAuditados).toHaveLength(TOTAL);
     expect(trazosAuditados.map((t) => t.malla)).toEqual(trazos);
     expect(trazosAuditados.map((t) => t.malla)).toEqual(tabla.map((f) => f.malla));
-    expect(trazosAuditados.map((t) => t.auditoria)).toEqual(tabla.map((f) => f.propuesta));
   });
 
-  it('solo propone cuando la auditoría da una sola opción de la lista', () => {
-    const fija: Record<string, string> = {
-      'candidato: ramo faríngeo': 'm-pharyngeal-branch-of-vagus-nerve',
-      'candidato: nervio laríngeo superior': 'm-superior-laryngeal-nerve',
-      'tronco del vago': 'no_es_ramo',
-    };
-    for (const t of trazosAuditados) expect(t.propuesta, t.malla).toBe(fija[t.auditoria] ?? null);
-    const conPropuesta = trazosAuditados.filter((t) => t.propuesta !== null).map((t) => t.malla);
-    expect(conPropuesta).toEqual([
-      'Vagus nerve (X).l#t01',
-      'Vagus nerve (X).l#t02',
-      'Vagus nerve (X).r#t01',
-      'Vagus nerve (X).r#t02',
-    ]);
-    const validas = [...ramosDeTrazo(), 'no_es_ramo'];
+  it('D2: la tabla y el archivo coinciden trazo por trazo en propuesta de la auditoría, confianza y fuente', () => {
+    for (const [i, t] of trazosAuditados.entries()) {
+      const f = tabla[i]!;
+      expect(t.malla).toBe(f.malla);
+      expect(t.auditoria, t.malla).toBe(f.propuesta);
+      expect(t.confianza ?? '-', t.malla).toBe(f.confianza); // la tabla pone "-" donde el archivo tiene null
+      expect(t.fuente, t.malla).toBe(f.fuente);
+    }
+  });
+
+  it('R4.1: cada trazo trae evidencia en es y en, con altura, largo y las piezas cercanas de la tabla', () => {
+    for (const t of trazosAuditados) {
+      const e = t.evidencia;
+      expect(e, t.malla).toBeDefined();
+      expect(e!.es.trim(), t.malla).not.toBe('');
+      expect(e!.en.trim(), t.malla).not.toBe('');
+      expect(e!.es, t.malla).toContain('Altura: ');
+      expect(e!.es, t.malla).toContain('Largo: ');
+      expect(e!.en, t.malla).toContain('Height: ');
+      expect(e!.en, t.malla).toContain('Length: ');
+      const piezas = filaDe(t.malla).piezas;
+      expect(piezas.length, t.malla).toBeGreaterThan(0);
+      for (const pieza of piezas) {
+        expect(e!.es, `${t.malla}: ${pieza}`).toContain(pieza);
+        expect(e!.en, `${t.malla}: ${pieza}`).toContain(pieza);
+      }
+    }
+  });
+
+  it('R4.2: la confianza es no nula exactamente cuando hay propuesta, y con ella la evidencia da la razón', () => {
+    expect(trazosAuditados.some((t) => t.propuesta !== null)).toBe(true);
+    for (const t of trazosAuditados) {
+      expect(Object.hasOwn(t, 'confianza'), t.malla).toBe(true);
+      if (t.propuesta === null) {
+        expect(t.confianza, t.malla).toBeNull();
+        continue;
+      }
+      expect(['alta', 'media', 'baja'], t.malla).toContain(t.confianza);
+      expect(t.evidencia!.es, t.malla).toContain('Confianza ');
+      expect(t.evidencia!.en, t.malla).toMatch(/confidence/);
+    }
+  });
+
+  it('R4.3: cada raicilla propone no_es_ramo y su evidencia dice Raicilla y Rootlet', () => {
+    const raicillas = conRegla('raicilla');
+    expect(raicillas.length).toBeGreaterThan(0);
+    for (const t of raicillas) {
+      expect(t.propuesta, t.malla).toBe('no_es_ramo');
+      expect(t.evidencia!.es, t.malla).toContain('Raicilla');
+      expect(t.evidencia!.en, t.malla).toContain('Rootlet');
+    }
+  });
+
+  it('R4.4: cada trazo sin_regla queda sin propuesta ni confianza, y la evidencia dice que la regla no distingue', () => {
+    const sinRegla = conRegla('sin_regla');
+    expect(sinRegla.length).toBeGreaterThan(0);
+    for (const t of sinRegla) {
+      expect(t.propuesta, t.malla).toBeNull();
+      expect(t.confianza, t.malla).toBeNull();
+      expect(t.evidencia!.es, t.malla).toContain('La regla no distingue entre ramos');
+      expect(t.evidencia!.en, t.malla).toContain('does not distinguish');
+    }
+  });
+
+  it('la propuesta de cada trazo es la que la regla de su fila da en pipeline/reglas_vago.py (PROPUESTA)', () => {
+    // El mapa regla -> propuesta se lee del código que la decide, sin copiarlo: `"regla": "id"` o `"regla": None`.
+    const py = readFileSync('pipeline/reglas_vago.py', 'utf8');
+    const bloque = /^PROPUESTA = \{([^}]*)\}/m.exec(py)?.[1] ?? '';
+    const porRegla = new Map([...bloque.matchAll(/"(\w+)":\s*(?:"([^"]+)"|None)/g)].map((m) => [m[1]!, m[2] ?? null]));
+    expect(porRegla.size).toBeGreaterThan(0);
+    expect(porRegla.get('sin_regla')).toBeNull();
+    expect(porRegla.get('raicilla')).toBe('no_es_ramo');
+    for (const t of trazosAuditados) {
+      const regla = filaDe(t.malla).regla;
+      expect(porRegla.has(regla), `${t.malla}: regla ${regla} sin propuesta en reglas_vago.py`).toBe(true);
+      expect(t.propuesta, `${t.malla} (${regla})`).toBe(porRegla.get(regla));
+    }
+    const ramos = ramosDeTrazo();
+    for (const [regla, id] of porRegla) if (id !== null && id !== 'no_es_ramo') expect(ramos, regla).toContain(id);
+    const validas = [...ramos, 'no_es_ramo'];
     for (const t of trazosAuditados) if (t.propuesta !== null) expect(validas).toContain(t.propuesta);
   });
 
-  it('cada registro trae su fuente y el archivo no tiene guion largo', () => {
-    for (const t of trazosAuditados) expect(t.fuente.trim(), t.malla).not.toBe('');
-    const texto = readFileSync('src/data/trazos-vago.json', 'utf8');
-    expect(texto.includes(String.fromCharCode(0x2014))).toBe(false);
+  it('R4.5: la fuente de cada trazo es una clave de la bibliografía y la evidencia la cita', () => {
+    expect(claves.length).toBeGreaterThan(0);
+    for (const t of trazosAuditados) {
+      expect(claves, t.malla).toContain(t.fuente);
+      expect(t.evidencia!.es, t.malla).toContain(`Fuente: ${t.fuente}.`);
+      expect(t.evidencia!.en, t.malla).toContain(`Source: ${t.fuente}.`);
+    }
   });
 
-  it('propuestaDeTrazo lee del archivo', () => {
-    expect(propuestaDeTrazo('Vagus nerve (X).r#t01')).toBe('m-pharyngeal-branch-of-vagus-nerve');
-    expect(propuestaDeTrazo('Vagus nerve (X).l#t02')).toBe('no_es_ramo');
-    expect(propuestaDeTrazo('Vagus nerve (X).r#t03')).toBeNull();
+  it('el archivo y la auditoría no tienen guion largo', () => {
+    const guion = String.fromCharCode(0x2014);
+    expect(readFileSync('src/data/trazos-vago.json', 'utf8').includes(guion)).toBe(false);
+    expect(readFileSync('docs/research/vago/auditoria-vago.md', 'utf8').includes(guion)).toBe(false);
+  });
+
+  it('D3: propuestaDeTrazo lee del archivo para los trazos y da null para una malla desconocida', () => {
+    for (const t of trazosAuditados) expect(propuestaDeTrazo(t.malla), t.malla).toBe(t.propuesta);
     expect(propuestaDeTrazo('Vagus nerve (X).l#t99')).toBeNull();
   });
 });

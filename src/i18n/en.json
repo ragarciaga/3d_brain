@@ -194,7 +194,7 @@
     "trazosPorRevisar": "Strands left to review: {{pendientes}} of {{total}}",
     "trazoPropuesta": "The model audit proposes: {{nombre}}",
     "trazoCorrecto": "Correct, as proposed",
-    "noEsRamo": "Not a branch (vagal trunk)",
+    "noEsRamo": "Not a branch (trunk or rootlet)",
     "noSe": "I don't know",
     "enviar": "Send review",
     "enviarPorFormulario": "Send by form",
