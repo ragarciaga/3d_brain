@@ -2,7 +2,7 @@
 // tope), `?r=` fuera de la barra, llaves locales con huella, "Borrar también de este equipo" y salida sincronizada
 // entre pestañas. Solo códigos falsos; el canal del editor nunca se llama. El beacon real no existe en desarrollo
 // (el plugin es solo del build): las pruebas lo simulan con un `<script data-cf-beacon>` o con `data-beacon-cargado`.
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { claveGuiaVista, claveRevisionIdb } from '../src/lib/huella';
 import { protegerCanalReal } from './canal-real';
 
@@ -131,6 +131,13 @@ async function pedirSalida(page: Page) {
   await expect(dialogoSalida(page)).toBeVisible();
 }
 
+/**
+ * Con dos páginas en el mismo contexto, cada una cargaría y dibujaría el modelo 3D completo y en un CI con poca CPU
+ * el hilo principal de la segunda no atiende teclas ni eventos `storage`. Estas pruebas solo miran la barra, la
+ * ficha y el almacenamiento, que no dependen del modelo: se aborta su descarga en todo el contexto.
+ */
+const sinModelo = (context: BrowserContext) => context.route('**/modelos/atlas.glb', (ruta) => ruta.abort());
+
 const BEACON_FALSO = '{"token":"falso","spa":false}';
 
 // ---------- D1 y D2: adopción en un documento con beacon ----------
@@ -236,6 +243,7 @@ const espiarEscrituraDelCodigo = (page: Page) =>
 const escrituras = (page: Page) => page.evaluate(() => JSON.parse(sessionStorage.getItem('e2e-escrituras') ?? '[]') as string[]);
 
 test('un código que viene del almacén no se vuelve a escribir al navegar dentro de la app', async ({ page, context }) => {
+  await sinModelo(context);
   await entrarYResponder(page, 'SOLOUNA01');
 
   // Otra pestaña del mismo navegador: adopta el código recordado, sin enlace.
@@ -376,6 +384,7 @@ test('S6: salir con la casilla marcada borra el registro y la guía de ese códi
 // ---------- D8: varias pestañas ----------
 
 test('P1: salir y borrar en una pestaña saca a la otra del modo y no vuelve a escribir sus llaves', async ({ page, context }) => {
+  await sinModelo(context);
   await entrarYResponder(page, 'MULTI01');
 
   const otra = await context.newPage();
