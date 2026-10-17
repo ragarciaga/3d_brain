@@ -36,7 +36,11 @@ const claveDe = (malla: string) => `vagus-nerve-x|trazo:${malla}|`;
 
 // Los trazos que prueba el recorrido salen de los datos que aprueba el editor, no de nombres escritos aquí: la
 // auditoría de pipeline/auditar-vago.py decide cuál no tiene propuesta, cuál tiene un ramo y cuál no es ramo.
-const datosTrazos = (JSON.parse(readFileSync('src/data/trazos-vago.json', 'utf8')) as { trazos: { malla: string; propuesta: string | null }[] }).trazos;
+const datosTrazos = (
+  JSON.parse(readFileSync('src/data/trazos-vago.json', 'utf8')) as {
+    trazos: { malla: string; propuesta: string | null; fuente: string; confianza?: string | null; evidencia?: { es: string; en: string } }[];
+  }
+).trazos;
 const estructurasJson = (
   JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as { estructuras: Record<string, { nombre: { es: string; en: string } }> }
 ).estructuras;
@@ -66,7 +70,9 @@ const nombreDePropuesta = (id: string) => {
   const n = estructurasJson[id]!.nombre;
   return n.es !== 'PENDIENTE' ? n.es : n.en;
 };
-const tituloDe = (malla: string) => `Trazo ${/#t(\d+)$/.exec(malla)![1]} del vago ${malla.includes('.l#') ? 'izquierdo' : 'derecho'}`;
+/** Lo mismo en inglés (revision.noEsRamo de en.json, o `nombre.en` del marcador). */
+const nombreDePropuestaEn = (id: string) => (id === 'no_es_ramo' ? 'Not a branch (trunk or rootlet)' : estructurasJson[id]!.nombre.en);
+const tituloDe =(malla: string) => `Trazo ${/#t(\d+)$/.exec(malla)![1]} del vago ${malla.includes('.l#') ? 'izquierdo' : 'derecho'}`;
 
 async function abrir(page: Page, ruta: string) {
   await page.addInitScript(() => localStorage.setItem('atlas:aviso-visto', '1'));
@@ -260,6 +266,49 @@ test('trazos del vago desde "Qué revisar": se abren, se recorren con "Siguiente
   // D1: al reabrir "Qué revisar", el resumen refleja lo respondido.
   await barra(page).getByRole('button', { name: /Qué revisar/ }).click();
   await expect(seccion(page).locator('summary')).toHaveText(`Trazos del vago (${TOTAL - 3} de ${TOTAL})`);
+});
+
+test('el panel del trazo muestra la propuesta con confianza, evidencia y fuente en es y en; sin propuesta dice "Sin propuesta" (spec 04 R5.1)', async ({ page }) => {
+  await entrar(page, 'TRAZOS05');
+  await abrirSeccion(page);
+  await seccion(page).getByRole('button', { name: 'Abrir el primer trazo pendiente' }).click();
+  await expect(panel(page)).toBeVisible();
+
+  // Con propuesta: propuesta, confianza, evidencia y fuente, todo leído de los datos.
+  const confianzaEs: Record<string, string> = { alta: 'alta', media: 'media', baja: 'baja' };
+  const confianzaEn: Record<string, string> = { alta: 'high', media: 'medium', baja: 'low' };
+  const con = enOrden(CON);
+  expect(con.confianza).toBeTruthy();
+  expect(con.evidencia?.es).toBeTruthy();
+  await avanzarHasta(page, CON);
+  await expect(panel(page).getByText(`La auditoría del modelo propone: ${nombreDePropuesta(con.propuesta!)}`)).toBeVisible();
+  await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confianza: ${confianzaEs[con.confianza!]}`);
+  await expect(page.getByTestId('trazo-evidencia')).toHaveText(con.evidencia!.es);
+  await expect(page.getByTestId('trazo-fuente')).toHaveText(`Fuente de la regla: ${con.fuente}`);
+  await expect(page.getByTestId('trazo-sin-propuesta')).toHaveCount(0);
+
+  // En inglés, con el mismo trazo seleccionado.
+  await page.getByTestId('cambiar-idioma').click();
+  await expect(page.getByTestId('idioma-actual')).toHaveText('EN');
+  await expect.poll(async () => (await seleccion(page)).malla).toBe(CON);
+  await expect(page.getByTestId('trazo-evidencia')).toHaveText(con.evidencia!.en);
+  await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confidence: ${confianzaEn[con.confianza!]}`);
+  await expect(page.getByTestId('trazo-fuente')).toHaveText(`Rule source: ${con.fuente}`);
+  await expect(panel(page).getByText(`The model audit proposes: ${nombreDePropuestaEn(con.propuesta!)}`, { exact: true })).toBeVisible();
+  await expect(page.getByTestId('trazo-evidencia')).not.toContainText(con.evidencia!.es);
+
+  // Sin propuesta: evidencia y "Sin propuesta", sin línea de confianza ni botón "Correcto, es lo propuesto".
+  await page.getByTestId('cambiar-idioma').click();
+  await expect(page.getByTestId('idioma-actual')).toHaveText('ES');
+  await expect.poll(async () => (await seleccion(page)).malla).toBe(CON);
+  await avanzarHasta(page, SIN);
+  const sin = enOrden(SIN);
+  expect(sin.evidencia?.es).toBeTruthy();
+  await expect(page.getByTestId('trazo-evidencia')).toHaveText(sin.evidencia!.es);
+  await expect(page.getByTestId('trazo-sin-propuesta')).toHaveText(/Sin propuesta/);
+  await expect(page.getByTestId('trazo-confianza')).toHaveCount(0);
+  await expect(panel(page).getByRole('button', { name: 'Correcto, es lo propuesto' })).toHaveCount(0);
+  await expect(panel(page).getByText(/La auditoría del modelo propone/)).toHaveCount(0);
 });
 
 test('sin la sección de dudas, la de trazos es la primera de "Qué revisar" (#62)', async ({ page }) => {

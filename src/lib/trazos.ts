@@ -1,6 +1,7 @@
 // Trazos del vago (F24): los ramos vienen del modelo como mallas `#tNN` sin nombre y el docente dice
 // qué ramo es cada una. Lógica pura: sin React, sin store y sin `window`.
 import { esMallaDeToque, GRUPO_VAGO, marcadores, trazoDeMalla, trazosAuditados } from '../data/atlas';
+import type { Bilingue, ConfianzaTrazo } from '../data/tipos';
 import { claveRespuesta, respuestaCompleta, type Respuesta } from './revision';
 
 /** Entrada de estructuras.json donde se guardan las respuestas de los trazos del vago. */
@@ -49,4 +50,21 @@ export function ramosDeTrazo(): string[] {
 /** Lo que propone la regla de la auditoría del modelo para un trazo (un ramo de la lista o 'no_es_ramo', según src/data/trazos-vago.json); null si la regla no distingue o la malla no está. */
 export function propuestaDeTrazo(malla: string): string | null {
   return trazosAuditados.find((t) => t.malla === malla)?.propuesta ?? null;
+}
+
+/**
+ * Todo lo que la auditoría dejó para un trazo, para mostrarlo al docente: la propuesta (o null), la
+ * confianza, la evidencia en los dos idiomas y la clave de la fuente. Null si la malla no se auditó.
+ * La evidencia y la confianza faltan (null) en un registro que no las trae.
+ */
+export function auditoriaDeTrazo(malla: string): {
+  propuesta: string | null;
+  confianza: ConfianzaTrazo | null;
+  evidencia: Bilingue | null;
+  fuente: string | null;
+} | null {
+  const t = trazosAuditados.find((x) => x.malla === malla);
+  if (!t) return null;
+  const evidencia = t.evidencia && (t.evidencia.es || t.evidencia.en) ? t.evidencia : null;
+  return { propuesta: t.propuesta ?? null, confianza: t.confianza ?? null, evidencia, fuente: t.fuente || null };
 }

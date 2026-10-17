@@ -16,8 +16,10 @@ import {
   partesEnvio,
   pendientesComoCorrectas,
   pendientesDeEnvio,
+  posicionConfirmable,
   propuestaDePosicion,
   respuestaCompleta,
+  respuestaValida,
   separarIncompletas,
   urlFormulario,
   urlFormularioV2,
@@ -112,6 +114,29 @@ describe('posición propuesta (F24)', () => {
     const carga = JSON.parse(cargaRevision('PROF01', MARCADOR, [pos('comentario de prueba')]));
     expect(carga.respuestas[0].comentario).toBe('comentario de prueba');
     expect(carga.respuestas[0].posicion).toEqual([0.1, 0.2, 0.3]);
+  });
+});
+
+describe('Correcto para la posición de un marcador (spec 04 T8)', () => {
+  const MARCADOR = 'm-periaqueductal-grey';
+  const correcta: Respuesta = { estructura: MARCADOR, campo: 'posicion', veredicto: 'correcto', version: 'sin-ficha', fecha: '2026-10-11T00:00:00Z' };
+
+  it('D1: la respuesta posicion/correcto sin coordenadas es válida y no cuenta como posición propuesta', () => {
+    expect(respuestaValida(correcta, (id) => id === MARCADOR)).toBe(true);
+    expect(correcta.posicion).toBeUndefined();
+    const mapa = { [claveRespuesta(correcta)]: correcta };
+    expect(propuestaDePosicion(mapa, { [MARCADOR]: 'stomach' }, MARCADOR)).toBeNull();
+  });
+
+  it('D2: solo es confirmable la posición aproximada que tiene posición', () => {
+    const punto: [number, number, number] = [0.1, 0.2, 0.3];
+    expect(posicionConfirmable({ estado: 'aproximada', posicion: punto })).toBe(true);
+    expect(posicionConfirmable({ estado: 'aproximada', posicion: { l: punto, r: punto } })).toBe(true);
+    expect(posicionConfirmable({ estado: 'aproximada', posicion: null })).toBe(false);
+    expect(posicionConfirmable({ estado: 'sin_ubicar', posicion: null })).toBe(false);
+    expect(posicionConfirmable({ estado: 'sin_ubicar', posicion: punto })).toBe(false);
+    expect(posicionConfirmable({ estado: 'validada', posicion: punto })).toBe(false);
+    expect(posicionConfirmable(undefined)).toBe(false);
   });
 });
 

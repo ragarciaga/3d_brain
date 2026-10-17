@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { protegerCanalReal } from './canal-real';
+
+protegerCanalReal();
 
 type Vec = [number, number, number];
 
@@ -174,5 +178,144 @@ test('marcadores: un punto por lado, siguen a su ancla al separar y vuelven exac
     expect(unico(todos, 't-sin-ancla', null)).toEqual(posL);
     expect(unico(todos, 't-sin-posicion', 'l')).toEqual(posL);
     expect(unico(todos, 't-sin-posicion', 'r')).toEqual(posR);
+  });
+});
+
+interface RespuestaMarcador {
+  veredicto: string;
+  campo: string;
+  posicion?: Vec;
+}
+
+interface VentanaRevision {
+  __atlas: {
+    getState(): {
+      seleccion: { entrada: string | null };
+      ubicando: string | null;
+      respuestas: Record<string, RespuestaMarcador>;
+      responder(r: Record<string, unknown>): void;
+    };
+  };
+}
+
+// Los marcadores de la prueba salen de los datos, no de nombres escritos aquí; solo Wernicke se nombra porque la spec lo pide.
+type DatoMarcador = { id: string; estado: string; posicion: unknown; fuente_ubicacion: { es: string; en: string } };
+const datosMarcadores = JSON.parse(readFileSync('src/data/marcadores.json', 'utf8')) as DatoMarcador[];
+const DESACUERDO = ' Las fuentes no coinciden: ';
+const confirmables = datosMarcadores.filter((m) => m.estado === 'aproximada' && m.posicion !== null);
+const GEN = confirmables.find((m) => !m.fuente_ubicacion.es.includes(DESACUERDO))!;
+const OTRO = confirmables.find((m) => m.id !== GEN.id && !m.fuente_ubicacion.es.includes(DESACUERDO))!;
+const WERNICKE = datosMarcadores.find((m) => m.id === 'm-wernicke-area')!;
+const trozo = (t: string) => t.slice(0, 50);
+
+async function entrarRevision(page: Page, codigo: string) {
+  await abrir(page, `/es/revision?r=${codigo}`);
+  await expect(page.getByTestId('panel-revision')).toContainText(codigo);
+  await modeloCargado(page);
+  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
+  await expect(page.getByTestId('como-revisar')).toHaveCount(0);
+}
+
+/** Abre la ficha como lo hacen la búsqueda y el árbol, y espera a que la selección y el título sean los suyos. */
+async function elegir(page: Page, id: string) {
+  await page.evaluate((entrada) => window.dispatchEvent(new CustomEvent('atlas:elegir', { detail: { entrada } })), id);
+  await expect.poll(() => page.evaluate(() => (window as unknown as VentanaRevision).__atlas.getState().seleccion.entrada)).toBe(id);
+  await expect(page.locator('#ficha-titulo')).toBeVisible();
+}
+
+const respuestaDe = (page: Page, id: string) =>
+  page.evaluate((k) => (window as unknown as VentanaRevision).__atlas.getState().respuestas[k] ?? null, `${id}|posicion|`);
+const ubicandoAhora = (page: Page) => page.evaluate(() => (window as unknown as VentanaRevision).__atlas.getState().ubicando);
+
+test('revisión de marcadores: fuente de la posición, "Correcto" con un toque y casos sin el botón (spec 04 R5.2, R5.3)', async ({ page }) => {
+  test.setTimeout(240_000);
+  expect(GEN, 'un marcador aproximado con posición y sin desacuerdo').toBeDefined();
+  expect(OTRO).toBeDefined();
+  expect(WERNICKE?.fuente_ubicacion.es, 'Wernicke trae el desacuerdo').toContain(DESACUERDO);
+  await entrarRevision(page, 'MARCA01');
+
+  const fuente = page.getByTestId('fuente-posicion');
+  const correcta = page.getByTestId('posicion-correcta');
+  const proponer = page.getByRole('button', { name: 'Proponer posición' });
+
+  await test.step('(c) la fuente de la posición sale en el idioma activo y en la misma sección que "Proponer posición"', async () => {
+    await elegir(page, GEN.id);
+    await expect(fuente).toContainText(trozo(GEN.fuente_ubicacion.es));
+    await expect(fuente).not.toContainText(trozo(GEN.fuente_ubicacion.en));
+    await expect(fuente.getByRole('heading', { name: 'Método y fuente de la posición' })).toBeVisible();
+    await expect(page.locator('section.ficha-campo').filter({ has: fuente }).filter({ has: proponer })).toHaveCount(1);
+    // Sin duplicar el texto: solo está en el bloque de la fuente.
+    await expect(page.getByTestId('ficha').getByText(trozo(GEN.fuente_ubicacion.es))).toHaveCount(1);
+
+    await elegir(page, WERNICKE.id);
+    const desacuerdo = WERNICKE.fuente_ubicacion.es.slice(WERNICKE.fuente_ubicacion.es.indexOf(DESACUERDO) + DESACUERDO.length);
+    await expect(fuente).toContainText(trozo(desacuerdo));
+
+    await elegir(page, GEN.id);
+    await page.getByTestId('cambiar-idioma').click();
+    await expect(page.getByTestId('idioma-actual')).toHaveText('EN');
+    await expect.poll(() => page.evaluate(() => (window as unknown as VentanaRevision).__atlas.getState().seleccion.entrada)).toBe(GEN.id);
+    await expect(fuente).toContainText(trozo(GEN.fuente_ubicacion.en));
+    await expect(fuente).not.toContainText(trozo(GEN.fuente_ubicacion.es));
+    await expect(fuente.getByRole('heading', { name: 'Method and source of the position' })).toBeVisible();
+    await expect(correcta).toHaveText('Correct, the proposed position is right');
+    await page.getByTestId('cambiar-idioma').click();
+    await expect(page.getByTestId('idioma-actual')).toHaveText('ES');
+    await expect(correcta).toHaveText('Correcto, la posición propuesta está bien');
+  });
+
+  await test.step('(d) "Correcto" guarda con un toque, sin coordenadas y sin modo ubicar; el segundo toque la borra', async () => {
+    // Con "Proponer posición" abierto, confirmar cierra el modo ubicar.
+    await proponer.click();
+    await expect.poll(() => ubicandoAhora(page)).toBe(GEN.id);
+    await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toBeVisible();
+
+    await expect(correcta).toHaveAttribute('aria-pressed', 'false');
+    await correcta.click();
+    await expect(correcta).toHaveAttribute('aria-pressed', 'true');
+    const r = await respuestaDe(page, GEN.id);
+    expect(r).toMatchObject({ veredicto: 'correcto', campo: 'posicion' });
+    expect(r?.posicion).toBeUndefined();
+    expect(await ubicandoAhora(page)).toBeNull();
+    await expect(page.getByText('Toca en el modelo el punto donde va esta estructura.')).toHaveCount(0);
+    await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+    await expect(page.getByTestId('posicion-propuesta')).toHaveCount(0);
+
+    await correcta.click();
+    await expect(correcta).toHaveAttribute('aria-pressed', 'false');
+    expect(await respuestaDe(page, GEN.id)).toBeNull();
+    await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
+  });
+
+  await test.step('(e) con una posición ya propuesta, "Correcto" no aparece y la propuesta sigue', async () => {
+    await page.evaluate(
+      (id) =>
+        (window as unknown as VentanaRevision).__atlas.getState().responder({
+          estructura: id,
+          campo: 'posicion',
+          veredicto: 'corregir',
+          posicion: [0.1, 1.5, -0.02],
+          version: 'sin-ficha',
+          fecha: '2026-10-11T00:00:00.000Z',
+        }),
+      GEN.id,
+    );
+    await expect(page.getByTestId('posicion-propuesta')).toBeVisible();
+    await expect(correcta).toHaveCount(0);
+    expect((await respuestaDe(page, GEN.id))?.posicion).toEqual([0.1, 1.5, -0.02]);
+  });
+
+  await test.step('(f) un marcador sin ubicar no muestra "Correcto" ni la fuente, pero sí "Proponer posición"', async () => {
+    // El mismo módulo que usa la app (como atlas.spec.ts con la ficha revisada): se deja un marcador sin ubicar.
+    await page.evaluate(async (id) => {
+      const atlas = '/src/data/atlas.ts';
+      const { marcadores } = await import(/* @vite-ignore */ atlas);
+      const m = marcadores.find((x: { id: string }) => x.id === id);
+      Object.assign(m, { estado: 'sin_ubicar', posicion: null, ancla: null, fuente_ubicacion: { es: '', en: '' } });
+    }, OTRO.id);
+    await elegir(page, OTRO.id);
+    await expect(proponer).toBeVisible();
+    await expect(correcta).toHaveCount(0);
+    await expect(fuente).toHaveCount(0);
   });
 });
