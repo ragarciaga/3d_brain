@@ -46,11 +46,24 @@ const estructurasJson = (
 ).estructuras;
 const NO_ES_RAMO = 'No es un ramo (tronco o raicilla)'; // revision.noEsRamo en es.json
 const enOrden = (malla: string) => datosTrazos.find((t) => t.malla === malla)!;
-const SIN = trazos.find((m) => enOrden(m).propuesta === null)!; // sin propuesta
-const NO_ES = trazos.find((m) => enOrden(m).propuesta === 'no_es_ramo')!; // la auditoría dice que no es un ramo
+/** Falla con un mensaje claro si los datos no traen el trazo que el recorrido necesita. */
+function exigir(malla: string | undefined, cual: string): string {
+  if (malla === undefined) throw new Error(`src/data/trazos-vago.json no trae ${cual}: el recorrido de trazos lo necesita`);
+  return malla;
+}
+const SIN = exigir(
+  trazos.find((m) => enOrden(m).propuesta === null),
+  'ningún trazo sin propuesta',
+);
+const NO_ES = exigir(
+  trazos.find((m) => enOrden(m).propuesta === 'no_es_ramo'),
+  'ningún trazo con propuesta no_es_ramo',
+);
 // Con un ramo de la lista; si la corrida no trae ninguno, el siguiente no_es_ramo.
-const CON =
-  trazos.find((m) => ![null, 'no_es_ramo'].includes(enOrden(m).propuesta)) ?? trazos.find((m) => m !== NO_ES && enOrden(m).propuesta === 'no_es_ramo')!;
+const CON = exigir(
+  trazos.find((m) => ![null, 'no_es_ramo'].includes(enOrden(m).propuesta)) ?? trazos.find((m) => m !== NO_ES && enOrden(m).propuesta === 'no_es_ramo'),
+  'ningún trazo con un ramo de la lista ni un segundo no_es_ramo',
+);
 /** Lo que la interfaz escribe tras "La auditoría del modelo propone:" para una propuesta, en español. */
 const nombreDePropuesta = (id: string) => {
   if (id === 'no_es_ramo') return NO_ES_RAMO;

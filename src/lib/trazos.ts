@@ -47,7 +47,7 @@ export function ramosDeTrazo(): string[] {
   return marcadores.filter((m) => m.padre === GRUPO_VAGO && m.id !== 'm-jugular-foramen').map((m) => m.id);
 }
 
-/** Lo que propone la auditoría del modelo para un trazo cuando es una sola opción de la lista; si no, null. */
+/** Lo que propone la regla de la auditoría del modelo para un trazo (un ramo de la lista o 'no_es_ramo', según src/data/trazos-vago.json); null si la regla no distingue o la malla no está. */
 export function propuestaDeTrazo(malla: string): string | null {
   return trazosAuditados.find((t) => t.malla === malla)?.propuesta ?? null;
 }
