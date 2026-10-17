@@ -27,13 +27,15 @@ export function Metricas() {
 
 export default function Vistas() {
   const { t } = useTranslation();
+  const activa = useAtlas((s) => s.vistaActiva);
   return (
     <div className="brujula" role="toolbar" aria-label={t('vistas.titulo')}>
       {BRUJULA.map(([v, lugar]) => (
         <button
           key={v}
           type="button"
-          className={lugar}
+          className={activa === v ? `${lugar} activo` : lugar}
+          aria-pressed={activa === v}
           data-vista={v}
           aria-label={t(`vistas.${v}`)}
           title={t(`vistas.${v}`)}

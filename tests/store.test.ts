@@ -691,3 +691,54 @@ describe('cortes (F8)', () => {
     expect(useAtlas.getState().fantasmaCorte).toBe(false);
   });
 });
+
+describe('vista activa de la brújula (#213)', () => {
+  beforeEach(() => {
+    useAtlas.setState({ vistaActiva: null, camara: null });
+  });
+
+  it('una vista pedida queda activa', () => {
+    useAtlas.getState().pedirCamara({ vista: 'superior' });
+    expect(useAtlas.getState().vistaActiva).toBe('superior');
+  });
+
+  it('encuadrar, ir a una malla o a una parada del recorrido conserva la dirección y la marca', () => {
+    useAtlas.getState().pedirCamara({ vista: 'superior' });
+    useAtlas.getState().pedirCamara({ encuadrar: ['thalamus-l'] });
+    expect(useAtlas.getState().vistaActiva).toBe('superior');
+    useAtlas.getState().pedirCamara({ malla: 'vagus-nerve-x-l' });
+    expect(useAtlas.getState().vistaActiva).toBe('superior');
+    useAtlas.getState().irAParada(0);
+    expect(useAtlas.getState().camara?.encuadrar?.length).toBeGreaterThan(0);
+    expect(useAtlas.getState().vistaActiva).toBe('superior');
+  });
+
+  it('encuadrar sin vista previa no inventa una vista', () => {
+    useAtlas.getState().pedirCamara({ encuadrar: ['thalamus-l'] });
+    expect(useAtlas.getState().vistaActiva).toBeNull();
+  });
+
+  it('una pose libre (camara) desmarca', () => {
+    useAtlas.getState().pedirCamara({ vista: 'posterior' });
+    useAtlas.getState().pedirCamara({ camara: [1, 2, 3, 0, 0, 0] });
+    expect(useAtlas.getState().vistaActiva).toBeNull();
+  });
+
+  it('una vista con encuadre (Fragmentar) queda activa', () => {
+    useAtlas.getState().pedirCamara({ vista: 'anterior', encuadrar: ['thalamus-l'] });
+    expect(useAtlas.getState().vistaActiva).toBe('anterior');
+  });
+
+  it('setVistaActiva fija y borra la vista, y no notifica si no cambia', () => {
+    useAtlas.getState().setVistaActiva('inferior');
+    expect(useAtlas.getState().vistaActiva).toBe('inferior');
+    let n = 0;
+    const baja = useAtlas.subscribe(() => (n += 1));
+    useAtlas.getState().setVistaActiva('inferior');
+    expect(n).toBe(0);
+    useAtlas.getState().setVistaActiva(null);
+    baja();
+    expect(n).toBe(1);
+    expect(useAtlas.getState().vistaActiva).toBeNull();
+  });
+});
