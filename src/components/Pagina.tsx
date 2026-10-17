@@ -6,11 +6,12 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { entradaPorSlug, estructuras, piezasDeEntrada } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { aplicarCortesEnlace, entradasDeCortes, leer, serializar } from '../lib/enlaces';
+import { beaconCargado, decidirAdopcion } from '../lib/analitica';
 import { rutaPrivacidad } from '../lib/paginas';
-import { olvidarRevisor,pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
+import { borrarDeEsteEquipo, busquedaSinCodigo, olvidarRevisor, pedirPersistencia, recordarRevisor, revisorRecordado } from '../lib/persistencia';
 import { REVISOR_VALIDO } from '../lib/revision';
 import { accionEscape, esCampoDeTexto } from '../lib/teclado';
-import { useAtlas } from '../store/useAtlas';
+import { dejarModoRevision, useAtlas } from '../store/useAtlas';
 import Arbol from './Arbol';
 import AvisoPrimeraVisita from './Aviso';
 import BarraFragmentar from './BarraFragmentar';
@@ -43,6 +44,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   const enlaceInvalido = revision && codigoUrl !== null && !REVISOR_VALIDO.test(codigoUrl);
   const cargado = useAtlas((s) => s.cargado);
   const revisor = useAtlas((s) => s.revisor);
+  const revisionBloqueada = useAtlas((s) => s.revisionBloqueada);
   const [menu, setMenu] = useState(false);
   const [seccion, setSeccion] = useState<'grupos' | 'arbol'>('arbol'); // qué muestra el cajón del riel
   const [paleta, setPaleta] = useState(false); // paleta de búsqueda (riel, lupa o Ctrl+K)
@@ -74,12 +76,14 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     const o = origenSalida.current;
     if (o?.isConnected) o.focus();
   }, []);
-  const salirDeRevision = () => {
+  // Salir olvida el código en este navegador. Con `borrar` también se borran el registro de IndexedDB y la llave de
+  // la guía de ese código (las respuestas no enviadas se pierden); sin `borrar` quedan en este navegador.
+  const salirDeRevision = (borrar: boolean) => {
     setConfirmarSalida(false);
-    useAtlas.getState().setRevisor(null);
-    useAtlas.getState().cargarRespuestas({});
-    useAtlas.getState().setUbicando(null);
-    olvidarRevisor(); // el avance queda en IndexedDB; solo se olvida el código
+    const codigo = useAtlas.getState().revisor;
+    dejarModoRevision();
+    olvidarRevisor();
+    if (borrar && codigo) void borrarDeEsteEquipo(codigo);
   };
   const panel = useRef<HTMLElement>(null);
   const botonMenu = useRef<HTMLButtonElement>(null);
@@ -140,15 +144,38 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
 
   // Modo revisión: el código llega en ?r= y, si cumple el formato, se recuerda en este navegador hasta
   // "Salir del modo revisión". Con un enlace inválido no se activa nada ni se toca el código recordado.
+  // Si este documento tiene el beacon de analítica (una página abierta antes de entrar en modo revisión), el modo no
+  // se activa en caliente: se recarga una vez para que el cargador no lo cree (ADR 0015). Tras `?r=` válido, la URL
+  // se reemplaza por la misma sin `r`: Atrás no vuelve a la URL con el código.
+  // El código se escribe en localStorage solo si vino del enlace: uno que vino del almacén ya está recordado, y
+  // volver a escribirlo en cada cambio de URL podría resucitar un código que otra pestaña acaba de borrar (Chromium
+  // propaga localStorage entre pestañas de forma asíncrona y la lectura puede ser vieja). Si el código recordado ya
+  // es el del modo activo, el efecto no hace nada.
+  const recargando = useRef(false);
   useEffect(() => {
-    if (enlaceInvalido) return;
-    const codigo = (revision && codigoUrl) || revisorRecordado();
-    if (codigo) {
-      useAtlas.getState().setRevisor(codigo);
-      recordarRevisor(codigo);
-      void pedirPersistencia();
+    if (enlaceInvalido || recargando.current) return;
+    const codigoDeUrl = revision && codigoUrl ? codigoUrl : null;
+    const codigo = codigoDeUrl || revisorRecordado();
+    if (!codigo) return;
+    if (!codigoDeUrl && useAtlas.getState().revisor === codigo) return;
+    const decision = decidirAdopcion(beaconCargado());
+    if (decision === 'recargar') {
+      // Sin recordar el código antes: no se escribe en un documento con beacon. Si vino de ?r=, la URL que se recarga
+      // lo lleva; si vino del almacén, ya está recordado.
+      recargando.current = true;
+      window.location.reload();
+      return;
     }
-  }, [revision, codigoUrl, enlaceInvalido]);
+    if (decision === 'bloquear') {
+      useAtlas.getState().setRevisionBloqueada(true);
+      return;
+    }
+    useAtlas.getState().setRevisionBloqueada(false);
+    useAtlas.getState().setRevisor(codigo);
+    if (codigoDeUrl) recordarRevisor(codigo);
+    void pedirPersistencia();
+    if (codigoDeUrl) navigate({ pathname: location.pathname, search: busquedaSinCodigo(location.search), hash: location.hash }, { replace: true });
+  }, [revision, codigoUrl, enlaceInvalido, navigate, location.pathname, location.search, location.hash]);
 
   // La URL decide la selección. El encuadre espera a que el modelo cargue (las cajas salen del GLB).
   // Un enlace compartido trae cámara y modo aislar: se respetan una sola vez, en la primera carga.
@@ -354,6 +381,11 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       {enlaceInvalido && (
         <p className="mensaje mensaje-aviso" role="alert" data-testid="enlace-invalido">
           {t('revision.enlaceInvalido')}
+        </p>
+      )}
+      {revisionBloqueada && (
+        <p className="mensaje mensaje-aviso" role="alert" data-testid="revision-bloqueada">
+          {t('revision.bloqueadaBeacon')}
         </p>
       )}
       {mensaje && (

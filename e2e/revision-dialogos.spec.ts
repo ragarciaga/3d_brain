@@ -2,6 +2,7 @@
 // y respuestas "Corregir" sin texto. Helpers propios para no depender de atlas.spec.ts.
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { configRevision } from '../src/config/revision';
+import { claveRevisionIdb } from '../src/lib/huella';
 import { protegerCanalReal } from './canal-real';
 
 protegerCanalReal();
@@ -217,12 +218,12 @@ const guardadas = (page: Page, codigo: string) =>
         abrirDb.onsuccess = () => {
           const db = abrirDb.result;
           if (!db.objectStoreNames.contains('keyval')) return resolver(null);
-          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(c);
           pedido.onsuccess = () => resolver(pedido.result?.respuestas ?? null);
           pedido.onerror = () => resolver(null);
         };
       }),
-    codigo,
+    claveRevisionIdb(codigo),
   );
 
 /** Lo confirmado como enviado, guardado en IndexedDB para un código de revisor (claveRespuesta a fecha). */
@@ -235,12 +236,12 @@ const confirmadasGuardadas = (page: Page, codigo: string) =>
         abrirDb.onsuccess = () => {
           const db = abrirDb.result;
           if (!db.objectStoreNames.contains('keyval')) return resolver(null);
-          const pedido = db.transaction('keyval').objectStore('keyval').get(`revision:${c}`);
+          const pedido = db.transaction('keyval').objectStore('keyval').get(c);
           pedido.onsuccess = () => resolver(pedido.result?.confirmadas ?? null);
           pedido.onerror = () => resolver(null);
         };
       }),
-    codigo,
+    claveRevisionIdb(codigo),
   );
 
 test('la propuesta se guarda mientras se escribe y sobrevive a recargar', async ({ page }) => {
