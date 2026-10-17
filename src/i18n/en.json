@@ -429,7 +429,7 @@
     "verFicha": "See the entry and its sources",
     "enEstaParada": "Branches and structures at this stop ({{n}})",
     "nota": "Simplified model of the pathway. The nerve is drawn down to the current stop; each text comes from the structure entry, with its sources.",
-    "notaIzquierdo": "From here the right vagus is followed: in the model, the left one ends in the thorax.",
+    "notaIzquierdo": "From here the right vagus is followed; the left one continues along a traced (approximate) segment to the anterior vagal trunk.",
     "anterior": "Previous",
     "siguiente": "Next",
     "terminar": "Finish",
@@ -475,6 +475,7 @@
     "escaneada": "Measured from the scanned body",
     "aproximada": "Traced (approximate, for teaching)",
     "marcador": "Marker: labelled point, no volume",
+    "toracico": "The thoracic segment of the vagus is traced; the scanned-only filter hides it.",
     "soloEscaneada": "Scanned geometry only",
     "aviso": "Approximate tracing for teaching. The overall position follows the cited source; calibre and exact course vary between people."
   }

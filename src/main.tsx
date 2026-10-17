@@ -8,6 +8,7 @@ import Privacidad from './components/Privacidad';
 import { configRevision } from './config/revision';
 import { camaraActual, cortesVisor, marcadoresDePrueba } from './components/Visor';
 import { alturaRecorte } from './components/recorte';
+import { rutasDePrueba, type RutaDibujada } from './components/RutasTrazadas';
 import i18n, { idiomaDelNavegador } from './i18n';
 import { escucharRetiroDelCodigo } from './lib/persistencia';
 import { dejarModoRevision, useAtlas } from './store/useAtlas';
@@ -42,6 +43,7 @@ if (import.meta.env.DEV) {
     __camara: typeof camaraActual;
     __recorte: typeof alturaRecorte;
     __marcadores: typeof marcadoresDePrueba;
+    __rutasDibujadas: () => RutaDibujada[];
     __cortes: {
       planosDe(pieza: string): number;
       fantasmas(): string[];
@@ -57,6 +59,7 @@ if (import.meta.env.DEV) {
   w.__camara = camaraActual;
   w.__recorte = alturaRecorte;
   w.__marcadores = marcadoresDePrueba;
+  w.__rutasDibujadas = () => rutasDePrueba.dibujadas?.() ?? [];
   w.__cortes = {
     planosDe: (p) => cortesVisor.planosDe?.(p) ?? 0,
     fantasmas: () => cortesVisor.fantasmas?.() ?? [],
