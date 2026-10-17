@@ -130,6 +130,12 @@ export function validarMediciones(datos: unknown, mallas: readonly string[], ram
       if (confianza !== null) throw new Error(`${malla}: sin propuesta, confianza debe ser null`);
     } else if (typeof confianza !== 'string' || !NIVELES.includes(confianza)) {
       throw new Error(`${malla}: con propuesta, confianza debe ser alta, media o baja`);
+    } else if (confianza !== 'baja') {
+      // La razón de alta y media compara la segunda pieza más cercana con la primera, en el extremo que usa la regla.
+      const extremo = regla === 'raicilla' ? 'superior' : 'inferior';
+      if ((cerca[extremo] as Cercana[]).length < 2) {
+        throw new Error(`${malla}: confianza ${confianza} necesita dos piezas cerca del extremo ${extremo}`);
+      }
     }
   }
   return datos as unknown as Record<string, Medicion>;
@@ -147,8 +153,8 @@ function cercanas(lista: Cercana[], idioma: keyof Bilingue): string {
 // Una frase por regla, en palabras y sin cifras de umbral: esas viven en pipeline/reglas_vago.py.
 const FRASE_REGLA: Record<ReglaTrazo, Bilingue> = {
   raicilla: {
-    es: 'Raicilla: trazo corto cuyo extremo superior queda junto a la superficie del bulbo, por detrás de la oliva y por encima del foramen yugular; se propone que no es un ramo.',
-    en: 'Rootlet: short trace whose upper end lies next to the surface of the medulla, dorsal to the olive and above the jugular foramen; it is proposed not to be a branch.',
+    es: 'Raicilla: trazo corto cuyo extremo superior queda junto a la superficie del bulbo y por detrás de la oliva, y todo el trazo queda por encima del foramen yugular; se propone que no es un ramo.',
+    en: 'Rootlet: short trace whose upper end lies next to the surface of the medulla and dorsal to the olive, and the whole trace lies above the jugular foramen; it is proposed not to be a branch.',
   },
   faringeo: {
     es: 'Regla del ramo faríngeo: el extremo superior queda, medido a lo largo del tronco, a la distancia bajo el foramen yugular que da la fuente; el extremo inferior queda cerca de la faringe, más cerca de ella que del cartílago tiroides y en su cara posterior.',
@@ -163,12 +169,12 @@ const FRASE_REGLA: Record<ReglaTrazo, Bilingue> = {
     en: 'Hepatic branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the liver, closer to it than to the other target pieces.',
   },
   abdominal_gastrico_anterior: {
-    es: 'Regla del ramo gástrico anterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, en su cara anterior, en el vago izquierdo.',
-    en: 'Anterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, on its anterior side, in the left vagus.',
+    es: 'Regla del ramo gástrico anterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara anterior, en el vago izquierdo.',
+    en: 'Anterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its anterior side, in the left vagus.',
   },
   abdominal_gastrico_posterior: {
-    es: 'Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, en su cara posterior, en el vago derecho.',
-    en: 'Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, on its posterior side, in the right vagus.',
+    es: 'Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho.',
+    en: 'Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus.',
   },
   abdominal_celiaco: {
     es: 'Regla del ramo celíaco: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca de la aorta torácica, más cerca de ella que de las otras piezas de destino.',
@@ -186,16 +192,16 @@ const FRASE_REGLA: Record<ReglaTrazo, Bilingue> = {
 
 function razonConfianza(nivel: ConfianzaTrazo, extremo: 'superior' | 'inferior', idioma: keyof Bilingue): string {
   if (idioma === 'es') {
-    if (nivel === 'baja') return 'Confianza baja: algún umbral de la regla queda a menos de 3 mm de su límite.';
+    if (nivel === 'baja') return 'Confianza baja: alguna medida de la regla queda a menos de 3 mm de su umbral.';
     return (
-      `Confianza ${nivel}: ningún umbral de la regla queda a menos de 3 mm de su límite y, en el extremo ${extremo}, ` +
+      `Confianza ${nivel}: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo ${extremo}, ` +
       `la segunda pieza más cercana está a ${nivel === 'alta' ? 'más del doble' : 'no más del doble'} de distancia que la primera.`
     );
   }
-  if (nivel === 'baja') return 'Low confidence: some threshold of the rule lies within 3 mm of its limit.';
+  if (nivel === 'baja') return 'Low confidence: some measure of the rule is less than 3 mm from its threshold.';
   const nombre = nivel === 'alta' ? 'High' : 'Medium';
   return (
-    `${nombre} confidence: no threshold of the rule lies within 3 mm of its limit and, at the ${extremo === 'superior' ? 'upper' : 'lower'} end, ` +
+    `${nombre} confidence: no measure of the rule is less than 3 mm from its threshold and, at the ${extremo === 'superior' ? 'upper' : 'lower'} end, ` +
     `the second closest piece is ${nivel === 'alta' ? 'more than twice' : 'no more than twice'} as far as the first.`
   );
 }

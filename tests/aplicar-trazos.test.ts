@@ -142,7 +142,7 @@ describe('ramo, confianza y razón (R4.2)', () => {
   const casos = [
     ['alta', 'Confianza alta:', 'High confidence:', 'está a más del doble de distancia', 'is more than twice as far'],
     ['media', 'Confianza media:', 'Medium confidence:', 'está a no más del doble de distancia', 'is no more than twice as far'],
-    ['baja', 'Confianza baja:', 'Low confidence:', 'algún umbral de la regla queda a menos de 3 mm', 'some threshold of the rule lies within 3 mm'],
+    ['baja', 'Confianza baja:', 'Low confidence:', 'alguna medida de la regla queda a menos de 3 mm de su umbral', 'some measure of the rule is less than 3 mm from its threshold'],
   ] as const;
 
   it.each(casos)('nivel %s: propuesta el ramo, confianza copiada y solo la razón de ese nivel', (nivel, es, en, esFrase, enFrase) => {
@@ -160,6 +160,16 @@ describe('ramo, confianza y razón (R4.2)', () => {
       expect(t.evidencia!.en).not.toContain(otro[2]);
       expect(t.evidencia!.en).not.toContain(otro[4]);
     }
+  });
+
+  it('la razón dice medida y umbral, no umbral y límite', () => {
+    const alta = aplicar({ M1: medida('faringeo', { confianza: 'alta' }) }).datos.trazos[1]!.evidencia!;
+    const baja = aplicar({ M1: medida('faringeo', { confianza: 'baja' }) }).datos.trazos[1]!.evidencia!;
+    expect(alta.es).toContain('ninguna medida de la regla queda a menos de 3 mm de su umbral');
+    expect(alta.en).toContain('no measure of the rule is less than 3 mm from its threshold');
+    expect(baja.es).toContain('alguna medida de la regla queda a menos de 3 mm de su umbral');
+    expect(baja.en).toContain('some measure of the rule is less than 3 mm from its threshold');
+    for (const t of [alta.es, alta.en, baja.es, baja.en]) expect(t).not.toMatch(/límite|limit\b/);
   });
 
   it('la regla de un ramo sale en palabras, sin la frase de la raicilla ni la de sin regla', () => {
@@ -188,6 +198,23 @@ describe('raicilla (R4.3)', () => {
     expect(t.evidencia!.es).toContain('en el extremo superior, la segunda pieza');
     expect(t.evidencia!.en).toContain('at the upper end, the second closest piece');
     expect(t.evidencia!.es).not.toContain('en el extremo inferior,');
+  });
+});
+
+describe('frases de la regla: lo que mide pipeline/reglas_vago.py', () => {
+  it('la raicilla exige que todo el trazo quede por encima del foramen yugular, no solo el extremo', () => {
+    const e = aplicar({ M1: medida('raicilla') }).datos.trazos[1]!.evidencia!;
+    expect(e.es).toContain('todo el trazo queda por encima del foramen yugular');
+    expect(e.en).toContain('the whole trace lies above the jugular foramen');
+  });
+
+  it.each([
+    ['abdominal_gastrico_anterior', 'anterior', 'izquierdo'],
+    ['abdominal_gastrico_posterior', 'posterior', 'derecho'],
+  ] as const)('el ramo %s exige el estómago más cerca que las otras piezas de destino, como el hepático', (regla, cara, lado) => {
+    const e = aplicar({ M1: medida(regla) }).datos.trazos[1]!.evidencia!;
+    expect(e.es).toContain(`queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara ${cara}, en el vago ${lado}`);
+    expect(e.en).toContain('lies near the stomach, closer to it than to the other target pieces, on its');
   });
 });
 
@@ -305,6 +332,8 @@ describe('validación (D2)', () => {
     ['sin piezas cerca del extremo superior', { cerca_extremos: { superior: [], inferior: [{ pieza: 'A', mm: 1 }] } }],
     ['tres piezas cerca del extremo inferior', { cerca_extremos: { superior: [{ pieza: 'A', mm: 1 }], inferior: [1, 2, 3].map((n) => ({ pieza: `P${n}`, mm: n })) } }],
     ['una pieza con distancia negativa', { cerca_extremos: { superior: [{ pieza: 'A', mm: -1 }], inferior: [{ pieza: 'A', mm: 1 }] } }],
+    ['confianza alta con una sola pieza cerca del extremo inferior', { cerca_extremos: { superior: [{ pieza: 'A', mm: 1 }, { pieza: 'B', mm: 2 }], inferior: [{ pieza: 'A', mm: 1 }] } }],
+    ['confianza media con una sola pieza cerca del extremo inferior', { confianza: 'media', cerca_extremos: { superior: [{ pieza: 'A', mm: 1 }, { pieza: 'B', mm: 2 }], inferior: [{ pieza: 'A', mm: 1 }] } }],
     ['una confianza null con propuesta', { confianza: null }],
     ['una confianza fuera de los niveles', { confianza: 'muy alta' }],
     ['un guion largo en la auditoría', { auditoria: `candidato ${GUION_LARGO} ramo` }],
@@ -317,6 +346,17 @@ describe('validación (D2)', () => {
     const m = { ...medida('faringeo'), ...extra };
     if ('fuente' in extra && extra['fuente'] === undefined) delete (m as Partial<Medicion>).fuente;
     expect(() => aplicar({ M1: m })).toThrow(/^M1: /);
+  });
+
+  it('la raicilla mira el extremo superior y los ramos el inferior para las dos piezas; la baja no las exige', () => {
+    const uno = [{ pieza: 'A', mm: 1 }];
+    const dos = [{ pieza: 'A', mm: 1 }, { pieza: 'B', mm: 2 }];
+    expect(() => aplicar({ M1: medida('raicilla', { cerca_extremos: { superior: uno, inferior: dos } }) })).toThrow(/^M1: .*superior/);
+    expect(() => aplicar({ M1: medida('raicilla', { cerca_extremos: { superior: dos, inferior: uno } }) })).not.toThrow();
+    expect(() => aplicar({ M1: medida('faringeo', { cerca_extremos: { superior: dos, inferior: uno } }) })).toThrow(/^M1: .*inferior/);
+    expect(() => aplicar({ M1: medida('faringeo', { cerca_extremos: { superior: uno, inferior: dos } }) })).not.toThrow();
+    expect(() => aplicar({ M1: medida('faringeo', { confianza: 'baja', cerca_extremos: { superior: uno, inferior: uno } }) })).not.toThrow();
+    expect(() => aplicar({ M1: medida('sin_regla', { cerca_extremos: { superior: uno, inferior: uno } }) })).not.toThrow();
   });
 
   it('una regla raicilla con el id de un ramo lanza', () => {
