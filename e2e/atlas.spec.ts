@@ -708,13 +708,20 @@ test('ruta desconocida: aviso traducido con enlace al inicio; mayúsculas en el 
 });
 
 test('marcadores: la fuente de ubicación sale en el idioma de la interfaz y cada marcador tiene su slug', async ({ page }) => {
+  const pag = (JSON.parse(readFileSync('src/data/marcadores.json', 'utf8')) as { id: string; fuente_ubicacion: { es: string; en: string } }[]).find(
+    (m) => m.id === 'm-periaqueductal-grey',
+  )!.fuente_ubicacion;
+  const fragmento = (t: string, rotulo: string) => (t.includes(rotulo) ? t.slice(0, t.indexOf(rotulo)) : t.slice(0, 60));
+  const fragmentoEs = fragmento(pag.es, ' Fuente: ');
+  const fragmentoEn = fragmento(pag.en, ' Source: ');
   await abrir(page, '/en/periaqueductal-grey');
   await expect(page.locator('#ficha-titulo')).toHaveText('Periaqueductal grey');
-  await expect(page.getByTestId('ficha')).toContainText('surrounds the cerebral aqueduct of the midbrain');
+  await expect(page.getByTestId('ficha')).toContainText(fragmentoEn);
+  await expect(page.getByTestId('ficha')).not.toContainText(fragmentoEs);
   await expect(page.getByTestId('ficha')).not.toContainText('rodea');
   await expect(page.getByTestId('ficha')).toContainText('Name source: TA2');
   await abrir(page, '/es/sustancia-gris-periacueductal');
-  await expect(page.getByTestId('ficha')).toContainText('rodea el acueducto del mesencéfalo');
+  await expect(page.getByTestId('ficha')).toContainText(fragmentoEs);
   await abrir(page, '/es/area-de-wernicke');
   await expect(page.locator('#ficha-titulo')).toHaveText('Área de Wernicke');
   await abrir(page, '/en/wernickes-area');

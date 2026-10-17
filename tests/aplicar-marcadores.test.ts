@@ -218,7 +218,11 @@ describe('lo que no cambia (R6.2)', () => {
     while (a[a.length - 1 - sufijo] === b[b.length - 1 - sufijo]) sufijo++;
     expect(prefijo).toBeGreaterThanOrEqual(inicio);
     expect(sufijo).toBeGreaterThanOrEqual(a.length - fin);
-    expect(b.length).toBeGreaterThan(a.length);
+    // Con posicion null el punto agrega líneas; si el rafe ya tiene punto, el largo no cambia.
+    expect(b.length - a.length).toBe(
+      JSON.stringify([0, 1.5, -0.03], null, 1).split('\n').length -
+        JSON.stringify(antes.posicion, null, 1).split('\n').length,
+    );
   });
 
   it('un marcador validada con propuesta queda igual campo por campo y el resumen dice que se omitió', () => {

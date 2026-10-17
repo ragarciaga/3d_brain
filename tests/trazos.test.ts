@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { GRUPO_VAGO, marcadores, trazosAuditados } from '../src/data/atlas';
 import type { Respuesta } from '../src/lib/revision';
 import {
+  auditoriaDeTrazo,
   avanceTrazos,
   claveTrazo,
   ENTRADA_VAGO,
@@ -266,5 +267,42 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
   it('D3: propuestaDeTrazo lee del archivo para los trazos y da null para una malla desconocida', () => {
     for (const t of trazosAuditados) expect(propuestaDeTrazo(t.malla), t.malla).toBe(t.propuesta);
     expect(propuestaDeTrazo('Vagus nerve (X).l#t99')).toBeNull();
+  });
+
+  it('R5.1: auditoriaDeTrazo da propuesta, confianza, evidencia y fuente del registro de cada trazo', () => {
+    expect(trazosAuditados.length).toBeGreaterThan(0);
+    for (const t of trazosAuditados) {
+      const a = auditoriaDeTrazo(t.malla);
+      expect(a, t.malla).not.toBeNull();
+      expect(a!.propuesta, t.malla).toBe(t.propuesta);
+      expect(a!.confianza, t.malla).toBe(t.confianza ?? null);
+      expect(a!.evidencia, t.malla).toEqual(t.evidencia);
+      expect(a!.fuente, t.malla).toBe(t.fuente);
+    }
+  });
+
+  it('R5.1: un trazo sin propuesta da confianza null y conserva la evidencia; una malla desconocida da null', () => {
+    const sin = trazosAuditados.filter((t) => t.propuesta === null);
+    expect(sin.length).toBeGreaterThan(0);
+    for (const t of sin) {
+      const a = auditoriaDeTrazo(t.malla)!;
+      expect(a.propuesta, t.malla).toBeNull();
+      expect(a.confianza, t.malla).toBeNull();
+      expect(a.evidencia?.es.trim(), t.malla).toBeTruthy();
+      expect(a.evidencia?.en.trim(), t.malla).toBeTruthy();
+    }
+    expect(auditoriaDeTrazo('Vagus nerve (X).l#t99')).toBeNull();
+  });
+
+  it('D3: es.json y en.json traen revision.confianza_<c> para cada confianza presente en el archivo', () => {
+    const textos = (i: 'es' | 'en') => (JSON.parse(readFileSync(`src/i18n/${i}.json`, 'utf8')) as { revision: Record<string, unknown> }).revision;
+    const presentes = new Set(trazosAuditados.flatMap((t) => (t.confianza ? [t.confianza] : [])));
+    expect(presentes.size).toBeGreaterThan(0);
+    for (const c of presentes) {
+      for (const i of ['es', 'en'] as const) {
+        const v = textos(i)[`confianza_${c}`];
+        expect(typeof v === 'string' && v.trim() !== '', `${i}: confianza_${c}`).toBe(true);
+      }
+    }
   });
 });
