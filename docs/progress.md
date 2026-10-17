@@ -186,7 +186,7 @@ Sigue, en este orden:
 - Pruebas: F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas.
 - Cortes: el encuadre en celular no descuenta el cajón de cortes; el recorrido del vago puede tapar el cajón.
 - Pruebas de F8 (informe de #205, no bloquean): F3-E2 comprueba "translúcido" por la lista de fantasmas y no por la opacidad del material; cinco esperas fijas negativas en `cortes-panel`, `cortes-movil`, `cortes-marcadores` y `cortes-relleno` se pueden cambiar por `cuadros()` con control positivo.
-- Spec 04: los marcadores torácicos se vuelven a ubicar cuando se trace el vago torácico (spec 02); `evidencia` y `confianza` de `PropuestaTrazo` siguen opcionales en `src/data/tipos.ts` aunque los 28 trazos ya las traen; el docstring de `pipeline/auditar-vago.py` y `pipeline/README.md` todavía dicen que la medición "la leerá" `scripts/aplicar-trazos.ts`; 17 de los 28 trazos quedan sin propuesta y los nombra el docente; la fuente de un trazo se muestra como clave de bibliografía.
+- Spec 04: `evidencia` y `confianza` de `PropuestaTrazo` siguen opcionales en `src/data/tipos.ts` aunque los 28 trazos ya las traen; el docstring de `pipeline/auditar-vago.py` y `pipeline/README.md` todavía dicen que la medición "la leerá" `scripts/aplicar-trazos.ts`; 17 de los 28 trazos quedan sin propuesta y los nombra el docente; la fuente de un trazo se muestra como clave de bibliografía.
 - Harness: actualizar una rama con un commit de main que solo cambia documentación obliga a correr todo el CI otra vez; Rockbuilt 0.9.0 (#198) trae la cola de fusiones para eso. `rb vendor` crea `e2e/smoke.spec.ts` en proyectos que ya tienen suite (ragarciaga/rockbuilt#22).
 
 ## Timing

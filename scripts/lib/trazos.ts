@@ -2,6 +2,8 @@
 // archivos: eso lo hace scripts/aplicar-trazos.ts. Solo se importan tipos de src/data/tipos.ts;
 // src/data/atlas.ts y src/lib/trazos.ts no se pueden importar desde Node (importan JSON sin atributo).
 import type { Bilingue, ConfianzaTrazo, Marcador, PropuestaTrazo } from '../../src/data/tipos.ts';
+import type { Banda, Lado } from './asimetrias.ts';
+import { TRONCO_VAGO } from './modelo.ts';
 
 // Copia de REGLAS de pipeline/reglas_vago.py, en el mismo orden; la prueba de paridad las mantiene iguales.
 export const REGLAS_TRAZO = [
@@ -39,6 +41,7 @@ export const RUTAS_POR_DEFECTO = {
   trazos: 'src/data/trazos-vago.json',
   marcadores: 'src/data/marcadores.json',
   resumen: 'docs/research/vago/resumen-trazos.md',
+  rutas: 'public/modelos/rutas-vago.json',
 };
 
 const GRUPO_VAGO = 'g-vagus-nerve-x';
@@ -146,6 +149,36 @@ function numero(n: number, idioma: keyof Bilingue): string {
   return idioma === 'es' ? t.replace('.', ',') : t;
 }
 
+/**
+ * Frase de banda de un trazo del tronco escaneado (ADR 0010): el atlas publicado retira de ese trazo lo que
+ * cae dentro de la banda de su lado, y las medidas siguen siendo las del trazo de Z-Anatomy sin cortar.
+ * Las alturas salen de la banda y de la medición; lanza si la banda no corta el trazo como se espera.
+ */
+function fraseBanda(malla: string, m: Medicion, banda: Banda, idioma: keyof Bilingue): string {
+  const arriba = banda.y_max * 1000;
+  const abajo = banda.y_min === null ? null : banda.y_min * 1000;
+  const { max, min } = m.altura_mm;
+  if (!(max > arriba && min < (abajo ?? arriba))) {
+    throw new Error(`${malla}: la banda del vago ${banda.lado} no corta el trazo (de ${numero(max, 'en')} a ${numero(min, 'en')} mm)`);
+  }
+  const A = numero(arriba, idioma);
+  const MAX = numero(max, idioma);
+  if (abajo === null) {
+    return idioma === 'es'
+      ? `En el atlas publicado se retira lo que este trazo tiene por debajo de ${A} mm (ADR 0010): ahí se ve el tramo torácico trazado. ` +
+          `Lo publicado va de ${MAX} a ${A} mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar.`
+      : `In the published atlas, the part of this trace below ${A} mm is removed (ADR 0010): the traced thoracic segment is shown there. ` +
+          `What is published runs from ${MAX} to ${A} mm. The earlier measurements are those of the uncut Z-Anatomy trace.`;
+  }
+  const B = numero(abajo, idioma);
+  const MIN = numero(min, idioma);
+  return idioma === 'es'
+    ? `En el atlas publicado se retira lo que este trazo tiene entre ${A} y ${B} mm (ADR 0010): ahí se ve el tramo torácico trazado. ` +
+        `Lo publicado queda en dos partes, de ${MAX} a ${A} mm y de ${B} a ${MIN} mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar.`
+    : `In the published atlas, the part of this trace between ${A} and ${B} mm is removed (ADR 0010): the traced thoracic segment is shown there. ` +
+        `What is published stays in two parts, from ${MAX} to ${A} mm and from ${B} to ${MIN} mm. The earlier measurements are those of the uncut Z-Anatomy trace.`;
+}
+
 function cercanas(lista: Cercana[], idioma: keyof Bilingue): string {
   return lista.map((c) => `${c.pieza} (${numero(c.mm, idioma)} mm)`).join(', ');
 }
@@ -207,10 +240,11 @@ function razonConfianza(nivel: ConfianzaTrazo, extremo: 'superior' | 'inferior',
 }
 
 /**
- * Evidencia bilingüe de un trazo: las medidas, la regla en palabras, la razón de la confianza y la clave de la
- * fuente. Solo repite lo que mide la regla; no agrega anatomía.
+ * Evidencia bilingüe de un trazo: las medidas, la frase de banda si el trazo es un tronco cortado (`banda`), la
+ * regla en palabras, la razón de la confianza y la clave de la fuente. Solo repite lo que mide la regla y lo
+ * que corta la banda; no agrega anatomía.
  */
-export function evidenciaDeTrazo(m: Medicion): Bilingue {
+export function evidenciaDeTrazo(m: Medicion, banda?: { malla: string; banda: Banda }): Bilingue {
   const extremo = m.regla === 'raicilla' ? 'superior' : 'inferior';
   const salida = { es: '', en: '' };
   for (const idioma of ['es', 'en'] as const) {
@@ -220,7 +254,9 @@ export function evidenciaDeTrazo(m: Medicion): Bilingue {
           `Cerca del extremo superior: ${cercanas(m.cerca_extremos.superior, idioma)}. Cerca del extremo inferior: ${cercanas(m.cerca_extremos.inferior, idioma)}.`
         : `Height: from ${numero(m.altura_mm.max, idioma)} to ${numero(m.altura_mm.min, idioma)} mm. Length: ${numero(m.largo_mm, idioma)} mm. ` +
           `Near the upper end: ${cercanas(m.cerca_extremos.superior, idioma)}. Near the lower end: ${cercanas(m.cerca_extremos.inferior, idioma)}.`;
-    const partes = [medidas, FRASE_REGLA[m.regla][idioma]];
+    const partes = [medidas];
+    if (banda) partes.push(fraseBanda(banda.malla, m, banda.banda, idioma));
+    partes.push(FRASE_REGLA[m.regla][idioma]);
     if (m.confianza !== null) partes.push(razonConfianza(m.confianza, extremo, idioma));
     partes.push(idioma === 'es' ? `Fuente: ${m.fuente}.` : `Source: ${m.fuente}.`);
     salida[idioma] = partes.join(' ');
@@ -242,12 +278,14 @@ function describir(t: PropuestaTrazo): string {
 /**
  * Lleva las mediciones a los trazos. Pura: no muta la entrada. Solo cambian `auditoria`, `propuesta`, `fuente`,
  * `evidencia` y `confianza`; `malla`, el orden y cualquier otra clave quedan iguales, y un trazo sin medición no
- * se toca. Valida todo primero. Devuelve también el resumen en Markdown.
+ * se toca. Valida todo primero. Devuelve también el resumen en Markdown. Si la medición es de un tronco escaneado
+ * (`TRONCO_VAGO`), la evidencia lleva la frase de la banda de su lado, que sale de `bandas`.
  */
 export function aplicarMediciones(
   datos: { trazos: PropuestaTrazo[] },
   medidos: unknown,
   ramos: readonly string[],
+  bandas: readonly Banda[],
 ): { datos: { trazos: PropuestaTrazo[] }; resumen: string } {
   if (!esObjeto(datos) || !Array.isArray(datos.trazos) || datos.trazos.some((t) => !esObjeto(t) || !textoNoVacio(t.malla))) {
     throw new Error('los trazos no son { trazos: [...] } con una malla en cada uno');
@@ -262,12 +300,19 @@ export function aplicarMediciones(
     if (!m) {
       motivo = 'no hay medición para este trazo';
     } else {
+      const lado = (Object.keys(TRONCO_VAGO) as Lado[]).find((l) => TRONCO_VAGO[l] === t.malla);
+      let banda: { malla: string; banda: Banda } | undefined;
+      if (lado !== undefined) {
+        const delLado = bandas.find((b) => b.lado === lado);
+        if (!delLado) throw new Error(`${t.malla}: falta la banda del vago ${lado}`);
+        banda = { malla: t.malla, banda: delLado };
+      }
       nuevo = {
         ...nuevo,
         auditoria: m.auditoria,
         propuesta: m.propuesta,
         fuente: m.fuente,
-        evidencia: evidenciaDeTrazo(m),
+        evidencia: evidenciaDeTrazo(m, banda),
         confianza: m.confianza,
       };
       if (JSON.stringify(nuevo) === JSON.stringify(t)) motivo = 'la medición coincide con lo que ya tiene el trazo';
@@ -298,17 +343,17 @@ export function aplicarMediciones(
 }
 
 /**
- * Argumentos del CLI: `[--medidos <ruta>] [--trazos <ruta>] [--marcadores <ruta>] [--resumen <ruta>]`, cada una una sola vez.
+ * Argumentos del CLI: `[--medidos <ruta>] [--trazos <ruta>] [--marcadores <ruta>] [--resumen <ruta>] [--rutas <ruta>]`, cada una una sola vez.
  * Devuelve null ante un uso indebido: bandera desconocida, sin valor, repetida, o un argumento suelto.
  */
 export function argumentosAplicarTrazos(
   args: string[],
-): { medidos: string; trazos: string; marcadores: string; resumen: string } | null {
+): { medidos: string; trazos: string; marcadores: string; resumen: string; rutas: string } | null {
   const rutas = { ...RUTAS_POR_DEFECTO };
   const puestas = new Set<string>();
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a !== '--medidos' && a !== '--trazos' && a !== '--marcadores' && a !== '--resumen') return null;
+    if (a !== '--medidos' && a !== '--trazos' && a !== '--marcadores' && a !== '--resumen' && a !== '--rutas') return null;
     const valor = args[i + 1];
     const clave = a.slice(2) as keyof typeof rutas;
     if (puestas.has(clave) || !valor || valor.startsWith('--')) return null;

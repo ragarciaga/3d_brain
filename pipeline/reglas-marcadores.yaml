@@ -20,6 +20,13 @@
 #   por_lado    opcional (solo con ambos): {l, r} con lo que cambia en cada lado respecto de la regla base
 # {lado} se cambia por l o r en los nombres de malla, y {Lado} por Left o Right.
 #
+# Nombres de malla: son los del modelo de Z-Anatomy, medidos como los publica el atlas. A `Vagus nerve (X).l`
+# y `.r` se les quitan los vértices del tramo del tronco que el atlas ya no publica (la banda `reemplaza` de
+# public/modelos/rutas-vago.json, ADR 0010), y un `en_curva` sobre ese vago cuyo punto caiga en la banda
+# detiene la corrida. `ruta:<id>` nombra una ruta trazada de ese archivo (por ejemplo
+# `ruta:vago_toracico_izquierdo`) y sirve como curva o dentro de `cerca_de.malla`; el atlas la publica con
+# revisión docente pendiente (ADR 0013, actualización de 2026-10-17).
+#
 # Operaciones y sus parámetros:
 #   extremo      malla, hacia; de: linea (usa la línea central de una curva); tramo; limite
 #   centro       malla; tramo; limite
@@ -46,7 +53,7 @@ referencias:
   asa_r: &asa_r
     operacion: superficie
     malla: Right subclavian artery
-    cerca_de: { malla: "Vagus nerve (X).r" }
+    cerca_de: { malla: ["Vagus nerve (X).r", "ruta:vago_toracico_derecho"] }
     cara: inferior
   asa_l: &asa_l
     operacion: superficie
@@ -179,6 +186,7 @@ marcadores:
     curva: "Vagus nerve (X).{lado}"
     por_lado:
       l:
+        curva: "ruta:vago_toracico_izquierdo"
         altura: { operacion: entre, a: *prominencia, b: *asa_l }
       r:
         altura: { operacion: entre, a: *prominencia, b: *asa_r }
@@ -190,14 +198,18 @@ marcadores:
         la prominencia laríngea y el origen del recurrente, por encima de la arteria subclavia; las fuentes
         dicen que los ramos cardíacos del cuello quedan casi todos entre la prominencia laríngea y la clavícula,
         y que el superior sale por encima del origen del recurrente, pero el punto medio y esa combinación de
-        límites son deducción propia).
+        límites son deducción propia). En el lado izquierdo esa altura cae dentro del tramo del tronco escaneado
+        que ya no se publica (ADR 0010), así que el punto va sobre el tramo torácico trazado
+        (`vago_toracico_izquierdo`).
       en: >-
         On the vagus curve, at the height halfway between the laryngeal prominence (most anterior point of
         the thyroid cartilage) and the loop of the recurrent laryngeal nerve on that side (derived: midpoint of
         the stretch between the laryngeal prominence and the origin of the recurrent nerve, above the
         subclavian artery; the sources say the cardiac branches of the neck lie almost all between the
         laryngeal prominence and the clavicle, and that the superior one leaves above the origin of the
-        recurrent nerve, but the midpoint and that combination of limits are our own deduction).
+        recurrent nerve, but the midpoint and that combination of limits are our own deduction). On the left
+        side that height falls inside the stretch of the scanned trunk that is no longer published (ADR
+        0010), so the point goes on the traced thoracic segment (`vago_toracico_izquierdo`).
 
   m-inferior-cervical-cardiac-branches-of-vagus-nerve:
     lado: ambos
@@ -231,7 +243,7 @@ marcadores:
         izquierdo nace en la cara inferior del arco aórtico, junto al ligamento arterioso, y lo rodea. Z-Anatomy
         no trae el ligamento, así que `Node of ligamentum arteriosum` es el sustituto del ligamento arterioso.
         (derivado: el punto más bajo del asa se calcula como el punto de la arteria subclavia derecha más
-        cercano al vago derecho, o del arco aórtico más cercano al sustituto del ligamento, y desde ahí el
+        cercano al vago derecho (al vago publicado: el escaneado fuera del tramo reemplazado y el tramo torácico trazado, ADR 0010), o del arco aórtico más cercano al sustituto del ligamento, y desde ahí el
         vértice más bajo sobre un rayo hacia abajo; la fuente solo describe el recorrido del asa). La fuente
         dice que el izquierdo nace inmediatamente lateral al ligamento arterioso; esta regla no aplica ese
         "lateral": toma el punto del arco más cercano al sustituto, sin desplazarlo hacia el lado.
@@ -240,7 +252,7 @@ marcadores:
         one arises from the underside of the aortic arch, next to the arterial ligament, and hooks around it.
         Z-Anatomy does not include the ligament, so `Node of ligamentum arteriosum` stands in for the arterial
         ligament. (derived: the lowest point of the loop is computed as the point of the right subclavian
-        artery nearest the right vagus, or of the aortic arch nearest the stand-in for the ligament, and from
+        artery nearest the right vagus (to the published vagus: the scanned trunk outside the replaced stretch and the traced thoracic segment, ADR 0010), or of the aortic arch nearest the stand-in for the ligament, and from
         there the lowest vertex along a downward ray; the source only describes the course of the loop). The
         source says the left one arises immediately lateral to the arterial ligament; this rule does not apply
         that "lateral": it takes the point of the arch nearest the stand-in, without moving it sideways.
@@ -251,11 +263,13 @@ marcadores:
     curva: "Vagus nerve (X).{lado}"
     por_lado:
       l:
+        curva: "ruta:vago_toracico_izquierdo"
         altura:
           operacion: entre
           a: *asa_l
           b: { operacion: extremo, malla: "{Lado} main bronchus", hacia: superior }
       r:
+        curva: "ruta:vago_toracico_derecho"
         altura:
           operacion: entre
           a: *asa_r
@@ -263,17 +277,21 @@ marcadores:
     fuentes: [Zandstra2021, Liu2022, Bahadir2026]
     metodo:
       es: >-
-        Sobre el tronco del vago escaneado del modelo, a la altura media entre el asa del recurrente y el
-        borde superior del bronquio principal de ese lado (derivado: punto medio del tramo entre el origen del
-        recurrente, bajo el cual sale el ramo según la fuente, y el bronquio; el límite en el bronquio y el
-        punto medio son elección de la regla). Ojo: ese tramo del modelo es un espejo
-        (ADR 0010), por lo que se vuelve a ubicar cuando se publique el vago torácico trazado.
+        Sobre el tramo torácico trazado del vago de ese lado (ruta `vago_toracico_izquierdo` o
+        `vago_toracico_derecho` de `public/modelos/rutas-vago.json`, ADR 0010, pendiente de revisión docente), a
+        la altura media entre el asa del recurrente y el borde superior del bronquio principal de ese lado
+        (derivado: punto medio del tramo entre el origen del recurrente, bajo el cual sale el ramo según la
+        fuente, y el bronquio; el límite en el bronquio y el punto medio son elección de la regla). El tronco
+        escaneado del modelo a esa altura es un espejo y ya no se publica; si la ruta cambia, el marcador se
+        vuelve a calcular.
       en: >-
-        On the scanned vagus trunk of the model, at the height halfway between the loop of the recurrent nerve
-        and the upper border of the main bronchus on that side (derived: midpoint of the stretch between the
-        origin of the recurrent nerve, below which the branch leaves according to the source, and the bronchus;
-        the limit at the bronchus and the midpoint are choices of the rule). Note: that stretch of the
-        model is a mirror image (ADR 0010), so it is placed again once the traced thoracic vagus is published.
+        On the traced thoracic segment of the vagus on that side (route `vago_toracico_izquierdo` or
+        `vago_toracico_derecho` of `public/modelos/rutas-vago.json`, ADR 0010, pending teacher review), at the
+        height halfway between the loop of the recurrent nerve and the upper border of the main bronchus on that
+        side (derived: midpoint of the stretch between the origin of the recurrent nerve, below which the
+        branch leaves according to the source, and the bronchus; the limit at the bronchus and the midpoint are
+        choices of the rule). The scanned trunk of the model at that height is a mirror image and is no longer
+        published; if the route changes, the marker is calculated again.
 
   m-bronchial-branches-of-vagus-nerve:
     lado: ambos

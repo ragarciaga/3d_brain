@@ -23,6 +23,7 @@ datos = yaml.safe_load(open(RAIZ / "pipeline" / "reglas-marcadores.yaml", encodi
 reglas = datos["marcadores"]
 marcadores = json.load(open(RAIZ / "src" / "data" / "marcadores.json", encoding="utf-8"))
 arbol = json.load(open(RAIZ / "src" / "data" / "arbol.json", encoding="utf-8"))
+rutas_vago = json.load(open(RAIZ / "public" / "modelos" / "rutas-vago.json", encoding="utf-8"))["rutas"]
 fuentes_md = open(RAIZ / "docs" / "research" / "marcadores" / "fuentes.md", encoding="utf-8").read()
 
 # Bibliografía y tabla, con regex propios (no los del ubicador).
@@ -184,7 +185,15 @@ def cautelas_obligatorias():
     assert "sustituto del ligamento arterioso" in es("m-recurrent-laryngeal-nerve")
     assert "Ninguna fuente leída usa el término ramos bronquiales; se ubica como el plexo pulmonar" in es(
         "m-bronchial-branches-of-vagus-nerve")
-    assert "sobre el tronco del vago escaneado del modelo" in es("m-thoracic-cardiac-branches-of-vagus-nerve").lower()
+    toracico = "m-thoracic-cardiac-branches-of-vagus-nerve"
+    assert "sobre el tramo torácico trazado del vago de ese lado" in es(toracico).lower()
+    assert "pendiente de revisión docente" in es(toracico) and "pending teacher review" in en(toracico)
+    assert "ya no se publica" in es(toracico) and "no longer published" in en(toracico)
+    cervical = "m-superior-cervical-cardiac-branches-of-vagus-nerve"
+    assert "dentro del tramo del tronco escaneado que ya no se publica" in es(cervical)
+    assert "vago_toracico_izquierdo" in es(cervical) and "vago_toracico_izquierdo" in en(cervical)
+    assert "al vago publicado" in es("m-recurrent-laryngeal-nerve")
+    assert "to the published vagus" in en("m-recurrent-laryngeal-nerve")
     assert "Regla aproximada" in es("m-coeliac-branches-of-posterior-vagal-trunk")
     assert "Approximate rule" in en("m-coeliac-branches-of-posterior-vagal-trunk")
 
@@ -307,14 +316,56 @@ def mallas_existen_en_el_inventario():
     for id_, por_lado in resueltas.items():
         for lado, r in por_lado.items():
             for nombre in mallas_en(r):
+                if nombre.startswith(u.PREFIJO_RUTA):
+                    continue  # una ruta trazada, no una malla de Z-Anatomy: la prueba de rutas la revisa
                 assert nombre in inventario, f"{id_} ({lado}): '{nombre}' no está en el inventario de Z-Anatomy"
                 total += 1
             for nombre in curvas_en(r):
+                if nombre.startswith(u.PREFIJO_RUTA):
+                    continue
                 assert inventario[nombre] == "CURVE", f"{id_} ({lado}): '{nombre}' se usa como línea pero es {inventario[nombre]}"
             # El ubicador y esta prueba ven las mismas mallas.
             assert sorted(set(mallas_en(r))) == sorted(u.mallas_de_regla(r)), id_
             assert sorted(set(curvas_en(r))) == sorted(u.mallas_con_linea(r)), id_
     assert total > 60, total
+
+
+@prueba
+def rutas_nombradas_existen_y_son_del_lado_de_la_regla():
+    """Cada `ruta:<id>` de una regla es una ruta de rutas-vago.json, del lado (izquierdo o derecho) de la regla.
+    El vago escaneado `Vagus nerve (X).l/.r` solo se usa como curva donde el punto queda fuera de la banda:
+    eso lo detiene el ubicador al correr, no esta prueba."""
+    lado_ruta = {"l": "izquierdo", "r": "derecho"}
+    usadas = set()
+    for id_, por_lado in resueltas.items():
+        for lado, r in por_lado.items():
+            for nombre in mallas_en(r):
+                if not nombre.startswith(u.PREFIJO_RUTA):
+                    continue
+                id_ruta = nombre[len(u.PREFIJO_RUTA):]
+                assert id_ruta in rutas_vago, f"{id_} ({lado}): '{nombre}' no es una ruta de rutas-vago.json"
+                assert lado in lado_ruta, f"{id_}: una ruta de lado solo va en una regla de lado l o r"
+                assert rutas_vago[id_ruta]["lado"] == lado_ruta[lado], f"{id_} ({lado}): '{nombre}' es del otro lado"
+                usadas.add(nombre)
+    assert usadas == {"ruta:vago_toracico_izquierdo", "ruta:vago_toracico_derecho"}, usadas
+    # Ninguna regla mide contra geometría que el atlas no publica: el asa derecha (que usan el recurrente y los
+    # cardíacos cervicales) mide contra el vago derecho publicado, el escaneado fuera de la banda y la ruta torácica.
+    publicado = ["Vagus nerve (X).r", "ruta:vago_toracico_derecho"]
+    assert datos["referencias"]["asa_r"]["cerca_de"]["malla"] == publicado
+    for id_ in ("m-recurrent-laryngeal-nerve", "m-inferior-cervical-cardiac-branches-of-vagus-nerve"):
+        assert resueltas[id_]["r"]["cerca_de"]["malla"] == publicado, id_
+    # Los puntos del tramo torácico van sobre la ruta de su lado y no sobre el tronco escaneado.
+    for id_ in ("m-thoracic-cardiac-branches-of-vagus-nerve", "m-superior-cervical-cardiac-branches-of-vagus-nerve"):
+        assert resueltas[id_]["l"]["curva"] == "ruta:vago_toracico_izquierdo", id_
+    assert resueltas["m-thoracic-cardiac-branches-of-vagus-nerve"]["r"]["curva"] == "ruta:vago_toracico_derecho"
+    assert resueltas["m-superior-cervical-cardiac-branches-of-vagus-nerve"]["r"]["curva"] == "Vagus nerve (X).r"
+    # El ubicador y esta prueba ven las mismas mallas, también con ruta:.
+    for por_lado in resueltas.values():
+        for r in por_lado.values():
+            assert sorted(set(mallas_en(r))) == sorted(u.mallas_de_regla(r))
+    # La banda de cada lado existe: sin ella el ubicador no corre.
+    leidas = u.leer_rutas(RAIZ / "public" / "modelos" / "rutas-vago.json")
+    assert set(leidas["bandas"]) == {"izquierdo", "derecho"} and set(leidas["rutas"]) == set(rutas_vago)
 
 
 @prueba

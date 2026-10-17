@@ -107,7 +107,8 @@ npm test                                        # tests/asimetrias.test.ts: las 
   `docs/research/marcadores/fuentes.md`. `auditar-vago.py` solo lee el modelo y se las pasa. Cada umbral es
   una constante con nombre, y lo que no sale de una cifra de la fuente está marcado "(derivado)". Cada
   trazo sale con `regla`, `propuesta`, `confianza` (`alta`, `media` o `baja`, o `null` sin regla) y `fuente`;
-  lo leerá `scripts/aplicar-trazos.ts` (spec 04, T6). Se prueban con el mismo vago sintético:
+  lo lee `scripts/aplicar-trazos.ts` (spec 04, T6), que además lee `public/modelos/rutas-vago.json` (`--rutas`)
+  para agregar a la evidencia de `l#t02` y `r#t02` qué parte del trazo se publica (ADR 0010). Se prueban con el mismo vago sintético:
   `python pipeline/pruebas/probar_auditar.py`.
 - `extraer.py` corta el tronco con las bandas de `rutas-vago.json`; se prueba en Blender con
   `python pipeline/pruebas/probar_recorte.py` (curva sintética, troncos reales y los casos en que
@@ -140,9 +141,25 @@ punto queda a más de 5 mm de las mallas de su regla, el script se detiene y no 
 deducción propia (milímetros, fracciones, puntos medios, caras) va marcado "(derivado)" en el `metodo` de la
 regla, y lo aprueba el editor en el PR de datos.
 
+Mide contra lo que el atlas publica del vago (ADR 0010, actualización del ADR 0013 del 2026-10-17): lee
+`public/modelos/rutas-vago.json` (`--rutas`), quita de `Vagus nerve (X).l` y `.r` los vértices de la banda
+`reemplaza` de su lado y ofrece cada ruta trazada como la malla `ruta:<id>`, que una regla puede usar como
+`curva` o dentro de `cerca_de.malla`. Un `en_curva` sobre el vago escaneado cuyo punto caiga dentro de la banda
+detiene la corrida. Si falta el archivo o la banda de un lado, se detiene con un mensaje de una línea. Por eso
+`generar-ramas-vago.py` va antes. El orden de las corridas que mueven datos del vago:
+
+```bash
+python pipeline/auditar-vago.py                             # Blender: anclajes y trazos medidos
+python pipeline/generar-ramas-vago.py                       # public/modelos/rutas-vago.json (las bandas y las rutas)
+node scripts/aplicar-trazos.ts                              # mediciones + rutas -> src/data/trazos-vago.json
+python pipeline/ubicar-marcadores.py                        # Blender + rutas -> pipeline/salida/marcadores-propuestos.json
+node scripts/aplicar-marcadores.ts                          # propuestas -> src/data/marcadores.json
+```
+
 ```bash
 python pipeline/ubicar-marcadores.py                        # Blender: -> pipeline/salida/marcadores-propuestos.json
 python pipeline/ubicar-marcadores.py --salida otra/ruta.json
+python pipeline/ubicar-marcadores.py --rutas otra/rutas-vago.json
 python pipeline/pruebas/probar_ubicar.py                    # sin Blender: geometría y ubicador sobre un modelo sintético
 python pipeline/pruebas/probar_reglas.py                    # sin Blender: el YAML real contra fuentes, árbol e inventario
 node scripts/aplicar-marcadores.ts                          # propuestas -> src/data/marcadores.json y el resumen

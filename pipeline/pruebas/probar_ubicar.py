@@ -76,6 +76,33 @@ def sub_reglas(*ids):
     return {i: copy.deepcopy(REGLAS_REALES["marcadores"][i]) for i in ids}
 
 
+# Rutas trazadas sintéticas: "x" baja de y = 0,060 a 0,004 cada 8 mm y se acerca al vago izquierdo (x = 0,03).
+RUTA_X = [[round(0.08 - (0.06 - y) * 1.0, 6), y, 0.0] for y in (0.060, 0.052, 0.044, 0.036, 0.028, 0.020, 0.012, 0.004)]
+# Banda que no toca el modelo sintético (todo está en y >= 0): las dos rutas reales de las reglas existen.
+RUTAS_INOCUAS = {
+    "bandas": {"izquierdo": (0.0, None), "derecho": (0.0, None)},
+    "rutas": {"x": RUTA_X, "vago_toracico_izquierdo": RUTA_X, "vago_toracico_derecho": RUTA_X},
+}
+
+
+def rutas_con(izquierdo=(0.0, None), derecho=(0.0, None)):
+    return {**RUTAS_INOCUAS, "bandas": {"izquierdo": izquierdo, "derecho": derecho}}
+
+
+def archivo_rutas(carpeta, rutas=RUTAS_INOCUAS, nombre="rutas-vago.json"):
+    """Escribe un rutas-vago.json mínimo (el formato que lee leer_rutas) con las bandas y rutas dadas."""
+    lados = {"izquierdo": "vago_toracico_izquierdo", "derecho": "vago_toracico_derecho"}
+    salida = {}
+    for id_, puntos in rutas["rutas"].items():
+        salida[id_] = {"puntos": puntos}
+    for lado, (y_max, y_min) in rutas["bandas"].items():
+        salida[lados[lado]] = {"puntos": rutas["rutas"][lados[lado]], "lado": lado,
+                               "reemplaza": {"lado": lado, "y_max": y_max, "y_min": y_min}}
+    ruta = Path(carpeta) / nombre
+    ruta.write_text(json.dumps({"rutas": salida}), encoding="utf-8")
+    return ruta
+
+
 def ErrorUbicacion_con(f, *textos):
     try:
         f()
@@ -443,6 +470,212 @@ def por_lado_mallas_distintas():
 
 
 # --------------------------------------------------------------------------------------------------
+# Lo que el atlas publica del vago: bandas y rutas (ADR 0010)
+# --------------------------------------------------------------------------------------------------
+
+ALTURA_NUBE = {"operacion": "extremo", "malla": "Nube", "hacia": "superior"}  # y = 0,01 m
+
+
+def en_vago_a_nube(lado, curva):
+    return regla(lado, operacion="en_curva", curva=curva, altura=ALTURA_NUBE)
+
+
+@prueba
+def publicar_quita_los_vertices_de_la_banda_de_su_lado():
+    original = copy.deepcopy(SINT)
+    # Banda de una parte (y_min nulo) en el izquierdo; de dos partes en el derecho.
+    pub = u.publicar(SINT, rutas_con(izquierdo=(0.05, None), derecho=(0.07, 0.03)))
+    izq = [v[1] for v in pub["Vagus nerve (X).l"]["vertices"]]
+    assert izq and min(izq) == 0.05 and max(izq) == 0.1, (min(izq), max(izq))  # el borde exacto se queda
+    assert all(v[1] >= 0.05 for v in pub["Vagus nerve (X).l"]["vertices"])
+    der = sorted({v[1] for v in pub["Vagus nerve (X).r"]["vertices"]})
+    assert 0.07 in der and 0.03 in der, "los bordes de la banda se quedan"
+    assert not [y for y in der if 0.03 < y < 0.07], "lo de adentro se quita"
+    assert 0.0 in der and 0.1 in der and 0.02 in der and 0.08 in der, "lo de afuera se queda"
+    assert pub["Vagus nerve (X).l"]["banda"] == {"lado": "izquierdo", "y_max": 0.05, "y_min": None}
+    assert pub["Vagus nerve (X).r"]["banda"] == {"lado": "derecho", "y_max": 0.07, "y_min": 0.03}
+    # La línea no cambia, ni las demás mallas, y el modelo de entrada tampoco.
+    for n in ("Vagus nerve (X).l", "Vagus nerve (X).r"):
+        assert pub[n]["linea"] == SINT[n]["linea"]
+    for n in SINT:
+        if n not in ("Vagus nerve (X).l", "Vagus nerve (X).r"):
+            assert pub[n] is SINT[n], n
+    assert SINT == original, "publicar no modifica el modelo de entrada"
+    # A 0,5 µm del borde ya es del borde (se queda); a 2 µm de adentro, se quita.
+    cerca_borde = {"Vagus nerve (X).l": {"vertices": [[0, 0.05 - 5e-7, 0], [0, 0.05 - 2e-6, 0], [0, 0.06, 0]],
+                                          "linea": [[0, 0.06, 0], [0, 0.0, 0]]}}
+    assert [v[1] for v in u.publicar(cerca_borde, rutas_con(izquierdo=(0.05, None)))
+            ["Vagus nerve (X).l"]["vertices"]] == [0.05 - 5e-7, 0.06]
+
+
+@prueba
+def publicar_agrega_cada_ruta_como_malla_con_linea():
+    pub = u.publicar(SINT, RUTAS_INOCUAS)
+    assert pub["ruta:x"]["vertices"] == RUTA_X and pub["ruta:x"]["linea"] == RUTA_X
+    assert set(pub) - set(SINT) == {"ruta:x", "ruta:vago_toracico_izquierdo", "ruta:vago_toracico_derecho"}
+    pub["ruta:x"]["linea"][0][1] = 9.0
+    assert RUTA_X[0][1] == 0.06, "la ruta publicada es una copia"
+
+
+@prueba
+def en_curva_sobre_una_ruta_interpola_su_punto():
+    pub = u.publicar(SINT, RUTAS_INOCUAS)
+    # y = 0,01 queda entre los puntos y = 0,012 y 0,004, a un cuarto del primero.
+    p = uno(en_vago_a_nube("l", "ruta:x"), pub)["posicion"]
+    cerca(p, [0.03, 0.01, 0.0])
+    # Una ruta que no cruza esa altura deja el marcador sin ubicar, con motivo.
+    r = uno(regla("l", operacion="en_curva", curva="ruta:x", altura={**ALTURA_NUBE, "hacia": "inferior"}), pub)
+    assert r["posicion"] is None and "ruta:x" in r["motivo"], r
+
+
+@prueba
+def cerca_de_con_vago_y_ruta_mide_contra_lo_publicado():
+    regla_l = regla("l", operacion="en_curva", curva="ruta:x", cerca_de={"malla": ["Vagus nerve (X).l"]})
+    # Sin banda, el punto de la ruta más cercano al vago izquierdo está a y = 0,012; con la banda se quitan sus
+    # vértices bajos y el más cercano pasa a y = 0,028.
+    cerca(uno(regla_l, u.publicar(SINT, RUTAS_INOCUAS))["posicion"], [0.032, 0.012, 0.0])
+    cerca(uno(regla_l, u.publicar(SINT, rutas_con(izquierdo=(0.05, None))))["posicion"], [0.048, 0.028, 0.0])
+    # La lista suma los vértices de la ruta: ahora el más cercano es el primero de la propia ruta.
+    mixta = regla("l", operacion="en_curva", curva="ruta:x",
+                  cerca_de={"malla": ["Vagus nerve (X).l", "ruta:x"]})
+    cerca(uno(mixta, u.publicar(SINT, rutas_con(izquierdo=(0.05, None))))["posicion"], RUTA_X[0])
+
+
+@prueba
+def los_vertices_quitados_no_cuentan_para_el_control_de_cinco_milimetros():
+    # La línea del vago llega a y = 0 (no se corta), pero su malla publicada empieza en y = 0,05.
+    r = regla("l", operacion="extremo", malla="Vagus nerve (X).l", hacia="inferior", de="linea")
+    assert uno(r, u.publicar(SINT, RUTAS_INOCUAS))["estado"] == "aproximada"
+    ErrorUbicacion_con(lambda: uno(r, u.publicar(SINT, rutas_con(izquierdo=(0.05, None)))),
+                       "m-prueba", "50.0 mm", "Vagus nerve (X).l")
+
+
+@prueba
+def en_curva_sobre_el_vago_escaneado_dentro_de_la_banda_detiene():
+    curva_l, curva_r = "Vagus nerve (X).l", "Vagus nerve (X).r"
+    # Una parte: el punto está en y = 0,01 y la banda llega a 0,05.
+    msg = ErrorUbicacion_con(lambda: uno(en_vago_a_nube("l", curva_l), u.publicar(SINT, rutas_con(izquierdo=(0.05, None)))),
+                             "m-prueba", "(l)", "izquierdo", "10.0 mm", "ruta:")
+    assert "\n" not in msg
+    # Dos partes: dentro de (0,005, 0,02) detiene; justo en el borde no.
+    ErrorUbicacion_con(lambda: uno(en_vago_a_nube("r", curva_r), u.publicar(SINT, rutas_con(derecho=(0.02, 0.005)))),
+                       "m-prueba", "(r)", "derecho", "ruta:")
+    for borde in ((0.02, 0.01), (0.01, 0.005)):
+        assert uno(en_vago_a_nube("r", curva_r), u.publicar(SINT, rutas_con(derecho=borde)))["estado"] == "aproximada"
+    # Fuera de la banda pasa, y la misma regla sobre la ruta del lado nunca pasa por el control.
+    assert uno(en_vago_a_nube("l", curva_l), u.publicar(SINT, rutas_con(izquierdo=(0.005, None))))["estado"] == "aproximada"
+    assert uno(en_vago_a_nube("l", "ruta:x"), u.publicar(SINT, rutas_con(izquierdo=(0.05, None))))["estado"] == "aproximada"
+    # El control mira el punto que da la curva, antes de acercarlo a un destino.
+    ErrorUbicacion_con(lambda: uno(regla("l", operacion="en_curva", curva=curva_l, altura=ALTURA_NUBE,
+                                         destino={"malla": "Nube", "max_mm": 50}),
+                                   u.publicar(SINT, rutas_con(izquierdo=(0.05, None)))), "m-prueba")
+    # Las curvas que no son el vago escaneado no llevan control (no tienen banda).
+    assert uno(regla("l", operacion="en_curva", curva="Internal jugular vein.l", altura=ALTURA_NUBE),
+               u.publicar(SINT, rutas_con(izquierdo=(0.05, None))))["estado"] == "aproximada"
+
+
+@prueba
+def ruta_inexistente_detiene_con_su_nombre():
+    pub = u.publicar(SINT, RUTAS_INOCUAS)
+    ErrorUbicacion_con(lambda: uno(en_vago_a_nube("l", "ruta:nope"), pub), "m-prueba", "falta la malla 'ruta:nope'")
+    ErrorUbicacion_con(lambda: uno(regla("l", operacion="en_curva", curva="ruta:x",
+                                         cerca_de={"malla": ["Vagus nerve (X).l", "ruta:nope"]}), pub),
+                       "falta la malla 'ruta:nope'")
+
+
+@prueba
+def leer_rutas_lee_bandas_y_rutas_con_el_formato_real():
+    real = u.leer_rutas(u.RUTAS)
+    assert set(real["bandas"]) == {"izquierdo", "derecho"}
+    assert real["bandas"]["izquierdo"][1] is None and real["bandas"]["derecho"][1] is not None
+    assert real["bandas"]["derecho"][1] < real["bandas"]["derecho"][0]
+    assert {"vago_toracico_izquierdo", "vago_toracico_derecho"} <= set(real["rutas"])
+    assert all(len(p) == 3 for p in real["rutas"]["vago_toracico_derecho"])
+    with tempfile.TemporaryDirectory() as tmp:
+        leida = u.leer_rutas(archivo_rutas(tmp, rutas_con(izquierdo=(0.5, None), derecho=(0.4, 0.2))))
+    assert leida["bandas"] == {"izquierdo": (0.5, None), "derecho": (0.4, 0.2)}
+    assert leida["rutas"]["x"] == RUTA_X
+
+
+def _rutas_rechaza(texto, *esperados, contenido=None):
+    with tempfile.TemporaryDirectory() as tmp:
+        ruta = Path(tmp) / "rutas-vago.json"
+        if contenido is not None:
+            ruta.write_text(contenido if isinstance(contenido, str) else json.dumps(contenido), encoding="utf-8")
+        msg = ErrorUbicacion_con(lambda: u.leer_rutas(ruta), *esperados)
+        assert "\n" not in msg, "el mensaje es de una línea"
+        return msg
+
+
+@prueba
+def leer_rutas_se_detiene_con_un_mensaje_de_una_linea():
+    ok = {"puntos": RUTA_X}
+    banda = lambda lado, y_max, y_min=None: {**ok, "reemplaza": {"lado": lado, "y_max": y_max, "y_min": y_min}}  # noqa: E731
+    _rutas_rechaza("falta", "No existe", "generar-ramas-vago.py")
+    _rutas_rechaza("no es json", "no es JSON válido", contenido="{no es json")
+    _rutas_rechaza("sin rutas", "no trae el objeto 'rutas'", contenido=[1, 2])
+    _rutas_rechaza("sin rutas", "no trae el objeto 'rutas'", contenido={"otra": 1})
+    _rutas_rechaza("falta un lado", "falta la banda del vago derecho",
+                   contenido={"rutas": {"a": banda("izquierdo", 1.4)}})
+    _rutas_rechaza("falta un lado", "falta la banda del vago izquierdo",
+                   contenido={"rutas": {"a": banda("derecho", 1.4, 1.3)}})
+    _rutas_rechaza("dos del mismo lado", "hay dos bandas del vago izquierdo",
+                   contenido={"rutas": {"a": banda("izquierdo", 1.4), "b": banda("izquierdo", 1.3),
+                                        "c": banda("derecho", 1.4)}})
+    _rutas_rechaza("lado malo", "lado inválido", contenido={"rutas": {"a": banda("medio", 1.4)}})
+    _rutas_rechaza("y_max", "y_max inválido", contenido={"rutas": {"a": banda("izquierdo", None)}})
+    _rutas_rechaza("y_min", "y_min inválido", contenido={"rutas": {"a": banda("derecho", 1.3, 1.4)}})
+    _rutas_rechaza("puntos", "'puntos'", contenido={"rutas": {"a": {"reemplaza": None}}})
+    _rutas_rechaza("puntos", "'puntos'", contenido={"rutas": {"a": {"puntos": [[0, 1]]}}})
+
+
+@prueba
+def la_corrida_sin_rutas_se_detiene_con_un_mensaje_de_una_linea():
+    import subprocess
+    with tempfile.TemporaryDirectory() as tmp:
+        reglas = _yaml_reglas(tmp, {"m-bueno": regla(operacion="extremo", malla="Nube", hacia="superior")})
+        salida = Path(tmp) / "x" / "y.json"
+        r = subprocess.run([sys.executable, "-B", str(RAIZ / "pipeline" / "ubicar-marcadores.py"),
+                            "--reglas", str(reglas), "--salida", str(salida), "--rutas", str(Path(tmp) / "no-existe.json")],
+                           capture_output=True, text=True)
+        assert r.returncode != 0 and "No existe" in r.stderr and "generar-ramas-vago.py" in r.stderr, r.stderr
+        assert "Traceback" not in r.stderr and len(r.stderr.strip().splitlines()) == 1, r.stderr
+        assert not salida.exists() and not salida.parent.exists()
+        # Reglas malas se dicen antes que las rutas: con las dos cosas mal, el error es el de las reglas.
+        mala = _yaml_reglas(tmp, {"m-mala": regla(operacion="girar", malla="Nube", hacia="superior")}, "mala.yaml")
+        r = subprocess.run([sys.executable, "-B", str(RAIZ / "pipeline" / "ubicar-marcadores.py"),
+                            "--reglas", str(mala), "--salida", str(salida), "--rutas", str(Path(tmp) / "no-existe.json")],
+                           capture_output=True, text=True)
+        assert "m-mala" in r.stderr and "No existe" not in r.stderr, r.stderr
+
+
+@prueba
+def main_aplica_la_banda_y_las_rutas_del_archivo():
+    with tempfile.TemporaryDirectory() as tmp:
+        pedidos = []
+
+        def leer(nombres):
+            pedidos.append(list(nombres))
+            return SINT
+        reglas = _yaml_reglas(tmp, {"m-ruta": en_vago_a_nube("l", "ruta:x"),
+                                    "m-vago": en_vago_a_nube("l", "Vagus nerve (X).l")})
+        # Con una banda que no toca el punto, las dos reglas se ubican y a leer_modelo no llega 'ruta:...'.
+        sana = archivo_rutas(tmp, rutas_con(izquierdo=(0.005, None)), "sana.json")
+        salida = Path(tmp) / "ok.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            u.main(["--reglas", str(reglas), "--salida", str(salida), "--rutas", str(sana)], leer_modelo=leer)
+        assert len(pedidos) == 1 and set(pedidos[0]) == {"Nube", "Vagus nerve (X).l"}, pedidos  # sin 'ruta:...'
+        assert {p["id"]: p["estado"] for p in json.loads(salida.read_text(encoding="utf-8"))} == {
+            "m-ruta": "aproximada", "m-vago": "aproximada"}
+        # Con la banda sobre el punto, la regla del vago escaneado detiene la corrida y no escribe nada.
+        mala = archivo_rutas(tmp, rutas_con(izquierdo=(0.05, None)), "mala.json")
+        salida2 = Path(tmp) / "n" / "no.json"
+        ErrorUbicacion_con(lambda: u.main(["--reglas", str(reglas), "--salida", str(salida2), "--rutas", str(mala)],
+                                          leer_modelo=lambda n: SINT), "m-vago", "(l)", "ruta:")
+        assert not salida2.exists() and not salida2.parent.exists()
+
+
+# --------------------------------------------------------------------------------------------------
 # Fallas
 # --------------------------------------------------------------------------------------------------
 
@@ -458,7 +691,7 @@ def malla_que_falta_detiene_sin_escribir():
     with tempfile.TemporaryDirectory() as tmp:
         reglas = _yaml_reglas(tmp, {"m-faringeo": en_vago(26, destino={"malla": "Laryngopharynx", "max_mm": 5})})
         salida = Path(tmp) / "carpeta" / "x.json"
-        ErrorUbicacion_con(lambda: u.main(["--reglas", str(reglas), "--salida", str(salida)],
+        ErrorUbicacion_con(lambda: u.main(["--reglas", str(reglas), "--salida", str(salida), "--rutas", str(archivo_rutas(tmp))],
                                           leer_modelo=lambda n: sin_laringo), "m-faringeo", "Laryngopharynx")
         assert not salida.exists() and not salida.parent.exists(), "no debe crearse nada"
     # Una curva sin línea central también detiene, con id y malla.
@@ -467,7 +700,8 @@ def malla_que_falta_detiene_sin_escribir():
     ErrorUbicacion_con(lambda: uno(en_vago(0), sin_linea), "m-prueba", "Vagus nerve (X).l")
     # Las reglas reales sobre un modelo sin estómago ni hígado detienen nombrando la malla que falta.
     with tempfile.TemporaryDirectory() as tmp:
-        msg = ErrorUbicacion_con(lambda: u.main(["--salida", str(Path(tmp) / "y.json")], leer_modelo=lambda n: SINT),
+        msg = ErrorUbicacion_con(lambda: u.main(["--salida", str(Path(tmp) / "y.json"), "--rutas", str(archivo_rutas(tmp))],
+                                                leer_modelo=lambda n: SINT),
                                  "falta la malla")
         assert not (Path(tmp) / "y.json").exists()
         faltante = msg.split("'")[1]
@@ -526,7 +760,8 @@ def mas_de_cinco_milimetros_detiene():
     with tempfile.TemporaryDirectory() as tmp:
         reglas = _yaml_reglas(tmp, {"m-bueno": regla(**base), "m-malo": regla(operacion="centro", malla="Prisma")})
         salida = Path(tmp) / "x" / "y.json"
-        ErrorUbicacion_con(lambda: u.main(["--reglas", str(reglas), "--salida", str(salida)],
+        ErrorUbicacion_con(lambda: u.main(["--reglas", str(reglas), "--salida", str(salida),
+                                           "--rutas", str(archivo_rutas(tmp))],
                                           leer_modelo=lambda n: SINT), "m-malo", " mm")
         assert not salida.exists() and not salida.parent.exists()
 
@@ -628,7 +863,8 @@ def _correr_main(carpeta, ids, nombre="salida.json"):
     reglas = _yaml_reglas(carpeta, sub_reglas(*ids))
     salida = Path(carpeta) / nombre
     with contextlib.redirect_stdout(io.StringIO()) as out:
-        u.main(["--reglas", str(reglas), "--salida", str(salida)], leer_modelo=lambda n: SINT)
+        u.main(["--reglas", str(reglas), "--salida", str(salida), "--rutas", str(archivo_rutas(carpeta))],
+               leer_modelo=lambda n: SINT)
     return salida, out.getvalue()
 
 
@@ -672,7 +908,7 @@ def salida_por_defecto_y_opcion_salida():
             u.SALIDA_POR_DEFECTO = Path(tmp) / "defecto" / "propuestos.json"
             reglas = _yaml_reglas(tmp, sub_reglas(*IDS_REALES[:2]))
             with contextlib.redirect_stdout(io.StringIO()) as out:
-                u.main(["--reglas", str(reglas)], leer_modelo=lambda n: SINT)
+                u.main(["--reglas", str(reglas), "--rutas", str(archivo_rutas(tmp))], leer_modelo=lambda n: SINT)
             assert u.SALIDA_POR_DEFECTO.exists(), "sin --salida el archivo va a SALIDA_POR_DEFECTO"
             assert len(json.loads(u.SALIDA_POR_DEFECTO.read_text(encoding="utf-8"))) == 2
             assert str(u.SALIDA_POR_DEFECTO) in out.getvalue()

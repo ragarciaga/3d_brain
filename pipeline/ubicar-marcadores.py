@@ -5,8 +5,13 @@ con nombre del modelo de Z-Anatomy y la bibliografía de docs/research/marcadore
 posición propuesta de cada marcador en pipeline/salida/marcadores-propuestos.json (glTF: Y arriba, +X a la
 izquierda, +Z anterior, metros). No toca src/data: aplicar las propuestas es otro paso (scripts/aplicar-marcadores.ts).
 
-Uso: python pipeline/ubicar-marcadores.py [--salida RUTA] [--reglas RUTA] [--fuentes RUTA]
+Uso: python pipeline/ubicar-marcadores.py [--salida RUTA] [--reglas RUTA] [--fuentes RUTA] [--rutas RUTA]
      (o blender -b --python pipeline/ubicar-marcadores.py -- --salida RUTA)
+
+Mide contra lo que el atlas publica del vago (ADR 0010, ADR 0013): lee public/modelos/rutas-vago.json, quita de
+`Vagus nerve (X).l/.r` los vértices que caen en la banda `reemplaza` de su lado y ofrece cada ruta trazada como
+la curva `ruta:<id>`. Un `en_curva` sobre el vago escaneado cuyo punto cae dentro de la banda detiene la corrida.
+Corre después de pipeline/generar-ramas-vago.py, que escribe ese archivo.
 
 `bpy` solo se importa dentro de leer_modelo_blender: las pruebas corren sin Blender con un modelo sintético.
 """
@@ -25,6 +30,10 @@ from comun import RAIZ, abrir_blend, argumentos  # noqa: E402
 REGLAS = RAIZ / "reglas-marcadores.yaml"
 FUENTES = RAIZ.parent / "docs/research/marcadores/fuentes.md"
 SALIDA_POR_DEFECTO = RAIZ / "salida" / "marcadores-propuestos.json"
+RUTAS = RAIZ.parent / "public" / "modelos" / "rutas-vago.json"  # igual que RUTAS_PUBLICADAS en extraer.py
+PREFIJO_RUTA = "ruta:"  # una malla `ruta:<id>` es la ruta trazada <id> de rutas-vago.json
+VAGO_LADO = {"Vagus nerve (X).l": "izquierdo", "Vagus nerve (X).r": "derecho"}  # vago escaneado y lado de su banda
+EPS_PLANO = 1e-6  # el mismo borde que extraer.cortar_banda: a menos de 1 µm de un plano de corte es del borde
 MAX_DISTANCIA = 0.005  # 5 mm: un punto más lejos de todas las mallas de su regla detiene la corrida
 OPERACIONES = ("extremo", "centro", "polo", "en_curva", "superficie", "plano_medio", "entre")
 LADOS = ("medio", "ambos", "l", "r")
@@ -362,6 +371,79 @@ def mallas_con_linea(regla):
 
 
 # --------------------------------------------------------------------------------------------------
+# Lo que el atlas publica del vago (public/modelos/rutas-vago.json)
+# --------------------------------------------------------------------------------------------------
+
+def _dentro_de_banda(y, banda):
+    """Mismo predicado que extraer.cortar_banda: dentro del tramo que el atlas ya no publica."""
+    return y < banda["y_max"] - EPS_PLANO and (banda["y_min"] is None or y > banda["y_min"] + EPS_PLANO)
+
+
+def _puntos_ok(puntos):
+    return (isinstance(puntos, list) and len(puntos) >= 2
+            and all(isinstance(p, list) and len(p) == 3 and all(_es_numero(v) for v in p) for p in puntos))
+
+
+def leer_rutas(ruta=RUTAS):
+    """{"bandas": {lado: (y_max, y_min o None)}, "rutas": {id: puntos}} de rutas-vago.json, en metros glTF.
+    Las mismas validaciones que extraer.leer_bandas (que no se importa: importa bpy al cargarse)."""
+    ruta = Path(ruta)
+    if not ruta.exists():
+        raise ErrorUbicacion(f"No existe {ruta}: sin las rutas del vago no se sabe qué publica el atlas. "
+                             "Corre antes pipeline/generar-ramas-vago.py")
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+    except ValueError as e:
+        raise ErrorUbicacion(f"{ruta} no es JSON válido: {e}") from None
+    rutas = datos.get("rutas") if isinstance(datos, dict) else None
+    if not isinstance(rutas, dict):
+        raise ErrorUbicacion(f"{ruta} no trae el objeto 'rutas'")
+    bandas, puntos = {}, {}
+    for id_ruta, r in rutas.items():
+        if not isinstance(r, dict) or not _puntos_ok(r.get("puntos")):
+            raise ErrorUbicacion(f"{ruta}: la ruta {id_ruta} no trae 'puntos' (al menos dos [x, y, z])")
+        puntos[id_ruta] = r["puntos"]
+        rem = r.get("reemplaza")
+        if rem is None:
+            continue
+        lado = rem.get("lado") if isinstance(rem, dict) else None
+        if lado not in ("derecho", "izquierdo"):
+            raise ErrorUbicacion(f"{ruta}: la ruta {id_ruta} trae un lado inválido en 'reemplaza': {lado!r}")
+        if lado in bandas:
+            raise ErrorUbicacion(f"{ruta}: hay dos bandas del vago {lado}")
+        y_max, y_min = rem.get("y_max"), rem.get("y_min")
+        if not _es_numero(y_max):
+            raise ErrorUbicacion(f"{ruta}: la banda del vago {lado} trae un y_max inválido: {y_max!r}")
+        if y_min is not None and not (_es_numero(y_min) and y_min < y_max):
+            raise ErrorUbicacion(f"{ruta}: la banda del vago {lado} trae un y_min inválido "
+                                 f"(debe ser nulo o menor que y_max): {y_min!r}")
+        bandas[lado] = (float(y_max), None if y_min is None else float(y_min))
+    for lado in ("derecho", "izquierdo"):
+        if lado not in bandas:
+            raise ErrorUbicacion(f"{ruta}: falta la banda del vago {lado} ('reemplaza' de la ruta torácica). "
+                                 "Corre pipeline/generar-ramas-vago.py")
+    return {"bandas": bandas, "rutas": puntos}
+
+
+def publicar(modelo, rutas):
+    """Copia del modelo como lo publica el atlas: a `Vagus nerve (X).l/.r` se le quitan los vértices de la
+    banda de su lado (su `linea` no cambia) y se le agrega `banda`; cada ruta trazada entra como `ruta:<id>`."""
+    copia = dict(modelo)
+    for nombre, lado in VAGO_LADO.items():
+        if nombre not in copia:
+            continue
+        y_max, y_min = rutas["bandas"][lado]
+        banda = {"lado": lado, "y_max": y_max, "y_min": y_min}
+        m = dict(copia[nombre])
+        m["vertices"] = [v for v in m["vertices"] if not _dentro_de_banda(v[1], banda)]
+        m["banda"] = banda
+        copia[nombre] = m
+    for id_ruta, puntos in rutas["rutas"].items():
+        copia[PREFIJO_RUTA + id_ruta] = {"vertices": [list(p) for p in puntos], "linea": [list(p) for p in puntos]}
+    return copia
+
+
+# --------------------------------------------------------------------------------------------------
 # Bibliografía
 # --------------------------------------------------------------------------------------------------
 
@@ -455,6 +537,11 @@ def _punto(s, lado, modelo):
                 raise _SinPunto(f"la curva {s['curva']} no cruza la altura {y:.3f} m")
         else:
             q = g.en_curva_cerca_de(linea, _vertices(modelo, s["cerca_de"]["malla"]))
+        banda = modelo[s["curva"]].get("banda")
+        if banda and _dentro_de_banda(q[1], banda):
+            raise ErrorUbicacion(
+                f"el punto cae a {q[1] * 1000:.1f} mm de altura, dentro del tramo del vago {banda['lado']} que el atlas "
+                f"ya no publica ({s['curva']}); usa la ruta trazada de ese lado como curva ('{PREFIJO_RUTA}<id>', ADR 0010)")
         if "destino" in s:
             dest = _vertices(modelo, s["destino"]["malla"])
             cerca, d = g.punto_mas_cercano(q, dest)
@@ -546,6 +633,8 @@ def ubicar(reglas, modelo, bibliografia):
                 puntos[lg] = g.redondear(p)
             except _SinPunto as e:
                 motivos.append(f"lado {lg}: {e}" if len(lados) > 1 else str(e))
+            except ErrorUbicacion as e:
+                raise ErrorUbicacion(f"{id_} ({lg}): {e}") from None
         if motivos:
             propuestas.append({**base, "posicion": None, "cita": {"es": cita, "en": cita},
                                "motivo": "no se pudo calcular el punto (" + "; ".join(motivos) + ")"})
@@ -635,15 +724,17 @@ def main(argv=None, leer_modelo=None):
     ap.add_argument("--reglas", type=Path, default=REGLAS)
     ap.add_argument("--fuentes", type=Path, default=FUENTES)
     ap.add_argument("--salida", type=Path, default=SALIDA_POR_DEFECTO)
+    ap.add_argument("--rutas", type=Path, default=RUTAS)
     args = ap.parse_args(argv)
 
     reglas = cargar_reglas(args.reglas)
     bibliografia = leer_bibliografia(args.fuentes)
+    rutas = leer_rutas(args.rutas)
     nombres = []
     for lados in reglas.values():
         for regla in lados.values():
-            nombres += [n for n in mallas_de_regla(regla) if n not in nombres]
-    modelo = (leer_modelo or leer_modelo_blender)(nombres)
+            nombres += [n for n in mallas_de_regla(regla) if n not in nombres and not n.startswith(PREFIJO_RUTA)]
+    modelo = publicar((leer_modelo or leer_modelo_blender)(nombres), rutas)
     propuestas = ubicar(reglas, modelo, bibliografia)
     escribir(propuestas, args.salida)
     sin = [p["id"] for p in propuestas if p["posicion"] is None]
