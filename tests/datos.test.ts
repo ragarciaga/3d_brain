@@ -58,7 +58,19 @@ describe('datos del atlas', () => {
     const m = marcadores.find((x) => x.id === 'm-wernicke-area');
     expect(m?.padre).toBe('g-temporal-lobe');
     expect(m?.estado).toBe('aproximada');
-    expect(m?.posicion).toBeNull();
+    // Un solo punto Vec3 en el hemisferio izquierdo (+X): la regla solo cubre el lado izquierdo.
+    expect(Array.isArray(m?.posicion)).toBe(true);
+    const p = m!.posicion as number[];
+    expect(p).toHaveLength(3);
+    expect(p.every((c) => Number.isFinite(c))).toBe(true);
+    expect(p[0]!).toBeGreaterThan(0);
+    // La fuente nombra las tres posturas que no coinciden con la clásica, en cada idioma.
+    for (const cita of ['Binder 2015', 'Matchin 2022', 'Dick 2016']) {
+      expect(m?.fuente_ubicacion.es, cita).toContain(cita);
+      expect(m?.fuente_ubicacion.en, cita).toContain(cita);
+    }
+    expect(m?.fuente_ubicacion.es).toContain('Tremblay y Dick');
+    expect(m?.fuente_ubicacion.en).toContain('Tremblay and Dick');
     expect(m?.ancla).toBe('superior-temporal-gyrus-lateral-part-l');
     expect(nodos[m!.ancla!]?.lado).toBe('l');
     expect(estructuras['m-wernicke-area']?.tipo).toBe('marcador');
@@ -90,7 +102,20 @@ describe('datos del atlas', () => {
       expect(m.fuente_ubicacion.en.trim() === '', `${m.id} falta la nota en inglés`).toBe(m.fuente_ubicacion.es.trim() === '');
     }
     const pag = marcadores.find((m) => m.id === 'm-periaqueductal-grey')!;
-    expect(pag.fuente_ubicacion.en).toContain('cerebral aqueduct of the midbrain');
+    // Ni el rótulo ni la cita de un idioma aparecen en el otro.
+    for (const m of marcadores) {
+      const { es, en } = m.fuente_ubicacion;
+      expect(en, m.id).not.toContain(' Fuente: ');
+      expect(en, m.id).not.toContain('Las fuentes no coinciden');
+      expect(es, m.id).not.toContain(' Source: ');
+      expect(es, m.id).not.toContain('Sources disagree');
+    }
+    expect(Array.isArray(pag.posicion)).toBe(true);
+    expect(pag.fuente_ubicacion.es).toContain(' Fuente: ');
+    expect(pag.fuente_ubicacion.es).toContain('PMID 32870572');
+    expect(pag.fuente_ubicacion.en).not.toContain(pag.fuente_ubicacion.es.split(' Fuente: ')[0]!);
+    expect(pag.fuente_ubicacion.en).toContain(' Source: ');
+    expect(pag.fuente_ubicacion.en).toContain('PMID 32870572');
     expect(estructuras['m-periaqueductal-grey']!.fuente_nombre).toContain('TA2');
     expect(estructuras['m-wernicke-area']!.fuente_nombre).toContain('Terminologia Neuroanatomica');
   });
@@ -310,6 +335,39 @@ describe('posición de marcadores (R3)', () => {
       { lado: 'l', posicion: [1, 2, 3], piezas: [] },
       { lado: 'r', posicion: [-1, 2, 3], piezas: [] },
     ]);
+  });
+});
+
+describe('propuestas de la spec 04 (T4)', () => {
+  const resumen = readFileSync('docs/research/marcadores/resumen-propuestas.md', 'utf8');
+  const secciones = new Map(resumen.split('\n## ').slice(1).map((s) => [s.slice(0, s.indexOf('\n')).trim(), s]));
+  const ids = marcadores.map((m) => m.id);
+
+  it('hay un marcador por cada sección del resumen y viceversa', () => {
+    expect(ids).toHaveLength(26);
+    expect([...secciones.keys()].sort()).toEqual([...ids].sort());
+  });
+
+  it.each(ids)('%s: tiene punto, o es sin_ubicar, o es aproximada con ancla y sin punto, y en esos dos casos el resumen dice el motivo', (id) => {
+    const m = marcadores.find((x) => x.id === id)!;
+    if (m.posicion !== null) return;
+    const sinUbicar = m.estado === 'sin_ubicar';
+    const aproximadaConAncla = m.estado === 'aproximada' && typeof m.ancla === 'string' && m.ancla !== '';
+    expect(sinUbicar || aproximadaConAncla, `${id} sin punto debe ser sin_ubicar o aproximada con ancla`).toBe(true);
+    const motivo = (secciones.get(id) ?? '').split('\n').find((l) => l.startsWith('- Motivo: '));
+    expect(motivo, `${id} sin línea "- Motivo: " en el resumen`).toBeDefined();
+    expect(motivo!.slice('- Motivo: '.length).trim(), id).not.toBe('');
+  });
+
+  it('ningún marcador es validada: solo un docente valida', () => {
+    expect(marcadores.filter((m) => m.estado === 'validada').map((m) => m.id)).toEqual([]);
+  });
+
+  it('toda aproximada trae la fuente de ubicación en español y en inglés', () => {
+    for (const m of marcadores.filter((x) => x.estado === 'aproximada')) {
+      expect(m.fuente_ubicacion.es.trim(), `${m.id} es`).not.toBe('');
+      expect(m.fuente_ubicacion.en.trim(), `${m.id} en`).not.toBe('');
+    }
   });
 });
 

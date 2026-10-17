@@ -504,7 +504,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Mesencéfalo, puente, bulbo raquídeo | Mallas, por lado |
 | Cerebelo | Mallas |
 | Ventrículos laterales, tercero y cuarto, acueducto cerebral, plexos coroideos | Mallas (pineal y plexos coroideos vienen fuera del grupo Brain de Z-Anatomy y el pipeline los agrega) |
-| Núcleo accumbens | Marcador sin ubicar; por completar con el atlas SPL/NAC |
+| Núcleo accumbens | Marcador `aproximada`: un punto por lado, con ancla en el núcleo caudado, puesto por una regla anatómica con su fuente (Birbilis 2021) y pendiente de revisión docente (ADR 0013); la malla desde el atlas SPL/NAC sigue diferida |
 | Sustancia gris periacueductal, locus coeruleus, núcleos del rafe, área postrema, núcleo anterior del tálamo | Marcadores |
 
 **Nervio vago (ambos lados)**
@@ -523,7 +523,7 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Troncos vagales anterior y posterior, ramos gástricos, hepáticos y celíacos | Marcadores |
 | Agujero yugular | Marcador |
 
-**Áreas funcionales:** Broca con las piezas de la parte opercular y triangular del giro frontal inferior (sujeto a revisión); Wernicke como marcador sin ubicar (`m-wernicke-area`) hasta que un revisor proponga su posición.
+**Áreas funcionales:** Broca con las piezas de la parte opercular y triangular del giro frontal inferior (sujeto a revisión); Wernicke como marcador `aproximada` (`m-wernicke-area`) en el hemisferio izquierdo, con una posición propuesta por una regla anatómica con su fuente, que cita el desacuerdo entre definiciones (Barba 2026, Binder 2015, Matchin 2022, Mesulam 2015, Tremblay y Dick 2016), pendiente de revisión docente (ADR 0013).
 
 **Órganos de referencia (translúcidos, sin ficha de estudio):** corazón (cavidades y paredes), pulmones (lóbulos), laringe (cartílagos), tráquea, esófago y estómago. Vienen por partes y se agrupan.
 
