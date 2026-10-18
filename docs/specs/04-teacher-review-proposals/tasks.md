@@ -126,3 +126,16 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 - 2026-10-14 ronda 1: lector nuevo en `src/lib/trazos.ts`; "Correcto" de marcador con forma definida (clave compartida con "Proponer posición", no pisa una propuesta, se deshace); se aclara qué ya existe para no rehacerlo; no cambia `camposDeFicha`.
 - 2026-10-17: plan publicado en #108 (nivel B); se implementa sobre T4 y T7 y se fusiona después de ellos.
 - 2026-10-17: fusionada como PR #209 (nivel B; una devolución: la prueba en inglés comparaba solo el comienzo de la propuesta).
+
+## T9: Citar completa la fuente de la regla de cada trazo
+- Purpose: que el docente vea junto a cada trazo la fuente de su regla como cita (autores, título, año e identificador PMID, DOI o URL) y no solo la clave interna (hoy "Fuente de la regla: Bahadir2026"), para verificarla sin buscar fuera de la app. Lo encontró la auditoría de objetivo de la verificación (test-report.md, Goal G4).
+- Covers: R4.5, R5.1
+- Size: S
+- Depends on: T8
+- Files: src/lib/trazos.ts, src/components/RevisionTrazo.tsx, tests/trazos.test.ts, e2e/trazos-vago.spec.ts
+- Verify: `npm test -- tests/trazos.test.ts` (cada clave `fuente` de `src/data/trazos-vago.json` se resuelve a una cita con autores, título, año e identificador tomada de la bibliografía registrada en `docs/research/marcadores/fuentes.md`, sin texto inventado; una clave sin entrada no muestra una cita vacía); `npm run test:e2e -- e2e/trazos-vago.spec.ts` (al abrir un trazo con propuesta en es y en, el bloque de la fuente muestra la cita completa y no la clave sola); `npm run check:i18n`; `npm run typecheck`. Si la cita tiene que vivir en `src/data/`, el plan lo declara nivel C.
+- Issue: #218
+- Status: todo
+
+### Decision log
+- 2026-10-18: creada por la verificación de la feature (auditoría de objetivo, G4 parcial): R4.5 y R5.1 piden la fuente y hoy se ve solo la clave.
