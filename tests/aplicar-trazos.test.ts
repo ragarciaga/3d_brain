@@ -289,11 +289,11 @@ describe('sin regla (R4.4)', () => {
   it('con una región de una sola regla nombra esa regla y la condición que falla con su margen a 0,1 mm', () => {
     const e = aplicar({ M1: medida('sin_regla') }).datos.trazos[1]!.evidencia!;
     expect(e.es).toContain(
-      'Ninguna regla se cumple: queda sin propuesta. Por la altura del trazo, la regla más cercana es la de la raicilla; ' +
+      'Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; ' +
         'no se cumple que su extremo superior quede por detrás de la oliva (falla por 1,3 mm).',
     );
     expect(e.en).toContain(
-      'No rule is met: no proposal. By the height of the trace, the closest rule is the rootlet rule; ' +
+      "No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; " +
         'not met: its upper end lies dorsal to the olive (fails by 1.3 mm).',
     );
   });

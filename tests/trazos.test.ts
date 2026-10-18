@@ -274,16 +274,31 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
     for (const t of trazosAuditados.filter((x) => x.propuesta !== null)) expect(t.evidencia!.es, t.malla).not.toContain('Ninguna regla se cumple');
   });
 
-  it('D4: los seis trazos del bulbo tienen a la raicilla como regla más cercana y `detras_oliva` entre sus fallas; l#t04 y r#t18 fallan además por el foramen', () => {
-    const bulbo = ['l#t03', 'l#t04', 'l#t05', 'r#t17', 'r#t18', 'r#t19'].map((x) => `Vagus nerve (X).${x}`);
-    for (const malla of bulbo) {
+  it('D4: los seis trazos del bulbo tienen a la raicilla como regla más cercana y esta es exactamente su lista de fallas: `detras_oliva` en los seis y, además, `sobre_foramen` en l#t04 y r#t18', () => {
+    const oliva = (mm: string) => ({
+      es: `no se cumple que su extremo superior quede por detrás de la oliva (falla por ${mm.replace('.', ',')} mm)`,
+      en: `not met: its upper end lies dorsal to the olive (fails by ${mm} mm)`,
+    });
+    const foramen = { es: ' y que todo el trazo quede por encima del foramen yugular (falla por 0,4 mm)', en: '; the whole trace lies above the jugular foramen (fails by 0.4 mm)' };
+    const esperado: [string, string, boolean][] = [
+      ['l#t03', '1.2', false],
+      ['l#t04', '0.6', true],
+      ['l#t05', '0.6', false],
+      ['r#t17', '1.2', false],
+      ['r#t18', '0.6', true],
+      ['r#t19', '0.6', false],
+    ];
+    for (const [corto, mm, conForamen] of esperado) {
+      const malla = `Vagus nerve (X).${corto}`;
       const e = evidenciaDe(malla);
       expect(filaDe(malla).regla, malla).toBe('sin_regla');
-      expect(e.es, malla).toContain('la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por ');
+      // La lista entera, con su cierre: la regla más cercana y cada condición que falla, ni una más.
+      expect(e.es, malla).toContain(`la regla más cercana es la de la raicilla; ${oliva(mm).es}${conForamen ? foramen.es : ''}. Fuente: `);
+      expect(e.en, malla).toContain(`the closest rule is the rootlet rule; ${oliva(mm).en}${conForamen ? foramen.en : ''}. Source: `);
+      const fallas = conForamen ? 2 : 1;
+      expect(e.es.split('(falla por ').length - 1, malla).toBe(fallas);
+      expect(e.en.split('(fails by ').length - 1, malla).toBe(fallas);
       expect(e.es, malla).not.toContain('ramo faríngeo');
-      const foramen = /todo el trazo quede por encima del foramen yugular \(falla por 0,4 mm\)/.test(e.es);
-      expect(foramen, malla).toBe(malla.endsWith('l#t04') || malla.endsWith('r#t18'));
-      expect(/(fails by 0\.4 mm)/.test(e.en), malla).toBe(foramen);
     }
   });
 

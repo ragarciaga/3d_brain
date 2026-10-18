@@ -418,13 +418,13 @@ function fraseSinRegla(m: Medicion, idioma: keyof Bilingue): string {
   if (fallas.length === 1) {
     const f = fallas[0]!;
     return idioma === 'es'
-      ? `${inicio} Por la altura del trazo, la regla más cercana es ${nombreDe(f)}; ${fallasDe(f, idioma)}.`
-      : `${inicio} By the height of the trace, the closest rule is ${nombreDe(f)}; ${fallasDe(f, idioma)}.`;
+      ? `${inicio} Por la altura media del trazo, la regla más cercana es ${nombreDe(f)}; ${fallasDe(f, idioma)}.`
+      : `${inicio} By the trace's mean height, the closest rule is ${nombreDe(f)}; ${fallasDe(f, idioma)}.`;
   }
   const [a, b] = [fallas[0]!, fallas[1]!];
   return idioma === 'es'
-    ? `${inicio} Por la altura del trazo, las reglas más cercanas son ${nombreDe(a)} y ${nombreDe(b)}. En ${nombreDe(a)}, ${fallasDe(a, idioma)}. En ${nombreDe(b)}, ${fallasDe(b, idioma)}.`
-    : `${inicio} By the height of the trace, the closest rules are ${nombreDe(a)} and ${nombreDe(b)}. In ${nombreDe(a)}, ${fallasDe(a, idioma)}. In ${nombreDe(b)}, ${fallasDe(b, idioma)}.`;
+    ? `${inicio} Por la altura media del trazo, las reglas más cercanas son ${nombreDe(a)} y ${nombreDe(b)}. En ${nombreDe(a)}, ${fallasDe(a, idioma)}. En ${nombreDe(b)}, ${fallasDe(b, idioma)}.`
+    : `${inicio} By the trace's mean height, the closest rules are ${nombreDe(a)} and ${nombreDe(b)}. In ${nombreDe(a)}, ${fallasDe(a, idioma)}. In ${nombreDe(b)}, ${fallasDe(b, idioma)}.`;
 }
 
 function razonConfianza(nivel: ConfianzaTrazo, extremo: 'superior' | 'inferior', idioma: keyof Bilingue): string {
