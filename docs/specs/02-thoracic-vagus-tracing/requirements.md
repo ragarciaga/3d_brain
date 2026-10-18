@@ -3,6 +3,8 @@
 Status: approved  |  Date: 2026-10-13  |  Spec: docs/specs/02-thoracic-vagus-tracing/
 Brief: docs/brief.md  |  ADRs: docs/adr/0009-vago-fijo-recorrido-y-trazado-selectivo.md, docs/adr/0010-vago-toracico-trazado.md  |  Auditoría: docs/research/vago/auditoria-vago.md
 
+> **Plan B (2026-10-18).** El editor decidió no publicar ninguna ruta trazada en el lanzamiento docente. Los requisitos R1 (trazar), R4 (mostrar lo trazado) y R5 (revisar cada ruta) quedan pendientes del trazado; lo que se entrega ahora es R2 (el tronco espejo no se publica, vigilado por `check:modelo`) y un hueco declarado en `rutas-vago.json` (`huecos`) que la leyenda, la ficha del vago y el recorrido avisan. Ver el plan `02-planB` y el ADR 0010.
+
 ## Context
 La auditoría del 13 de octubre de 2026 midió que el vago del tórax de Z-Anatomy es un espejo izquierda-derecha. El izquierdo atraviesa el arco aórtico y el derecho pasa por delante del bronquio principal derecho, así que el atlas enseña hoy dos relaciones falsas justo donde un docente mira. El ADR 0010 decide trazar ese tramo en los dos lados por anclajes del modelo y dejar de publicar el escaneado que reemplaza. Este spec lo implementa con las condiciones de F25 (ruta por anclaje, prueba de asimetrías, acabado `aproximada`, revisión docente).
 

@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { Document } from '@gltf-transform/core';
 import { describe, expect, it } from 'vitest';
 import { bandas, type Banda, type P, type Rutas } from '../scripts/lib/asimetrias.ts';
 import { cajasDelDocumento, io, verticesDelDocumento } from '../scripts/lib/glb.ts';
-import { cajaBlenderAGltf, cajaDePuntos, comprobarBandas, compararCajas, mallasDelTronco, TRONCO_VAGO, type Caja } from '../scripts/lib/modelo.ts';
+import { cajaBlenderAGltf, cajaDePuntos, comprobarBandas, compararCajas, mallasDelTronco, revisarLados, TRONCO_VAGO, type Caja } from '../scripts/lib/modelo.ts';
 
 const blender: Caja = [0.01, -0.02, 1.5, 0.03, 0.04, 1.6];
 
@@ -116,9 +117,20 @@ describe('tronco del vago fuera de la banda (check:modelo)', () => {
     expect(comprobarBandas(bandas(rutas), v)).toHaveLength(2);
   });
 
-  it('con rutas vacías (el archivo publicado hoy) no vigila nada', () => {
+  it('con rutas vacías y sin huecos no vigila nada', () => {
     const v = con(R, 1.4, 1.3);
     expect(comprobarBandas(bandas({ rutas: {} }), v)).toEqual([]);
+  });
+
+  it('con huecos y sin rutas (Plan B) vigila las dos mallas de cada lado', () => {
+    const rutas: Rutas = { rutas: {}, huecos: [der, izq] };
+    const v = validos();
+    v[R] = [...v[R]!, [0, 1.4, 0]];
+    v[`${L}#toque`] = [...v[`${L}#toque`]!, [0, 1.3, 0]];
+    const e = comprobarBandas(bandas(rutas), v);
+    expect(e).toHaveLength(2);
+    expect(e[0]).toContain(`${R}:`);
+    expect(e[1]).toContain(`${L}#toque:`);
   });
 
   it('falla si falta una malla del tronco en el GLB', () => {
@@ -176,6 +188,48 @@ describe('lector de vértices del GLB', () => {
   it('cajasDelDocumento es la caja de esos mismos vértices', () => {
     const doc = documento();
     expect(cajasDelDocumento(doc)).toEqual({ [TRONCO_VAGO.derecho]: cajaDePuntos(verticesDelDocumento(doc)[TRONCO_VAGO.derecho]!) });
+  });
+});
+
+describe('revisarLados (una banda por lado)', () => {
+  const der: Banda = { lado: 'derecho', y_max: 1.4, y_min: 1.3 };
+  const izq: Banda = { lado: 'izquierdo', y_max: 1.41, y_min: null };
+
+  it('sin bandas falla nombrando los dos lados', () => {
+    const e = revisarLados([]);
+    expect(e).toHaveLength(2);
+    expect(e[0]).toContain('derecho');
+    expect(e[1]).toContain('izquierdo');
+  });
+
+  it('con una sola banda falla nombrando el lado que falta', () => {
+    expect(revisarLados([der])).toEqual([expect.stringContaining('izquierdo')]);
+    expect(revisarLados([izq])).toEqual([expect.stringContaining('derecho')]);
+  });
+
+  it('con las dos pasa', () => {
+    expect(revisarLados([der, izq])).toEqual([]);
+  });
+
+  it('con un lado repetido falla nombrándolo', () => {
+    const e = revisarLados([der, izq, { ...der }]);
+    expect(e).toHaveLength(1);
+    expect(e[0]).toContain('derecho');
+  });
+});
+
+describe('huecos publicados contra el GLB publicado', () => {
+  it('rutas-vago.json trae una banda por lado y ningún vértice del tronco cae dentro', async () => {
+    const rutas = JSON.parse(readFileSync('public/modelos/rutas-vago.json', 'utf8')) as Rutas;
+    const bs = bandas(rutas);
+    expect(revisarLados(bs)).toEqual([]);
+    const doc = await (await io()).read('public/modelos/atlas.glb');
+    const nombres = new Set(bs.flatMap((b) => mallasDelTronco(b.lado)));
+    expect(comprobarBandas(bs, verticesDelDocumento(doc, nombres))).toEqual([]);
+  }, 30000);
+
+  it('sin los huecos revisarLados falla', () => {
+    expect(revisarLados(bandas({ rutas: {} }))).toHaveLength(2);
   });
 });
 

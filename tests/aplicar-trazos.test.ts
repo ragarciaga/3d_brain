@@ -7,6 +7,8 @@ import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ramosDeTrazo } from '../src/lib/trazos';
 import type { Marcador, PropuestaTrazo } from '../src/data/tipos';
+import { bandas, type Banda, type Rutas } from '../scripts/lib/asimetrias.ts';
+import { TRONCO_VAGO } from '../scripts/lib/modelo.ts';
 import {
   aplicarMediciones,
   argumentosAplicarTrazos,
@@ -26,6 +28,9 @@ const textoMarcadores = readFileSync(rutaMarcadores, 'utf8');
 const marcadores = JSON.parse(textoMarcadores) as Marcador[];
 const textoReal = readFileSync(join(raiz, 'src/data/trazos-vago.json'), 'utf8');
 const real = JSON.parse(textoReal) as { trazos: PropuestaTrazo[] };
+const rutaRutas = join(raiz, 'public/modelos/rutas-vago.json');
+const textoRutas = readFileSync(rutaRutas, 'utf8');
+const BANDAS = bandas(JSON.parse(textoRutas) as Rutas);
 const RAMOS = ramosDeMarcadores(marcadores);
 const GUION_LARGO = String.fromCharCode(0x2014);
 const HEPATICO = 'm-hepatic-branches-of-anterior-vagal-trunk';
@@ -88,8 +93,8 @@ function sinteticos(): { trazos: PropuestaTrazo[] } {
   };
 }
 
-function aplicar(medidos: Record<string, unknown>, datos = sinteticos()) {
-  return aplicarMediciones(datos, medidos, RAMOS);
+function aplicar(medidos: Record<string, unknown>, datos = sinteticos(), bandasUsadas: readonly Banda[] = BANDAS) {
+  return aplicarMediciones(datos, medidos, RAMOS, bandasUsadas);
 }
 
 /** Texto de la sección `## malla` del resumen, hasta la siguiente. */
@@ -112,7 +117,8 @@ describe('formato (D1)', () => {
     const dir = carpeta();
     writeFileSync(join(dir, 't.json'), textoReal);
     writeFileSync(join(dir, 'm.json'), '{}');
-    const r = cli(dir, ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md']);
+    writeFileSync(join(dir, 'rutas.json'), textoRutas);
+    const r = cli(dir, ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json']);
     expect(r.status, r.stderr).toBe(0);
     expect(readFileSync(join(dir, 't.json'), 'utf8')).toBe(textoReal);
   });
@@ -313,8 +319,10 @@ describe('lo que no cambia (R6.2)', () => {
     const medidos = { M1: medida('faringeo') };
     const ramos = [...RAMOS];
     const copias = structuredClone({ datos, medidos, ramos });
-    const salida = aplicarMediciones(datos, medidos, ramos);
+    const bandasEntrada = [...BANDAS];
+    const salida = aplicarMediciones(datos, medidos, ramos, bandasEntrada);
     expect({ datos, medidos, ramos }).toEqual(copias);
+    expect(bandasEntrada).toEqual(BANDAS);
     expect(salida.datos).not.toBe(datos);
     expect(salida.datos.trazos[1]).not.toBe(datos.trazos[1]);
   });
@@ -399,7 +407,8 @@ describe('el CLI no escribe si algo falla (D2)', () => {
     writeFileSync(join(dir, 't.json'), textoReal);
     writeFileSync(join(dir, 'm.json'), JSON.stringify(medidos));
     writeFileSync(join(dir, 'r.md'), 'centinela');
-    return { dir, args: ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md'] };
+    writeFileSync(join(dir, 'rutas.json'), textoRutas);
+    return { dir, args: ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json'] };
   }
 
   it.each([
@@ -425,6 +434,25 @@ describe('el CLI no escribe si algo falla (D2)', () => {
     expect(r.stderr).toContain('auditar-vago.py');
   });
 
+  it('si no está el archivo de rutas, sale con 2, dice cómo generarlo y no escribe nada', () => {
+    const { dir, args } = preparar({ [MALLA_REAL]: medida('faringeo') });
+    rmSync(join(dir, 'rutas.json'));
+    const r = cli(dir, args);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain('generar-ramas-vago.py');
+    expect(readFileSync(join(dir, 't.json'), 'utf8')).toBe(textoReal);
+    expect(readFileSync(join(dir, 'r.md'), 'utf8')).toBe('centinela');
+  });
+
+  it('un archivo de rutas sin el objeto "rutas" sale con 1 y lo dice', () => {
+    const { dir, args } = preparar({ [MALLA_REAL]: medida('faringeo') });
+    writeFileSync(join(dir, 'rutas.json'), '{"otra": 1}');
+    const r = cli(dir, args);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('"rutas"');
+    expect(readFileSync(join(dir, 't.json'), 'utf8')).toBe(textoReal);
+  });
+
   it('con una medición válida escribe el JSON y el resumen, y no toca marcadores.json', () => {
     const { dir, args } = preparar({ [MALLA_REAL]: medida('faringeo') });
     const copia = join(dir, 'marc.json');
@@ -447,16 +475,19 @@ describe('argumentos y rutas (D3)', () => {
       trazos: 'src/data/trazos-vago.json',
       marcadores: 'src/data/marcadores.json',
       resumen: 'docs/research/vago/resumen-trazos.md',
+      rutas: 'public/modelos/rutas-vago.json',
     });
   });
 
-  it('las cuatro banderas cambian sus rutas', () => {
-    expect(argumentosAplicarTrazos(['--medidos', 'a', '--trazos', 'b', '--marcadores', 'c', '--resumen', 'd'])).toEqual({
+  it('las cinco banderas cambian sus rutas', () => {
+    expect(argumentosAplicarTrazos(['--medidos', 'a', '--trazos', 'b', '--marcadores', 'c', '--resumen', 'd', '--rutas', 'e'])).toEqual({
       medidos: 'a',
       trazos: 'b',
       marcadores: 'c',
       resumen: 'd',
+      rutas: 'e',
     });
+    expect(argumentosAplicarTrazos(['--rutas', 'e'])).toEqual({ ...RUTAS_POR_DEFECTO, rutas: 'e' });
     expect(argumentosAplicarTrazos(['--resumen', 'd'])).toEqual({ ...RUTAS_POR_DEFECTO, resumen: 'd' });
   });
 
@@ -467,6 +498,8 @@ describe('argumentos y rutas (D3)', () => {
     [['--medidos', '--resumen']],
     [['posicional']],
     [['--trazos', 'a', '--trazos', 'b']],
+    [['--rutas']],
+    [['--rutas', 'a', '--rutas', 'b']],
   ])('uso indebido %j da null', (args) => {
     expect(argumentosAplicarTrazos(args)).toBeNull();
   });
@@ -478,12 +511,13 @@ describe('argumentos y rutas (D3)', () => {
   });
 
   function colocar(dir: string, medidos: unknown) {
-    for (const ruta of [RUTAS_POR_DEFECTO.medidos, RUTAS_POR_DEFECTO.trazos, RUTAS_POR_DEFECTO.marcadores]) {
+    for (const ruta of [RUTAS_POR_DEFECTO.medidos, RUTAS_POR_DEFECTO.trazos, RUTAS_POR_DEFECTO.marcadores, RUTAS_POR_DEFECTO.rutas]) {
       mkdirSync(dirname(join(dir, ruta)), { recursive: true });
     }
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.medidos), JSON.stringify(medidos, null, 1));
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.trazos), textoReal);
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.marcadores), textoMarcadores);
+    writeFileSync(join(dir, RUTAS_POR_DEFECTO.rutas), textoRutas);
   }
 
   it('el CLI sin argumentos usa las rutas por defecto, crea la carpeta del resumen y cuenta bien', () => {
@@ -513,6 +547,115 @@ describe('argumentos y rutas (D3)', () => {
       expect(t).not.toContain(GUION_LARGO);
       expect(t).not.toContain(tmpdir());
     }
+  });
+});
+
+describe('banda del tronco cortado (ADR 0010)', () => {
+  const IZQ = TRONCO_VAGO.izquierdo;
+  const DER = TRONCO_VAGO.derecho;
+  const banda1: Banda = { lado: 'izquierdo', y_max: 1.4248, y_min: null };
+  const banda2: Banda = { lado: 'derecho', y_max: 1.4211, y_min: 1.3482 };
+  const datosTronco = () => ({
+    trazos: [IZQ, DER, 'M1'].map((malla) => ({ malla, auditoria: 'antes', propuesta: null, fuente: 'viejo' }) as PropuestaTrazo),
+  });
+  const tronco = (max: number, min: number) => medida('tronco', { altura_mm: { max, min } });
+
+  it('el trazo del tronco izquierdo (banda de una parte) lleva la frase con las alturas publicadas, en es y en en', () => {
+    const { datos } = aplicar({ [IZQ]: tronco(1573.4, 1346.6) }, datosTronco(), [banda1, banda2]);
+    const e = datos.trazos[0]!.evidencia!;
+    expect(e.es).toContain(
+      'En el atlas publicado se retira lo que este trazo tiene por debajo de 1424,8 mm (ADR 0010): el tramo torácico está pendiente de trazado y ahí queda un hueco. ' +
+        'Lo publicado va de 1573,4 a 1424,8 mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar.',
+    );
+    expect(e.en).toContain(
+      'In the published atlas, the part of this trace below 1424.8 mm is removed (ADR 0010): the thoracic segment is pending tracing and a gap is left there. ' +
+        'What is published runs from 1573.4 to 1424.8 mm. The earlier measurements are those of the uncut Z-Anatomy trace.',
+    );
+  });
+
+  it('el trazo del tronco derecho (banda de dos partes) dice entre qué alturas se retira y las dos partes publicadas', () => {
+    const { datos } = aplicar({ [DER]: tronco(1573.4, 1128.2) }, datosTronco(), [banda1, banda2]);
+    const e = datos.trazos[1]!.evidencia!;
+    expect(e.es).toContain(
+      'En el atlas publicado se retira lo que este trazo tiene entre 1421,1 y 1348,2 mm (ADR 0010): el tramo torácico está pendiente de trazado y ahí queda un hueco. ' +
+        'Lo publicado queda en dos partes, de 1573,4 a 1421,1 mm y de 1348,2 a 1128,2 mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar.',
+    );
+    expect(e.en).toContain(
+      'In the published atlas, the part of this trace between 1421.1 and 1348.2 mm is removed (ADR 0010): the thoracic segment is pending tracing and a gap is left there. ' +
+        'What is published stays in two parts, from 1573.4 to 1421.1 mm and from 1348.2 to 1128.2 mm. The earlier measurements are those of the uncut Z-Anatomy trace.',
+    );
+  });
+
+  it('la frase va después de las medidas y antes de la regla, y las medidas siguen siendo las del trazo sin cortar', () => {
+    const e = aplicar({ [IZQ]: tronco(1573.4, 1346.6) }, datosTronco(), [banda1, banda2]).datos.trazos[0]!.evidencia!;
+    expect(e.es.indexOf('Cerca del extremo inferior')).toBeLessThan(e.es.indexOf('En el atlas publicado'));
+    expect(e.es.indexOf('En el atlas publicado')).toBeLessThan(e.es.indexOf('Regla del tronco'));
+    expect(e.es).toContain('Altura: de 1573,4 a 1346,6 mm.');
+    expect(e.en.indexOf('Near the lower end')).toBeLessThan(e.en.indexOf('In the published atlas'));
+    expect(e.en.indexOf('In the published atlas')).toBeLessThan(e.en.indexOf('Trunk rule'));
+  });
+
+  it('un trazo que no es un tronco escaneado no lleva la frase, aunque su regla sea tronco', () => {
+    const { datos } = aplicar({ M1: tronco(1573.4, 1346.6) }, datosTronco(), [banda1, banda2]);
+    expect(datos.trazos[2]!.evidencia).toEqual(evidenciaDeTrazo(tronco(1573.4, 1346.6)));
+    expect(datos.trazos[2]!.evidencia!.es).not.toContain('ADR 0010');
+    expect(datos.trazos[2]!.evidencia!.en).not.toContain('ADR 0010');
+  });
+
+  it.each([
+    ['una parte, el trazo queda todo por debajo de la banda', IZQ, 1400, 1346.6],
+    ['una parte, el trazo queda todo por encima de la banda', IZQ, 1573.4, 1500],
+    ['dos partes, el trazo queda todo por debajo de la banda', DER, 1400, 1128.2],
+    ['dos partes, el trazo queda todo por encima de la banda', DER, 1573.4, 1430],
+    ['dos partes, el trazo termina dentro de la banda', DER, 1573.4, 1350],
+  ])('si la banda no corta el trazo como se espera (%s) lanza con la malla', (_n, malla, max, min) => {
+    expect(() => aplicar({ [malla]: tronco(max, min) }, datosTronco(), [banda1, banda2])).toThrow(
+      new RegExp(`^${malla.replace(/[().]/g, '\\$&')}: la banda del vago `),
+    );
+  });
+
+  it('si falta la banda del lado del tronco lanza con la malla y el lado', () => {
+    expect(() => aplicar({ [IZQ]: tronco(1573.4, 1346.6) }, datosTronco(), [banda2])).toThrow(
+      `${IZQ}: falta la banda del vago izquierdo`,
+    );
+    expect(() => aplicar({ [DER]: tronco(1573.4, 1128.2) }, datosTronco(), [])).toThrow(`${DER}: falta la banda del vago derecho`);
+    // Sin medición del tronco no hace falta su banda.
+    expect(() => aplicar({ M1: tronco(1573.4, 1346.6) }, datosTronco(), [])).not.toThrow();
+  });
+
+  it('con las bandas reales, los dos troncos del archivo real llevan la frase con las alturas de su banda', () => {
+    const hoy = (lado: Banda['lado']) => BANDAS.find((b) => b.lado === lado)!;
+    const alto = (y: number) => (y * 1000).toFixed(1).replace('.', ',');
+    const izq = real.trazos.find((t) => t.malla === IZQ)!.evidencia!;
+    const der = real.trazos.find((t) => t.malla === DER)!.evidencia!;
+    expect(izq.es).toContain(`por debajo de ${alto(hoy('izquierdo').y_max)} mm (ADR 0010)`);
+    expect(der.es).toContain(`entre ${alto(hoy('derecho').y_max)} y ${alto(hoy('derecho').y_min!)} mm (ADR 0010)`);
+    expect(izq.en).toContain(`below ${alto(hoy('izquierdo').y_max).replace(',', '.')} mm is removed (ADR 0010)`);
+    expect(der.en).toContain(`between ${alto(hoy('derecho').y_max).replace(',', '.')} and ${alto(hoy('derecho').y_min!).replace(',', '.')} mm is removed`);
+    // Ningún otro trazo real lleva la frase.
+    for (const tz of real.trazos) {
+      if (tz.malla !== IZQ && tz.malla !== DER) expect(tz.evidencia?.es ?? '').not.toContain('ADR 0010');
+    }
+  });
+
+  it('el CLI con las rutas reales escribe la frase en el trazo del tronco', () => {
+    const dir = carpeta();
+    const medidos = { [IZQ]: tronco(1573.4, 1346.6) };
+    writeFileSync(join(dir, 'm.json'), JSON.stringify(medidos));
+    writeFileSync(join(dir, 't.json'), textoReal);
+    writeFileSync(join(dir, 'rutas.json'), textoRutas);
+    const r = cli(dir, ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json']);
+    expect(r.status, r.stderr).toBe(0);
+    const nuevo = JSON.parse(readFileSync(join(dir, 't.json'), 'utf8')) as { trazos: PropuestaTrazo[] };
+    expect(nuevo.trazos.find((tz) => tz.malla === IZQ)!.evidencia!.es).toContain('(ADR 0010)');
+    // Una banda que no corta el trazo detiene el CLI sin escribir.
+    writeFileSync(join(dir, 't2.json'), textoReal);
+    writeFileSync(join(dir, 'm.json'), JSON.stringify({ [IZQ]: tronco(1400, 1346.6) }));
+    const r2 = cli(dir, ['--medidos', 'm.json', '--trazos', 't2.json', '--marcadores', rutaMarcadores, '--resumen', 'r2.md', '--rutas', 'rutas.json']);
+    expect(r2.status).toBe(1);
+    expect(r2.stderr).toContain(IZQ);
+    expect(readFileSync(join(dir, 't2.json'), 'utf8')).toBe(textoReal);
+    expect(existsSync(join(dir, 'r2.md'))).toBe(false);
   });
 });
 

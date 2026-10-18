@@ -371,6 +371,44 @@ describe('propuestas de la spec 04 (T4)', () => {
   });
 });
 
+describe('vago torácico como hueco (Plan B, ADR 0010)', () => {
+  const trazos = (JSON.parse(readFileSync('src/data/trazos-vago.json', 'utf8')) as { trazos: { malla: string; evidencia: { es: string; en: string } }[] }).trazos;
+  const evidencia = (malla: string) => trazos.find((t) => t.malla === malla)!.evidencia;
+
+  it('la evidencia del tronco izquierdo dice que lo publicado se corta en 1424,8 mm y que ahí queda un hueco', () => {
+    const e = evidencia('Vagus nerve (X).l#t02');
+    expect(e.es).toContain('por debajo de 1424,8 mm');
+    expect(e.es).toContain('pendiente de trazado y ahí queda un hueco');
+    expect(e.en).toContain('below 1424.8 mm');
+    expect(e.en).toContain('pending tracing and a gap is left there');
+  });
+
+  it('la evidencia del tronco derecho dice que se retira entre 1421,1 y 1348,2 mm y que ahí queda un hueco', () => {
+    const e = evidencia('Vagus nerve (X).r#t02');
+    expect(e.es).toContain('entre 1421,1 y 1348,2 mm');
+    expect(e.es).toContain('pendiente de trazado y ahí queda un hueco');
+    expect(e.en).toContain('between 1421.1 and 1348.2 mm');
+    expect(e.en).toContain('pending tracing and a gap is left there');
+  });
+
+  it('ningún registro afirma que el tramo torácico se ve trazado', () => {
+    for (const t of trazos) {
+      for (const idioma of idiomas) {
+        expect(t.evidencia[idioma], `${t.malla} ${idioma}`).not.toMatch(/tramo torácico trazado|traced thoracic segment/);
+      }
+    }
+  });
+
+  it('el marcador de los ramos cardíacos torácicos no tiene punto: estaba sobre el tronco espejo que no se publica', () => {
+    const m = marcadores.find((x) => x.id === 'm-thoracic-cardiac-branches-of-vagus-nerve')!;
+    expect(m.posicion).toBeNull();
+    expect(m.estado).toBe('sin_ubicar');
+    const resumen = readFileSync('docs/research/marcadores/resumen-propuestas.md', 'utf8');
+    const seccion = resumen.split('\n## ').find((x) => x.startsWith(m.id))!;
+    expect(seccion).toMatch(/^- Motivo: .+espejo/m);
+  });
+});
+
 describe('rutas por slug (F11)', () => {
   it('las mayúsculas en el slug no impiden resolverlo', () => {
     expect(entradaPorSlug('HIPOCAMPO', 'es')).toBe('hippocampus');

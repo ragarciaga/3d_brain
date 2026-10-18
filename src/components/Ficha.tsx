@@ -6,6 +6,7 @@ import type { Estructura, Fuente, Idioma, Recurso } from '../data/tipos';
 import { latinVisible, nombre, nombreNodo, nombrePendiente, nombrePieza } from '../lib/nombres';
 import { hayCortes } from '../lib/cortes';
 import { campoTrazado } from '../lib/rutas';
+import { ENTRADA_VAGO } from '../lib/trazos';
 import { enlacesArticulos } from '../lib/articulos';
 import { accionAlPulsar, estadoAislar, estadoOcultar, estadoSeparar, propsPulsado, type Pulsado } from '../lib/alternar';
 import {
@@ -487,6 +488,7 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
   const revisor = useAtlas((s) => s.revisor);
   const ubicando = useAtlas((s) => s.ubicando);
   const rutas = useAtlas((s) => s.rutas);
+  const hayHuecos = useAtlas((s) => s.huecos.length > 0);
   // Filtro del vago (spec 03, R5): sin la casilla (con canal) no se muestran el control de trazo ni el de rutas trazadas.
   const vago = useAtlas(vagoVisible);
   const enfocar = useAtlas((s) => s.enfocarFicha);
@@ -591,6 +593,11 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
       {(piezasDeEntrada(id).some((p) => origenDe(p) === 'aproximada') || rutasDeLaEntrada.length > 0) && (
         <p className="etiqueta-aviso" data-testid="aviso-aproximada">
           {t('origen.aviso')}
+        </p>
+      )}
+      {id === ENTRADA_VAGO && hayHuecos && (
+        <p className="etiqueta-aviso" data-testid="aviso-hueco">
+          {t('origen.huecoFicha')}
         </p>
       )}
       <div className="ficha-meta">

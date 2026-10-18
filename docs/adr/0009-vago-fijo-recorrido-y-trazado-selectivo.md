@@ -59,3 +59,5 @@ responder como con el resto del atlas. Cambia el punto 6:
 - Positive: el vago se recorre de arriba abajo y en los dos lados; lo trazado se distingue de lo medido; cada ruta es un texto que un docente corrige sin tocar código.
 - Negative: cambia la regla de geometría de AGENTS.md (ahora admite geometría trazada con las condiciones del punto 6). La auditoría y el trazado necesitan el `.blend` de Z-Anatomy, que exige acceso a GitHub en el entorno donde corre el pipeline.
 - Revisit when: un docente rechace una ruta, aparezca una fuente abierta con los ramos medidos (SPARC, por ejemplo), o se quiera trazar algo más allá de las tres piezas.
+
+Estado 2026-10-18: para el lanzamiento docente no se publica ninguna ruta trazada (recurrentes, vago izquierdo distal y tramos torácicos); quedan pendientes de trazado (ver la nota "Plan B" del ADR 0010 y docs/v2.md). Las condiciones del punto 6 siguen siendo las de cualquier ruta que se publique después.

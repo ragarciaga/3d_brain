@@ -77,6 +77,7 @@ export default function RecorridoVago({ idioma }: { idioma: Idioma }) {
             </ul>
           </details>
         )}
+        {parada.id === 'torax' && <p className="recorrido-nota">{t('recorrido.notaToracico')}</p>}
         {parada.id === 'abdomen' && <p className="recorrido-nota">{t('recorrido.notaIzquierdo')}</p>}
         <p className="recorrido-nota">{t('recorrido.nota')}</p>
       </div>

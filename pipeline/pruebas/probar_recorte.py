@@ -5,7 +5,8 @@ Necesita bpy como módulo (pipeline/requirements.txt). La parte B necesita adem�
 Z-Anatomy (python pipeline/descargar.py). No escribe en pipeline/cajas.json ni en public/modelos/.
 
 Parte C (sin .blend): `extraer.main()` se detiene antes de abrir el .blend y de escribir nada si
-        falta rutas-vago.json o la banda de algún lado.
+        falta rutas-vago.json o la banda de algún lado (de `huecos` o de `reemplaza`), o si un lado
+        aparece en las dos.
 Parte D (sin .blend): `python pipeline/extraer.py` arranca como script en un proceso nuevo (orden de
         imports) y se detiene en el mismo mensaje de bandas, no con ModuleNotFoundError.
 Parte A (bpy, sin .blend): `cortar_banda` sobre una curva sintética en zigzag.
@@ -195,9 +196,10 @@ def parte_c():
     with tempfile.TemporaryDirectory() as d:
         tmp = Path(d)
 
-        def escribir(nombre, rutas):
+        def escribir(nombre, rutas, huecos=None):
             ruta = tmp / nombre
-            ruta.write_text(json.dumps({"rutas": rutas}), encoding="utf-8")
+            datos = {"rutas": rutas} if huecos is None else {"rutas": rutas, "huecos": huecos}
+            ruta.write_text(json.dumps(datos), encoding="utf-8")
             return ruta
 
         def reemplaza(lado, y_max, y_min):
@@ -221,6 +223,21 @@ def parte_c():
         esperar_alto(escribir("sin-ymax.json", {"vago_toracico_derecho": reemplaza("derecho", None, 1.3), "vago_toracico_izquierdo": izq}),
                      ["sin-ymax.json", "derecho", "y_max"], tmp, "y_max que no es número")
         esperar_alto(escribir("repetida.json", {"a": der, "b": der, "c": izq}), ["repetida.json", "derecho", "dos bandas"], tmp, "dos bandas del mismo lado")
+
+        # Plan B (ADR 0010): las bandas pueden venir de `huecos`, sin ninguna ruta.
+        hueco_der = {"lado": "derecho", "y_max": 1.45, "y_min": 1.35}
+        hueco_izq = {"lado": "izquierdo", "y_max": 1.47, "y_min": None}
+        esperar_alto(escribir("hueco-solo-der.json", {}, [hueco_der]), ["hueco-solo-der.json", "izquierdo"], tmp, "solo el hueco derecho")
+        esperar_alto(escribir("hueco-repetido.json", {"vago_toracico_derecho": der}, [hueco_der, hueco_izq]),
+                     ["hueco-repetido.json", "derecho", "dos bandas"], tmp, "un lado en huecos y en reemplaza")
+        esperar_alto(escribir("hueco-lado.json", {}, [{"lado": "central", "y_max": 1.45, "y_min": 1.35}, hueco_izq]),
+                     ["hueco-lado.json", "lado inválido"], tmp, "hueco con lado inválido")
+        solo_huecos = escribir("solo-huecos.json", {}, [hueco_der, hueco_izq])
+        afirmar(extraer.leer_bandas(solo_huecos) == {"derecho": (1.45, 1.35), "izquierdo": (1.47, None)},
+                "leer_bandas no leyó las dos bandas de huecos")
+        mezcla = escribir("mezcla.json", {"vago_toracico_izquierdo": izq}, [hueco_der])
+        afirmar(extraer.leer_bandas(mezcla) == {"derecho": (1.45, 1.35), "izquierdo": (1.47, None)},
+                "leer_bandas no juntó un hueco y una banda reemplaza")
 
         # Control positivo: un JSON válido da exactamente sus dos bandas y no se detiene.
         valido = escribir("valido.json", {"vago_toracico_derecho": der, "vago_toracico_izquierdo": izq,
