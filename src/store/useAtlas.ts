@@ -27,7 +27,7 @@ import type { Vista } from '../lib/enlaces';
 import { desplazamientosDeslizador, INICIO_INVENTARIO, usaInventario, type Caja } from '../lib/inventario';
 import { vagoRevisable } from '../lib/prioridad';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
-import type { RutaTrazada } from '../lib/rutas';
+import type { Reemplaza, RutaTrazada } from '../lib/rutas';
 import { fusionarRespuestas, piezasQueSiguen } from '../lib/respaldo';
 import { claveRespuesta, type Respuesta } from '../lib/revision';
 import { ENTRADA_VAGO } from '../lib/trazos';
@@ -135,6 +135,7 @@ interface Estado {
   recorrido: number | null; // parada actual del recorrido del vago (F14); null fuera del recorrido
   soloEscaneada: boolean; // F25: esconder la geometría trazada
   rutas: RutaTrazada[]; // rutas trazadas del vago (ADR 0009), cargadas de public/modelos/rutas-vago.json
+  huecos: Reemplaza[]; // tramos del vago que el atlas deja sin trazar (Plan B, ADR 0010), del mismo archivo
   trazos: string[]; // mallas de trazo del GLB cargado, en orden (src/lib/trazos.ts); [] hasta que carga el modelo
   panelRecorrido: number; // alto (px) del panel del recorrido cuando tapa la parte de abajo del visor (celular)
   cortes: Cortes; // planos de corte (F8); mm desde el centro de la caja del encéfalo
@@ -188,6 +189,7 @@ interface Estado {
   setPanelRecorrido(px: number): void;
   setSoloEscaneada(v: boolean): void;
   setRutas(r: RutaTrazada[]): void;
+  setHuecos(h: Reemplaza[]): void;
   setTrazos(l: string[]): void;
   abrirTrazo(malla: string): void;
 }
@@ -271,6 +273,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   panelRecorrido: 0,
   soloEscaneada: false,
   rutas: [],
+  huecos: [],
   trazos: [],
   cortes: cortesApagados(),
   fantasmaCorte: false,
@@ -484,6 +487,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   },
   setSoloEscaneada: (v) => set({ soloEscaneada: v }),
   setRutas: (r) => set({ rutas: r }),
+  setHuecos: (h) => set({ huecos: h }),
   setTrazos: (l) => {
     if (get().trazos.join('\n') !== l.join('\n')) set({ trazos: l });
   },

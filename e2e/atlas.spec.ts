@@ -1195,12 +1195,16 @@ test('el vago no se separa: su ficha ofrece el recorrido, que baja parada por pa
 test('rutas trazadas del vago: todos las ven con aviso, leyenda y estado; el revisor además las juzga (ADR 0009)', async ({ page }) => {
   const rutas = readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8');
   await page.route('**/modelos/rutas-vago.json', (r) => r.fulfill({ contentType: 'application/json', body: rutas }));
-  // Sin modo revisión: se ven como en el lanzamiento, con su estado, pero sin botones para responder.
+  // Sin modo revisión: se ven con su estado, pero sin botones para responder.
   await abrir(page, '/es/nervio-laringeo-recurrente');
   await modeloCargado(page);
   await expect.poll(() => page.evaluate(() => (window as unknown as VentanaAtlas).__atlas.getState().rutas.length)).toBe(5);
   await expect(page.getByTestId('leyenda-origen')).toBeVisible();
+  // Con rutas dibujadas y sin huecos (el archivo simulado no trae `huecos`), la leyenda no habla de un hueco.
+  await expect(page.getByTestId('leyenda-toracico')).toHaveCount(0);
+  await expect(page.getByTestId('leyenda-origen').getByRole('checkbox')).toBeVisible();
   await expect(page.getByTestId('aviso-aproximada')).toBeVisible();
+  await expect(page.getByTestId('aviso-hueco')).toHaveCount(0);
   const ficha = page.getByTestId('ficha');
   const recurrentes = ['laringeo_recurrente_derecho', 'laringeo_recurrente_izquierdo'];
   for (const id of recurrentes) {

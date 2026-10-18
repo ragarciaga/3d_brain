@@ -1,7 +1,7 @@
 // Verificación de la invariante de posición: compara la caja envolvente de cada malla del GLB
 // (coordenadas de mundo glTF, Y arriba) con la medida en Blender (Z arriba) en pipeline/cajas.json.
-// También vigila que el tronco escaneado del vago no vuelva al GLB dentro de la banda que reemplazan
-// las rutas torácicas (ADR 0010, `comprobarBandas`).
+// También vigila que el tronco escaneado del vago no vuelva al GLB dentro de las bandas del vago: los
+// `huecos` y lo que reemplazan las rutas torácicas (ADR 0010, `comprobarBandas`), una por lado (`revisarLados`).
 import { puntosEnBanda, TOLERANCIA_BANDA } from './asimetrias.ts';
 import type { Banda, Lado, P } from './asimetrias.ts';
 
@@ -97,6 +97,20 @@ export function comprobarBandas(bandas: Banda[], vertices: Record<string, P[]>, 
         `${malla}: ${dentro.length} vértice(s) dentro del tramo reemplazado del vago ${lado}, el primero a la altura y = ${dentro[0]![1].toFixed(4)} m (banda de ${y_max.toFixed(4)} m a ${hasta})`,
       );
     }
+  }
+  return errores;
+}
+
+/**
+ * ADR 0010: hay una banda por lado, ni más ni menos. Sin una banda el tronco espejo podría volver al GLB
+ * sin que check:modelo lo note; con dos del mismo lado, una de las dos no vigila nada.
+ */
+export function revisarLados(bs: Banda[]): string[] {
+  const errores: string[] = [];
+  for (const lado of ['derecho', 'izquierdo'] as const) {
+    const n = bs.filter((b) => b.lado === lado).length;
+    if (n === 0) errores.push(`Falta la banda del vago ${lado}: sin ella no se vigila el tramo torácico (public/modelos/rutas-vago.json, \`huecos\`)`);
+    else if (n > 1) errores.push(`El vago ${lado} tiene ${n} bandas: debe tener una sola`);
   }
   return errores;
 }

@@ -3,6 +3,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  aAltura,
   asimetria1,
   asimetria2,
   asimetria3,
@@ -16,6 +17,7 @@ import {
   TOLERANCIA_BANDA,
   tronco,
   troncoPublicado,
+  type Ancla,
   type Anclajes,
   type Banda,
   type P,
@@ -105,6 +107,29 @@ describe('tronco publicado y bandas (ADR 0010)', () => {
 
     it('sin rutas da una lista vacía', () => {
       expect(bandas({ rutas: {} })).toEqual([]);
+    });
+
+    it('con solo huecos (Plan B) devuelve los huecos, y copia sus tres claves', () => {
+      const huecos = [
+        { lado: 'derecho', y_max: 1.4, y_min: 1.3, de_mas: 1 },
+        { lado: 'izquierdo', y_max: 1.41, y_min: null },
+      ] as Banda[];
+      expect(bandas({ rutas: {}, huecos })).toEqual([
+        { lado: 'derecho', y_max: 1.4, y_min: 1.3 },
+        { lado: 'izquierdo', y_max: 1.41, y_min: null },
+      ]);
+    });
+
+    it('un huecos que no es lista se ignora', () => {
+      expect(bandas({ rutas: {}, huecos: 'x' as unknown as Banda[] })).toEqual([]);
+    });
+
+    it('con huecos y reemplaza devuelve primero los huecos y después las reemplaza', () => {
+      const huecos: Banda[] = [{ lado: 'derecho', y_max: 1.2, y_min: 1.1 }];
+      const res = bandas({ rutas: sintRutas.rutas, huecos });
+      expect(res[0]).toEqual({ lado: 'derecho', y_max: 1.2, y_min: 1.1 });
+      expect(res).toHaveLength(3);
+      expect(res.slice(1).map((b) => b.lado).sort()).toEqual(['derecho', 'izquierdo']);
     });
   });
 
@@ -301,9 +326,14 @@ describe('tronco publicado y bandas (ADR 0010)', () => {
 
 describe('asimetrías del vago con el modelo real', () => {
   const rutaAnclajes = 'pipeline/anclajes-vago.json';
-  // Lo que dibuja la app (pipeline/generar-ramas-vago.py lo escribe).
+  // Lo que dibuja la app (pipeline/generar-ramas-vago.py lo escribió; el Plan B del ADR 0010 lo dejó sin rutas).
   const publicadas = leer<Rutas>('public/modelos/rutas-vago.json');
   const hayRutas = Object.keys(publicadas.rutas).length > 0;
+  const d = leer<Anclajes & { anclas: Record<string, Ancla & { puntos: P[] }> }>(rutaAnclajes);
+  const ymas = (nombre: string) => Math.max(...d.anclas[nombre]!.puntos.map((p) => p[1]));
+  const ymenos = (nombre: string) => Math.min(...d.anclas[nombre]!.puntos.map((p) => p[1]));
+  const redondea = (v: number) => Math.round(v * 1e6) / 1e6;
+  const hueco = (lado: Banda['lado']) => publicadas.huecos!.find((h) => h.lado === lado)!;
 
   it('no hay geometría trazada sin anclajes medidos (criterio de bloqueo de F25)', () => {
     if (piezasAproximadas.length || hayRutas) {
@@ -311,8 +341,45 @@ describe('asimetrías del vago con el modelo real', () => {
     }
   });
 
-  it.runIf(existsSync(rutaAnclajes))('el modelo medido y las rutas publicadas cumplen las asimetrías', () => {
-    const d = leer<Anclajes>(rutaAnclajes);
-    for (const res of comprobar(d, hayRutas ? publicadas : null)) expect(res.ok, `asimetría ${res.asimetria}: ${res.detalle}`).toBe(true);
+  it('el lanzamiento docente no publica ninguna ruta trazada (Plan B, ADR 0010)', () => {
+    expect(publicadas.rutas).toEqual({});
+    expect(piezasAproximadas).toEqual([]);
+  });
+
+  it('los dos huecos son los que dan los anclajes con la regla de generar-ramas-vago.py (mas_alto de la subclavia hasta mas_bajo del bronquio)', () => {
+    expect(publicadas.huecos).toHaveLength(2);
+    expect(hueco('derecho')).toEqual({ lado: 'derecho', y_max: redondea(ymas('Right subclavian artery')), y_min: redondea(ymenos('Right main bronchus')) });
+    expect(hueco('izquierdo')).toEqual({ lado: 'izquierdo', y_max: redondea(ymas('Left subclavian artery')), y_min: null });
+  });
+
+  it('ninguna relación falsa queda a la vista: la cima del arco y el centro del bronquio derecho caen dentro del hueco de su lado', () => {
+    const cima = ymas('Aortic arch');
+    const izq = hueco('izquierdo');
+    expect(puntosEnBanda([[0, cima, 0]], izq), 'cima del arco aórtico').toHaveLength(1);
+    const caja = d.anclas['Right main bronchus']!.caja;
+    const centroBronquio = (caja[0][1] + caja[1][1]) / 2;
+    expect(puntosEnBanda([[0, centroBronquio, 0]], hueco('derecho')), 'centro del bronquio principal derecho').toHaveLength(1);
+  });
+
+  it('del tronco escaneado no queda nada a la altura de la cima del arco ni del bronquio derecho, ni arriba ni abajo del hueco', () => {
+    const cima = ymas('Aortic arch');
+    const caja = d.anclas['Right main bronchus']!.caja;
+    const centroBronquio = (caja[0][1] + caja[1][1]) / 2;
+    for (const [lado, y] of [['izquierdo', cima], ['derecho', centroBronquio]] as const) {
+      const { arriba, abajo } = recortarBanda(tronco(d, lado), hueco(lado));
+      expect(arriba.length, `${lado}: queda escaneado arriba`).toBeGreaterThan(1);
+      expect(aAltura(arriba, y), `${lado} arriba`).toBeNull();
+      expect(aAltura(abajo, y), `${lado} abajo`).toBeNull();
+      expect(() => comprobarBanda([...arriba, ...abajo], hueco(lado), lado)).not.toThrow();
+    }
+    expect(recortarBanda(tronco(d, 'izquierdo'), hueco('izquierdo')).abajo).toEqual([]);
+    expect(recortarBanda(tronco(d, 'derecho'), hueco('derecho')).abajo.length).toBeGreaterThan(1);
+  });
+
+  it('sin el hueco el escaneado crudo sí cruza esas alturas: la prueba de arriba no pasa en vacío', () => {
+    const caja = d.anclas['Right main bronchus']!.caja;
+    expect(aAltura(tronco(d, 'izquierdo'), ymas('Aortic arch'))).not.toBeNull();
+    expect(aAltura(tronco(d, 'derecho'), (caja[0][1] + caja[1][1]) / 2)).not.toBeNull();
+    expect(() => comprobarBanda(tronco(d, 'izquierdo'), hueco('izquierdo'), 'izquierdo')).toThrow(/dentro del tramo reemplazado/);
   });
 });

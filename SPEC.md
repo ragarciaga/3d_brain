@@ -2,6 +2,13 @@
 
 Nombre: Maysa Brain (decidido por el editor el 12 de octubre de 2026). Versión 0.3, 11 de octubre de 2026.
 
+**Cambios del 18 de octubre de 2026 (vago torácico: hueco en el lanzamiento, ADR 0010)**
+
+- El editor decidió que para el lanzamiento docente no se publica ninguna ruta trazada del vago (los dos recurrentes, el vago izquierdo distal y los dos tramos torácicos). Quedan pendientes de trazado y se retoman después del lanzamiento (`docs/v2.md`).
+- El tronco escaneado sigue sin publicarse en el tramo torácico, porque es un espejo que contradice las asimetrías. En su lugar el atlas deja un **hueco** en el vago del tórax. El hueco se declara en `public/modelos/rutas-vago.json` (`huecos`), la leyenda del visor lo dice, y la ficha del vago y el recorrido guiado lo avisan.
+- Las ramas trazadas siguen siendo la única excepción de geometría no escaneada (ADR 0009 y 0010), pero hoy no hay ninguna publicada.
+- El marcador de los ramos cardíacos torácicos pasa a "sin ubicar": su regla lo ponía sobre el tronco espejo.
+
 **Cambios del 13 de octubre de 2026 (vago torácico, ADR 0010)**
 
 - La auditoría midió que el vago del tórax de Z-Anatomy es un espejo izquierda-derecha: el izquierdo atraviesa el arco aórtico y el derecho pasa por delante del bronquio principal derecho. Ese tramo se traza (`aproximada`) en los dos lados y el escaneado que reemplaza no se publica.
@@ -254,9 +261,9 @@ Cada pieza lleva `origen_geometria`:
 | `marcador` | No tiene volumen: punto o región con etiqueta | Punto con etiqueta, nunca como sólido |
 
 - La ficha de una pieza aproximada muestra: "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas."
-- Una leyenda en el visor explica los acabados cuando hay piezas aproximadas a la vista.
+- Una leyenda en el visor explica los acabados cuando hay piezas aproximadas a la vista. Mientras el atlas deje un hueco en el vago del tórax, la leyenda lo dice y esconde lo que no aplica (la fila "Trazada" y el filtro).
 - El filtro "Solo geometría escaneada" esconde lo trazado.
-- Las rutas trazadas del vago se dibujan desde `public/modelos/rutas-vago.json`, para todos, con su estado en la ficha ("Pendiente de revisión docente" o aprobado). Los docentes las juzgan en modo revisión con el campo "Recorrido trazado" (F24).
+- Las rutas trazadas del vago se dibujan desde `public/modelos/rutas-vago.json`, para todos, con su estado en la ficha ("Pendiente de revisión docente" o aprobado). Los docentes las juzgan en modo revisión con el campo "Recorrido trazado" (F24). En el lanzamiento docente (18 de octubre de 2026) ese archivo no trae ninguna ruta: trae los `huecos` del vago torácico, y la ficha del vago y el recorrido guiado avisan que ese tramo está pendiente de trazado.
 
 **Criterio de bloqueo:** si la distinción visual no está implementada y probada, la geometría aproximada no se publica. Sin excepción.
 
@@ -515,9 +522,9 @@ Confirmado contra Z-Anatomy el 11 de octubre de 2026 (detalle en `docs/research/
 | Núcleo motor dorsal (posterior), núcleo ambiguo, núcleo del tracto solitario | Mallas, por lado |
 | Ganglios superior e inferior | Marcadores |
 | Raicillas, ramo faríngeo y laríngeo superior (candidatos), ramos abdominales del derecho | Trazos sin nombre dentro de la curva del vago (21 en el derecho, 7 en el izquierdo). `pipeline/auditar-vago.py` propone el nombre de cada uno con su relación a los anclajes; un revisor lo confirma con F24 y el pipeline lo separa como pieza, sin moverlo |
-| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazan (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`; se ven con la etiqueta "Pendiente de revisión docente" y un docente las juzga en la app (F24) |
-| Vago izquierdo de la bifurcación de la tráquea al estómago, con el tronco vagal anterior | No existe. Se traza igual que los recurrentes |
-| Tramo torácico de los dos troncos (de la subclavia a debajo del bronquio principal) | Existe, pero es un espejo izquierda-derecha que contradice las asimetrías (ADR 0010). Se traza igual que los recurrentes y el escaneado de ese tramo no se publica |
+| Laríngeo recurrente derecho e izquierdo | No existen en el modelo. Se trazarían (`aproximada`) por la ruta de `pipeline/rutas-vago.yaml`, con la etiqueta "Pendiente de revisión docente" y un docente que las juzga en la app (F24). Pendiente de trazado: no se publican en el lanzamiento docente (18 de octubre de 2026, `docs/v2.md`) |
+| Vago izquierdo de la bifurcación de la tráquea al estómago, con el tronco vagal anterior | No existe. Se trazaría igual que los recurrentes; pendiente de trazado, no se publica en el lanzamiento docente (`docs/v2.md`) |
+| Tramo torácico de los dos troncos (de la subclavia a debajo del bronquio principal) | Existe, pero es un espejo izquierda-derecha que contradice las asimetrías (ADR 0010). Pendiente de trazado en el lanzamiento docente (`docs/v2.md`): el escaneado de ese tramo no se publica y el atlas deja un hueco declarado en `rutas-vago.json` (`huecos`), con aviso en la leyenda, la ficha del vago y el recorrido |
 | Ramos cardíacos | No existen. Marcadores |
 | Plexos pulmonar, esofágico y cardíaco | Marcadores o regiones; nunca tubos |
 | Troncos vagales anterior y posterior, ramos gástricos, hepáticos y celíacos | Marcadores |
@@ -553,7 +560,7 @@ Fuente: Z-Anatomy, atlas en Blender construido sobre BodyParts3D, licencia CC BY
    - exporta `atlas.glb`.
 7. **Comprimir** con gltf-transform. Los nervios no se simplifican en la versión completa, porque son delgados y se deforman.
 8. **Generar la versión liviana** solo si la medición lo pide (F19).
-9. **Validar** (`npm run check:modelo`, corre en cada CI): cada malla del GLB, incluidos los trazos del vago y las mallas de toque, coincide con su caja en `cajas.json` con tolerancia de 0,1 mm (descontando el giro global de ejes), no falta ni sobra ninguna, y `atlas.glb` pesa 15 MB o menos. También verifica que `src/config/mallas-cerradas.json` coincida con las piezas de estudio del encéfalo que no tienen bordes abiertos en el GLB (vértices soldados a 6 decimales, ADR 0011): falla si falta una cerrada, si sobra una abierta o si la lista nombra una malla que no existe en el GLB o que no es pieza de estudio del encéfalo. Y vigila las bandas del vago: ningún vértice del tronco (`#t02`) ni de su `#toque` puede caer dentro del tramo que reemplaza la ruta torácica de su lado en `public/modelos/rutas-vago.json`, con 0,1 mm de tolerancia (ADR 0010). Que cada fila de `mapeo.csv` tenga su pieza en el árbol lo prueba `tests/datos.test.ts`.
+9. **Validar** (`npm run check:modelo`, corre en cada CI): cada malla del GLB, incluidos los trazos del vago y las mallas de toque, coincide con su caja en `cajas.json` con tolerancia de 0,1 mm (descontando el giro global de ejes), no falta ni sobra ninguna, y `atlas.glb` pesa 15 MB o menos. También verifica que `src/config/mallas-cerradas.json` coincida con las piezas de estudio del encéfalo que no tienen bordes abiertos en el GLB (vértices soldados a 6 decimales, ADR 0011): falla si falta una cerrada, si sobra una abierta o si la lista nombra una malla que no existe en el GLB o que no es pieza de estudio del encéfalo. Y vigila las bandas del vago: ningún vértice del tronco (`#t02`) ni de su `#toque` puede caer dentro del hueco (`huecos`) ni del tramo que reemplaza una ruta torácica (`reemplaza`) de su lado en `public/modelos/rutas-vago.json`, con 0,1 mm de tolerancia, y exige una banda por lado (ADR 0010). Que cada fila de `mapeo.csv` tenga su pieza en el árbol lo prueba `tests/datos.test.ts`.
 
 El pipeline corre en la nube (sesión de Claude Code) o en el portátil, con `pip install bpy` o con `blender -b --python`. No necesita abrir la interfaz de Blender.
 
@@ -748,7 +755,7 @@ para que la hoja no las tape. No hay riel.
 6. Licencia del contenido: CC BY-SA 4.0.
 8. Hosting: GitHub Pages.
 9. Canal de revisión docente: Apps Script en la cuenta del editor que guarda en su hoja de Google, con el formulario como respaldo (14 de octubre de 2026, ADR 0012, spec 03).
-11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25. Ampliado el mismo día (ADR 0010): también se traza el tramo torácico de los dos troncos, porque el escaneado es un espejo.
+11. Vago (13 de octubre de 2026, ADR 0009): no se fragmenta, se recorre; se nombran primero los trazos reales y solo se trazan tres piezas (recurrentes y vago izquierdo distal) con las condiciones de F25. Ampliado el mismo día (ADR 0010): también se traza el tramo torácico de los dos troncos, porque el escaneado es un espejo. Actualizado el 18 de octubre de 2026: para el lanzamiento docente no se publica ninguna ruta trazada y el tramo torácico queda como hueco declarado.
 10. Sin "modo ambos idiomas" (13 de octubre de 2026): el editor lo quitó porque recargaba la interfaz. Lo bilingüe queda en la búsqueda cruzada, el nombre latino siempre visible y un selector de idioma claro.
 4. Dominio propio: `brain.maysasp.com` (15 de octubre de 2026, ADR 0014). DNS en Cloudflare y hosting en GitHub Pages.
 3. Nombre: **Maysa Brain**, igual en español y en inglés (12 de octubre de 2026). Logo propio en `public/marca/`: cerebro cuya mitad posterior es un circuito, con el vago que baja, en los verdes de Maysa.

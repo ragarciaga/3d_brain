@@ -2,15 +2,15 @@
 // más de 0,1 mm y peso dentro del presupuesto (AGENTS.md, SPEC sección 9). También verifica que
 // src/config/mallas-cerradas.json coincida con las mallas del encéfalo sin bordes abiertos medidas
 // en el GLB (SPEC R3.2, ADR 0011). Y vigila las bandas del vago: ningún vértice del tronco escaneado
-// (`Vagus nerve (X).l/.r#t02` y su `#toque`) dentro del tramo que reemplaza cada ruta torácica de
-// public/modelos/rutas-vago.json (ADR 0010).
+// (`Vagus nerve (X).l/.r#t02` y su `#toque`) dentro de las bandas del vago de public/modelos/rutas-vago.json
+// (`huecos` y lo que reemplaza cada ruta torácica; ADR 0010), con una banda por lado.
 // Uso: node scripts/check-modelo.ts [glb] [cajas.json] [mallas-cerradas.json] [rutas-vago.json]
 import { readFileSync, statSync } from 'node:fs';
 import type { Arbol } from '../src/data/tipos.ts';
 import { bandas, type Rutas } from './lib/asimetrias.ts';
 import { cajasDelDocumento, io, verticesDelDocumento } from './lib/glb.ts';
 import { compararMallasCerradas, mallasDelEncefalo, medirMalla, primitivasDelDocumento, type MedidaMalla } from './lib/mallas.ts';
-import { comprobarBandas, compararCajas, mallasDelTronco, type Caja } from './lib/modelo.ts';
+import { comprobarBandas, compararCajas, mallasDelTronco, revisarLados, type Caja } from './lib/modelo.ts';
 
 const PRESUPUESTO_MB = 15;
 const glb = process.argv[2] ?? 'public/modelos/atlas.glb';
@@ -36,6 +36,7 @@ if (typeof rutas.rutas !== 'object' || rutas.rutas === null) {
 } else {
   const bs = bandas(rutas as Rutas);
   vigiladas = bs.length;
+  errores.push(...revisarLados(bs));
   const nombres = new Set(bs.filter((b) => b.lado === 'izquierdo' || b.lado === 'derecho').flatMap((b) => mallasDelTronco(b.lado)));
   errores.push(...comprobarBandas(bs, verticesDelDocumento(doc, nombres)));
 }

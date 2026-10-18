@@ -35,5 +35,15 @@ La prueba de asimetrías (`tests/asimetrias.test.ts`) falla con el modelo real, 
 
 ## Consequences
 - Positive: el vago del tórax respeta las cuatro asimetrías; lo que se ve falso hoy deja de verse; cada tramo nuevo es texto que un docente corrige.
-- Negative: crece la geometría trazada (de tres piezas a cinco: los dos recurrentes, el vago izquierdo distal y los dos tramos torácicos). El pipeline tiene que recortar el tronco escaneado, lo que regenera el GLB (tier C). Con el modelo actual, `npm test` falla si `pipeline/anclajes-vago.json` está en el repo; por eso ese archivo entra junto con la implementación de esta decisión, no antes (se regenera con `pipeline/auditar-vago.py`).
+- Negative: crece la geometría trazada (de tres piezas a cinco: los dos recurrentes, el vago izquierdo distal y los dos tramos torácicos). El pipeline tiene que recortar el tronco escaneado, lo que regenera el GLB (tier C). Con el modelo actual, `npm test` falla si `pipeline/anclajes-vago.json` está en el repo; por eso ese archivo entra junto con la implementación de esta decisión, no antes (se regenera con `pipeline/auditar-vago.py`). Con el Plan B (nota al final) el archivo entra sin rutas publicadas y `npm test` pasa.
 - Revisit when: un docente rechace una ruta torácica, aparezca una fuente abierta con el vago torácico medido, o el recorte del tronco escaneado no se pueda hacer sin mover lo que queda.
+
+## Update 2026-10-18 (Plan B): el tramo torácico queda como hueco en el lanzamiento docente
+Status de esta decisión: parcialmente en vigor. El editor decidió el 18 de octubre de 2026 que para el lanzamiento docente no se publica ninguna ruta trazada (los dos recurrentes, el vago izquierdo distal y los dos tramos torácicos), porque la ruta torácica del borrador todavía atraviesa órganos y ninguna ruta tiene revisión docente.
+- Sigue vigente el punto 2: el tramo escaneado que es un espejo no se publica. El GLB y `pipeline/cajas.json` traen el tronco cortado (los de la rama del recorte).
+- El punto 1 (trazar el tramo) queda pendiente: `public/modelos/rutas-vago.json` trae `rutas: {}` y las bandas como `huecos`. La app lo dice en la leyenda, en la ficha del vago y en el recorrido; `check:modelo` vigila una banda por lado.
+- El punto 3 se cumple sin rutas: la prueba de asimetrías comprueba que ninguna relación falsa queda a la vista (la cima del arco y el centro del bronquio derecho caen dentro del hueco y nada escaneado conservado llega a esas alturas).
+- El punto 4 (recurrentes que salen del tramo trazado) queda pendiente con el trazado.
+- El marcador `m-thoracic-cardiac-branches-of-vagus-nerve` pasa a `sin_ubicar`, porque su regla lo puso sobre el tronco espejo.
+- Retomar el trazado: cuando se retome, la evidencia de los troncos (`fraseBanda`) tendría que volver a decir "trazado" si la banda viene de `reemplaza`; hoy siempre dice hueco.
+- Alcance: SPEC.md (cambios del 18 de octubre de 2026), `docs/v2.md` (las cinco rutas, después del lanzamiento) y `docs/specs/02-thoracic-vagus-tracing/`.

@@ -16,8 +16,9 @@ Mallas derivadas:
 - Nervios (curvas de estudio): malla de toque `<malla>#toque`, un tubo de 3 mm de radio, invisible
   en la app, para poder seleccionarlos en el celular.
 - Corte del tronco del vago (ADR 0010): del trazo más largo de cada lado (`#t02`) y de su `#toque`
-  se borra el tramo que reemplaza la ruta torácica, con las bandas `reemplaza` de
-  public/modelos/rutas-vago.json (las escribe generar-ramas-vago.py, que necesita auditar-vago.py).
+  se borra el tramo que no se publica, con las bandas `huecos` (Plan B del ADR 0010: tramo sin trazar)
+  y las `reemplaza` de las rutas torácicas de public/modelos/rutas-vago.json (las `reemplaza` las escribe
+  generar-ramas-vago.py, que necesita auditar-vago.py).
   Dos planos horizontales parten las aristas que cruzan cada borde; después se borran los vértices
   de dentro. Ningún vértice conservado se mueve y los extremos quedan abiertos, sin tapa. Sin ese
   archivo, o sin la banda de algún lado, se detiene antes de abrir el .blend y de exportar nada."""
@@ -79,8 +80,10 @@ def _numero(v):
 
 
 def leer_bandas(ruta=RUTAS_PUBLICADAS):
-    """Bandas `reemplaza` de las rutas publicadas: lado -> (y_max, y_min o None), en metros glTF.
-    Y glTF es Z de Blender (a_gltf en auditar-vago.py). Se detiene si falta el archivo o la banda de un lado."""
+    """Bandas del vago de las rutas publicadas: lado -> (y_max, y_min o None), en metros glTF.
+    Salen de `huecos` (tramos que se cortan y no se trazan, Plan B del ADR 0010) y del `reemplaza` de cada
+    ruta torácica. Y glTF es Z de Blender (a_gltf en auditar-vago.py). Se detiene si falta el archivo, la
+    banda de un lado, o si un lado tiene dos bandas (también entre `huecos` y `reemplaza`)."""
     ruta = Path(ruta)
     if not ruta.exists():
         raise SystemExit(f"No existe {ruta}: sin las bandas del vago no se sabe qué tramo del tronco cortar. "
@@ -92,16 +95,21 @@ def leer_bandas(ruta=RUTAS_PUBLICADAS):
     rutas = datos.get("rutas") if isinstance(datos, dict) else None
     if not isinstance(rutas, dict):
         raise SystemExit(f"{ruta} no trae el objeto 'rutas'")
-    bandas = {}
+    huecos = datos.get("huecos", [])
+    if not isinstance(huecos, list):
+        raise SystemExit(f"{ruta}: 'huecos' debe ser una lista")
+    declaradas = [(f"el hueco {i + 1}", "huecos", h) for i, h in enumerate(huecos)]
     for id_ruta, r in rutas.items():
         rem = r.get("reemplaza") if isinstance(r, dict) else None
-        if rem is None:
-            continue
+        if rem is not None:
+            declaradas.append((f"la ruta {id_ruta}", "reemplaza", rem))
+    bandas = {}
+    for quien, campo, rem in declaradas:
         lado = rem.get("lado") if isinstance(rem, dict) else None
         if lado not in ("derecho", "izquierdo"):
-            raise SystemExit(f"{ruta}: la ruta {id_ruta} trae un lado inválido en 'reemplaza': {lado!r}")
+            raise SystemExit(f"{ruta}: {quien} trae un lado inválido en '{campo}': {lado!r}")
         if lado in bandas:
-            raise SystemExit(f"{ruta}: hay dos bandas del vago {lado}")
+            raise SystemExit(f"{ruta}: hay dos bandas del vago {lado} (entre 'huecos' y 'reemplaza')")
         y_max, y_min = rem.get("y_max"), rem.get("y_min")
         if not _numero(y_max):
             raise SystemExit(f"{ruta}: la banda del vago {lado} trae un y_max inválido: {y_max!r}")
@@ -110,7 +118,7 @@ def leer_bandas(ruta=RUTAS_PUBLICADAS):
         bandas[lado] = (float(y_max), None if y_min is None else float(y_min))
     for lado in ("derecho", "izquierdo"):
         if lado not in bandas:
-            raise SystemExit(f"{ruta}: falta la banda del vago {lado} ('reemplaza' de la ruta torácica). "
+            raise SystemExit(f"{ruta}: falta la banda del vago {lado} ('huecos' o 'reemplaza' de la ruta torácica). "
                              "Corre pipeline/generar-ramas-vago.py")
     return bandas
 

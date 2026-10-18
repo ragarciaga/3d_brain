@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-17 (corrida cycle-4889aa8-pwzk, segunda parte: spec 04 completa con #203 (04-T6), #204 (04-T4), #206 (04-T7) y #209 (04-T8); fusionados también #198 (Rockbuilt 0.9.0), #202 (cámara quieta en e2e, #201), #207 (bookkeeping) y #210 (ficha de destino en e2e, #208); abierto para el editor #205 (verificación de F8); antes: fusionados #189 (bookkeeping), #191 (importador aparta las respuestas sin autorización, #190), #192 (SPEC paso 9, #56), #193 (seguridad del modo revisión, #149), #196 (controles en celular, #194) y #199 (panel de fragmentar y brújula en escritorio, #197); primera parte: fusionados #172 (04-T3), #173 (Rockbuilt 0.7.0), #174 (privacidad, autorización v3), #175 (04-T5), #179 (script cerrado antes del despliegue), #180 (medición de cortes, #42), #181 (importador), #182 (marcadores con cortes), #183 (índice de toque después del primer cuadro), #184 (pausa del reloj en e2e), #186 (seguimientos), #187 (recorte por caja en los cortes) y #188 (SPEC y diseño de cortes al día); corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
+Updated: 2026-10-18 (corrida cycle-381f1ba-vgto: fusionados #212 (SPEC F24), #214 (brújula, #213), #222 (vago torácico, plan B: se retira el tramo en espejo y queda un hueco explicado; cierra #50 y #51) y la guía del revisor sin recorridos trazados; cerrados #215 y #216 sin fusionar; corrida cycle-1a06f45-qmvt: verificación de la spec 04 en #220 (seguridad PASS, E2E 8 de 9, objetivo parcial), tarea nueva 04-T9 (#218), escalaciones #217 y #219; corrida cycle-4889aa8-pwzk, segunda parte: spec 04 completa con #203 (04-T6), #204 (04-T4), #206 (04-T7) y #209 (04-T8); fusionados también #198 (Rockbuilt 0.9.0), #202 (cámara quieta en e2e, #201), #207 (bookkeeping) y #210 (ficha de destino en e2e, #208); abierto para el editor #205 (verificación de F8); antes: fusionados #189 (bookkeeping), #191 (importador aparta las respuestas sin autorización, #190), #192 (SPEC paso 9, #56), #193 (seguridad del modo revisión, #149), #196 (controles en celular, #194) y #199 (panel de fragmentar y brújula en escritorio, #197); primera parte: fusionados #172 (04-T3), #173 (Rockbuilt 0.7.0), #174 (privacidad, autorización v3), #175 (04-T5), #179 (script cerrado antes del despliegue), #180 (medición de cortes, #42), #181 (importador), #182 (marcadores con cortes), #183 (índice de toque después del primer cuadro), #184 (pausa del reloj en e2e), #186 (seguimientos), #187 (recorte por caja en los cortes) y #188 (SPEC y diseño de cortes al día); corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -156,25 +156,25 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 - 2026-10-16: importador (#190, opción A del editor): con `--autorizaciones`, las respuestas de alias sin ninguna autorización van solo a "Descartadas: sin autorización" (alias, campo, idioma, estructura), sin texto libre, porque `resumen.md` se vuelve issue público.
 - 2026-10-16: modo revisión (#149): las llaves locales llevan una huella SHA-256 del código (no es secreta, solo evita el código en claro), sin migración; "Borrar también de este equipo" desmarcada por defecto; una página con el beacon recarga una vez antes de adoptar un código y, si sigue con beacon, no lo adopta; el aviso de privacidad dice lo que pasa por página (texto aprobado por el editor). El código recordado solo se escribe al abrir un enlace con `?r=`.
+- 2026-10-18: vago torácico, plan B (decisión del editor): no se publican rutas trazadas en el lanzamiento; se retira el tramo en espejo de Z-Anatomy y queda un hueco explicado en la leyenda, la ficha y el recorrido (`huecos` en `rutas-vago.json`, ADR 0010 actualizado). Razón: el generador no logró rutas fuera de los órganos (pulmón izquierdo y arco solapados cerca de 1 mm). Antes, el editor fijó la tolerancia de contacto en 1 mm con tráquea y esófago y 0,5 mm con lo demás.
 - 2026-10-17: datos de la spec 04 aprobados por el editor (#203, #204, #206): 26 posiciones `aproximada` con método y fuente, y en los trazos 7 gástricos posteriores, 2 tronco, 2 raicillas y 17 sin propuesta; los umbrales "(derivado)" de `pipeline/reglas_vago.py` quedan aprobados con #206.
 - 2026-10-17: el lanzamiento a docentes espera las propuestas de la spec 04 (T4, T6, T7 y T8 en main), para que cada docente confirme o corrija en vez de ubicar desde cero (decisión del editor).
 - 2026-10-17: controles (#194, #197): en celular el panel de fragmentar toma el ancho de su contenido y la brújula tiene más relleno para que Post quepa; en escritorio la brújula conserva su tamaño con celdas de 2rem, y con cortes o con poca altura el deslizador se acorta para no cruzarse con la brújula en modo revisión.
 
 ## Next steps
-1. Revisión docente: la spec 04 está completa en main (posiciones de los 26 marcadores, evidencia y propuestas de los 28 trazos, y en modo revisión la evidencia junto a cada trazo y "Correcto" para la posición de un marcador). Falta solo mandar el mensaje a los 10 docentes (`docs/guia-docentes.md`).
-2. Spec 04: sin `/rb-verify` todavía (las puertas de la función completa).
-3. F8 cortes: verificación hecha (#205, la fusiona el editor).
+1. Revisión docente: la spec 04 está completa en main y el vago torácico en espejo se retiró con el hueco explicado (#222). La verificación de la spec 04 (#220) dio seguridad PASS y E2E 8 de 9 (1 omitida con motivo); la auditoría de objetivo dio dos parciales: la fuente del trazo se ve solo como clave (04-T9, #218, se construye cuando #220 llegue a main) y las preguntas de #219.
+2. Modo revisión: deshacer un veredicto no llega al canal (#217, decisión del editor).
+3. Vago torácico trazado: después del lanzamiento (docs/v2.md). El trabajo del generador está en las ramas `rb/02-T5`, `rb/02-T6` y `rb/i216`; #52 (T7) queda diferido.
 4. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
-5. Vago: T5 a T7 (#50 a #52).
 
-## Pendientes del editor (al 2026-10-17)
-Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42), texto legal de #149 revisado y aprobado. Hecho el 2026-10-17: controles revisados en el iPhone (#194), Rockbuilt 0.9.0 aprobado (#198).
+## Pendientes del editor (al 2026-10-18)
+Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42), texto legal de #149 revisado y aprobado. Hecho el 2026-10-17: controles revisados en el iPhone (#194), Rockbuilt 0.9.0 aprobado (#198). Hecho el 2026-10-18: #205 fusionado, SPEC F24 con "Correcto" para la posición (#212), plan B del vago torácico aprobado y fusionado (#222).
 
 Sigue, en este orden:
-1. Abrir https://brain.maysasp.com/es/revision con un código de prueba y mirar un trazo del vago y un marcador (evidencia, confianza, fuente y "Correcto"), antes de mandar el mensaje.
-2. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado y la hoja quedó limpia.
-3. Revisar y fusionar #205 (verificación de F8).
-4. Agregar a SPEC.md F24 el "Correcto" para la posición de un marcador (ruta sensible).
+1. Responder #219 (trazos del bulbo sin propuesta y nombres en inglés en la evidencia) y #217 (deshacer en modo revisión), antes de mandar el mensaje a los docentes.
+2. Revisar y fusionar #220 (verificación de la spec 04).
+3. Abrir https://brain.maysasp.com/es/revision con un código de prueba y mirar un trazo del vago, un marcador y el hueco del tórax (leyenda y ficha del vago).
+4. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado y la hoja quedó limpia.
 
 ## Seguimientos abiertos (sin decisión pendiente)
 - Modo revisión (#149): no hay prueba e2e de dos pestañas con el modelo cargado (el CI no tiene CPU para dibujarlo dos veces por software); el nombre del archivo de descarga ya no lleva el código, pero el contenido y las URL prellenadas del formulario de respaldo sí (por diseño; la ayuda y la guía lo advierten).
@@ -186,44 +186,70 @@ Sigue, en este orden:
 - Pruebas: F7-E1 de `e2e/verificar-canal.spec.ts` no revisa el `<head>`; `e2e/revision-canal.spec.ts` usa esperas fijas negativas.
 - Cortes: el encuadre en celular no descuenta el cajón de cortes; el recorrido del vago puede tapar el cajón.
 - Pruebas de F8 (informe de #205, no bloquean): F3-E2 comprueba "translúcido" por la lista de fantasmas y no por la opacidad del material; cinco esperas fijas negativas en `cortes-panel`, `cortes-movil`, `cortes-marcadores` y `cortes-relleno` se pueden cambiar por `cuadros()` con control positivo.
-- Spec 04: los marcadores torácicos se vuelven a ubicar cuando se trace el vago torácico (spec 02); `evidencia` y `confianza` de `PropuestaTrazo` siguen opcionales en `src/data/tipos.ts` aunque los 28 trazos ya las traen; el docstring de `pipeline/auditar-vago.py` y `pipeline/README.md` todavía dicen que la medición "la leerá" `scripts/aplicar-trazos.ts`; 17 de los 28 trazos quedan sin propuesta y los nombra el docente; la fuente de un trazo se muestra como clave de bibliografía.
+- Vago torácico (plan B, #222): los marcadores torácicos que quedaron (recurrente, plexo pulmonar, ramos bronquiales, cardíacos cervicales inferiores) están dentro del hueco, sin nervio al lado; `recorrido.notaToracico` y `notaIzquierdo` no dependen de `huecos` y habrá que condicionarlas cuando se publiquen rutas; `revision.seccion_vago` y SPEC.md F24 (recorridos trazados) hablan de rutas que hoy no se publican; ninguna prueba fija el cableado de `comprobarBandas` en `check-modelo.ts`; si se vuelve a correr `ubicar-marcadores.py`, el marcador cardíaco torácico vuelve al tronco en espejo.
+- Pruebas: `e2e/revision-canal.spec.ts:382` falló una vez en CI y pasó al relanzar (#223, causa por encontrar).
+- Spec 04: `evidencia` y `confianza` de `PropuestaTrazo` siguen opcionales en `src/data/tipos.ts` aunque los 28 trazos ya las traen; el docstring de `pipeline/auditar-vago.py` y `pipeline/README.md` todavía dicen que la medición "la leerá" `scripts/aplicar-trazos.ts`; 17 de los 28 trazos quedan sin propuesta y los nombra el docente; la fuente de un trazo se muestra como clave de bibliografía.
 - Harness: actualizar una rama con un commit de main que solo cambia documentación obliga a correr todo el CI otra vez; Rockbuilt 0.9.0 (#198) trae la cola de fusiones para eso. `rb vendor` crea `e2e/smoke.spec.ts` en proyectos que ya tienen suite (ragarciaga/rockbuilt#22).
 
 ## Timing
 <!-- rb:timing:start -->
-| Task | plan | implement | audit | security | Total |
-|---|---:|---:|---:|---:|---:|
-| T3 | 5.8 | 5.1 |  |  | 10.9 |
-| T1 |  |  |  |  | 0.0 |
-| T1 |  |  |  |  | 0.0 |
-| T1 |  |  |  |  | 0.0 |
-| T4 |  |  |  |  | 0.0 |
-| T5 |  |  |  |  | 0.0 |
-| T2 |  |  |  |  | 0.0 |
-| i83 |  |  |  |  | 0.0 |
-| T2 |  |  |  |  | 0.0 |
-| i120 |  |  |  |  | 0.0 |
-| T4 |  |  |  |  | 0.0 |
-| T3 |  |  |  |  | 0.0 |
-| T6 |  |  |  |  | 0.0 |
-| T4 |  |  |  |  | 0.0 |
-| T5 |  |  |  |  | 0.0 |
-| i84 |  |  |  |  | 0.0 |
-| T7 |  |  |  |  | 0.0 |
-| T8 |  |  |  |  | 0.0 |
-| T9 |  |  |  |  | 0.0 |
-| T11 |  |  |  |  | 0.0 |
-| T10 |  |  |  |  | 0.0 |
-| T12 |  |  |  |  | 0.0 |
-| T6 |  |  |  |  | 0.0 |
-| T8 |  |  |  |  | 0.0 |
-| T7 |  |  |  |  | 0.0 |
-| T2 |  |  |  |  | 0.0 |
-| analitica |  |  |  |  | 0.0 |
-| i163 | 9.4 |  | 3.3 | 2.2 | 14.9 |
-| i162 | 10.1 |  |  |  | 10.1 |
-| i149 |  |  |  |  | 0.0 |
+| Task | plan | implement | verify | audit | e2e | security | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| T3 | 5.8 | 5.1 |  |  |  |  | 10.9 |
+| T1 |  |  |  |  |  |  | 0.0 |
+| T1 |  |  |  |  |  |  | 0.0 |
+| T1 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| T2 |  |  |  |  |  |  | 0.0 |
+| i83 |  |  |  |  |  |  | 0.0 |
+| T2 |  |  |  |  |  |  | 0.0 |
+| i120 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T3 |  |  |  |  |  |  | 0.0 |
+| T6 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| i84 |  |  |  |  |  |  | 0.0 |
+| T7 |  |  |  |  |  |  | 0.0 |
+| T8 |  |  |  |  |  |  | 0.0 |
+| T9 |  |  |  |  |  |  | 0.0 |
+| T11 |  |  |  |  |  |  | 0.0 |
+| T10 |  |  |  |  |  |  | 0.0 |
+| T12 |  |  |  |  |  |  | 0.0 |
+| T6 |  |  |  |  |  |  | 0.0 |
+| T8 |  |  |  |  |  |  | 0.0 |
+| T7 |  |  |  |  |  |  | 0.0 |
+| T2 |  |  |  |  |  |  | 0.0 |
+| analitica |  |  |  |  |  |  | 0.0 |
+| i163 | 9.4 |  |  | 3.3 |  | 2.2 | 14.9 |
+| i162 |  |  | 8.9 |  |  |  | 8.9 |
+| T3 |  |  |  |  |  |  | 0.0 |
+| i168 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| i169 |  |  |  |  |  |  | 0.0 |
+| T10 |  |  |  |  |  |  | 0.0 |
+| i166 |  |  |  |  |  |  | 0.0 |
+| i176 |  |  |  |  |  |  | 0.0 |
+| i178 |  |  |  |  |  |  | 0.0 |
+| pausa |  |  |  |  |  |  | 0.0 |
+| 185 |  |  |  |  |  |  | 0.0 |
+| i177 |  |  |  |  |  |  | 0.0 |
+| docs177 |  |  |  |  |  |  | 0.0 |
+| i190 |  |  |  |  |  |  | 0.0 |
+| i56 |  |  |  |  |  |  | 0.0 |
+| i149 |  |  |  |  |  |  | 0.0 |
+| i194 |  |  |  |  |  |  | 0.0 |
+| i197 |  |  |  |  |  |  | 0.0 |
+| i201 |  |  |  |  |  |  | 0.0 |
+| T6 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T7 |  |  |  |  |  |  | 0.0 |
+| T8 |  |  |  |  |  |  | 0.0 |
+| i208 |  |  |  |  |  |  | 0.0 |
+| i213 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| verify-teacher-review-proposals |  |  |  |  | 18.7 | 1.9 | 20.6 |
 
 Minutes per phase.
-Open (started, not ended): i149/plan, T2/fix, i163/implement, i162/implement.
 <!-- rb:timing:end -->

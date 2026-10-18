@@ -17,7 +17,7 @@ python pipeline/descargar.py          # Z-Anatomy (commit fijado) y TA2.csv en p
 python pipeline/listar.py             # inventario completo: pipeline/salida/estructuras.txt
 python pipeline/mapear.py             # pipeline/mapeo.csv, src/data/arbol.json, siembra estructuras.json
 python pipeline/auditar-vago.py       # pipeline/anclajes-vago.json (ver "Vago", más abajo)
-python pipeline/generar-ramas-vago.py # public/modelos/rutas-vago.json, con las bandas que extraer.py corta
+python pipeline/generar-ramas-vago.py # public/modelos/rutas-vago.json (Plan B: no lo corras, ver "Vago"; sobrescribe los `huecos`)
 python pipeline/extraer.py            # pipeline/salida/atlas-crudo.glb y pipeline/cajas.json
 node scripts/comprimir-modelo.ts      # public/modelos/atlas.glb (meshopt, sin simplificar)
 node scripts/mallas-cerradas.ts       # src/config/mallas-cerradas.json (mallas del encéfalo sin bordes abiertos, F8)
@@ -27,8 +27,9 @@ npm run check:modelo                  # 0,1 mm por pieza, lista de mallas cerrad
 Con `.venv-pipeline/bin/python` en lugar de `python` si usas el entorno de arriba.
 
 `extraer.py` se detiene, antes de abrir el .blend y sin exportar nada, si falta
-`public/modelos/rutas-vago.json` o la banda `reemplaza` de algún lado del vago (ADR 0010). Por eso
-`auditar-vago.py` y `generar-ramas-vago.py` van antes.
+`public/modelos/rutas-vago.json` o la banda del vago de algún lado, que sale de `huecos` o del
+`reemplaza` de la ruta torácica (ADR 0010). Con el Plan B las dos bandas vienen en `huecos` y no hay
+rutas; si un lado aparece en `huecos` y en `reemplaza` a la vez, también se detiene.
 
 ## En Windows (PowerShell)
 
@@ -63,12 +64,13 @@ Alternativa con Blender instalado (sin pip), desde la carpeta del repositorio:
 - `extraer.py` evalúa cada pieza con sus modificadores, convierte curvas (nervios) a malla, hornea
   la matriz de mundo en los vértices y exporta. El vago sale trazo por trazo (`#tNN`) para la
   revisión docente, y cada nervio lleva una malla de toque invisible (`#toque`). Del tronco de cada
-  vago (`#t02`) y de su `#toque` corta el tramo que reemplaza la ruta torácica, con las bandas de
-  `public/modelos/rutas-vago.json`: parte las aristas que cruzan cada borde y borra lo de dentro, sin
+  vago (`#t02`) y de su `#toque` corta el tramo que no se publica (el hueco del Plan B, o el que
+  reemplaza una ruta torácica), con las bandas de `public/modelos/rutas-vago.json`: parte las aristas que cruzan cada borde y borra lo de dentro, sin
   mover ningún vértice que queda ni cerrar los extremos.
 - `cajas.json` guarda la caja de cada malla medida en Blender; `check:modelo` la compara con el GLB
   en cada CI. Si alguien mueve una pieza, CI falla. `check:modelo` también lee los vértices del tronco
-  del vago y falla, nombrando la malla y la altura, si alguno cae dentro de la banda de su lado.
+  del vago y falla, nombrando la malla y la altura, si alguno cae dentro de la banda de su lado, y exige una
+  banda por lado.
 - `mallas-cerradas.ts` mide en el GLB qué mallas del encéfalo no tienen bordes abiertos (ADR 0011) y
   escribe `src/config/mallas-cerradas.json`, que `check:modelo` también verifica. Si regeneras el GLB
   y no regeneras la lista, `check:modelo` y CI fallan con "Falta en mallas-cerradas.json" o
@@ -109,14 +111,20 @@ npm test                                        # tests/asimetrias.test.ts: las 
   trazo sale con `regla`, `propuesta`, `confianza` (`alta`, `media` o `baja`, o `null` sin regla) y `fuente`;
   lo leerá `scripts/aplicar-trazos.ts` (spec 04, T6). Se prueban con el mismo vago sintético:
   `python pipeline/pruebas/probar_auditar.py`.
-- `extraer.py` corta el tronco con las bandas de `rutas-vago.json`; se prueba en Blender con
+- `extraer.py` corta el tronco con las bandas (`huecos` y `reemplaza`) de `rutas-vago.json`; se prueba en Blender con
   `python pipeline/pruebas/probar_recorte.py` (curva sintética, troncos reales y los casos en que
   `extraer.py` se detiene). Necesita bpy y el .blend de `descargar.py`; no corre en el CI.
 - La app dibuja las rutas como tubos punteados en tiempo de ejecución (no van al GLB), con aviso,
   leyenda y filtro (SPEC F25). Lo que sí toca el GLB es el recorte del tramo torácico escaneado
   (ADR 0010), con el pipeline y `check:modelo`.
-- `pipeline/anclajes-vago.json` entra al repositorio junto con la implementación del ADR 0010: con
-  el modelo actual, la prueba de asimetrías falla (el espejo), como debe.
+- `pipeline/anclajes-vago.json` está en el repositorio (ADR 0010). Con el modelo escaneado crudo la
+  prueba de asimetrías falla (el espejo), como debe; por eso en el lanzamiento docente no se publica
+  ninguna ruta (Plan B) y la prueba comprueba que el hueco cubre las alturas donde el espejo
+  contradice las asimetrías 3 y 4.
+- Plan B: `public/modelos/rutas-vago.json` trae `rutas: {}` y los `huecos` medidos por
+  `generar-ramas-vago.py` en 6f7f286. Si alguien vuelve a correr `generar-ramas-vago.py` (sin
+  `--borrador`), el archivo se reescribe sin `huecos` y con las rutas del YAML: eso publicaría rutas
+  que el editor decidió no publicar. `check:modelo` falla si con eso falta la banda de algún lado.
 
 En Windows (PowerShell), desde la carpeta del repositorio:
 

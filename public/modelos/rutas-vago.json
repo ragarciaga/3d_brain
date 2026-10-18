@@ -1,6 +1,10 @@
 {
 "unidad": "metro",
 "ejes": "glTF (Y arriba, +X izquierda del cuerpo)",
-"nota": "Rutas trazadas del vago (ADR 0009). Vacío hasta que pipeline/generar-ramas-vago.py las calcule sobre el modelo medido.",
-"rutas": {}
+"nota": "Plan B del vago torácico (ADR 0010): para el lanzamiento docente no se publica ninguna ruta trazada. `huecos` son los tramos del tronco escaneado que se cortaron del GLB y se dejan sin trazar (y_max y y_min en metros, y_min nulo = hasta el final). Medidas por generar-ramas-vago.py en 6f7f286 sobre pipeline/anclajes-vago.json (ADR 0010, Plan B). Si alguien vuelve a correr generar-ramas-vago.py, este archivo se reescribe sin `huecos` y con las rutas del YAML: eso publicaría rutas que el editor decidió no publicar, y lo bloquean npm test (tests/asimetrias.test.ts y tests/rutas.test.ts) y e2e/vago-hueco.spec.ts.",
+"rutas": {},
+"huecos": [
+{"lado": "derecho", "y_max": 1.421107, "y_min": 1.348156},
+{"lado": "izquierdo", "y_max": 1.424844, "y_min": null}
+]
 }

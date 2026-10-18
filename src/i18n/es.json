@@ -281,8 +281,8 @@
       "nombres": "Si un nombre no tiene término oficial en español o en latín, la ficha muestra la propuesta y su fuente: confírmala o corrígela.",
       "marcadores": "Los marcadores son estructuras sin malla 3D. Si la posición aproximada es correcta, pulsa \"Correcto\"; si falta o está mal, usa \"Proponer posición\" y toca el punto en el modelo.",
       "trazos": "Los ramos del vago vienen como trazos sin nombre. En \"Qué revisar\", la sección \"Trazos del vago\" abre el primero pendiente; elige qué ramo es (o confirma la propuesta de la auditoría), deja un comentario si quieres y sigue con \"Siguiente trazo\". También puedes tocar un trazo en el modelo.",
-      "recorridos": "Los laríngeos recurrentes y el vago izquierdo bajo el tórax no están en el modelo escaneado: se trazaron y se ven punteados. En su ficha, \"Recorrido trazado\" te pide juzgarlos.",
-      "vagoCasilla": "Los trazos y los recorridos trazados del vago solo aparecen si marcas \"También puedo revisar el recorrido del nervio vago en cuello y tórax\": al dar tu autorización o, cuando quieras, en esa misma casilla de la barra de revisión (en el celular, dentro de \"Acciones\").",
+      "recorridos": "Los laríngeos recurrentes no están en el modelo, y en el tórax hay un hueco en los dos vagos (el derecho, entre la arteria subclavia y el bronquio principal; el izquierdo se interrumpe al entrar al tórax), porque el modelo de origen trae ese tramo en espejo. Esos recorridos están pendientes de trazado y no se revisan en esta sesión.",
+      "vagoCasilla": "Los trazos del vago solo aparecen si marcas \"También puedo revisar el recorrido del nervio vago en cuello y tórax\": al dar tu autorización o, cuando quieras, en esa misma casilla de la barra de revisión (en el celular, dentro de \"Acciones\").",
       "guardado": "No tienes que enviar nada: cada respuesta se guarda sola en la hoja del editor unos segundos después de marcarla, y la barra de revisión dice \"Guardado ✓\" cuando ya quedó guardada. Si dice \"Sin conexión: se guardará cuando vuelva\", no hagas nada: tus respuestas siguen en este equipo y se guardan solas cuando vuelva la conexión.",
       "otroEquipo": "Puedes seguir en otro equipo: abre el mismo enlace en el computador, la tableta o el celular y verás lo que ya respondiste.",
       "privacidad": "La primera vez que vayas a guardar una respuesta, el atlas te pide una sola vez tu autorización de tratamiento de datos (Ley 1581 de 2012) y si también puedes revisar el nervio vago. No te pedimos nombre ni correo, y las fichas solo dicen \"Revisado por un docente universitario\", sin ningún dato tuyo. Las propuestas y los comentarios que escribas pueden publicarse con tu alias (nunca con tu nombre) en los issues públicos del proyecto: no escribas nada que te identifique."
@@ -429,7 +429,8 @@
     "verFicha": "Ver la ficha y sus fuentes",
     "enEstaParada": "Ramos y estructuras de esta parada ({{n}})",
     "nota": "Modelo simplificado de la vía. El nervio se dibuja hasta la parada; cada texto viene de la ficha de la estructura, con sus fuentes.",
-    "notaIzquierdo": "Aquí se sigue el vago derecho: en el modelo, el izquierdo termina en el tórax.",
+    "notaToracico": "En el tórax el atlas deja un hueco en los dos vagos: ese tramo está pendiente de trazado.",
+    "notaIzquierdo": "Aquí se sigue el vago derecho: en el atlas, el izquierdo se interrumpe al entrar al tórax y su recorrido hasta el abdomen está pendiente de trazado.",
     "anterior": "Anterior",
     "siguiente": "Siguiente",
     "terminar": "Terminar",
@@ -476,6 +477,8 @@
     "aproximada": "Trazada (aproximada, con fines didácticos)",
     "marcador": "Marcador: punto con etiqueta, sin volumen",
     "soloEscaneada": "Solo geometría escaneada",
-    "aviso": "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas."
+    "aviso": "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas.",
+    "toracico": "Hueco en el tórax: un tramo de cada vago está pendiente de trazado.",
+    "huecoFicha": "En el atlas, un tramo torácico de este nervio está pendiente de trazado: en el vago derecho, entre la arteria subclavia y el bronquio principal; el vago izquierdo se interrumpe al entrar al tórax. El modelo de origen trae ese tramo en espejo de un lado al otro, con relaciones que no corresponden, y por eso queda un hueco."
   }
 }
