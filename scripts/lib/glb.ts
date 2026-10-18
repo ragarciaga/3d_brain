@@ -46,6 +46,50 @@ export function verticesDelDocumento(doc: Document, nombres?: ReadonlySet<string
   return Object.fromEntries(nodosConVertices(doc, nombres));
 }
 
+/**
+ * Triángulos en coordenadas de mundo (glTF, Y arriba) de los nodos con malla que se piden, por nombre de nodo.
+ * Cada triángulo ocupa nueve números seguidos (x, y, z de sus tres vértices). Sirve índices o secuencia; una
+ * primitiva que no sea de triángulos es un error, porque el volumen no se podría medir.
+ */
+export function triangulosDelDocumento(doc: Document, nombres: ReadonlySet<string>): Record<string, Float64Array> {
+  const res: Record<string, Float64Array> = {};
+  for (const node of doc.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (!mesh || !nombres.has(node.getName())) continue;
+    const m = node.getWorldMatrix();
+    const partes: number[][] = [];
+    for (const prim of mesh.listPrimitives()) {
+      if (prim.getMode() !== 4) throw new Error(`${node.getName()}: la primitiva no es de triángulos (modo ${prim.getMode()})`);
+      const pos = prim.getAttribute('POSITION');
+      if (!pos) continue;
+      const indices = prim.getIndices();
+      const n = indices ? indices.getCount() : pos.getCount();
+      const v = [0, 0, 0];
+      const mundo = (i: number): [number, number, number] => {
+        pos.getElement(indices ? (indices.getScalar(i) as number) : i, v);
+        const [x, y, z] = v as [number, number, number];
+        return [
+          m[0] * x + m[4] * y + m[8] * z + m[12],
+          m[1] * x + m[5] * y + m[9] * z + m[13],
+          m[2] * x + m[6] * y + m[10] * z + m[14],
+        ];
+      };
+      const tris: number[] = [];
+      for (let i = 0; i + 2 < n; i += 3) tris.push(...mundo(i), ...mundo(i + 1), ...mundo(i + 2));
+      partes.push(tris);
+    }
+    const total = partes.reduce((s, a) => s + a.length, 0);
+    const salida = new Float64Array(total);
+    let o = 0;
+    for (const a of partes) {
+      salida.set(a, o);
+      o += a.length;
+    }
+    res[node.getName()] = salida;
+  }
+  return res;
+}
+
 /** Caja en coordenadas de mundo de cada nodo con malla, por nombre de nodo. */
 export function cajasDelDocumento(doc: Document): Record<string, Caja> {
   const res: Record<string, Caja> = {};

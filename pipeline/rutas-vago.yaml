@@ -21,15 +21,18 @@
 #   rodear           el nervio pasa por ese lado del anclaje: debajo, encima, anterior, posterior
 #   surco             recorre el surco traqueoesofágico de ese lado (entre la tráquea y el esófago) entre el paso
 #                     anterior y el siguiente, un punto cada 5 mm, en el orden del nervio. Cada punto es el sitio
-#                     libre más cercano al costado de la tráquea: nunca dentro de un órgano. No lleva altura
+#                     de una rejilla de 0,5 mm más cercano al costado de la tráquea que queda dentro de la
+#                     tolerancia de todos los órganos; si no hay ninguno, el generador se detiene. No lleva altura
 #   seguir            el nervio acompaña la cara indicada del anclaje entre el paso anterior y el siguiente
 #   a_la_altura_de    la altura de un punto de otro anclaje (mas_alto, mas_bajo, centro)
 #   cara_lateral      con rodear anterior o posterior: por la esquina de ese lado (posterolateral)
 #
 # Despeje: el generador no deja que ninguna ruta pase por dentro de la tráquea, el esófago, los cartílagos
-# cricoides y tiroides, las arterias ni los bronquios (0,5 mm de tolerancia; 1 mm contra la tráquea y el esófago,
-# donde va el recurrente). Si un paso lo obligaría, el generador rehace ese tramo por un camino libre o se
-# detiene sin escribir. Los pasos de este archivo no cambian por eso: siguen siendo nombres de anclajes.
+# cricoides y tiroides, las arterias, los bronquios ni los cinco lóbulos pulmonares más allá de su tolerancia
+# (0,5 mm; 1 mm contra la tráquea y el esófago, donde va el recurrente; 1 mm contra el arco aórtico solo en el
+# gancho del recurrente izquierdo). Empuja fuera los puntos que se pasan, suaviza el entorno y no deja giros de más
+# de 30 grados entre segmentos seguidos. Si no lo logra, se detiene sin escribir nada. Los pasos de este archivo no
+# cambian por eso: siguen siendo nombres de anclajes.
 #
 # Las cuatro asimetrías que no se pueden equivocar se prueban solas (tests/asimetrias.test.ts):
 #   1. El laríngeo recurrente derecho pasa por debajo de la arteria subclavia derecha.
@@ -132,14 +135,14 @@ rutas:
       - desde_ruta:
           ruta: vago_toracico_izquierdo
           a_la_altura_de: { anclaje: "Aortic arch", punto: mas_alto }
-      # Rodea el arco aórtico por debajo, junto al ligamento arterioso (asimetría 2).
+      # Pasa por detrás del ganglio del ligamento arterioso, por debajo del arco aórtico (asimetría 2): el asa
+      # del recurrente izquierdo es el gancho bajo el arco, junto al ligamento arterioso.
       # Z-Anatomy no trae el ligamento: se usa su ganglio ("Node of ligamentum arteriosum"), que en el
       # modelo está 8 mm bajo la superficie del arco y 8 mm sobre la bifurcación del tronco pulmonar.
       # Sustituto pendiente de revisión docente.
-      - anclaje: "Aortic arch"
-        punto: cerca_de
-        cerca_de: "Node of ligamentum arteriosum"
-        rodear: debajo
+      - anclaje: "Node of ligamentum arteriosum"
+        punto: centro
+        rodear: posterior
       # Sube por el surco traqueoesofágico izquierdo, desde el asa hasta el cricoides, por fuera de la tráquea
       # y del esófago; por eso es más largo que el derecho.
       - surco: izquierdo

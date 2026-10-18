@@ -10,8 +10,14 @@
 //   esófago (los dos se tocan), las dos caras se mueven a su punto medio. Así un punto sobre la pared
 //   no cuenta como dentro de uno y de otro a la vez.
 // - Tubos: las nueve arterias y bronquios, con su línea central y su radio.
+// - Pulmones: los cinco lóbulos, medidos en 3D sobre la malla de public/modelos/atlas.glb (no están en
+//   pipeline/anclajes-vago.json; ver scripts/lib/pulmones.ts). Solo cuentan si la prueba los pasa.
+// - Gancho: el único sitio donde se tolera 1 mm contra el arco aórtico (el asa del recurrente izquierdo bajo
+//   el arco, junto al ligamento arterioso). Va desde el primer punto de la ruta hasta el primer punto, después
+//   del más bajo, que está a la altura de la cima del eje del arco o más arriba.
 // La profundidad es positiva dentro del obstáculo, en metros.
 import { signoAnterior, type Ancla, type Anclajes, type P, type Rutas } from './asimetrias.ts';
+import { LOBULOS, profundidadMalla } from './pulmones.ts';
 
 export interface Corte {
   y: number;
@@ -33,8 +39,13 @@ export const TOLERANCIA = 0.0005;
 /** Decisión del editor, 2026-10-17: contra la tráquea y el esófago se tolera hasta 1 mm (dos radios del nervio), porque el recurrente va en el surco traqueoesofágico, en contacto con sus paredes. Debe coincidir con pipeline/generar-ramas-vago.py. */
 export const TOLERANCIA_SURCO = 0.001;
 const TOLERANCIA_POR_ANCLAJE: Record<string, number> = { Trachea: TOLERANCIA_SURCO, Oesophagus: TOLERANCIA_SURCO };
-/** Hasta cuánto puede entrar un punto de una ruta en ese órgano, en metros. */
-export const toleranciaDe = (nombre: string): number => TOLERANCIA_POR_ANCLAJE[nombre] ?? TOLERANCIA;
+/** Decisión del editor: 1 mm contra el arco aórtico, solo en el gancho del recurrente izquierdo. Debe coincidir con pipeline/generar-ramas-vago.py. */
+export const TOLERANCIA_GANCHO = 0.001;
+/** La ruta y el órgano del gancho. */
+export const GANCHO = { ruta: 'laringeo_recurrente_izquierdo', ancla: 'Aortic arch' } as const;
+/** Hasta cuánto puede entrar un punto de una ruta en ese órgano, en metros; `enGancho` solo cambia el arco aórtico. */
+export const toleranciaDe = (nombre: string, enGancho = false): number =>
+  enGancho && nombre === GANCHO.ancla ? TOLERANCIA_GANCHO : (TOLERANCIA_POR_ANCLAJE[nombre] ?? TOLERANCIA);
 export const OBSTACULOS_CAJA = ['Trachea', 'Oesophagus', 'Cricoid cartilage', 'Thyroid cartilage'] as const;
 export const OBSTACULOS_TUBO = [
   'Aortic arch',
@@ -136,6 +147,38 @@ export function peor(d: DatosDespeje, p: P): { ancla: string; profundidad: numbe
   return mejor;
 }
 
+/** Mallas 3D de los lóbulos pulmonares (triángulos de mundo, nueve números cada uno), por nombre de nodo. */
+export type MallasPulmones = Record<string, Float64Array>;
+
+/** Altura de la cima del eje del arco aórtico: donde termina el gancho. */
+export function yCimaArco(d: DatosDespeje): number {
+  const eje = ancla(d, GANCHO.ancla).puntos;
+  if (!eje?.length) throw new Error(`El anclaje "${GANCHO.ancla}" no trae línea central`);
+  return Math.max(...eje.map((p) => p[1]));
+}
+
+/**
+ * Qué puntos de la ruta están en el gancho (donde se tolera 1 mm contra el arco). Solo existe en la ruta
+ * GANCHO.ruta: desde su primer punto hasta el primer punto, después del más bajo, con y >= `yCima`.
+ */
+export function enGancho(id: string, puntos: P[], yCima: number): boolean[] {
+  const res = puntos.map(() => false);
+  if (id !== GANCHO.ruta || !puntos.length) return res;
+  let bajo = 0;
+  puntos.forEach((p, i) => {
+    if (p[1] < puntos[bajo]![1]) bajo = i;
+  });
+  let fin = puntos.length - 1;
+  for (let i = bajo + 1; i < puntos.length; i++) {
+    if (puntos[i]![1] >= yCima) {
+      fin = i;
+      break;
+    }
+  }
+  for (let i = 0; i <= fin; i++) res[i] = true;
+  return res;
+}
+
 export interface Penetracion {
   ruta: string;
   ancla: string;
@@ -144,18 +187,33 @@ export interface Penetracion {
   punto: P;
 }
 
-/** Para cada ruta y obstáculo, el punto más adentro (solo los que pasan de la tolerancia de ese obstáculo, si `soloFallas`). */
-export function penetraciones(d: DatosDespeje, r: Rutas, soloFallas = true): Penetracion[] {
+/**
+ * Para cada ruta y obstáculo, el punto más adentro. Con `soloFallas`, solo los que pasan de la tolerancia de ese
+ * obstáculo (con la del gancho en los puntos del gancho) y el punto elegido es el que más se pasa. Con
+ * `pulmones`, los cinco lóbulos también son obstáculos (profundidad 3D sobre su malla).
+ */
+export function penetraciones(d: DatosDespeje, r: Rutas, soloFallas = true, pulmones?: MallasPulmones): Penetracion[] {
   const ant = signoAnterior(d);
+  const yCima = yCimaArco(d);
   const res: Penetracion[] = [];
+  const nombres = [...obstaculos(), ...(pulmones ? LOBULOS : [])];
   for (const [id, ruta] of Object.entries(r.rutas)) {
-    for (const n of obstaculos()) {
+    const gancho = enGancho(id, ruta.puntos, yCima);
+    for (const n of nombres) {
+      const malla = pulmones?.[n];
+      const prof = (p: P) => (malla ? profundidadMalla(malla, p) : profundidad(d, n, p, ant));
       let mejor: Penetracion | null = null;
-      for (const p of ruta.puntos) {
-        const prof = profundidad(d, n, p, ant);
-        if (!mejor || prof > mejor.profundidad) mejor = { ruta: id, ancla: n, profundidad: prof, y: p[1], punto: p };
-      }
-      if (mejor && Number.isFinite(mejor.profundidad) && (!soloFallas || mejor.profundidad > toleranciaDe(n))) res.push(mejor);
+      let exceso = -Infinity;
+      ruta.puntos.forEach((p, i) => {
+        const pr = prof(p);
+        const e = pr - toleranciaDe(n, gancho[i]);
+        if (soloFallas ? e > exceso : !mejor || pr > mejor.profundidad) {
+          mejor = { ruta: id, ancla: n, profundidad: pr, y: p[1], punto: p };
+          exceso = e;
+        }
+      });
+      const m = mejor as Penetracion | null;
+      if (m && Number.isFinite(m.profundidad) && (!soloFallas || exceso > 0)) res.push(m);
     }
   }
   return res;
@@ -164,4 +222,80 @@ export function penetraciones(d: DatosDespeje, r: Rutas, soloFallas = true): Pen
 /** Texto de una penetración: ruta, anclaje, profundidad y altura, en mm. */
 export function describir(p: Penetracion): string {
   return `${p.ruta} pasa ${(p.profundidad * 1000).toFixed(2)} mm dentro de ${p.ancla} en y = ${(p.y * 1000).toFixed(1)} mm`;
+}
+
+export interface Giro {
+  /** Índice del punto (entre los que quedan al descartar los muy juntos) donde cambia la dirección. */
+  indice: number;
+  grados: number;
+  y: number;
+  punto: P;
+}
+
+/** Puntos más cerca que esto del anterior se descartan antes de medir los giros (0,5 mm). */
+export const GIRO_SEGMENTO_MIN = 0.0005;
+/** Giro máximo entre dos segmentos seguidos de una ruta publicada. */
+export const GIRO_MAXIMO = 30;
+
+/**
+ * El giro, en grados, en cada punto interior de la polilínea: el ángulo entre el segmento que llega y el que sale.
+ * Antes se descartan los puntos a menos de GIRO_SEGMENTO_MIN del anterior que se conservó.
+ */
+export function giros(pts: P[]): Giro[] {
+  const util: P[] = [];
+  for (const p of pts) if (!util.length || dist(p, util.at(-1)!) >= GIRO_SEGMENTO_MIN) util.push(p);
+  const res: Giro[] = [];
+  for (let i = 1; i + 1 < util.length; i++) {
+    const a = util[i - 1]!;
+    const b = util[i]!;
+    const c = util[i + 1]!;
+    const u: P = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const v: P = [c[0] - b[0], c[1] - b[1], c[2] - b[2]];
+    const cos = (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (Math.hypot(...u) * Math.hypot(...v));
+    res.push({ indice: i, grados: (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI, y: b[1], punto: b });
+  }
+  return res;
+}
+
+/** El giro mayor de la ruta, o null si tiene menos de tres puntos útiles. */
+export function giroMaximo(pts: P[]): Giro | null {
+  return giros(pts).reduce<Giro | null>((m, g) => (!m || g.grados > m.grados ? g : m), null);
+}
+
+/** Cuánto puede retroceder y sin contar como subida o bajada en contra (0,1 mm). */
+export const TOLERANCIA_MONOTONIA = 0.0001;
+
+export interface Retroceso {
+  indice: number;
+  y: number;
+  /** Cuánto retrocede respecto del extremo anterior, en metros. */
+  retroceso: number;
+}
+
+/**
+ * Dónde la altura va en contra del sentido esperado, con TOLERANCIA_MONOTONIA.
+ * - 'baja': la ruta solo baja (los dos tramos torácicos).
+ * - 'baja y sube': baja hasta su punto más bajo y después solo sube (los recurrentes).
+ * Una meseta (misma altura en varios puntos) no cuenta; un rebote de más de 0,1 mm, sí.
+ */
+export function monotonia(pts: P[], tipo: 'baja' | 'baja y sube'): Retroceso[] {
+  const res: Retroceso[] = [];
+  let bajo = 0;
+  pts.forEach((p, i) => {
+    if (p[1] < pts[bajo]![1]) bajo = i;
+  });
+  const fin = tipo === 'baja' ? pts.length - 1 : bajo;
+  let piso = Infinity;
+  for (let i = 0; i <= fin; i++) {
+    const y = pts[i]![1];
+    if (y - piso > TOLERANCIA_MONOTONIA) res.push({ indice: i, y, retroceso: y - piso });
+    piso = Math.min(piso, y);
+  }
+  let techo = -Infinity;
+  for (let i = bajo; tipo === 'baja y sube' && i < pts.length; i++) {
+    const y = pts[i]![1];
+    if (techo - y > TOLERANCIA_MONOTONIA) res.push({ indice: i, y, retroceso: techo - y });
+    techo = Math.max(techo, y);
+  }
+  return res;
 }

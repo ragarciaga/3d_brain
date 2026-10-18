@@ -322,16 +322,6 @@ crudo = modelo.rodear("Trachea", cr, "anterior")
 assert modelo.exceso(crudo) > 0, "el caso de prueba ya no cae dentro de otro órgano"
 assert modelo.exceso(g.resolver(modelo, paso_dentro, {})[0]) <= 0, "resolver no sacó el control rodeado del órgano vecino"
 
-# 17. Un camino libre rodea un órgano; si no hay holgura posible, devuelve None.
-a_, b_ = [-0.02, 1.40, 0.012], [0.02, 1.40, 0.012]
-assert any(modelo.profundidad("Trachea", [a_[0] + (b_[0] - a_[0]) * k / 40, 1.40, 0.012]) > 0 for k in range(41)), "la recta debe cruzar la tráquea"
-camino = g.camino_libre(modelo, a_, b_, 0.0)
-assert camino, "debió haber un camino libre alrededor de la tráquea"
-assert all(modelo.exceso(p) <= 1e-12 for p in camino), "el camino pasa por dentro de un órgano"
-assert g.camino_libre(modelo, a_, b_, 10.0) is None
-rehecho = g.reenrutar(modelo, [a_, b_], [0.0, 1.40, 0.012], "x")
-assert rehecho and rehecho[0] == a_ and rehecho[-1] == b_ and len(rehecho) > 2
-
 # 18. Una ruta forzada a pasar por el centro de la tráquea se rechaza nombrando ruta, órgano y altura, y no escribe nada.
 forzada = copy.deepcopy(rutas)
 forzada["rutas"]["laringeo_recurrente_derecho"]["pasos"].insert(2, {"anclaje": "Trachea", "punto": "centro"})

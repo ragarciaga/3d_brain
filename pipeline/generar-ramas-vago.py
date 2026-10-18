@@ -15,25 +15,34 @@ Salida:
 La prueba de las cuatro asimetrías (tests/asimetrias.test.ts) corre en CI sobre esos puntos y falla
 si alguna no se cumple o si falta un anclaje.
 
-Despeje (SPEC F25): ninguna ruta puede pasar por dentro de un órgano. Los órganos son la tráquea, el esófago y
-los cartílagos cricoides y tiroides (cajas por franja de altura; donde tráquea y esófago se tocan, la pared
-común se parte por la mitad) y nueve arterias y bronquios (tubos con línea central y radio). Tolerancia: 0,5 mm
-dentro (el radio del nervio), salvo contra la tráquea y el esófago, 1 mm (decisión del editor, 2026-10-17: el
-recurrente va en el surco traqueoesofágico, en contacto con sus paredes). Cómo se logra, en orden:
-1. `surco` recorre el tramo entre el paso anterior y el siguiente con un punto cada 5 mm, cada uno el sitio libre
-   más cercano al costado de la tráquea (`Modelo.surco`, rejilla de 0,5 mm).
+Despeje (SPEC F25): ninguna ruta puede pasar por dentro de un órgano más allá de su tolerancia. Los órganos son
+la tráquea, el esófago y los cartílagos cricoides y tiroides (cajas por franja de altura; donde tráquea y esófago
+se tocan, la pared común se parte por la mitad), nueve arterias y bronquios (tubos con línea central y radio) y
+los cinco lóbulos pulmonares. Los pulmones no están en anclajes-vago.json: salen de secciones horizontales de 1 mm
+de la malla de public/modelos/atlas.glb que exporta `node scripts/exportar-pulmones.ts` a
+pipeline/salida/pulmones-vago.json (hay que correrlo antes de este script). Tolerancia: 0,5 mm dentro (el radio
+del nervio), salvo contra la tráquea y el esófago, 1 mm (decisión del editor: el recurrente va en el surco
+traqueoesofágico, en contacto con sus paredes), y contra el arco aórtico, 1 mm solo en el gancho del recurrente
+izquierdo (el asa bajo el arco, desde su primer punto hasta el primer punto, después del más bajo, que llega a la
+cima del eje del arco). Cómo se logra, en orden:
+1. `surco` recorre el tramo entre el paso anterior y el siguiente con un punto cada 5 mm, cada uno el sitio de una
+   rejilla de 0,5 mm más cercano al costado de la tráquea que queda dentro de la tolerancia de todos los órganos
+   (`Modelo.surco`). Si no hay ninguno, el que menos se pasa, y `despejar` se detiene.
 2. `rodear anterior/posterior` sobre un tubo cuya franja abarca dos ramas (el arco aórtico) parte de su línea
-   central más el radio (`Modelo._por_linea_central`); los anclajes medidos por cajas (tráquea, esófago,
-   cartílagos) nunca usan esa regla, porque su radio de línea central no describe su sección. El control
-   rodeado se empuja fuera de cualquier órgano vecino en el que haya caído (`_empujar`).
-3. `despejar` saca de los órganos los puntos de la curva (sin mover los controles), parte por la mitad todo
-   tramo que el empuje estiró a más de 2,5 mm y, si aún queda algún punto fuera de tolerancia, lanza `Atraviesa`.
-4. Si hay un punto fuera de tolerancia, el tramo entre los dos controles que lo contienen se rehace con un camino
-   libre por una rejilla (`camino_libre`, A*) y se reintenta hasta `MAX_REENRUTAR` veces; si no hay camino, se
-   detiene sin escribir nada.
+   central más el radio (`Modelo._por_linea_central`); si ese punto se pasa de la tolerancia (un pulmón envuelve el
+   arco), gira alrededor del eje del tubo de 5 en 5 grados hasta 60 sin cambiar el lado pedido. Los anclajes medidos
+   por cajas (tráquea, esófago, cartílagos) nunca usan esa regla, porque su radio de línea central no describe su
+   sección. El control rodeado se empuja fuera de cualquier órgano vecino (`_empujar`); si aun así se pasa, se
+   detiene (`Atraviesa`).
+3. `despejar` empuja fuera de los órganos solo los puntos de la curva que se pasan de su tolerancia (nunca un
+   control), suaviza el entorno de lo empujado y de los giros de más de 30 grados (hasta 20 rondas, sin mover los
+   controles), vuelve a empujar lo que se pasó y parte por la mitad todo tramo de más de 2,5 mm. Si al final queda un
+   punto fuera de tolerancia lanza `Atraviesa`; si queda un giro de más de 30 grados, `Quiebre`. En los dos casos
+   no se escribe nada.
 
 Uso: python pipeline/generar-ramas-vago.py [--borrador]
 """
+import bisect
 import json
 import math
 import sys
@@ -57,12 +66,9 @@ TOLERANCIA_SURCO = 0.001
 TOLERANCIA_POR_ANCLAJE = {"Trachea": TOLERANCIA_SURCO, "Oesophagus": TOLERANCIA_SURCO}
 SALTO_MAXIMO = 0.0025  # entre dos puntos seguidos de una ruta no hay más de 2,5 mm (los empalmes se miden con eso)
 PASO_REJILLA = 0.0005  # rejilla de 0,5 mm con la que `surco` busca el sitio libre
-PASO_RUTA_Y = 0.001  # alto de la rejilla con la que se busca un camino libre entre dos controles
-MAX_REENRUTAR = 3  # veces que se rehace el tramo que atraviesa un órgano antes de rendirse
-MARGEN_RUTA_Y = 0.010  # y en altura (el camino puede bajar bajo el arco)
-MARGEN_RUTA = 0.008  # cuánto se ensancha (en x y z) la zona de búsqueda alrededor de los dos controles
 # Órganos que ninguna ruta puede atravesar (SPEC F25). Los cuatro primeros se miden por franjas (caja x/z de
-# sus vértices en cada altura); los otros nueve, como tubos (línea central y radio).
+# sus vértices en cada altura); los nueve siguientes, como tubos (línea central y radio); los lóbulos pulmonares,
+# por las secciones horizontales de su malla (scripts/exportar-pulmones.ts).
 OBSTACULOS_CAJA = ("Trachea", "Oesophagus", "Cricoid cartilage", "Thyroid cartilage")
 OBSTACULOS_TUBO = (
     "Aortic arch", "Thoracic aorta", "Brachiocephalic trunk",
@@ -70,6 +76,21 @@ OBSTACULOS_TUBO = (
     "Left subclavian artery", "Right subclavian artery",
     "Left main bronchus", "Right main bronchus",
 )
+PULMONES = (
+    "Superior lobe of left lung", "Inferior lobe of left lung",
+    "Superior lobe of right lung", "Middle lobe of right lung", "Inferior lobe of right lung",
+)
+SALIDA_PULMONES = RAIZ / "salida" / "pulmones-vago.json"
+ALCANCE_SECCION = 0.005  # más lejos que esto de la caja de una sección, el punto no está en ese lóbulo
+GIRO_MAXIMO = 30.0  # grados entre dos segmentos seguidos de una ruta
+GIRO_SEGMENTO_MIN = 0.0005  # al medir giros se descartan los puntos a menos de 0,5 mm del anterior
+RONDAS_SUAVIZADO = 20
+VENTANA_SUAVIZADO = 5  # puntos a cada lado de lo empujado o de un giro que se suavizan
+GIRO_ROTACION_MAX = 60  # grados que puede girar el control de un rodeo para salir de un pulmón
+PASO_ROTACION = 5
+# El gancho (decisión del editor): la ruta y el órgano donde se tolera 1 mm. Debe coincidir con scripts/lib/despeje.ts.
+GANCHO = ("laringeo_recurrente_izquierdo", "Aortic arch")
+TOLERANCIA_GANCHO = 0.001
 
 
 class FaltaAnclaje(Exception):
@@ -88,6 +109,10 @@ class Atraviesa(ValueError):
         self.punto = punto
 
 
+class Quiebre(ValueError):
+    """Una ruta gira más de GIRO_MAXIMO entre dos segmentos seguidos y el suavizado no lo arregla."""
+
+
 def sumar(a, b):
     return [a[i] + b[i] for i in range(3)]
 
@@ -100,9 +125,54 @@ def centro_caja(c):
     return [(c[0][i] + c[1][i]) / 2 for i in range(3)]
 
 
-def tolerancia_de(nombre):
-    """Hasta cuánto puede entrar un punto de una ruta en ese órgano, en m."""
+def tolerancia_de(nombre, en_gancho=False):
+    """Hasta cuánto puede entrar un punto de una ruta en ese órgano, en m. `en_gancho` solo cambia el arco aórtico."""
+    if en_gancho and nombre == GANCHO[1]:
+        return TOLERANCIA_GANCHO
     return TOLERANCIA_POR_ANCLAJE.get(nombre, TOLERANCIA_DESPEJE)
+
+
+def indices_gancho(puntos, y_cima):
+    """Índices de los puntos del gancho: desde el primero hasta el primero, después del más bajo, con y >= y_cima
+    (la cima del eje del arco). Si ninguno lo alcanza, hasta el final."""
+    if not puntos:
+        return set()
+    bajo = min(range(len(puntos)), key=lambda i: puntos[i][1])
+    fin = len(puntos) - 1
+    for i in range(bajo + 1, len(puntos)):
+        if puntos[i][1] >= y_cima:
+            fin = i
+            break
+    return set(range(fin + 1))
+
+
+def giros(puntos):
+    """[(índice, grados)] del giro en cada punto interior: el ángulo entre el segmento que llega y el que sale.
+    Antes se descartan los puntos a menos de GIRO_SEGMENTO_MIN del anterior que se conservó."""
+    util = []
+    for i, p in enumerate(puntos):
+        if not util or math.dist(p, puntos[util[-1]]) >= GIRO_SEGMENTO_MIN:
+            util.append(i)
+    res = []
+    for a, b, c in zip(util, util[1:], util[2:]):
+        u = [puntos[b][k] - puntos[a][k] for k in range(3)]
+        v = [puntos[c][k] - puntos[b][k] for k in range(3)]
+        cos = sum(u[k] * v[k] for k in range(3)) / (math.hypot(*u) * math.hypot(*v))
+        res.append((b, math.degrees(math.acos(max(-1.0, min(1.0, cos))))))
+    return res
+
+
+def cargar_pulmones(ruta):
+    """Secciones de los lóbulos que escribe scripts/exportar-pulmones.ts, o SystemExit si falta el archivo o un lóbulo."""
+    ruta = Path(ruta)
+    if not ruta.exists():
+        raise SystemExit(f"Falta {ruta.name}: corre primero node scripts/exportar-pulmones.ts")
+    with open(ruta, encoding="utf-8") as f:
+        lobulos = json.load(f)["lobulos"]
+    faltan = [n for n in PULMONES if not lobulos.get(n)]
+    if faltan:
+        raise SystemExit(f"Faltan lóbulos en {ruta.name}: {', '.join(faltan)}. Corre node scripts/exportar-pulmones.ts")
+    return lobulos
 
 
 def dist_a_polilinea(p, pts):
@@ -121,12 +191,56 @@ def dist_a_polilinea(p, pts):
     return mejor
 
 
+def _medida_seccion(segs, x, z):
+    """(profundidad, x, z) de (x, z) en una sección: ± la distancia mínima a sus segmentos (positiva dentro) y el punto
+    más cercano. Dentro es lo que dicen al menos 2 de 3 rayos (+x, -x, +z) por paridad de cruces: la sección puede
+    estar recortada en x y un solo rayo se equivoca."""
+    cruces_x_pos = cruces_x_neg = cruces_z = 0
+    mejor2, cerca = math.inf, (x, z)
+    for x0, z0, x1, z1 in segs:
+        if (z0 > z) != (z1 > z):
+            xc = x0 + (x1 - x0) * (z - z0) / (z1 - z0)
+            if xc > x:
+                cruces_x_pos ^= 1
+            elif xc < x:
+                cruces_x_neg ^= 1
+        if (x0 > x) != (x1 > x):
+            zc = z0 + (z1 - z0) * (x - x0) / (x1 - x0)
+            if zc > z:
+                cruces_z ^= 1
+        dx, dz = x1 - x0, z1 - z0
+        largo2 = dx * dx + dz * dz
+        t = 0.0 if largo2 == 0 else max(0.0, min(1.0, ((x - x0) * dx + (z - z0) * dz) / largo2))
+        qx, qz = x0 + dx * t, z0 + dz * t
+        d2 = (x - qx) ** 2 + (z - qz) ** 2
+        if d2 < mejor2:
+            mejor2, cerca = d2, (qx, qz)
+    if mejor2 == math.inf:
+        return (-math.inf, None, None)
+    d = math.sqrt(mejor2)
+    return ((d if cruces_x_pos + cruces_x_neg + cruces_z >= 2 else -d), cerca[0], cerca[1])
+
+
 class Modelo:
     """Anclajes y trazos medidos, con los ejes anatómicos sacados de los datos."""
 
-    def __init__(self, datos):
+    def __init__(self, datos, pulmones=None):
+        """`pulmones` son las secciones de los lóbulos ({nombre: [{y, segmentos}]}, ver cargar_pulmones). Sin ellas,
+        los pulmones no son obstáculo (las pruebas con el modelo sintético, que no los trae)."""
         self.anclas = datos["anclas"]
         self.trazos = datos["trazos"]
+        self.pulmones = {}
+        for nombre, secciones in (pulmones or {}).items():
+            if nombre not in PULMONES:
+                raise ValueError(f"'{nombre}' no es un lóbulo pulmonar conocido")
+            secciones = sorted(secciones, key=lambda s: s["y"])
+            preparadas = []
+            for sec in secciones:
+                segs = [tuple(sg) for sg in sec["segmentos"]]
+                xs = [v for sg in segs for v in (sg[0], sg[2])] or [0.0]
+                zs = [v for sg in segs for v in (sg[1], sg[3])] or [0.0]
+                preparadas.append((segs, (min(xs), max(xs), min(zs), max(zs))))
+            self.pulmones[nombre] = ([sec["y"] for sec in secciones], preparadas)
         for k in ("Trachea", "Oesophagus"):
             self.ancla(k)
         # Anterior: la tráquea está por delante del esófago. Así el signo de Z no se supone.
@@ -189,7 +303,11 @@ class Modelo:
     def _por_linea_central(self, nombre, p, s, lado):
         """Para rodear anterior o posterior un tubo cuya franja abarca dos ramas (el arco aórtico): el punto de la
         línea central p llevado a radio + h, en la dirección (0, 0, s) más la lateral, proyectada en el plano
-        perpendicular al eje del tubo. None si la regla de la caja basta."""
+        perpendicular al eje del tubo. Si ese punto se pasa de la tolerancia de algún órgano (un pulmón envuelve el
+        arco), la dirección gira alrededor del eje del tubo de PASO_ROTACION en PASO_ROTACION grados, hasta
+        GIRO_ROTACION_MAX, alternando hacia abajo y hacia arriba, y se queda el primer giro que respeta todas las
+        tolerancias y no cambia el lado pedido (el signo de u_z por el sentido anterior). None si la regla de la caja
+        basta."""
         a = self.ancla(nombre)
         pts, radio = a.get("puntos"), a.get("radio")
         if not pts or not radio or nombre in OBSTACULOS_CAJA:
@@ -212,7 +330,26 @@ class Modelo:
         nu = math.hypot(*u)
         if nu < 0.3:
             raise ValueError(f"No sé rodear '{nombre}' hacia ese lado: la dirección casi coincide con su eje")
-        return [p[k] + u[k] / nu * (radio + h) for k in range(3)]
+        u = [v / nu for v in u]
+
+        def en(dir_):
+            return [p[k] + dir_[k] * (radio + h) for k in range(3)]
+
+        candidato = en(u)
+        if self.exceso(candidato) <= 0:
+            return candidato
+        # b = t x u es unitario y perpendicular a los dos: u(a) = u cos a + b sin a recorre la sección del tubo.
+        b = [t[1] * u[2] - t[2] * u[1], t[2] * u[0] - t[0] * u[2], t[0] * u[1] - t[1] * u[0]]
+        abajo = -1 if b[1] > 0 else 1  # signo del ángulo que baja el punto
+        for grados in range(PASO_ROTACION, GIRO_ROTACION_MAX + 1, PASO_ROTACION):
+            for signo in (abajo, -abajo):
+                ang = math.radians(signo * grados)
+                giro = [u[k] * math.cos(ang) + b[k] * math.sin(ang) for k in range(3)]
+                if giro[2] * s <= 0:
+                    continue
+                if self.exceso(en(giro)) <= 0:
+                    return en(giro)
+        return candidato
 
     def rodear(self, nombre, p, hacia, lado=None):
         """El punto p llevado justo por fuera de la superficie del anclaje, hacia donde se pide."""
@@ -267,9 +404,39 @@ class Modelo:
                         z0, z1 = (z0, medio) if self.anterior > 0 else (medio, z1)
         return x0, x1, z0, z1
 
+    def obstaculos(self):
+        """Los órganos que cuentan: los trece de los anclajes y los lóbulos pulmonares que se cargaron."""
+        return OBSTACULOS_CAJA + OBSTACULOS_TUBO + tuple(n for n in PULMONES if n in self.pulmones)
+
+    def y_cima_arco(self):
+        """La altura de la cima del eje del arco aórtico: donde termina el gancho."""
+        return max(q[1] for q in self.ancla(GANCHO[1])["puntos"])
+
+    def _medida_pulmon(self, nombre, p):
+        """(profundidad, x, z) de p en el lóbulo, en m, con el punto más cercano de su sección. Se toman las dos
+        secciones que rodean la altura de p y gana la de mayor profundidad. -inf si p queda fuera del rango de
+        alturas del lóbulo o a más de ALCANCE_SECCION de la caja de cada sección."""
+        ys, secciones = self.pulmones[nombre]
+        y = p[1]
+        if not ys or y < ys[0] or y > ys[-1]:
+            return (-math.inf, None, None)
+        k = max(0, bisect.bisect_right(ys, y) - 1)
+        mejor = (-math.inf, None, None)
+        for segs, (xmin, xmax, zmin, zmax) in secciones[k:k + 2]:
+            if (p[0] < xmin - ALCANCE_SECCION or p[0] > xmax + ALCANCE_SECCION
+                    or p[2] < zmin - ALCANCE_SECCION or p[2] > zmax + ALCANCE_SECCION):
+                continue
+            medida = _medida_seccion(segs, p[0], p[2])
+            if medida[0] > mejor[0]:
+                mejor = medida
+        return mejor
+
     def profundidad(self, nombre, p):
         """Cuánto está p dentro del obstáculo, en m: positivo dentro, negativo fuera, -inf si no hay órgano a esa
-        altura. Cajas: distancia a la cara más cercana. Tubos: radio menos la distancia a la línea central."""
+        altura. Cajas: distancia a la cara más cercana. Tubos: radio menos la distancia a la línea central. Pulmones:
+        distancia en planta a la sección más cercana (_medida_pulmon)."""
+        if nombre in PULMONES:
+            return self._medida_pulmon(nombre, p)[0]
         if nombre in OBSTACULOS_TUBO:
             a = self.ancla(nombre)
             return a["radio"] - dist_a_polilinea(p, a["puntos"])[0]
@@ -278,45 +445,33 @@ class Modelo:
             return -math.inf
         return min(p[0] - c[0], c[1] - p[0], p[2] - c[2], c[3] - p[2])
 
-    def peor(self, p):
-        """(anclaje, profundidad) del obstáculo en el que p está más adentro. Un tubo cuya caja crecida en radio +
-        h no contiene la altura no cuenta: queda a más de h de su superficie."""
-        h = self.radio_nervio * HOLGURA
-        mejor = ("", -math.inf)
-        for nombre in OBSTACULOS_CAJA + OBSTACULOS_TUBO:
-            if nombre in OBSTACULOS_TUBO:
-                a = self.ancla(nombre)
-                if not (a["caja"][0][1] - a["radio"] - h <= p[1] <= a["caja"][1][1] + a["radio"] + h):
-                    continue
-            d = self.profundidad(nombre, p)
-            if d > mejor[1]:
-                mejor = (nombre, d)
-        return mejor
-
-    def exceso(self, p):
+    def exceso(self, p, en_gancho=False):
         """Cuánto se pasa p de la tolerancia del órgano en el que más se pasa, en m (negativo si no se pasa)."""
-        return max(self.profundidad(n, p) - tolerancia_de(n) for n in OBSTACULOS_CAJA + OBSTACULOS_TUBO)
+        return max(self.profundidad(n, p) - tolerancia_de(n, en_gancho) for n in self.obstaculos())
 
-    def excede(self, p):
+    def excede(self, p, en_gancho=False):
         """(anclaje, profundidad) del obstáculo en el que p pasa más allá de su tolerancia (el que más se pasa), o
         None si ninguno."""
         mejor = None
-        for nombre in OBSTACULOS_CAJA + OBSTACULOS_TUBO:
+        for nombre in self.obstaculos():
             d = self.profundidad(nombre, p)
-            exceso = d - tolerancia_de(nombre)
+            exceso = d - tolerancia_de(nombre, en_gancho)
             if exceso > 0 and (mejor is None or exceso > mejor[2]):
                 mejor = (nombre, d, exceso)
         return None if mejor is None else mejor[:2]
 
-    def surco(self, lado, y):
+    def surco(self, lado, y, en_gancho=None):
         """Surco traqueoesofágico a la altura y: al costado de la tráquea, entre su cara posterior y la anterior del
         esófago. Parte del sitio nominal (borde lateral de la tráquea más h, z en el punto medio) y busca, en una
-        rejilla de 0,5 mm, el punto más cercano al nominal que quede a h o más de todo órgano. Si no hay ninguno
-        libre, el que menos se adentra."""
+        rejilla de 0,5 mm, el sitio más cercano al nominal que queda dentro de la tolerancia de todos los órganos. Si
+        no hay ninguno, el que menos se pasa (y `despejar` se detiene). `en_gancho` (por omisión: lado izquierdo a la
+        altura de la cima del arco o más abajo) usa la tolerancia del gancho contra el arco."""
         t = self.corte("Trachea", y)
         e = self.corte("Oesophagus", y)
         h = self.radio_nervio * HOLGURA
         lateral = SIDE[lado]
+        if en_gancho is None:
+            en_gancho = lado == "izquierdo" and y <= self.y_cima_arco()
         x_nominal = (t[1][0] + h) if lateral > 0 else (t[0][0] - h)
         posterior_traquea = t[0][2] if self.anterior > 0 else t[1][2]
         anterior_esofago = e[1][2] if self.anterior > 0 else e[0][2]
@@ -331,8 +486,7 @@ class Modelo:
             for iz in range(-nz, nz + 1):
                 z = z_nominal + iz * PASO_REJILLA
                 q = [x, y, z]
-                puntaje = max(0.0, self.peor(q)[1] + h)
-                clave = (puntaje, math.hypot(x - x_nominal, z - z_nominal))
+                clave = (max(0.0, self.exceso(q, en_gancho)), math.hypot(x - x_nominal, z - z_nominal))
                 if mejor is None or clave < mejor[0]:
                     mejor = (clave, q)
         return mejor[1]
@@ -406,9 +560,10 @@ def banda(modelo, id_ruta, ruta):
     return {"lado": ruta["lado"], "y_max": round(y_max, 6), "y_min": None if y_min is None else round(y_min, 6)}
 
 
-def resolver(modelo, ruta, hechas):
+def resolver(modelo, ruta, hechas, id_ruta="ruta"):
     """Pasos del YAML a puntos de control. 'seguir' y 'surco' se expanden entre el paso anterior y el siguiente.
-    `hechas` trae las rutas ya generadas (id a salida) para los pasos desde_ruta."""
+    `hechas` trae las rutas ya generadas (id a salida) para los pasos desde_ruta. Un control rodeado que, tras
+    empujarlo, siga pasado de la tolerancia de un órgano lanza Atraviesa."""
     lado = ruta["lado"]
     fijos = []
     for paso in ruta["pasos"]:
@@ -444,6 +599,10 @@ def resolver(modelo, ruta, hechas):
             if "rodear" in paso:
                 p = modelo.rodear(paso["anclaje"], p, paso["rodear"], lado if paso.get("cara_lateral") else None)
                 p = _empujar(modelo, _empujar(modelo, p))  # el punto rodeado no cae dentro de un órgano vecino
+                en_gancho = id_ruta == GANCHO[0] and p[1] <= modelo.y_cima_arco()
+                e = modelo.excede(p, en_gancho)
+                if e is not None:
+                    raise Atraviesa(f"{id_ruta}: el control de {paso['anclaje']} queda {e[1] * 1000:.2f} mm dentro de {e[0]}", p)
             fijos.append(p)
         else:
             raise ValueError(f"Paso sin tipo conocido: {paso}")
@@ -499,7 +658,8 @@ def remuestrear(pts, paso):
 
 def _empujar(modelo, p):
     """p llevado fuera de los órganos en los que está dentro: los tubos en dirección radial hasta radio + h, las
-    cajas por la cara más cercana hasta cara + h."""
+    cajas por la cara más cercana hasta cara + h, los pulmones en horizontal hasta el segmento más cercano de su
+    sección + h."""
     h = modelo.radio_nervio * HOLGURA
     p = list(p)
     for nombre in OBSTACULOS_TUBO:
@@ -516,129 +676,118 @@ def _empujar(modelo, p):
         caras = [(p[0] - c[0], 0, c[0] - h), (c[1] - p[0], 0, c[1] + h), (p[2] - c[2], 2, c[2] - h), (c[3] - p[2], 2, c[3] + h)]
         _, eje, valor = min(caras, key=lambda f: f[0])
         p[eje] = valor
+    for nombre in PULMONES:
+        if nombre not in modelo.pulmones:
+            continue
+        d, qx, qz = modelo._medida_pulmon(nombre, p)
+        if d > 1e-12:
+            # Hacia el segmento más cercano y h más allá: ahí termina el pulmón y empieza el aire.
+            ux, uz = (qx - p[0]) / d, (qz - p[2]) / d
+            p[0], p[2] = qx + ux * h, qz + uz * h
     return p
 
 
-def camino_libre(modelo, a, b, holgura):
-    """Camino de a a b por una rejilla (PASO_REJILLA en x y z, PASO_RUTA_Y en y) cuyas celdas quedan a `holgura` o
-    más por debajo de la tolerancia de todo órgano (exceso <= -holgura). A* con 26 vecinos; devuelve la lista de
-    celdas como puntos (sin los extremos) o None si no hay camino."""
-    import heapq
-
-    x0 = min(a[0], b[0]) - MARGEN_RUTA
-    z0 = min(a[2], b[2]) - MARGEN_RUTA
-    y0 = min(a[1], b[1]) - MARGEN_RUTA_Y
-    nx = int((max(a[0], b[0]) + MARGEN_RUTA - x0) / PASO_REJILLA) + 1
-    nz = int((max(a[2], b[2]) + MARGEN_RUTA - z0) / PASO_REJILLA) + 1
-    ny = int((max(a[1], b[1]) + MARGEN_RUTA_Y - y0) / PASO_RUTA_Y) + 1
-
-    def punto(c):
-        return [x0 + c[0] * PASO_REJILLA, y0 + c[1] * PASO_RUTA_Y, z0 + c[2] * PASO_REJILLA]
-
-    def celda(p):
-        return (round((p[0] - x0) / PASO_REJILLA), round((p[1] - y0) / PASO_RUTA_Y), round((p[2] - z0) / PASO_REJILLA))
-
-    libres = {}
-
-    def libre(c):
-        if not (0 <= c[0] < nx and 0 <= c[1] < ny and 0 <= c[2] < nz):
-            return False
-        if c not in libres:
-            libres[c] = modelo.exceso(punto(c)) <= -holgura
-        return libres[c]
-
-    ini, fin = celda(a), celda(b)
-    # Los extremos son controles: se aceptan aunque su celda no cumpla la holgura.
-    libres[ini] = libres[fin] = True
-    vecinos = [(i, j, k) for i in (-1, 0, 1) for j in (-1, 0, 1) for k in (-1, 0, 1) if (i, j, k) != (0, 0, 0)]
-
-    def paso(d):
-        return math.dist((0, 0, 0), (d[0] * PASO_REJILLA, d[1] * PASO_RUTA_Y, d[2] * PASO_REJILLA))
-
-    costo, padre = {ini: 0.0}, {}
-    cola = [(math.dist(punto(ini), punto(fin)), ini)]
-    while cola:
-        _, c = heapq.heappop(cola)
-        if c == fin:
-            camino = [c]
-            while camino[-1] in padre:
-                camino.append(padre[camino[-1]])
-            return [punto(q) for q in reversed(camino)][1:-1]
-        for d in vecinos:
-            n = (c[0] + d[0], c[1] + d[1], c[2] + d[2])
-            if not libre(n):
-                continue
-            nuevo = costo[c] + paso(d)
-            if nuevo < costo.get(n, math.inf):
-                costo[n], padre[n] = nuevo, c
-                heapq.heappush(cola, (nuevo + math.dist(punto(n), punto(fin)), n))
-    return None
+def _redondear(p):
+    return [round(v, 6) for v in p]
 
 
-def reenrutar(modelo, control, falla, id_ruta):
-    """Control con el tramo que contiene el punto `falla` cambiado por un camino libre (un control cada ~2 mm), o
-    None si no hay camino. El tramo es el par de controles seguidos entre los que la curva pasa por `falla`."""
-    tramo = min(range(len(control) - 1), key=lambda i: math.dist(falla, control[i]) + math.dist(falla, control[i + 1]) - math.dist(control[i], control[i + 1]))
-    a, b = control[tramo], control[tramo + 1]
-    for holgura in (0.0005, 0.0):
-        camino = camino_libre(modelo, a, b, holgura)
-        if camino is not None:
-            break
-    else:
-        return None
-    # Un control cada PASO_MUESTREO de camino, para que la curva siga el camino sin cortar esquinas.
-    nuevos, acumulado, anterior = [], 0.0, a
-    for q in camino:
-        acumulado += math.dist(anterior, q)
-        anterior = q
-        if acumulado >= PASO_MUESTREO:
-            nuevos.append([round(v, 6) for v in q])
-            acumulado = 0.0
-    return control[: tramo + 1] + nuevos + control[tramo + 1 :]
-
-
-def despejar(modelo, puntos, control, id_ruta):
-    """Saca de los órganos los puntos de la curva que quedaron dentro (en dos pasadas), sin mover los que
-    coinciden con un punto de control. Después comprueba todos los puntos: si alguno sigue más de
-    su tolerancia adentro (tolerancia_de), lanza Atraviesa y no se escribe nada."""
-    fijos = [[round(v, 6) for v in c] for c in control]
-    res = [list(p) for p in puntos]
-    for _ in range(2):
-        for i, p in enumerate(res):
-            if any(math.dist(p, c) < 1e-9 for c in fijos):
-                continue
-            res[i] = [round(v, 6) for v in _empujar(modelo, p)]
-    # Empujar mueve cada punto por separado: donde un vecino se mueve y el otro no, el tramo se estira. Se parte
-    # por la mitad todo tramo de más de SALTO_MAXIMO (el punto nuevo también se empuja) hasta que ninguno lo pase.
+def _partir_largos(modelo, res, tocado, fijo, y_cima):
+    """Parte por la mitad todo tramo de más de SALTO_MAXIMO (hasta 8 rondas). El punto nuevo también se empuja: empujar
+    dos veces puede pasar de un órgano a otro (la tráquea y el arco están pegados) y se queda el candidato que menos
+    se pasa de su tolerancia."""
     for _ronda in range(8):
-        nuevo, partido = [res[0]], False
-        for a, b in zip(res, res[1:]):
+        gancho = indices_gancho(res, y_cima) if y_cima is not None else set()
+        nuevo, nuevo_tocado, nuevo_fijo, partido = [res[0]], [tocado[0]], [fijo[0]], False
+        for i, (a, b) in enumerate(zip(res, res[1:])):
             if math.dist(a, b) > SALTO_MAXIMO:
                 m = [(a[k] + b[k]) / 2 for k in range(3)]
                 candidatos = [m]
                 for _pasada in range(2):
                     candidatos.append(_empujar(modelo, candidatos[-1]))
-                # Empujar dos veces puede pasar de un órgano a otro (la tráquea y el arco están pegados): se queda
-                # el candidato que menos se pasa de su tolerancia.
-                m = min(candidatos, key=lambda q: modelo.exceso(q))
-                nuevo.append([round(v, 6) for v in m])
+                m = min(candidatos, key=lambda q: modelo.exceso(q, i in gancho))
+                nuevo.append(_redondear(m))
+                nuevo_tocado.append(True)
+                nuevo_fijo.append(False)
                 partido = True
             nuevo.append(b)
-        res = nuevo
+            nuevo_tocado.append(tocado[i + 1])
+            nuevo_fijo.append(fijo[i + 1])
+        res, tocado, fijo = nuevo, nuevo_tocado, nuevo_fijo
         if not partido:
             break
-    peor = None
-    for p in res:
-        e = modelo.excede(p)
-        if e is not None and (peor is None or e[1] - tolerancia_de(e[0]) > peor[1] - tolerancia_de(peor[0])):
-            peor = (e[0], e[1], p[1], p)
-    if peor is not None:
-        raise Atraviesa(f"{id_ruta} pasa {peor[1] * 1000:.2f} mm dentro de {peor[0]} en y = {peor[2] * 1000:.1f} mm", peor[3])
+    return res, tocado, fijo
+
+
+def despejar(modelo, puntos, control, id_ruta):
+    """Saca de los órganos los puntos de la curva que se pasan de su tolerancia y deja la ruta sin quiebres. Nunca mueve
+    un punto que coincide con un control. Empuja solo los puntos con exceso (tolerancia_de, con la del gancho en la ruta
+    GANCHO) y después, hasta RONDAS_SUAVIZADO rondas: suaviza (promedio de los vecinos, a medias) los VENTANA_SUAVIZADO
+    puntos a cada lado de lo empujado o de un giro de más de GIRO_MAXIMO, vuelve a empujar lo que se pasó y parte los
+    tramos de más de SALTO_MAXIMO. Termina cuando no queda exceso ni giro. Si al final queda un punto fuera de tolerancia
+    lanza Atraviesa; si queda un giro de más de GIRO_MAXIMO, Quiebre."""
+    fijos = [[round(v, 6) for v in c] for c in control]
+    res = [list(p) for p in puntos]
+    fijo = [any(math.dist(p, c) < 1e-9 for c in fijos) for p in res]
+    tocado = [False] * len(res)
+    y_cima = modelo.y_cima_arco() if id_ruta == GANCHO[0] else None
+
+    def excesos(pts):
+        gancho = indices_gancho(pts, y_cima) if y_cima is not None else set()
+        return [modelo.exceso(p, i in gancho) for i, p in enumerate(pts)]
+
+    def empujar_pasados(pts):
+        for i, e in enumerate(excesos(pts)):
+            if e > 0 and not fijo[i]:
+                pts[i] = _redondear(_empujar(modelo, pts[i]))
+                tocado[i] = True
+
+    empujar_pasados(res)
+    res, tocado, fijo = _partir_largos(modelo, res, tocado, fijo, y_cima)
+    for _ronda in range(RONDAS_SUAVIZADO):
+        quiebres = [i for i, g in giros(res) if g > GIRO_MAXIMO]
+        if not quiebres and max(excesos(res)) <= 0:
+            break
+        objetivo = set()
+        for i in [i for i, t in enumerate(tocado) if t] + quiebres:
+            objetivo.update(range(max(1, i - VENTANA_SUAVIZADO), min(len(res) - 1, i + VENTANA_SUAVIZADO + 1)))
+        nuevo = [list(p) for p in res]
+        for i in objetivo:
+            if not fijo[i]:
+                medio = [(res[i - 1][k] + res[i + 1][k]) / 2 for k in range(3)]
+                nuevo[i] = _redondear([res[i][k] + 0.5 * (medio[k] - res[i][k]) for k in range(3)])
+        res = nuevo
+        empujar_pasados(res)
+        res, tocado, fijo = _partir_largos(modelo, res, tocado, fijo, y_cima)
+    comprobar_despeje(modelo, res, id_ruta)
+    comprobar_giros(res, id_ruta)
     return res
 
 
-def generar(datos_anclajes, rutas_yaml):
-    modelo = Modelo(datos_anclajes)
+def comprobar_despeje(modelo, puntos, id_ruta):
+    """Lanza Atraviesa nombrando ruta, órgano y altura si algún punto pasa de la tolerancia de un órgano (la del gancho
+    en los puntos del gancho)."""
+    y_cima = modelo.y_cima_arco() if id_ruta == GANCHO[0] else None
+    gancho = indices_gancho(puntos, y_cima) if y_cima is not None else set()
+    peor = None
+    for i, p in enumerate(puntos):
+        e = modelo.excede(p, i in gancho)
+        if e is not None and (peor is None or e[1] - tolerancia_de(e[0], i in gancho) > peor[1] - tolerancia_de(peor[0], peor[4])):
+            peor = (e[0], e[1], p[1], p, i in gancho)
+    if peor is not None:
+        raise Atraviesa(f"{id_ruta} pasa {peor[1] * 1000:.2f} mm dentro de {peor[0]} en y = {peor[2] * 1000:.1f} mm", peor[3])
+
+
+def comprobar_giros(puntos, id_ruta):
+    """Lanza Quiebre si algún giro entre segmentos seguidos pasa de GIRO_MAXIMO."""
+    quiebres = giros(puntos)
+    if quiebres:
+        i, grados = max(quiebres, key=lambda g: g[1])
+        if grados > GIRO_MAXIMO:
+            raise Quiebre(f"{id_ruta} gira {grados:.1f}° en y = {puntos[i][1] * 1000:.1f} mm")
+
+
+def generar(datos_anclajes, rutas_yaml, pulmones=None):
+    modelo = Modelo(datos_anclajes, pulmones)
     salida = {"unidad": "metro", "ejes": "glTF (Y arriba, +X izquierda del cuerpo)", "anterior_z": modelo.anterior,
               "fuentes": rutas_yaml["fuentes"], "rutas": {}}
     todas = rutas_yaml["rutas"]
@@ -658,18 +807,8 @@ def generar(datos_anclajes, rutas_yaml):
             raise ValueError(f"Dependencia circular entre rutas: {', '.join(pendientes)}")
         for id_ruta in listas:
             ruta = todas[id_ruta]
-            control = resolver(modelo, ruta, hechas)
-            # Si la curva atraviesa un órgano, el tramo que lo hace se rehace por un camino libre y se reintenta.
-            puntos = None
-            for _intento in range(MAX_REENRUTAR + 1):
-                try:
-                    puntos = despejar(modelo, catmull_rom(control), control, id_ruta)
-                    break
-                except Atraviesa:
-                    nuevo = reenrutar(modelo, control, sys.exc_info()[1].punto, id_ruta) if _intento < MAX_REENRUTAR else None
-                    if nuevo is None:
-                        raise
-                    control = nuevo
+            control = resolver(modelo, ruta, hechas, id_ruta)
+            puntos = despejar(modelo, catmull_rom(control), control, id_ruta)
             resuelta = {
                 "nombre": ruta["nombre"],
                 "lado": ruta["lado"],
@@ -689,9 +828,9 @@ def generar(datos_anclajes, rutas_yaml):
     return salida
 
 
-def generar_y_escribir(datos_anclajes, rutas_yaml, destino):
+def generar_y_escribir(datos_anclajes, rutas_yaml, destino, pulmones=None):
     """Genera y, solo si terminó sin error, escribe el JSON en `destino`."""
-    salida = generar(datos_anclajes, rutas_yaml)
+    salida = generar(datos_anclajes, rutas_yaml, pulmones)
     destino.parent.mkdir(parents=True, exist_ok=True)
     with open(destino, "w", encoding="utf-8") as f:
         json.dump(salida, f, ensure_ascii=False, indent=0)
@@ -710,10 +849,11 @@ def main():
         raise SystemExit("Falta pipeline/anclajes-vago.json: corre primero pipeline/auditar-vago.py")
     with open(ruta_anclajes, encoding="utf-8") as f:
         anclajes = json.load(f)
+    pulmones = cargar_pulmones(SALIDA_PULMONES)
     destino = (RAIZ / "salida" / "rutas-vago-borrador.json") if borrador else PUBLICADO
     try:
-        salida = generar_y_escribir(anclajes, rutas, destino)
-    except (FaltaAnclaje, FaltaRuta, Atraviesa) as e:
+        salida = generar_y_escribir(anclajes, rutas, destino, pulmones)
+    except (FaltaAnclaje, FaltaRuta, Atraviesa, Quiebre) as e:
         raise SystemExit(str(e)) from e
     print(f"{len(salida['rutas'])} rutas en {destino}")
 
