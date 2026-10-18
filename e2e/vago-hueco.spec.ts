@@ -30,8 +30,8 @@ async function abrirConHuecos(page: Page, ruta: string) {
 }
 
 const TEXTO_LEYENDA = {
-  es: 'Hueco en el tórax: el tramo torácico del vago está pendiente de trazado.',
-  en: 'Gap in the thorax: the thoracic segment of the vagus nerve is pending tracing.',
+  es: 'Hueco en el tórax: un tramo de cada vago está pendiente de trazado.',
+  en: 'Gap in the thorax: one segment of each vagus nerve is pending tracing.',
 };
 
 test('la leyenda dice que hay un hueco en el tórax, sin fila "Trazada" ni filtro, en español y en inglés (D5)', async ({ page }) => {
@@ -59,13 +59,13 @@ test('no se dibuja ninguna ruta trazada: el estado no tiene rutas y la escena ta
 test('la ficha del vago avisa del hueco y no dice que haya trazado; otra ficha no lo muestra (D7)', async ({ page }) => {
   await abrirConHuecos(page, '/es/nervio-vago-x');
   await expect(page.getByTestId('aviso-hueco')).toHaveText(
-    'En el atlas, el tramo torácico de este nervio está pendiente de trazado: el modelo de origen lo trae en espejo de un lado al otro, con relaciones que no corresponden, y por eso queda un hueco.',
+    'En el atlas, un tramo torácico de este nervio está pendiente de trazado: en el vago derecho, entre la arteria subclavia y el bronquio principal; el vago izquierdo se interrumpe al entrar al tórax. El modelo de origen trae ese tramo en espejo de un lado al otro, con relaciones que no corresponden, y por eso queda un hueco.',
   );
   await expect(page.getByTestId('aviso-aproximada')).toHaveCount(0);
 
   await abrirConHuecos(page, '/en/vagus-nerve-x');
   await expect(page.getByTestId('aviso-hueco')).toHaveText(
-    'In the atlas, the thoracic segment of this nerve is pending tracing: the source model mirrors it from one side to the other, with relations that do not match, so a gap is left.',
+    'In the atlas, a thoracic segment of this nerve is pending tracing: in the right vagus, between the subclavian artery and the main bronchus; the left vagus stops as it enters the thorax. The source model mirrors that segment from one side to the other, with relations that do not match, so a gap is left.',
   );
 
   await abrirConHuecos(page, '/es/hipocampo');

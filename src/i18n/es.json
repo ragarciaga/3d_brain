@@ -478,7 +478,7 @@
     "marcador": "Marcador: punto con etiqueta, sin volumen",
     "soloEscaneada": "Solo geometría escaneada",
     "aviso": "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas.",
-    "toracico": "Hueco en el tórax: el tramo torácico del vago está pendiente de trazado.",
-    "huecoFicha": "En el atlas, el tramo torácico de este nervio está pendiente de trazado: el modelo de origen lo trae en espejo de un lado al otro, con relaciones que no corresponden, y por eso queda un hueco."
+    "toracico": "Hueco en el tórax: un tramo de cada vago está pendiente de trazado.",
+    "huecoFicha": "En el atlas, un tramo torácico de este nervio está pendiente de trazado: en el vago derecho, entre la arteria subclavia y el bronquio principal; el vago izquierdo se interrumpe al entrar al tórax. El modelo de origen trae ese tramo en espejo de un lado al otro, con relaciones que no corresponden, y por eso queda un hueco."
   }
 }

@@ -1,4 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Document } from '@gltf-transform/core';
 import { describe, expect, it } from 'vitest';
 import { bandas, type Banda, type P, type Rutas } from '../scripts/lib/asimetrias.ts';
@@ -231,6 +234,35 @@ describe('huecos publicados contra el GLB publicado', () => {
   it('sin los huecos revisarLados falla', () => {
     expect(revisarLados(bandas({ rutas: {} }))).toHaveLength(2);
   });
+});
+
+describe('check:modelo como programa (cableado de revisarLados)', () => {
+  const corre = (rutas: string) => {
+    const dir = mkdtempSync(join(tmpdir(), 'check-modelo-'));
+    try {
+      writeFileSync(join(dir, 'rutas.json'), rutas);
+      return spawnSync(
+        process.execPath,
+        ['scripts/check-modelo.ts', 'public/modelos/atlas.glb', 'pipeline/cajas.json', 'src/config/mallas-cerradas.json', join(dir, 'rutas.json')],
+        { encoding: 'utf8' },
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  it('sin huecos ni rutas sale con 1 y nombra los dos lados sin banda', () => {
+    const r = corre('{"rutas": {}}');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('Falta la banda del vago derecho');
+    expect(r.stderr).toContain('Falta la banda del vago izquierdo');
+  }, 60000);
+
+  it('con el archivo publicado sale con 0 y dice que vigila 2 bandas', () => {
+    const r = corre(readFileSync('public/modelos/rutas-vago.json', 'utf8'));
+    expect(r.status, r.stderr).toBe(0);
+    expect(r.stdout).toContain('2 banda(s) del vago vigiladas');
+  }, 60000);
 });
 
 describe('tronco del vago en el GLB publicado', () => {

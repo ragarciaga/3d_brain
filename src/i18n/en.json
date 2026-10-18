@@ -478,7 +478,7 @@
     "marcador": "Marker: labelled point, no volume",
     "soloEscaneada": "Scanned geometry only",
     "aviso": "Approximate tracing for teaching. The overall position follows the cited source; calibre and exact course vary between people.",
-    "toracico": "Gap in the thorax: the thoracic segment of the vagus nerve is pending tracing.",
-    "huecoFicha": "In the atlas, the thoracic segment of this nerve is pending tracing: the source model mirrors it from one side to the other, with relations that do not match, so a gap is left."
+    "toracico": "Gap in the thorax: one segment of each vagus nerve is pending tracing.",
+    "huecoFicha": "In the atlas, a thoracic segment of this nerve is pending tracing: in the right vagus, between the subclavian artery and the main bronchus; the left vagus stops as it enters the thorax. The source model mirrors that segment from one side to the other, with relations that do not match, so a gap is left."
   }
 }
