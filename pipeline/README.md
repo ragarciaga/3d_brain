@@ -93,6 +93,9 @@ lanzamiento público, toda ruta que siga en revisión se aprueba o se retira.
 python pipeline/auditar-vago.py                 # Blender: mide anclajes y trazos -> pipeline/anclajes-vago.json,
                                                 #          pipeline/salida/trazos-medidos.json (regla, ramo propuesto y confianza por trazo)
                                                 #          y pipeline/salida/auditoria-vago.md (la tabla para revisar)
+python pipeline/nombrar-anclajes.py             # sin Blender: nombre es/en de las 24 piezas cercanas -> pipeline/nombres-anclajes.json
+                                                #          (necesita pipeline/.cache/TA2.csv de descargar.py)
+node scripts/aplicar-trazos.ts                  # lleva las mediciones y los nombres a src/data/trazos-vago.json (solo cambia la evidencia)
 python pipeline/generar-ramas-vago.py --borrador  # sin Blender: rutas de rutas-vago.yaml -> pipeline/salida/rutas-vago-borrador.json
 python pipeline/generar-ramas-vago.py           # -> public/modelos/rutas-vago.json (cada ruta con su estado de revisión)
 npm test                                        # tests/asimetrias.test.ts: las cuatro asimetrías sobre lo medido y lo trazado
@@ -108,9 +111,16 @@ npm test                                        # tests/asimetrias.test.ts: las 
   abdominales según su destino, tronco) están en `reglas_vago.py`, que no usa Blender y cita
   `docs/research/marcadores/fuentes.md`. `auditar-vago.py` solo lee el modelo y se las pasa. Cada umbral es
   una constante con nombre, y lo que no sale de una cifra de la fuente está marcado "(derivado)". Cada
-  trazo sale con `regla`, `propuesta`, `confianza` (`alta`, `media` o `baja`, o `null` sin regla) y `fuente`;
-  lo leerá `scripts/aplicar-trazos.ts` (spec 04, T6). Se prueban con el mismo vago sintético:
+  trazo sale con `regla`, `propuesta`, `confianza` (`alta`, `media` o `baja`, o `null` sin regla), `fuente` y
+  `fallas` (`null` con regla; sin regla, la regla o las dos reglas más cercanas con cada condición que no se
+  cumple y su margen en mm). La región de las reglas más cercanas se decide con la altura media del trazo:
+  sobre el foramen yugular, la raicilla; si no, bajo el hiato esofágico, la regla abdominal; si no, las dos del
+  cuello. Lo lee `scripts/aplicar-trazos.ts` (spec 04, T6). Se prueban con el mismo vago sintético:
   `python pipeline/pruebas/probar_auditar.py`.
+- `nombrar-anclajes.py` (sin Blender) arma `pipeline/nombres-anclajes.json`: el nombre, en español y en inglés, de cada
+  pieza que la auditoría puede citar como cercana a un trazo. Las 9 que ya están en la app toman el nombre de
+  `src/data/estructuras.json`; las demás, el de Terminologia Anatomica 2 (`TA2.csv`), copiado tal cual. Si una pieza no
+  tiene nombre, se detiene y la nombra. Se prueba con `python pipeline/pruebas/probar_nombrar.py`.
 - `extraer.py` corta el tronco con las bandas (`huecos` y `reemplaza`) de `rutas-vago.json`; se prueba en Blender con
   `python pipeline/pruebas/probar_recorte.py` (curva sintética, troncos reales y los casos en que
   `extraer.py` se detiene). Necesita bpy y el .blend de `descargar.py`; no corre en el CI.

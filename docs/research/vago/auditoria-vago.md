@@ -71,7 +71,7 @@ Altura en mm sobre el origen del modelo (Y arriba). Cercanos: las dos piezas má
 Las secciones Anclajes y Trazos salen de la corrida del 17 de octubre de 2026 (Z-Anatomy, commit `9de5d6912a1b0df9cab739d57f00e036b0496ddc`, bpy 5.2.2) con las reglas de la spec 04.
 Las reglas viven en `pipeline/reglas_vago.py` y sus fuentes, en `docs/research/marcadores/fuentes.md` (sección "Trazos sin nombre del vago: cómo distinguirlos").
 Los umbrales marcados "(derivado)" y la cara decidida por el centro z de la caja no salen de una fuente: el editor los aprueba en este PR.
-Cada propuesta es para revisión docente. Si una regla no distingue el trazo, queda `sin_regla`, sin propuesta.
+Cada propuesta es para revisión docente. Si una regla no distingue el trazo, queda `sin_regla`, sin propuesta; la evidencia de `src/data/trazos-vago.json` dice entonces cuál es la regla más cercana y qué condiciones no se cumplen.
 La fecha de "Cómo se generó" y la sección "Propuestas de `candidato()` que cambiaron" describen la corrida y la regla anteriores, no estas tablas.
 
 ## Cómo se generó
@@ -82,6 +82,7 @@ La fecha de "Cómo se generó" y la sección "Propuestas de `candidato()` que ca
 - Blender como módulo: bpy 5.2.2 en Python 3.13.
 - Primera corrida: 13 de octubre de 2026.
 - Corrida de la spec 02 T5: 17 de octubre de 2026, sobre `main` en `381f1ba`, mismo commit de Z-Anatomy, bpy 5.2.2, SHA-256 del zip `e029688545627bd0214b269e1063143abb580aad72b2c2445d6d8a9a0d9da736` y de `TA2.csv` `0f9092a328b27dcd15d696d9f9a4087deb229a1aad21b75876657622de835974`, verificados por `descargar.py`. Orden: `auditar-vago.py`, `generar-ramas-vago.py`, `extraer.py` y `scripts/comprimir-modelo.ts`. Las secciones Anclajes y Trazos de esa corrida son idénticas a las de este documento.
+- Corrida del issue #219: 18 de octubre de 2026, misma versión de Z-Anatomy y bpy 5.2.2, `TA2.csv` con el SHA-256 de arriba (verificado a mano contra `pipeline/comun.py`). Orden: `auditar-vago.py`, `nombrar-anclajes.py` y `node scripts/aplicar-trazos.ts`. `pipeline/anclajes-vago.json` salió idéntico byte a byte y las secciones Anclajes y Trazos de este documento no cambian: lo único nuevo es la clave `fallas` de `pipeline/salida/trazos-medidos.json` y, por eso, la evidencia de los 28 trazos en `src/data/trazos-vago.json` (nombres de las piezas cercanas como los da la app y, en los `sin_regla`, la regla más cercana con sus condiciones que fallan). Propuesta, confianza, fuente y auditoría no cambian. La regla más cercana se elige por la altura media del trazo (decisión del editor del 18 de octubre de 2026): sobre el foramen yugular, la raicilla; si no, bajo el hiato esofágico, la regla abdominal; si no, las dos del cuello.
 
 ## Anclaje sustituido: ligamento arterioso
 

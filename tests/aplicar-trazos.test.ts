@@ -13,12 +13,17 @@ import {
   aplicarMediciones,
   argumentosAplicarTrazos,
   evidenciaDeTrazo,
+  LADO,
+  nombrePiezaEvidencia,
   ramosDeMarcadores,
   REGLAS_TRAZO,
   RUTAS_POR_DEFECTO,
   serializarTrazos,
   validarMediciones,
+  validarNombresPiezas,
+  type FallaRegla,
   type Medicion,
+  type NombresPiezas,
   type ReglaTrazo,
 } from '../scripts/lib/trazos.ts';
 
@@ -32,6 +37,12 @@ const rutaRutas = join(raiz, 'public/modelos/rutas-vago.json');
 const textoRutas = readFileSync(rutaRutas, 'utf8');
 const BANDAS = bandas(JSON.parse(textoRutas) as Rutas);
 const RAMOS = ramosDeMarcadores(marcadores);
+const textoNombres = readFileSync(join(raiz, 'pipeline/nombres-anclajes.json'), 'utf8');
+// La tabla real de pipeline/nombres-anclajes.json más las piezas inventadas de estas pruebas (A, B, Solo, Otra y P1 a P3).
+const NOMBRES: NombresPiezas = {
+  ...validarNombresPiezas(JSON.parse(textoNombres)),
+  ...Object.fromEntries(['A', 'B', 'Solo', 'Otra', 'P1', 'P2', 'P3'].map((p) => [p, { es: `Pieza ${p}`, en: `Piece ${p}`, lado: '', fuente: 'prueba' }])),
+};
 const GUION_LARGO = String.fromCharCode(0x2014);
 const HEPATICO = 'm-hepatic-branches-of-anterior-vagal-trunk';
 const MALLA_REAL = 'Vagus nerve (X).l#t03';
@@ -58,6 +69,9 @@ const PROPUESTA: Record<ReglaTrazo, string | null> = {
   sin_regla: null,
 };
 
+/** Las fallas de un trazo sin regla: la raicilla falla por la oliva en 1,3 mm. */
+const FALLA_RAICILLA: FallaRegla[] = [{ regla: 'raicilla', no_cumple: [{ condicion: 'detras_oliva', mm: -1.3 }] }];
+
 /** Una medición con el esquema de pipeline/reglas_vago.py (T5); `extra` pisa cualquier campo. */
 function medida(regla: ReglaTrazo, extra: Record<string, unknown> = {}): Medicion {
   return {
@@ -78,6 +92,7 @@ function medida(regla: ReglaTrazo, extra: Record<string, unknown> = {}): Medicio
     propuesta: PROPUESTA[regla],
     confianza: regla === 'sin_regla' ? null : 'alta',
     fuente: 'Kim2022',
+    fallas: regla === 'sin_regla' ? FALLA_RAICILLA : null,
     ...extra,
   } as Medicion;
 }
@@ -93,8 +108,8 @@ function sinteticos(): { trazos: PropuestaTrazo[] } {
   };
 }
 
-function aplicar(medidos: Record<string, unknown>, datos = sinteticos(), bandasUsadas: readonly Banda[] = BANDAS) {
-  return aplicarMediciones(datos, medidos, RAMOS, bandasUsadas);
+function aplicar(medidos: Record<string, unknown>, datos = sinteticos(), bandasUsadas: readonly Banda[] = BANDAS, nombres: unknown = { piezas: NOMBRES }) {
+  return aplicarMediciones(datos, medidos, RAMOS, bandasUsadas, nombres);
 }
 
 /** Texto de la sección `## malla` del resumen, hasta la siguiente. */
@@ -103,6 +118,9 @@ function seccion(resumen: string, malla: string): string {
   if (s === undefined) throw new Error(`sin sección ${malla}`);
   return s;
 }
+
+/** Los argumentos del CLI con todas las rutas dadas (el archivo de nombres va en n.json de la carpeta). */
+const ARGS_CLI = ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json', '--nombres', 'n.json'];
 
 function cli(cwd: string, args: string[]) {
   return spawnSync(process.execPath, [join(raiz, 'scripts/aplicar-trazos.ts'), ...args], { cwd, encoding: 'utf8' });
@@ -118,29 +136,56 @@ describe('formato (D1)', () => {
     writeFileSync(join(dir, 't.json'), textoReal);
     writeFileSync(join(dir, 'm.json'), '{}');
     writeFileSync(join(dir, 'rutas.json'), textoRutas);
-    const r = cli(dir, ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json']);
+    writeFileSync(join(dir, 'n.json'), textoNombres);
+    const r = cli(dir, ARGS_CLI);
     expect(r.status, r.stderr).toBe(0);
     expect(readFileSync(join(dir, 't.json'), 'utf8')).toBe(textoReal);
   });
 });
 
 describe('evidencia (R4.1)', () => {
-  it('trae altura, largo y las piezas cercanas de cada extremo con sus mm, en es con coma y en en con punto', () => {
+  it('trae altura, largo y las piezas cercanas de cada extremo por su nombre en la app, con sus mm, en es con coma y en en con punto', () => {
     const { datos } = aplicar({ M1: medida('faringeo') });
     const e = datos.trazos[1]!.evidencia!;
     expect(e.es).toContain('Altura: de 1631,4 a 1619,8 mm. Largo: 12,5 mm.');
-    expect(e.es).toContain('Cerca del extremo superior: Medulla oblongata.l (2,5 mm), Olive.l (9,7 mm).');
-    expect(e.es).toContain('Cerca del extremo inferior: Liver (4,2 mm), Stomach (11,3 mm).');
+    expect(e.es).toContain('Cerca del extremo superior: Bulbo (izquierdo) (2,5 mm), Oliva (izquierdo) (9,7 mm).');
+    expect(e.es).toContain('Cerca del extremo inferior: Hígado (4,2 mm), Estómago (11,3 mm).');
     expect(e.en).toContain('Height: from 1631.4 to 1619.8 mm. Length: 12.5 mm.');
-    expect(e.en).toContain('Near the upper end: Medulla oblongata.l (2.5 mm), Olive.l (9.7 mm).');
+    expect(e.en).toContain('Near the upper end: Medulla oblongata (left) (2.5 mm), Olive (left) (9.7 mm).');
     expect(e.en).toContain('Near the lower end: Liver (4.2 mm), Stomach (11.3 mm).');
     expect(e.es).not.toContain('12.5');
     expect(e.en).not.toContain('12,5');
+    // Ningún nombre crudo de malla: ni el sufijo de lado de Z-Anatomy ni el nombre inglés en la evidencia en español.
+    expect(e.es).not.toMatch(/\.(l|r)\b/);
+    expect(e.en).not.toMatch(/\.(l|r)\b/);
+    expect(e.es).not.toContain('Liver');
   });
 
   it('un extremo con una sola pieza lista solo esa', () => {
     const m = medida('tronco', { cerca_extremos: { superior: [{ pieza: 'Solo', mm: 1 }], inferior: [{ pieza: 'Otra', mm: 22 }] } });
-    expect(evidenciaDeTrazo(m).es).toContain('Cerca del extremo superior: Solo (1,0 mm). Cerca del extremo inferior: Otra (22,0 mm).');
+    expect(evidenciaDeTrazo(m, NOMBRES).es).toContain('Cerca del extremo superior: Pieza Solo (1,0 mm). Cerca del extremo inferior: Pieza Otra (22,0 mm).');
+  });
+
+  it('una pieza con el lado en el nombre de TA2 no lleva paréntesis, y una con lado separado lo lleva en cada idioma', () => {
+    const m = medida('faringeo', {
+      cerca_extremos: {
+        superior: [{ pieza: 'Left common carotid artery', mm: 1 }, { pieza: 'Internal jugular vein.r', mm: 5 }],
+        inferior: [{ pieza: 'Olive.r', mm: 2 }, { pieza: 'Stomach', mm: 3 }],
+      },
+    });
+    const e = evidenciaDeTrazo(m, NOMBRES);
+    expect(e.es).toContain('Cerca del extremo superior: Arteria carótida común izquierda (1,0 mm), Vena yugular interna (derecho) (5,0 mm).');
+    expect(e.en).toContain('Near the upper end: Left common carotid artery (1.0 mm), Internal jugular vein (right) (5.0 mm).');
+    expect(e.es).toContain('Cerca del extremo inferior: Oliva (derecho) (2,0 mm), Estómago (3,0 mm).');
+    expect(e.en).toContain('Near the lower end: Olive (right) (2.0 mm), Stomach (3.0 mm).');
+    expect(e.es).not.toContain('carótida común izquierda (izquierdo)');
+  });
+
+  it('una pieza sin nombre en la tabla lanza nombrando la pieza, y desde aplicar nombrando la malla', () => {
+    const m = medida('faringeo', { cerca_extremos: { superior: [{ pieza: 'Sin nombre', mm: 1 }], inferior: [{ pieza: 'A', mm: 2 }, { pieza: 'B', mm: 3 }] } });
+    expect(() => evidenciaDeTrazo(m, NOMBRES)).toThrow(/Sin nombre/);
+    expect(() => aplicar({ M1: m })).toThrow(/^M1: .*"Sin nombre"/);
+    expect(() => nombrePiezaEvidencia('toString', NOMBRES, 'es')).toThrow(/toString/);
   });
 });
 
@@ -225,20 +270,63 @@ describe('frases de la regla: lo que mide pipeline/reglas_vago.py', () => {
 });
 
 describe('sin regla (R4.4)', () => {
-  it('sale con propuesta y confianza null, y la evidencia dice que la regla no distingue entre ramos', () => {
+  const CUELLO: FallaRegla[] = [
+    { regla: 'faringeo', no_cumple: [{ condicion: 'mas_cerca_faringe', mm: -10.3 }, { condicion: 'cerca_faringe', mm: -15.3 }, { condicion: 'cara_posterior_faringe', mm: -0.02 }] },
+    { regla: 'laringeo_superior', no_cumple: [{ condicion: 'bajo_foramen_min', mm: -7 }] },
+  ];
+
+  it('sale con propuesta y confianza null, y la evidencia dice que ninguna regla se cumple y que queda sin propuesta', () => {
     const t = aplicar({ M1: medida('sin_regla') }).datos.trazos[1]!;
     expect(t.propuesta).toBeNull();
     expect(t.confianza).toBeNull();
-    expect(t.evidencia!.es).toContain('La regla no distingue entre ramos');
-    expect(t.evidencia!.en).toContain('The rule does not distinguish between branches');
+    expect(t.evidencia!.es).toContain('Ninguna regla se cumple: queda sin propuesta.');
+    expect(t.evidencia!.en).toContain('No rule is met: no proposal.');
     expect(t.evidencia!.es).not.toContain('Confianza');
     expect(t.evidencia!.en).not.toContain('confidence');
+    for (const x of [t.evidencia!.es, t.evidencia!.en]) expect(x).not.toMatch(/no distingue|does not distinguish/);
   });
 
-  it('con una regla que propone, esa frase no aparece', () => {
+  it('con una región de una sola regla nombra esa regla y la condición que falla con su margen a 0,1 mm', () => {
+    const e = aplicar({ M1: medida('sin_regla') }).datos.trazos[1]!.evidencia!;
+    expect(e.es).toContain(
+      'Ninguna regla se cumple: queda sin propuesta. Por la altura del trazo, la regla más cercana es la de la raicilla; ' +
+        'no se cumple que su extremo superior quede por detrás de la oliva (falla por 1,3 mm).',
+    );
+    expect(e.en).toContain(
+      'No rule is met: no proposal. By the height of the trace, the closest rule is the rootlet rule; ' +
+        'not met: its upper end lies dorsal to the olive (fails by 1.3 mm).',
+    );
+  });
+
+  it('en el cuello nombra las dos reglas, cada una con todas sus condiciones que fallan y un margen menor que 0,05 mm como "menos de 0,1 mm"', () => {
+    const e = aplicar({ M1: medida('sin_regla', { fallas: CUELLO }) }).datos.trazos[1]!.evidencia!;
+    expect(e.es).toContain('las reglas más cercanas son la del ramo faríngeo y la del nervio laríngeo superior.');
+    expect(e.es).toContain(
+      'En la del ramo faríngeo, no se cumple que su extremo inferior quede más cerca de la faringe que del cartílago tiroides (falla por 10,3 mm), ' +
+        'que su extremo inferior quede cerca de la faringe (falla por 15,3 mm) y que su extremo inferior quede en la cara posterior de la faringe (falla por menos de 0,1 mm).',
+    );
+    expect(e.es).toContain('En la del nervio laríngeo superior, no se cumple que su extremo superior quede, a lo largo del tronco, por lo menos a la distancia mínima bajo el foramen yugular (falla por 7,0 mm).');
+    expect(e.en).toContain('the closest rules are the pharyngeal branch rule and the superior laryngeal nerve rule.');
+    expect(e.en).toContain('(fails by less than 0.1 mm)');
+    expect(e.en).toContain('In the superior laryngeal nerve rule, not met: its upper end lies, measured along the trunk, at least the minimum distance below the jugular foramen (fails by 7.0 mm).');
+  });
+
+  it('el ramo abdominal nombra su destino y la cara del estómago', () => {
+    const gastrico = (regla: ReglaTrazo) => [{ regla, no_cumple: [{ condicion: 'cara_estomago', mm: -43 }, { condicion: 'cerca_destino', mm: -2.2 }] }];
+    const e = aplicar({ M1: medida('sin_regla', { fallas: gastrico('abdominal_gastrico_posterior') }) }).datos.trazos[1]!.evidencia!;
+    expect(e.es).toContain('la regla más cercana es la del ramo gástrico posterior; no se cumple que su extremo inferior quede en la cara posterior del estómago (falla por 43,0 mm) y que su extremo inferior quede cerca del estómago (falla por 2,2 mm).');
+    const h = aplicar({ M1: medida('sin_regla', { fallas: [{ regla: 'abdominal_hepatico', no_cumple: [{ condicion: 'cerca_destino', mm: -5 }] }] }) }).datos.trazos[1]!.evidencia!;
+    expect(h.es).toContain('cerca del hígado (falla por 5,0 mm)');
+    expect(h.en).toContain('lies near the liver (fails by 5.0 mm)');
+    const a = aplicar({ M1: medida('sin_regla', { fallas: gastrico('abdominal_gastrico_anterior') }) }).datos.trazos[1]!.evidencia!;
+    expect(a.es).toContain('en la cara anterior del estómago');
+  });
+
+  it('con una regla que propone, ninguna de esas frases aparece', () => {
     const e = aplicar({ M1: medida('tronco') }).datos.trazos[1]!.evidencia!;
-    expect(e.es).not.toContain('no distingue');
-    expect(e.en).not.toContain('does not distinguish');
+    expect(e.es).not.toContain('Ninguna regla se cumple');
+    expect(e.en).not.toContain('No rule is met');
+    expect(e.es).not.toContain('regla más cercana');
   });
 });
 
@@ -318,10 +406,11 @@ describe('lo que no cambia (R6.2)', () => {
     const datos = sinteticos();
     const medidos = { M1: medida('faringeo') };
     const ramos = [...RAMOS];
-    const copias = structuredClone({ datos, medidos, ramos });
+    const nombresEntrada = structuredClone({ piezas: NOMBRES });
+    const copias = structuredClone({ datos, medidos, ramos, nombresEntrada });
     const bandasEntrada = [...BANDAS];
-    const salida = aplicarMediciones(datos, medidos, ramos, bandasEntrada);
-    expect({ datos, medidos, ramos }).toEqual(copias);
+    const salida = aplicarMediciones(datos, medidos, ramos, bandasEntrada, nombresEntrada);
+    expect({ datos, medidos, ramos, nombresEntrada }).toEqual(copias);
     expect(bandasEntrada).toEqual(BANDAS);
     expect(salida.datos).not.toBe(datos);
     expect(salida.datos.trazos[1]).not.toBe(datos.trazos[1]);
@@ -351,11 +440,14 @@ describe('validación (D2)', () => {
     ['un guion largo en la fuente', { fuente: `Kim${GUION_LARGO}2022` }],
     ['una regla de ramo con no_es_ramo', { propuesta: 'no_es_ramo' }],
     ['una regla de ramo sin propuesta', { propuesta: null, confianza: null }],
+    ['fallas no nula con una regla que propone', { fallas: FALLA_RAICILLA }],
+    ['sin la clave fallas', { fallas: undefined }],
   ];
 
   it.each(cambios)('con %s lanza un error que nombra la malla', (_n, extra) => {
     const m = { ...medida('faringeo'), ...extra };
     if ('fuente' in extra && extra['fuente'] === undefined) delete (m as Partial<Medicion>).fuente;
+    if ('fallas' in extra && extra['fallas'] === undefined) delete (m as Partial<Medicion>).fallas;
     expect(() => aplicar({ M1: m })).toThrow(/^M1: /);
   });
 
@@ -368,6 +460,35 @@ describe('validación (D2)', () => {
     expect(() => aplicar({ M1: medida('faringeo', { cerca_extremos: { superior: uno, inferior: dos } }) })).not.toThrow();
     expect(() => aplicar({ M1: medida('faringeo', { confianza: 'baja', cerca_extremos: { superior: uno, inferior: uno } }) })).not.toThrow();
     expect(() => aplicar({ M1: medida('sin_regla', { cerca_extremos: { superior: uno, inferior: uno } }) })).not.toThrow();
+  });
+
+  describe('fallas de un trazo sin regla', () => {
+    const sin = (fallas: unknown) => aplicar({ M1: medida('sin_regla', { fallas }) });
+    const regla = (r: string, ...no_cumple: [string, number][]) => ({ regla: r, no_cumple: no_cumple.map(([condicion, mm]) => ({ condicion, mm })) });
+
+    it('con fallas bien formadas pasa, con 1 o con 2 reglas y con un margen de cero', () => {
+      expect(() => sin([regla('raicilla', ['largo', -10])])).not.toThrow();
+      expect(() => sin([regla('faringeo', ['cerca_faringe', 0]), regla('laringeo_superior', ['bajo_foramen_max', -3])])).not.toThrow();
+    });
+
+    it.each([
+      ['null', null],
+      ['una lista vacía', []],
+      ['tres reglas', [regla('raicilla', ['largo', -1]), regla('faringeo', ['cerca_faringe', -1]), regla('laringeo_superior', ['cerca_tiroides', -1])]],
+      ['una regla repetida', [regla('faringeo', ['cerca_faringe', -1]), regla('faringeo', ['cara_posterior_faringe', -1])]],
+      ['una regla sin condiciones (tronco)', [regla('tronco', ['largo', -1])]],
+      ['una regla desconocida', [regla('otra', ['largo', -1])]],
+      ['una regla sin ninguna condición que falle', [regla('raicilla')]],
+      ['una condición de otra regla', [regla('raicilla', ['cerca_faringe', -1])]],
+      ['una condición que sobra en el hepático', [regla('abdominal_hepatico', ['cara_estomago', -1])]],
+      ['una condición repetida', [regla('raicilla', ['largo', -1], ['largo', -2])]],
+      ['un margen positivo', [regla('raicilla', ['largo', 0.1])]],
+      ['un margen que no es finito', [regla('raicilla', ['largo', Number.NaN])]],
+      ['una clave ajena en la regla', [{ ...regla('raicilla', ['largo', -1]), nota: 'x' }]],
+      ['una clave ajena en la condición', [{ regla: 'raicilla', no_cumple: [{ condicion: 'largo', mm: -1, nota: 'x' }] }]],
+    ])('con %s lanza un error que nombra la malla', (_n, fallas) => {
+      expect(() => sin(fallas)).toThrow(/^M1: .*fallas/);
+    });
   });
 
   it('una regla raicilla con el id de un ramo lanza', () => {
@@ -408,7 +529,8 @@ describe('el CLI no escribe si algo falla (D2)', () => {
     writeFileSync(join(dir, 'm.json'), JSON.stringify(medidos));
     writeFileSync(join(dir, 'r.md'), 'centinela');
     writeFileSync(join(dir, 'rutas.json'), textoRutas);
-    return { dir, args: ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json'] };
+    writeFileSync(join(dir, 'n.json'), textoNombres);
+    return { dir, args: [...ARGS_CLI] };
   }
 
   it.each([
@@ -432,6 +554,30 @@ describe('el CLI no escribe si algo falla (D2)', () => {
     const r = cli(carpeta(), ['--medidos', 'nada.json']);
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('auditar-vago.py');
+  });
+
+  it('si no está el archivo de nombres, sale con 2, dice cómo generarlo y no escribe nada', () => {
+    const { dir, args } = preparar({ [MALLA_REAL]: medida('faringeo') });
+    rmSync(join(dir, 'n.json'));
+    const r = cli(dir, args);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain('nombrar-anclajes.py');
+    expect(readFileSync(join(dir, 't.json'), 'utf8')).toBe(textoReal);
+    expect(readFileSync(join(dir, 'r.md'), 'utf8')).toBe('centinela');
+  });
+
+  it.each([
+    ['una pieza cercana sin nombre', '{"piezas":{}}'],
+    ['un nombre PENDIENTE', JSON.stringify({ piezas: { ...NOMBRES, Liver: { ...NOMBRES['Liver']!, es: 'PENDIENTE' } } })],
+    ['una tabla mal formada', '{"otra": 1}'],
+  ])('con %s sale con 1, nombra la malla o el problema, y no escribe nada', (_n, contenido) => {
+    const { dir, args } = preparar({ [MALLA_REAL]: medida('faringeo') });
+    writeFileSync(join(dir, 'n.json'), contenido);
+    const r = cli(dir, args);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/Liver|piezas|nombre/);
+    expect(readFileSync(join(dir, 't.json'), 'utf8')).toBe(textoReal);
+    expect(readFileSync(join(dir, 'r.md'), 'utf8')).toBe('centinela');
   });
 
   it('si no está el archivo de rutas, sale con 2, dice cómo generarlo y no escribe nada', () => {
@@ -476,17 +622,20 @@ describe('argumentos y rutas (D3)', () => {
       marcadores: 'src/data/marcadores.json',
       resumen: 'docs/research/vago/resumen-trazos.md',
       rutas: 'public/modelos/rutas-vago.json',
+      nombres: 'pipeline/nombres-anclajes.json',
     });
   });
 
-  it('las cinco banderas cambian sus rutas', () => {
-    expect(argumentosAplicarTrazos(['--medidos', 'a', '--trazos', 'b', '--marcadores', 'c', '--resumen', 'd', '--rutas', 'e'])).toEqual({
+  it('las seis banderas cambian sus rutas', () => {
+    expect(argumentosAplicarTrazos(['--medidos', 'a', '--trazos', 'b', '--marcadores', 'c', '--resumen', 'd', '--rutas', 'e', '--nombres', 'f'])).toEqual({
       medidos: 'a',
       trazos: 'b',
       marcadores: 'c',
       resumen: 'd',
       rutas: 'e',
+      nombres: 'f',
     });
+    expect(argumentosAplicarTrazos(['--nombres', 'f'])).toEqual({ ...RUTAS_POR_DEFECTO, nombres: 'f' });
     expect(argumentosAplicarTrazos(['--rutas', 'e'])).toEqual({ ...RUTAS_POR_DEFECTO, rutas: 'e' });
     expect(argumentosAplicarTrazos(['--resumen', 'd'])).toEqual({ ...RUTAS_POR_DEFECTO, resumen: 'd' });
   });
@@ -500,6 +649,8 @@ describe('argumentos y rutas (D3)', () => {
     [['--trazos', 'a', '--trazos', 'b']],
     [['--rutas']],
     [['--rutas', 'a', '--rutas', 'b']],
+    [['--nombres']],
+    [['--nombres', 'a', '--nombres', 'b']],
   ])('uso indebido %j da null', (args) => {
     expect(argumentosAplicarTrazos(args)).toBeNull();
   });
@@ -511,13 +662,14 @@ describe('argumentos y rutas (D3)', () => {
   });
 
   function colocar(dir: string, medidos: unknown) {
-    for (const ruta of [RUTAS_POR_DEFECTO.medidos, RUTAS_POR_DEFECTO.trazos, RUTAS_POR_DEFECTO.marcadores, RUTAS_POR_DEFECTO.rutas]) {
+    for (const ruta of [RUTAS_POR_DEFECTO.medidos, RUTAS_POR_DEFECTO.trazos, RUTAS_POR_DEFECTO.marcadores, RUTAS_POR_DEFECTO.rutas, RUTAS_POR_DEFECTO.nombres]) {
       mkdirSync(dirname(join(dir, ruta)), { recursive: true });
     }
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.medidos), JSON.stringify(medidos, null, 1));
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.trazos), textoReal);
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.marcadores), textoMarcadores);
     writeFileSync(join(dir, RUTAS_POR_DEFECTO.rutas), textoRutas);
+    writeFileSync(join(dir, RUTAS_POR_DEFECTO.nombres), textoNombres);
   }
 
   it('el CLI sin argumentos usa las rutas por defecto, crea la carpeta del resumen y cuenta bien', () => {
@@ -597,7 +749,7 @@ describe('banda del tronco cortado (ADR 0010)', () => {
 
   it('un trazo que no es un tronco escaneado no lleva la frase, aunque su regla sea tronco', () => {
     const { datos } = aplicar({ M1: tronco(1573.4, 1346.6) }, datosTronco(), [banda1, banda2]);
-    expect(datos.trazos[2]!.evidencia).toEqual(evidenciaDeTrazo(tronco(1573.4, 1346.6)));
+    expect(datos.trazos[2]!.evidencia).toEqual(evidenciaDeTrazo(tronco(1573.4, 1346.6), NOMBRES));
     expect(datos.trazos[2]!.evidencia!.es).not.toContain('ADR 0010');
     expect(datos.trazos[2]!.evidencia!.en).not.toContain('ADR 0010');
   });
@@ -644,14 +796,15 @@ describe('banda del tronco cortado (ADR 0010)', () => {
     writeFileSync(join(dir, 'm.json'), JSON.stringify(medidos));
     writeFileSync(join(dir, 't.json'), textoReal);
     writeFileSync(join(dir, 'rutas.json'), textoRutas);
-    const r = cli(dir, ['--medidos', 'm.json', '--trazos', 't.json', '--marcadores', rutaMarcadores, '--resumen', 'r.md', '--rutas', 'rutas.json']);
+    writeFileSync(join(dir, 'n.json'), textoNombres);
+    const r = cli(dir, ARGS_CLI);
     expect(r.status, r.stderr).toBe(0);
     const nuevo = JSON.parse(readFileSync(join(dir, 't.json'), 'utf8')) as { trazos: PropuestaTrazo[] };
     expect(nuevo.trazos.find((tz) => tz.malla === IZQ)!.evidencia!.es).toContain('(ADR 0010)');
     // Una banda que no corta el trazo detiene el CLI sin escribir.
     writeFileSync(join(dir, 't2.json'), textoReal);
     writeFileSync(join(dir, 'm.json'), JSON.stringify({ [IZQ]: tronco(1400, 1346.6) }));
-    const r2 = cli(dir, ['--medidos', 'm.json', '--trazos', 't2.json', '--marcadores', rutaMarcadores, '--resumen', 'r2.md', '--rutas', 'rutas.json']);
+    const r2 = cli(dir, ['--medidos', 'm.json', '--trazos', 't2.json', '--marcadores', rutaMarcadores, '--resumen', 'r2.md', '--rutas', 'rutas.json', '--nombres', 'n.json']);
     expect(r2.status).toBe(1);
     expect(r2.stderr).toContain(IZQ);
     expect(readFileSync(join(dir, 't2.json'), 'utf8')).toBe(textoReal);
@@ -700,9 +853,44 @@ describe('paridad con las otras copias de las listas', () => {
   });
 });
 
+describe('nombres de las piezas (D2)', () => {
+  const lado = (i: 'es' | 'en') => (JSON.parse(readFileSync(join(raiz, `src/i18n/${i}.json`), 'utf8')) as { lado: { izquierdo: string; derecho: string } }).lado;
+
+  it('LADO es igual a lado.izquierdo y lado.derecho de es.json y en.json', () => {
+    for (const i of ['es', 'en'] as const) {
+      expect(LADO[i].l).toBe(lado(i).izquierdo);
+      expect(LADO[i].r).toBe(lado(i).derecho);
+    }
+  });
+
+  it('la tabla real pasa la validación y la valida tal cual está en disco', () => {
+    expect(Object.keys(validarNombresPiezas(JSON.parse(textoNombres))).length).toBeGreaterThanOrEqual(24);
+  });
+
+  it.each([
+    ['sin el objeto piezas', { otra: 1 }, /piezas/],
+    ['una entrada que no es objeto', { piezas: { X: 1 } }, /^X: /],
+    ['una clave ajena', { piezas: { X: { es: 'a', en: 'b', lado: '', fuente: 'f', nota: 'x' } } }, /^X: /],
+    ['sin fuente', { piezas: { X: { es: 'a', en: 'b', lado: '' } } }, /^X: /],
+    ['un nombre vacío', { piezas: { X: { es: ' ', en: 'b', lado: '', fuente: 'f' } } }, /^X: es/],
+    ['un nombre PENDIENTE', { piezas: { X: { es: 'a', en: 'PENDIENTE', lado: '', fuente: 'f' } } }, /^X: .*PENDIENTE/],
+    ['un lado que no existe', { piezas: { X: { es: 'a', en: 'b', lado: 'x', fuente: 'f' } } }, /^X: lado/],
+    ['un guion largo', { piezas: { X: { es: `a${GUION_LARGO}b`, en: 'b', lado: '', fuente: 'f' } } }, /^X: es.*guion largo/],
+    ['una pieza vacía', { piezas: { X: { es: 'a', en: 'b', lado: '', fuente: 'f', pieza: '' } } }, /^X: pieza/],
+  ])('con %s lanza nombrando la malla', (_n, datos, patron) => {
+    expect(() => validarNombresPiezas(datos)).toThrow(patron);
+  });
+
+  it('el lado se escribe aparte: izquierdo, derecho o ninguno', () => {
+    expect(nombrePiezaEvidencia('Olive.l', NOMBRES, 'es')).toBe('Oliva (izquierdo)');
+    expect(nombrePiezaEvidencia('Olive.r', NOMBRES, 'en')).toBe('Olive (right)');
+    expect(nombrePiezaEvidencia('Liver', NOMBRES, 'es')).toBe('Hígado');
+  });
+});
+
 describe('la evidencia no lleva el guion largo ni espacios sobrantes', () => {
   it.each(REGLAS_TRAZO)('regla %s', (regla) => {
-    const e = evidenciaDeTrazo(medida(regla));
+    const e = evidenciaDeTrazo(medida(regla), NOMBRES);
     for (const t of [e.es, e.en]) {
       expect(t).not.toContain(GUION_LARGO);
       expect(t.trim()).toBe(t);

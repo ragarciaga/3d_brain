@@ -156,20 +156,31 @@ def cercanos(p, ctx):
     return ctx.cercanos(p)
 
 
-def _cumple(firmados):
-    """Márgenes firmados en mm (cero o más es que se cumple). Devuelve los márgenes si todos se cumplen, o None."""
-    return list(firmados) if all(m >= 0 for m in firmados) else None
+def _condicion(clave, margen_mm, cumple=None):
+    """(clave, margen firmado en mm, si se cumple). Sin `cumple`, se cumple con un margen de cero o más."""
+    return (clave, margen_mm, margen_mm >= 0 if cumple is None else cumple)
+
+
+def _margenes_si_cumple(condiciones):
+    """Los márgenes de las condiciones si todas se cumplen, o None."""
+    return [m for _, m, _ in condiciones] if all(c for _, _, c in condiciones) else None
+
+
+def _condiciones_raicilla(lado, linea, largo_mm, ctx):
+    sup = linea[0]
+    d_bulbo = min(ctx.distancia(n, sup) for n in BULBO) * 1000
+    return [
+        _condicion("largo", LARGO_RAICILLA_MAX_MM - largo_mm),
+        _condicion("cerca_bulbo", CERCA_BULBO_MM - d_bulbo),
+        # (derivado) dorsal a la oliva: cara decidida por el centro z de la caja
+        _condicion("detras_oliva", (ctx.centros[f"Olive.{lado}"][2] - sup[2]) * 1000),
+        # por encima del foramen
+        _condicion("sobre_foramen", (min(p[1] for p in linea) - ctx.foramen[lado][0][1]) * 1000),
+    ]
 
 
 def _raicilla(lado, linea, largo_mm, ctx):
-    sup = linea[0]
-    d_bulbo = min(ctx.distancia(n, sup) for n in BULBO) * 1000
-    return _cumple([
-        LARGO_RAICILLA_MAX_MM - largo_mm,
-        CERCA_BULBO_MM - d_bulbo,
-        (ctx.centros[f"Olive.{lado}"][2] - sup[2]) * 1000,  # (derivado) dorsal a la oliva: cara decidida por el centro z de la caja
-        (min(p[1] for p in linea) - ctx.foramen[lado][0][1]) * 1000,  # por encima del foramen
-    ])
+    return _margenes_si_cumple(_condiciones_raicilla(lado, linea, largo_mm, ctx))
 
 
 def _entre_cuello(inf, ctx):
@@ -177,53 +188,98 @@ def _entre_cuello(inf, ctx):
     return ctx.distancia("Laryngopharynx", inf), ctx.distancia("Thyroid cartilage", inf)
 
 
-def _faringeo(lado, linea, ctx):
+def _condiciones_faringeo(lado, linea, ctx):
     sup, inf = linea[0], linea[-1]
     d = distancia_desde_foramen_mm(ctx.troncos[lado], ctx.foramen[lado][1], sup)
     d_faringe, d_tiroides = _entre_cuello(inf, ctx)
-    return _cumple([
-        d - DISTANCIA_FARINGEO_MM[0],
-        DISTANCIA_FARINGEO_MM[1] - d,
-        (d_tiroides - d_faringe) * 1000,  # termina más cerca de la faringe que del tiroides
-        CERCA_CUELLO_MM - d_faringe * 1000,
-        (ctx.centros["Laryngopharynx"][2] - inf[2]) * 1000,  # (derivado) cara posterior: decidida por el centro z de la caja
-    ])
+    return [
+        _condicion("bajo_foramen_min", d - DISTANCIA_FARINGEO_MM[0]),
+        _condicion("bajo_foramen_max", DISTANCIA_FARINGEO_MM[1] - d),
+        _condicion("mas_cerca_faringe", (d_tiroides - d_faringe) * 1000),  # termina más cerca de la faringe que del tiroides
+        _condicion("cerca_faringe", CERCA_CUELLO_MM - d_faringe * 1000),
+        # (derivado) cara posterior: decidida por el centro z de la caja
+        _condicion("cara_posterior_faringe", (ctx.centros["Laryngopharynx"][2] - inf[2]) * 1000),
+    ]
+
+
+def _faringeo(lado, linea, ctx):
+    return _margenes_si_cumple(_condiciones_faringeo(lado, linea, ctx))
+
+
+def _condiciones_laringeo_superior(lado, linea, ctx):
+    sup, inf = linea[0], linea[-1]
+    d = distancia_desde_foramen_mm(ctx.troncos[lado], ctx.foramen[lado][1], sup)
+    d_faringe, d_tiroides = _entre_cuello(inf, ctx)
+    return [
+        _condicion("bajo_foramen_min", d - DISTANCIA_LARINGEO_SUPERIOR_MM[0]),
+        _condicion("bajo_foramen_max", DISTANCIA_LARINGEO_SUPERIOR_MM[1] - d),
+        _condicion("mas_cerca_tiroides", (d_faringe - d_tiroides) * 1000),  # termina más cerca del tiroides que de la faringe
+        _condicion("cerca_tiroides", CERCA_CUELLO_MM - d_tiroides * 1000),
+    ]
 
 
 def _laringeo_superior(lado, linea, ctx):
-    sup, inf = linea[0], linea[-1]
-    d = distancia_desde_foramen_mm(ctx.troncos[lado], ctx.foramen[lado][1], sup)
-    d_faringe, d_tiroides = _entre_cuello(inf, ctx)
-    return _cumple([
-        d - DISTANCIA_LARINGEO_SUPERIOR_MM[0],
-        DISTANCIA_LARINGEO_SUPERIOR_MM[1] - d,
-        (d_faringe - d_tiroides) * 1000,  # termina más cerca del tiroides que de la faringe
-        CERCA_CUELLO_MM - d_tiroides * 1000,
-    ])
+    return _margenes_si_cumple(_condiciones_laringeo_superior(lado, linea, ctx))
 
 
-def _abdominal(lado, linea, ctx):
-    """(regla, márgenes) de un ramo abdominal, o None."""
+def _condiciones_abdominal(lado, linea, ctx):
+    """(regla que se evalúa, condiciones) de un ramo abdominal. La regla sale del destino más cercano y, si es el
+    estómago, del lado (el tronco anterior es el izquierdo y el posterior, el derecho)."""
     inf = linea[-1]
     bajo_hiato = (ctx.hiato - max(p[1] for p in linea)) * 1000  # todo el trazo debajo del hiato
     destinos = sorted((ctx.distancia(n, inf), n) for n in ("Liver", "Stomach", "Thoracic aorta"))
     (d1, destino), (d2, _) = destinos[0], destinos[1]
-    cerca = [bajo_hiato, (d2 - d1) * 1000, CERCA_ABDOMEN_MM - d1 * 1000]
+    condiciones = [_condicion("bajo_hiato", bajo_hiato), _condicion("destino_mas_cercano", (d2 - d1) * 1000),
+                   _condicion("cerca_destino", CERCA_ABDOMEN_MM - d1 * 1000)]
     if destino == "Liver":
-        regla = "abdominal_hepatico"
-    elif destino == "Thoracic aorta":
-        regla = "abdominal_celiaco"
-    else:
-        dz = inf[2] - ctx.centros["Stomach"][2]  # (derivado) cara del estómago: decidida por el centro z de la caja
-        if lado == "l" and dz >= 0:
-            regla = "abdominal_gastrico_anterior"
-        elif lado == "r" and dz < 0:
-            regla = "abdominal_gastrico_posterior"
-        else:
-            return None  # cara y lado no encajan: el tronco anterior es el izquierdo y el posterior, el derecho
-        cerca.append(abs(dz) * 1000)
-    margenes = _cumple(cerca)
+        return "abdominal_hepatico", condiciones
+    if destino == "Thoracic aorta":
+        return "abdominal_celiaco", condiciones
+    dz = inf[2] - ctx.centros["Stomach"][2]  # (derivado) cara del estómago: decidida por el centro z de la caja
+    anterior = lado == "l"
+    encaja = dz >= 0 if anterior else dz < 0  # cara y lado deben encajar
+    # El margen es la distancia del extremo al centro z del estómago: positiva si encaja y negativa si no.
+    condiciones.append(_condicion("cara_estomago", abs(dz) * 1000 if encaja else -abs(dz) * 1000, encaja))
+    return ("abdominal_gastrico_anterior" if anterior else "abdominal_gastrico_posterior"), condiciones
+
+
+def _abdominal(lado, linea, ctx):
+    """(regla, márgenes) de un ramo abdominal, o None."""
+    regla, condiciones = _condiciones_abdominal(lado, linea, ctx)
+    margenes = _margenes_si_cumple(condiciones)
     return None if margenes is None else (regla, margenes)
+
+
+def _no_cumple(regla, condiciones):
+    """{regla, no_cumple: [{condicion, mm}]} con solo las condiciones que no se cumplen; mm es el margen (negativo
+    o cero) a 0,1 mm, igual que el resto de las mediciones."""
+    falla = [{"condicion": clave, "mm": round(margen, 1) + 0.0} for clave, margen, cumple in condiciones if not cumple]
+    if not falla:
+        raise ValueError(f"la regla {regla} se cumple: no puede estar entre las que fallan de un trazo sin regla")
+    return {"regla": regla, "no_cumple": falla}
+
+
+def fallas(nombre, puntos, ctx):
+    """Qué condiciones fallan en un trazo que quedó sin regla, para la regla o las reglas más cercanas. Solo se
+    llama con un trazo de 200 mm o menos (el tronco no es una regla cercana). Las reglas se excluyen por región.
+    La región se decide con la altura media del trazo, el punto medio entre su altura mínima y su máxima (no con
+    un extremo: un trazo que cruza una frontera por menos de un milímetro sigue siendo de su región):
+    - altura media por encima del foramen yugular: la raicilla;
+    - si no, altura media por debajo del hiato esofágico: la regla abdominal que elige `_condiciones_abdominal`;
+    - si no, las dos del cuello (faríngeo y laríngeo superior).
+    De cada regla se listan todas las condiciones que no se cumplen, también la de frontera (`sobre_foramen`,
+    `bajo_hiato`). Las reglas y los umbrales no cambian: solo se elige qué reglas se muestran."""
+    linea = g.orientar_de_arriba_abajo(puntos)
+    lado = lado_de(nombre)
+    alturas = [p[1] for p in linea]
+    media = (min(alturas) + max(alturas)) / 2
+    if media >= ctx.foramen[lado][0][1]:
+        return [_no_cumple("raicilla", _condiciones_raicilla(lado, linea, g.largo(linea) * 1000, ctx))]
+    if media <= ctx.hiato:
+        regla, abdominal = _condiciones_abdominal(lado, linea, ctx)
+        return [_no_cumple(regla, abdominal)]
+    return [_no_cumple("faringeo", _condiciones_faringeo(lado, linea, ctx)),
+            _no_cumple("laringeo_superior", _condiciones_laringeo_superior(lado, linea, ctx))]
 
 
 def clasificar(nombre, puntos, ctx):
@@ -287,6 +343,7 @@ def medir_trazos(anclas, trazos, superficies):
             "propuesta": PROPUESTA[regla],
             "confianza": confianza(regla, margenes, por_extremo[extremo]),
             "fuente": FUENTE[regla],
+            "fallas": fallas(nombre, puntos, ctx) if regla == "sin_regla" else None,
         }
     return medidos
 

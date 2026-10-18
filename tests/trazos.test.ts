@@ -1,8 +1,11 @@
 // Trazos del vago (#62): lógica pura de la lista y datos copiados de la auditoría del modelo.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { GRUPO_VAGO, marcadores, trazosAuditados } from '../src/data/atlas';
+import type { TFunction } from 'i18next';
+import { GRUPO_VAGO, marcadores, nodos, trazosAuditados } from '../src/data/atlas';
+import { nombrePieza } from '../src/lib/nombres';
 import type { Respuesta } from '../src/lib/revision';
+import { nombrePiezaEvidencia, validarNombresPiezas } from '../scripts/lib/trazos.ts';
 import {
   auditoriaDeTrazo,
   avanceTrazos,
@@ -150,6 +153,13 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
       return { malla: c[1]!, piezas, propuesta: c[5]!, regla: c[6]!, confianza: c[7]!, fuente: c[8]! };
     });
   const filaDe = (malla: string) => tabla.find((f) => f.malla === malla)!;
+  const NOMBRES = validarNombresPiezas(JSON.parse(readFileSync('pipeline/nombres-anclajes.json', 'utf8')));
+  const evidenciaDe = (malla: string) => trazosAuditados.find((t) => t.malla === malla)!.evidencia!;
+  // El `t` de i18next, leyendo las claves de es.json y en.json.
+  const tDe = (idioma: 'es' | 'en') => {
+    const textos = JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as Record<string, unknown>;
+    return ((clave: string) => clave.split('.').reduce<unknown>((acc, k) => (acc as Record<string, unknown>)[k], textos)) as unknown as TFunction;
+  };
   const conRegla = (regla: string) => trazosAuditados.filter((t) => filaDe(t.malla).regla === regla);
 
   // Claves de la bibliografía: las líneas "- [Clave] ..." que siguen a "## Referencias".
@@ -176,7 +186,7 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
     }
   });
 
-  it('R4.1: cada trazo trae evidencia en es y en, con altura, largo y las piezas cercanas de la tabla', () => {
+  it('R4.1: cada trazo trae evidencia en es y en, con altura, largo y las piezas cercanas de la tabla, por su nombre en la app', () => {
     for (const t of trazosAuditados) {
       const e = t.evidencia;
       expect(e, t.malla).toBeDefined();
@@ -189,8 +199,36 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
       const piezas = filaDe(t.malla).piezas;
       expect(piezas.length, t.malla).toBeGreaterThan(0);
       for (const pieza of piezas) {
-        expect(e!.es, `${t.malla}: ${pieza}`).toContain(pieza);
-        expect(e!.en, `${t.malla}: ${pieza}`).toContain(pieza);
+        expect(e!.es, `${t.malla}: ${pieza}`).toContain(nombrePiezaEvidencia(pieza, NOMBRES, 'es'));
+        expect(e!.en, `${t.malla}: ${pieza}`).toContain(nombrePiezaEvidencia(pieza, NOMBRES, 'en'));
+      }
+    }
+  });
+
+  it('D1: ninguna evidencia lleva el sufijo de lado .l/.r ni el nombre crudo de una malla', () => {
+    expect(Object.keys(NOMBRES).length).toBeGreaterThanOrEqual(24);
+    for (const t of trazosAuditados) {
+      for (const idioma of ['es', 'en'] as const) {
+        expect(t.evidencia![idioma], `${t.malla} ${idioma}`).not.toMatch(/\.(l|r)\b/);
+        for (const malla of Object.keys(NOMBRES)) {
+          if (idioma === 'es') expect(t.evidencia!.es, `${t.malla}: ${malla}`).not.toContain(malla);
+        }
+      }
+    }
+  });
+
+  it('D2: el nombre de cada pieza de la app en la tabla es el que da nombrePieza, y las demás traen su fuente de TA2', () => {
+    const enLaApp = Object.values(nodos).filter((n) => n.malla !== undefined);
+    for (const [malla, n] of Object.entries(NOMBRES)) {
+      if (n.pieza !== undefined) {
+        expect(nodos[n.pieza]?.malla, malla).toBe(malla);
+        for (const idioma of ['es', 'en'] as const) {
+          expect(nombrePiezaEvidencia(malla, NOMBRES, idioma), `${malla} ${idioma}`).toBe(nombrePieza(n.pieza, idioma, tDe(idioma)));
+        }
+        expect(n.fuente, malla).toBe('src/data/estructuras.json');
+      } else {
+        expect(enLaApp.some((x) => x.malla === malla), `${malla} está en la app pero la tabla no trae su pieza`).toBe(false);
+        expect(n.fuente, malla).toMatch(/^TA2 \(Z-Anatomy\)/);
       }
     }
   });
@@ -219,15 +257,41 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
     }
   });
 
-  it('R4.4: cada trazo sin_regla queda sin propuesta ni confianza, y la evidencia dice que la regla no distingue', () => {
+  it('R4.4: cada trazo sin_regla queda sin propuesta ni confianza, y la evidencia nombra la regla más cercana y cada condición que falla', () => {
     const sinRegla = conRegla('sin_regla');
     expect(sinRegla.length).toBeGreaterThan(0);
     for (const t of sinRegla) {
       expect(t.propuesta, t.malla).toBeNull();
       expect(t.confianza, t.malla).toBeNull();
-      expect(t.evidencia!.es, t.malla).toContain('La regla no distingue entre ramos');
-      expect(t.evidencia!.en, t.malla).toContain('does not distinguish');
+      expect(t.evidencia!.es, t.malla).toContain('Ninguna regla se cumple: queda sin propuesta.');
+      expect(t.evidencia!.es, t.malla).toMatch(/la regla más cercana es|las reglas más cercanas son/);
+      expect(t.evidencia!.es, t.malla).toMatch(/no se cumple que .*\(falla (por \d+,\d mm|por menos de 0,1 mm)\)/);
+      expect(t.evidencia!.en, t.malla).toContain('No rule is met: no proposal.');
+      expect(t.evidencia!.en, t.malla).toMatch(/not met: .*\(fails (by \d+\.\d mm|by less than 0\.1 mm)\)/);
+      for (const x of [t.evidencia!.es, t.evidencia!.en]) expect(x, t.malla).not.toMatch(/no distingue|does not distinguish/);
     }
+    // Los trazos con regla no llevan esas frases.
+    for (const t of trazosAuditados.filter((x) => x.propuesta !== null)) expect(t.evidencia!.es, t.malla).not.toContain('Ninguna regla se cumple');
+  });
+
+  it('D4: los seis trazos del bulbo tienen a la raicilla como regla más cercana y `detras_oliva` entre sus fallas; l#t04 y r#t18 fallan además por el foramen', () => {
+    const bulbo = ['l#t03', 'l#t04', 'l#t05', 'r#t17', 'r#t18', 'r#t19'].map((x) => `Vagus nerve (X).${x}`);
+    for (const malla of bulbo) {
+      const e = evidenciaDe(malla);
+      expect(filaDe(malla).regla, malla).toBe('sin_regla');
+      expect(e.es, malla).toContain('la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por ');
+      expect(e.es, malla).not.toContain('ramo faríngeo');
+      const foramen = /todo el trazo quede por encima del foramen yugular \(falla por 0,4 mm\)/.test(e.es);
+      expect(foramen, malla).toBe(malla.endsWith('l#t04') || malla.endsWith('r#t18'));
+      expect(/(fails by 0\.4 mm)/.test(e.en), malla).toBe(foramen);
+    }
+  });
+
+  it('D4: el trazo r#t09 cruza el hiato por 0,2 mm: es abdominal y no nombra las reglas del cuello', () => {
+    const e = evidenciaDe('Vagus nerve (X).r#t09');
+    expect(e.es).toContain('la regla más cercana es la del ramo hepático; no se cumple que todo el trazo quede por debajo del hiato esofágico (falla por 0,2 mm).');
+    expect(e.en).toContain('the closest rule is the hepatic branch rule; not met: the whole trace lies below the oesophageal hiatus (fails by 0.2 mm).');
+    expect(e.es).not.toMatch(/faríngeo|laríngeo/);
   });
 
   it('la propuesta de cada trazo es la que la regla de su fila da en pipeline/reglas_vago.py (PROPUESTA)', () => {
