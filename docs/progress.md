@@ -1,6 +1,6 @@
 # Progress
 
-Updated: 2026-10-17 (corrida cycle-4889aa8-pwzk, segunda parte: spec 04 completa con #203 (04-T6), #204 (04-T4), #206 (04-T7) y #209 (04-T8); fusionados también #198 (Rockbuilt 0.9.0), #202 (cámara quieta en e2e, #201), #207 (bookkeeping) y #210 (ficha de destino en e2e, #208); abierto para el editor #205 (verificación de F8); antes: fusionados #189 (bookkeeping), #191 (importador aparta las respuestas sin autorización, #190), #192 (SPEC paso 9, #56), #193 (seguridad del modo revisión, #149), #196 (controles en celular, #194) y #199 (panel de fragmentar y brújula en escritorio, #197); primera parte: fusionados #172 (04-T3), #173 (Rockbuilt 0.7.0), #174 (privacidad, autorización v3), #175 (04-T5), #179 (script cerrado antes del despliegue), #180 (medición de cortes, #42), #181 (importador), #182 (marcadores con cortes), #183 (índice de toque después del primer cuadro), #184 (pausa del reloj en e2e), #186 (seguimientos), #187 (recorte por caja en los cortes) y #188 (SPEC y diseño de cortes al día); corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
+Updated: 2026-10-18 (corrida cycle-1a06f45-qmvt: verificación de la spec 04 en #220 (seguridad PASS, E2E 8 de 9, objetivo parcial), tarea nueva 04-T9 (#218), escalaciones #217 y #219; el editor fusionó #205 (verificación de F8), #212 (SPEC F24 con Correcto) y #214 (brújula); abierto #215 (02-T5, nivel C); antes, corrida cycle-4889aa8-pwzk, segunda parte: spec 04 completa con #203 (04-T6), #204 (04-T4), #206 (04-T7) y #209 (04-T8); fusionados también #198 (Rockbuilt 0.9.0), #202 (cámara quieta en e2e, #201), #207 (bookkeeping) y #210 (ficha de destino en e2e, #208); abierto para el editor #205 (verificación de F8); antes: fusionados #189 (bookkeeping), #191 (importador aparta las respuestas sin autorización, #190), #192 (SPEC paso 9, #56), #193 (seguridad del modo revisión, #149), #196 (controles en celular, #194) y #199 (panel de fragmentar y brújula en escritorio, #197); primera parte: fusionados #172 (04-T3), #173 (Rockbuilt 0.7.0), #174 (privacidad, autorización v3), #175 (04-T5), #179 (script cerrado antes del despliegue), #180 (medición de cortes, #42), #181 (importador), #182 (marcadores con cortes), #183 (índice de toque después del primer cuadro), #184 (pausa del reloj en e2e), #186 (seguimientos), #187 (recorte por caja en los cortes) y #188 (SPEC y diseño de cortes al día); corrida cycle-c2c1f9f-hbrq: fusionados #161, #165 (analítica), #164 (04-T2), #167 (importador y casilla del vago) y #170 (autorización v2, Padrón en caché, leer por POST); prueba de Blender de #49 corrida en la nube; revisión docente dentro de la web, PR #31; vago, PR #30 y auditoría PR #32; spec de F8, PR #43; F8: T1, T2 y T3 fusionados en PR #54, #70 y #57; corrida cycle-d6a8417-qmvt; mejoras de la revisión docente #58 a #66, PR #72 a #81, "Enviar todo" fusionado en PR #78 el 2026-10-13; medición en equipos de referencia #6; canal de retorno #67 decidido; harness Rockbuilt 0.4.0 fusionado en PR #86; spec 03 del canal de retorno fusionado en PR #100, tareas #87 a #99; spec 04 de propuestas para la sesión docente; corridas nocturnas cycle-79c539f-qbnz y cycle-d52a895-vxmo: fusionados #110 a #113, #115 y #121; corrida cycle-97d0089-tqje: fusionados #114, #116, #117, #119 y #123; corrida cycle-026d53f-mxwp: fusionados #124, #126, #128 y #129; corridas cycle-197b7e3-hjkt y cycle-032bd1e-wqnz: fusionados #131, #134, #135, #137 y #138; corrida cycle-75748b5-tfkd: fusionado #140; corrida cycle-3f9c2e1-mzkb: fusionados #141, #143, #144 y #146, dominio brain.maysasp.com; corrida cycle-7ff7fd1-qvrn: fusionados #147, #148, #152, #153 y #154; corrida cycle-39630e3-nwpb: fusionados #145, #155, #156, #159 y #160)
 
 Todos los enlaces del proyecto (sitio, formularios, marca, GitHub): [docs/enlaces.md](enlaces.md).
 
@@ -161,20 +161,19 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 - 2026-10-17: controles (#194, #197): en celular el panel de fragmentar toma el ancho de su contenido y la brújula tiene más relleno para que Post quepa; en escritorio la brújula conserva su tamaño con celdas de 2rem, y con cortes o con poca altura el deslizador se acorta para no cruzarse con la brújula en modo revisión.
 
 ## Next steps
-1. Revisión docente: la spec 04 está completa en main (posiciones de los 26 marcadores, evidencia y propuestas de los 28 trazos, y en modo revisión la evidencia junto a cada trazo y "Correcto" para la posición de un marcador). Falta solo mandar el mensaje a los 10 docentes (`docs/guia-docentes.md`).
-2. Spec 04: sin `/rb-verify` todavía (las puertas de la función completa).
-3. F8 cortes: verificación hecha (#205, la fusiona el editor).
+1. Revisión docente: la spec 04 está completa en main. Su verificación (#220) dio seguridad PASS y E2E 8 de 9 (1 omitida con motivo). La auditoría de objetivo dio dos parciales: la fuente del trazo se ve solo como clave (tarea 04-T9, #218, se construye cuando #220 llegue a main) y las preguntas de #219 (trazos del bulbo sin propuesta, evidencia en español con nombres de malla en inglés).
+2. Vago torácico: 02-T5 en #215 (nivel C, espera al editor). Después siguen T6 (#51) y T7 (#52), y #216 (marcadores torácicos sobre el tramo trazado; su rama `rb/i216` viene de otra sesión, encima de #215).
+3. Modo revisión: deshacer un veredicto no llega al canal (#217, decisión del editor).
 4. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
-5. Vago: T5 a T7 (#50 a #52).
 
-## Pendientes del editor (al 2026-10-17)
-Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42), texto legal de #149 revisado y aprobado. Hecho el 2026-10-17: controles revisados en el iPhone (#194), Rockbuilt 0.9.0 aprobado (#198).
+## Pendientes del editor (al 2026-10-18)
+Hecho el 2026-10-17: #205 (verificación de F8) fusionado, SPEC.md F24 con "Correcto" para la posición (#212), brújula (#214).
 
 Sigue, en este orden:
-1. Abrir https://brain.maysasp.com/es/revision con un código de prueba y mirar un trazo del vago y un marcador (evidencia, confianza, fuente y "Correcto"), antes de mandar el mensaje.
-2. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado y la hoja quedó limpia.
-3. Revisar y fusionar #205 (verificación de F8).
-4. Agregar a SPEC.md F24 el "Correcto" para la posición de un marcador (ruta sensible).
+1. Responder #219 (trazos del bulbo y nombres en inglés en la evidencia) y #217 (deshacer en modo revisión), antes de mandar el mensaje a los docentes.
+2. Revisar y fusionar #220 (verificación de la spec 04) y #215 (02-T5, vago torácico; fusionar junto con T6).
+3. Abrir https://brain.maysasp.com/es/revision con un código de prueba y mirar un trazo del vago y un marcador.
+4. Mandar el mensaje a los docentes (`docs/guia-docentes.md`).
 
 ## Seguimientos abiertos (sin decisión pendiente)
 - Modo revisión (#149): no hay prueba e2e de dos pestañas con el modelo cargado (el CI no tiene CPU para dibujarlo dos veces por software); el nombre del archivo de descarga ya no lleva el código, pero el contenido y las URL prellenadas del formulario de respaldo sí (por diseño; la ayuda y la guía lo advierten).
@@ -191,39 +190,63 @@ Sigue, en este orden:
 
 ## Timing
 <!-- rb:timing:start -->
-| Task | plan | implement | audit | security | Total |
-|---|---:|---:|---:|---:|---:|
-| T3 | 5.8 | 5.1 |  |  | 10.9 |
-| T1 |  |  |  |  | 0.0 |
-| T1 |  |  |  |  | 0.0 |
-| T1 |  |  |  |  | 0.0 |
-| T4 |  |  |  |  | 0.0 |
-| T5 |  |  |  |  | 0.0 |
-| T2 |  |  |  |  | 0.0 |
-| i83 |  |  |  |  | 0.0 |
-| T2 |  |  |  |  | 0.0 |
-| i120 |  |  |  |  | 0.0 |
-| T4 |  |  |  |  | 0.0 |
-| T3 |  |  |  |  | 0.0 |
-| T6 |  |  |  |  | 0.0 |
-| T4 |  |  |  |  | 0.0 |
-| T5 |  |  |  |  | 0.0 |
-| i84 |  |  |  |  | 0.0 |
-| T7 |  |  |  |  | 0.0 |
-| T8 |  |  |  |  | 0.0 |
-| T9 |  |  |  |  | 0.0 |
-| T11 |  |  |  |  | 0.0 |
-| T10 |  |  |  |  | 0.0 |
-| T12 |  |  |  |  | 0.0 |
-| T6 |  |  |  |  | 0.0 |
-| T8 |  |  |  |  | 0.0 |
-| T7 |  |  |  |  | 0.0 |
-| T2 |  |  |  |  | 0.0 |
-| analitica |  |  |  |  | 0.0 |
-| i163 | 9.4 |  | 3.3 | 2.2 | 14.9 |
-| i162 | 10.1 |  |  |  | 10.1 |
-| i149 |  |  |  |  | 0.0 |
+| Task | plan | implement | verify | audit | e2e | security | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| T3 | 5.8 | 5.1 |  |  |  |  | 10.9 |
+| T1 |  |  |  |  |  |  | 0.0 |
+| T1 |  |  |  |  |  |  | 0.0 |
+| T1 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| T2 |  |  |  |  |  |  | 0.0 |
+| i83 |  |  |  |  |  |  | 0.0 |
+| T2 |  |  |  |  |  |  | 0.0 |
+| i120 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T3 |  |  |  |  |  |  | 0.0 |
+| T6 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| i84 |  |  |  |  |  |  | 0.0 |
+| T7 |  |  |  |  |  |  | 0.0 |
+| T8 |  |  |  |  |  |  | 0.0 |
+| T9 |  |  |  |  |  |  | 0.0 |
+| T11 |  |  |  |  |  |  | 0.0 |
+| T10 |  |  |  |  |  |  | 0.0 |
+| T12 |  |  |  |  |  |  | 0.0 |
+| T6 |  |  |  |  |  |  | 0.0 |
+| T8 |  |  |  |  |  |  | 0.0 |
+| T7 |  |  |  |  |  |  | 0.0 |
+| T2 |  |  |  |  |  |  | 0.0 |
+| analitica |  |  |  |  |  |  | 0.0 |
+| i163 | 9.4 |  |  | 3.3 |  | 2.2 | 14.9 |
+| i162 |  |  | 8.9 |  |  |  | 8.9 |
+| T3 |  |  |  |  |  |  | 0.0 |
+| i168 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| i169 |  |  |  |  |  |  | 0.0 |
+| T10 |  |  |  |  |  |  | 0.0 |
+| i166 |  |  |  |  |  |  | 0.0 |
+| i176 |  |  |  |  |  |  | 0.0 |
+| i178 |  |  |  |  |  |  | 0.0 |
+| pausa |  |  |  |  |  |  | 0.0 |
+| 185 |  |  |  |  |  |  | 0.0 |
+| i177 |  |  |  |  |  |  | 0.0 |
+| docs177 |  |  |  |  |  |  | 0.0 |
+| i190 |  |  |  |  |  |  | 0.0 |
+| i56 |  |  |  |  |  |  | 0.0 |
+| i149 |  |  |  |  |  |  | 0.0 |
+| i194 |  |  |  |  |  |  | 0.0 |
+| i197 |  |  |  |  |  |  | 0.0 |
+| i201 |  |  |  |  |  |  | 0.0 |
+| T6 |  |  |  |  |  |  | 0.0 |
+| T4 |  |  |  |  |  |  | 0.0 |
+| T7 |  |  |  |  |  |  | 0.0 |
+| T8 |  |  |  |  |  |  | 0.0 |
+| i208 |  |  |  |  |  |  | 0.0 |
+| i213 |  |  |  |  |  |  | 0.0 |
+| T5 |  |  |  |  |  |  | 0.0 |
+| verify-teacher-review-proposals |  |  |  |  | 18.7 | 1.9 | 20.6 |
 
 Minutes per phase.
-Open (started, not ended): i149/plan, T2/fix, i163/implement, i162/implement.
 <!-- rb:timing:end -->
