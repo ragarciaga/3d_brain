@@ -1221,6 +1221,8 @@ test('vago: sin la casilla no hay trazos ni recorridos que revisar, la casilla d
   await expect(guiaDeRevision(page)).toContainText('solo aparecen si marcas');
   await expect(guiaDeRevision(page)).not.toContainText('Trazos del vago');
   await expect(guiaDeRevision(page)).not.toContainText('Recorrido trazado');
+  await expect(guiaDeRevision(page)).not.toContainText('hueco en los dos vagos');
+  await expect(guiaDeRevision(page)).not.toContainText('recorridos trazados');
   await cerrarGuia(page);
 
   // Tocar un trazo en el modelo lleva a la ficha del vago, sin el control de revisión.
@@ -1325,6 +1327,11 @@ test('vago: en otro equipo, con vago true en el canal, los trazos y recorridos a
   // D3: la guía describe los trazos y recorridos, no la casilla.
   await abrirGuia(page);
   await expect(guiaDeRevision(page)).toContainText('Trazos del vago');
+  // La guía dice la verdad del tórax: hay un hueco pendiente de trazado y no promete rutas punteadas que juzgar.
+  await expect(guiaDeRevision(page)).toContainText('hueco en los dos vagos');
+  await expect(guiaDeRevision(page)).toContainText('no se revisan en esta sesión');
+  await expect(guiaDeRevision(page)).not.toContainText('se ven punteados');
+  await expect(guiaDeRevision(page)).not.toContainText('Recorrido trazado');
   await expect(guiaDeRevision(page)).not.toContainText('solo aparecen si marcas');
   await cerrarGuia(page);
 
