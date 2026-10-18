@@ -200,6 +200,7 @@
     "confianza_baja": "baja",
     "trazoSinPropuesta": "Sin propuesta de la auditoría",
     "trazoFuente": "Fuente de la regla: {{fuente}}",
+    "trazoFuenteSinCita": "Fuente de la regla: {{fuente}} (sin cita en la bibliografía)",
     "fuentePosicion": "Método y fuente de la posición",
     "posicionCorrecta": "Correcto, la posición propuesta está bien",
     "noEsRamo": "No es un ramo (tronco o raicilla)",

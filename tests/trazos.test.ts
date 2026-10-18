@@ -6,8 +6,10 @@ import type { Respuesta } from '../src/lib/revision';
 import {
   auditoriaDeTrazo,
   avanceTrazos,
+  citaDeFuente,
   claveTrazo,
   ENTRADA_VAGO,
+  leerReferencias,
   ordenarTrazos,
   propuestaDeTrazo,
   ramosDeTrazo,
@@ -294,6 +296,16 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
     expect(auditoriaDeTrazo('Vagus nerve (X).l#t99')).toBeNull();
   });
 
+  it('R5.1: auditoriaDeTrazo da la cita de la fuente del registro; una malla desconocida sigue dando null', () => {
+    for (const t of trazosAuditados) {
+      const a = auditoriaDeTrazo(t.malla)!;
+      expect(a.cita, t.malla).not.toBeNull();
+      expect(a.cita, t.malla).toEqual(citaDeFuente(t.fuente));
+      expect(a.cita!.clave, t.malla).toBe(t.fuente);
+    }
+    expect(auditoriaDeTrazo('Vagus nerve (X).l#t99')).toBeNull();
+  });
+
   it('D3: es.json y en.json traen revision.confianza_<c> para cada confianza presente en el archivo', () => {
     const textos = (i: 'es' | 'en') => (JSON.parse(readFileSync(`src/i18n/${i}.json`, 'utf8')) as { revision: Record<string, unknown> }).revision;
     const presentes = new Set(trazosAuditados.flatMap((t) => (t.confianza ? [t.confianza] : [])));
@@ -304,5 +316,124 @@ describe('datos de la auditoría (src/data/trazos-vago.json)', () => {
         expect(typeof v === 'string' && v.trim() !== '', `${i}: confianza_${c}`).toBe(true);
       }
     }
+  });
+});
+
+describe('citas de la bibliografía (docs/research/marcadores/fuentes.md)', () => {
+  const md = readFileSync('docs/research/marcadores/fuentes.md', 'utf8');
+  const seccion = md.slice(md.indexOf('\n## Referencias'));
+  const lineas = seccion.split('\n').filter((l) => l.startsWith('- ['));
+  const lineaDe = (clave: string) => lineas.find((l) => l.startsWith(`- [${clave}] `))!;
+  const refs = leerReferencias(md);
+
+  it('R4.5: cada fuente de los trazos tiene una cita con autores, título, año e identificador, escrita tal cual en la línea', () => {
+    expect(trazosAuditados.length).toBeGreaterThan(0);
+    for (const t of trazosAuditados) {
+      const c = citaDeFuente(t.fuente);
+      expect(c, t.fuente).not.toBeNull();
+      expect(c!.autores.trim(), t.fuente).not.toBe('');
+      expect(c!.titulo.trim(), t.fuente).not.toBe('');
+      expect(c!.anio, t.fuente).toMatch(/^\d{4}$/);
+      expect(c!.identificadores.length, t.fuente).toBeGreaterThan(0);
+      expect(lineaDe(t.fuente), t.fuente).toContain(c!.texto);
+    }
+  });
+
+  it('D1: se leen todas las entradas de ## Referencias, ninguna se pierde', () => {
+    expect(lineas.length).toBeGreaterThan(0);
+    expect(refs.size).toBe(lineas.length);
+    for (const l of lineas) {
+      const clave = /^- \[([^\]]+)\]/.exec(l)![1]!;
+      expect(refs.get(clave), clave).toBeDefined();
+      expect(l, clave).toContain(refs.get(clave)!.texto);
+    }
+  });
+
+  it('D1: Bahadir2026 trae PMID y DOI con su enlace exacto, y no muestra el PMCID ni la nota de lectura', () => {
+    const c = citaDeFuente('Bahadir2026')!;
+    expect(c.identificadores).toEqual([
+      { tipo: 'pmid', texto: 'PMID 42595102', url: 'https://pubmed.ncbi.nlm.nih.gov/42595102/' },
+      { tipo: 'doi', texto: 'DOI 10.1016/j.brs.2026.103182', url: 'https://doi.org/10.1016/j.brs.2026.103182' },
+    ]);
+    expect(c.anio).toBe('2026');
+    expect(c.revista).toBe('Brain Stimul');
+    expect(c.texto).not.toContain('PMCID');
+    expect(c.texto).not.toContain('Texto completo');
+    expect(JSON.stringify(c.identificadores)).not.toContain('PMC13634496');
+  });
+
+  it('D1: Galgani2025 trae solo PMID (no tiene DOI)', () => {
+    const c = citaDeFuente('Galgani2025')!;
+    expect(c.identificadores.map((i) => i.tipo)).toEqual(['pmid']);
+    expect(c.identificadores[0]!.url).toBe('https://pubmed.ncbi.nlm.nih.gov/40227216/');
+  });
+
+  it('D1: OpenStax20.5 trae solo la URL, tal cual, y no tiene revista', () => {
+    const c = citaDeFuente('OpenStax20.5')!;
+    expect(c.revista).toBeNull();
+    expect(c.anio).toBe('2022');
+    expect(c.identificadores).toEqual([
+      {
+        tipo: 'url',
+        texto: 'https://openstax.org/books/anatomy-and-physiology-2e/pages/20-5-circulatory-pathways',
+        url: 'https://openstax.org/books/anatomy-and-physiology-2e/pages/20-5-circulatory-pathways',
+      },
+    ]);
+    expect(c.texto).not.toContain('Página completa');
+  });
+
+  it('D1: Barba2026 (con "et al.") conserva los autores completos dentro de su línea', () => {
+    const c = citaDeFuente('Barba2026')!;
+    expect(c.autores.endsWith('et al')).toBe(true);
+    expect(c.texto).toContain('et al. Beyond Broca and Wernicke');
+    expect(lineaDe('Barba2026')).toContain(c.texto);
+  });
+
+  describe('lo que no es una cita completa da null', () => {
+    const encabezado = '# Fuentes\n\n## Referencias\n\n';
+    const una = (linea: string) => leerReferencias(`${encabezado}${linea}\n`);
+
+    it('la entrada completa del fixture se lee (control de los casos de abajo)', () => {
+      const m = una('- [Ok] Autor A, Autor B. Un título. Rev Ej. 2020. PMID 123. PMCID PMC9. Texto completo.');
+      expect(citaDeFuente('Ok', m)).toMatchObject({ autores: 'Autor A, Autor B', titulo: 'Un título', revista: 'Rev Ej', anio: '2020' });
+    });
+
+    it('una clave sin entrada', () => {
+      const m = una('- [Ok] Autor A. Un título. Rev Ej. 2020. PMID 123.');
+      expect(citaDeFuente('Otra', m)).toBeNull();
+      expect(citaDeFuente(null, m)).toBeNull();
+      expect(citaDeFuente('', m)).toBeNull();
+    });
+
+    it('una clave que solo aparece antes de ## Referencias (la tabla)', () => {
+      const m = leerReferencias(`# F\n\n- [SoloTabla] Autor A. Un título. Rev Ej. 2020. PMID 123.\n\n${encabezado}- [Ok] Autor A. Un título. Rev Ej. 2020. PMID 123.\n`);
+      expect(citaDeFuente('SoloTabla', m)).toBeNull();
+      expect(citaDeFuente('Ok', m)).not.toBeNull();
+    });
+
+    it('una clave que aparece en una sección posterior a ## Referencias', () => {
+      const m = leerReferencias(`${encabezado}- [Ok] Autor A. Un título. Rev Ej. 2020. PMID 123.\n\n## Después\n\n- [Tarde] Autor A. Un título. Rev Ej. 2020. PMID 123.\n`);
+      expect(citaDeFuente('Tarde', m)).toBeNull();
+      expect(citaDeFuente('Ok', m)).not.toBeNull();
+    });
+
+    it('un documento sin ## Referencias', () => {
+      expect(leerReferencias('- [Ok] Autor A. Un título. Rev Ej. 2020. PMID 123.\n').size).toBe(0);
+    });
+
+    it('una entrada sin año', () => {
+      expect(citaDeFuente('SinAnio', una('- [SinAnio] Autor A. Un título. Rev Ej. PMID 123.'))).toBeNull();
+    });
+
+    it('una entrada sin identificador', () => {
+      expect(citaDeFuente('SinId', una('- [SinId] Autor A. Un título. Rev Ej. 2020. PMCID PMC9. Texto completo.'))).toBeNull();
+    });
+
+    it('un identificador con esquema que no es https se descarta (y sin otro identificador, la cita da null)', () => {
+      expect(citaDeFuente('Js', una('- [Js] Autor A. Un título. 2020. javascript:alert(1). Página completa.'))).toBeNull();
+      expect(citaDeFuente('Http', una('- [Http] Autor A. Un título. 2020. http://ejemplo.org/x. Página completa.'))).toBeNull();
+      const m = una('- [Mixta] Autor A. Un título. Rev Ej. 2020. javascript:alert(1). PMID 123.');
+      expect(citaDeFuente('Mixta', m)!.identificadores.map((i) => i.tipo)).toEqual(['pmid']);
+    });
   });
 });
