@@ -3,13 +3,14 @@
 // calcula pipeline/generar-ramas-vago.py (rutas trazadas). Coordenadas glTF: Y arriba, +X izquierda.
 // El eje anterior no se supone: sale de los datos (la tráquea está por delante del esófago).
 // Las asimetrías 3 y 4 miden el tronco publicado (ADR 0010): el escaneado fuera de la banda que
-// reemplaza cada ruta torácica, más lo trazado. Lo que se mide es lo que el estudiante ve.
+// reemplaza cada ruta torácica, más lo trazado. Lo que se mide es lo que el estudiante ve. Con el Plan B
+// (ningún tramo trazado en el lanzamiento) las bandas son `huecos` y no hay nada que medir en ellos.
 
 export type P = [number, number, number];
 
 export type Lado = 'izquierdo' | 'derecho';
 
-/** Tramo del tronco escaneado que reemplaza una ruta torácica; `y_min` nulo = hasta el final. */
+/** Tramo del tronco escaneado que reemplaza una ruta torácica o queda como hueco; `y_min` nulo = hasta el final. */
 export interface Banda {
   lado: Lado;
   y_max: number;
@@ -30,6 +31,8 @@ export interface Anclajes {
 
 export interface Rutas {
   rutas: Record<string, { lado: Lado; puntos: P[]; reemplaza?: Banda }>;
+  /** Tramos del tronco escaneado que no se publican y tampoco se trazan (Plan B del ADR 0010). */
+  huecos?: Banda[];
 }
 
 /** 0,1 mm, igual que la tolerancia de check:modelo. */
@@ -80,6 +83,7 @@ export function tronco(d: Anclajes, lado: Lado): P[] {
 
 /** Punto de una polilínea a la altura y (el primero desde arriba); null si no llega. */
 export function aAltura(pts: P[], y: number): P | null {
+  if (pts.length < 2) return null;
   const orden = pts[0]![1] >= pts.at(-1)![1] ? pts : [...pts].reverse();
   for (let i = 0; i + 1 < orden.length; i++) {
     const a = orden[i]!;
@@ -97,9 +101,9 @@ function arribaPrimero(pts: P[]): P[] {
   return pts.length < 2 || pts[0]![1] >= pts.at(-1)![1] ? pts : [...pts].reverse();
 }
 
-/** Las bandas que declaran las rutas con `reemplaza`, en el orden de las rutas. */
+/** Las bandas del tronco escaneado que no se publican: primero los `huecos` y después las de las rutas con `reemplaza`, en el orden de las rutas. */
 export function bandas(r: Rutas): Banda[] {
-  const res: Banda[] = [];
+  const res: Banda[] = (Array.isArray(r.huecos) ? r.huecos : []).map((h) => ({ lado: h.lado, y_max: h.y_max, y_min: h.y_min }));
   for (const ruta of Object.values(r.rutas)) {
     if (ruta.reemplaza) res.push({ lado: ruta.reemplaza.lado, y_max: ruta.reemplaza.y_max, y_min: ruta.reemplaza.y_min });
   }

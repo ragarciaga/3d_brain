@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { leerEnvios, parsearCsv } from '../scripts/lib/revisiones.ts';
 import { estructuras } from '../src/data/atlas';
 import { cargaRevisionV2, type Respuesta } from '../src/lib/revision';
-import { campoTrazado, cargarRutas, leerRutas } from '../src/lib/rutas';
+import { campoTrazado, cargarRutas, leerHuecos, leerRutas } from '../src/lib/rutas';
 
 const sintetico = JSON.parse(readFileSync('tests/fixtures/vago-sintetico/puntos.json', 'utf8')) as unknown;
 
@@ -63,17 +63,62 @@ describe('rutas trazadas: archivo publicado', () => {
     expect(leerRutas(malo).map((r) => r.id).sort()).toEqual(otras);
   });
 
-  it('el archivo publicado hoy es válido (aunque esté vacío)', () => {
+  it('el archivo publicado no trae rutas y sí los dos huecos del vago torácico (Plan B, ADR 0010)', () => {
     const publicado = JSON.parse(readFileSync('public/modelos/rutas-vago.json', 'utf8')) as unknown;
-    expect(Array.isArray(leerRutas(publicado))).toBe(true);
+    expect(leerRutas(publicado)).toEqual([]);
+    expect(leerHuecos(publicado)).toEqual([
+      { lado: 'derecho', y_max: 1.421107, y_min: 1.348156 },
+      { lado: 'izquierdo', y_max: 1.424844, y_min: null },
+    ]);
   });
 
-  it('sin archivo, con un 404 o con la página de la app en su lugar, no hay rutas', async () => {
+  it('sin archivo, con un 404 o con la página de la app en su lugar, no hay rutas ni huecos', async () => {
     const con = (r: Partial<Response>) => (() => Promise.resolve(r as Response)) as unknown as typeof fetch;
-    expect(await cargarRutas('/', con({ ok: false }))).toEqual([]);
-    expect(await cargarRutas('/', con({ ok: true, json: () => Promise.reject(new SyntaxError('<html>')) }))).toEqual([]);
-    expect(await cargarRutas('/', (() => Promise.reject(new Error('red'))) as unknown as typeof fetch)).toEqual([]);
-    expect(await cargarRutas('/', con({ ok: true, json: () => Promise.resolve(sintetico) }))).toHaveLength(5);
+    const vacio = { rutas: [], huecos: [] };
+    expect(await cargarRutas('/', con({ ok: false }))).toEqual(vacio);
+    expect(await cargarRutas('/', con({ ok: true, json: () => Promise.reject(new SyntaxError('<html>')) }))).toEqual(vacio);
+    expect(await cargarRutas('/', (() => Promise.reject(new Error('red'))) as unknown as typeof fetch)).toEqual(vacio);
+    const cinco = await cargarRutas('/', con({ ok: true, json: () => Promise.resolve(sintetico) }));
+    expect(cinco.rutas).toHaveLength(5);
+    expect(cinco.huecos).toEqual([]);
+  });
+
+  it('cargarRutas devuelve las rutas y los huecos del mismo archivo', async () => {
+    const hueco = { lado: 'derecho', y_max: 1.4, y_min: 1.3 };
+    const con = (datos: unknown) => (() => Promise.resolve({ ok: true, json: () => Promise.resolve(datos) } as Response)) as unknown as typeof fetch;
+    const r = await cargarRutas('/', con({ ...(sintetico as object), huecos: [hueco] }));
+    expect(r.rutas).toHaveLength(5);
+    expect(r.huecos).toEqual([hueco]);
+  });
+});
+
+describe('rutas trazadas: huecos del vago (Plan B)', () => {
+  const bueno = { lado: 'derecho', y_max: 1.4, y_min: 1.3 };
+  const abierto = { lado: 'izquierdo', y_max: 1.41, y_min: null };
+
+  it('conserva los válidos, con y_min nulo o número, y solo sus tres claves', () => {
+    expect(leerHuecos({ rutas: {}, huecos: [bueno, abierto] })).toEqual([bueno, abierto]);
+    const conExtra = leerHuecos({ huecos: [{ ...bueno, otra: 1 }] });
+    expect(Object.keys(conExtra[0]!).sort()).toEqual(['lado', 'y_max', 'y_min']);
+  });
+
+  it.each([
+    ['lado inválido', { ...bueno, lado: 'central' }],
+    ['y_min igual a y_max', { ...bueno, y_min: 1.4 }],
+    ['y_min por encima de y_max', { ...bueno, y_min: 1.5 }],
+    ['y_max texto', { ...bueno, y_max: '1.4' }],
+    ['sin y_min', { lado: 'derecho', y_max: 1.4 }],
+    ['no es un objeto', 'derecho'],
+    ['es una lista', [bueno]],
+  ])('descarta solo el hueco mal formado y deja el otro: %s', (_caso, malo) => {
+    expect(leerHuecos({ huecos: [malo, abierto] })).toEqual([abierto]);
+  });
+
+  it('sin huecos, con huecos que no es lista o sin objeto da una lista vacía', () => {
+    expect(leerHuecos({ rutas: {} })).toEqual([]);
+    expect(leerHuecos({ huecos: bueno })).toEqual([]);
+    expect(leerHuecos(null)).toEqual([]);
+    expect(leerHuecos(undefined)).toEqual([]);
   });
 });
 

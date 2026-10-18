@@ -1,6 +1,7 @@
 // Rutas trazadas del vago (ADR 0009, SPEC F25). No vienen del cuerpo escaneado: las calcula
-// pipeline/generar-ramas-vago.py sobre anclajes del modelo. Se ven como se verían en el lanzamiento,
-// con su estado de revisión en la ficha; los docentes las juzgan en modo revisión (F24).
+// pipeline/generar-ramas-vago.py sobre anclajes del modelo. Si el archivo trae rutas, se ven con su estado
+// de revisión en la ficha y los docentes las juzgan en modo revisión (F24). En el lanzamiento docente no
+// trae ninguna (Plan B, ADR 0010): trae `huecos`, los tramos del vago que se dejan sin trazar.
 import type { Bilingue } from '../data/tipos';
 
 export type P3 = [number, number, number];
@@ -67,14 +68,25 @@ export function leerRutas(datos: unknown): RutaTrazada[] {
   return res;
 }
 
-/** Descarga las rutas publicadas. Sin archivo, o con uno inválido, no hay rutas. */
-export async function cargarRutas(base: string, traer: typeof fetch = fetch): Promise<RutaTrazada[]> {
+/** Los huecos del archivo publicado (`huecos`): un hueco mal formado se descarta y solo se copian sus 3 claves. */
+export function leerHuecos(datos: unknown): Reemplaza[] {
+  const huecos = (datos as { huecos?: unknown } | null)?.huecos;
+  if (!Array.isArray(huecos)) return [];
+  return huecos.filter(esReemplaza).map((h) => ({ lado: h.lado, y_max: h.y_max, y_min: h.y_min }));
+}
+
+/** Descarga las rutas y los huecos publicados. Sin archivo, o con uno inválido, no hay ninguno. */
+export async function cargarRutas(
+  base: string,
+  traer: typeof fetch = fetch,
+): Promise<{ rutas: RutaTrazada[]; huecos: Reemplaza[] }> {
   try {
     const r = await traer(`${base}modelos/rutas-vago.json`);
-    if (!r.ok) return [];
-    return leerRutas(await r.json());
+    if (!r.ok) return { rutas: [], huecos: [] };
+    const datos: unknown = await r.json();
+    return { rutas: leerRutas(datos), huecos: leerHuecos(datos) };
   } catch {
-    return [];
+    return { rutas: [], huecos: [] };
   }
 }
 

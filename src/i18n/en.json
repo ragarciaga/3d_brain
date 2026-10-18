@@ -429,7 +429,8 @@
     "verFicha": "See the entry and its sources",
     "enEstaParada": "Branches and structures at this stop ({{n}})",
     "nota": "Simplified model of the pathway. The nerve is drawn down to the current stop; each text comes from the structure entry, with its sources.",
-    "notaIzquierdo": "From here the right vagus is followed: in the model, the left one ends in the thorax.",
+    "notaToracico": "In the thorax the atlas leaves a gap in both vagus nerves: that segment is pending tracing.",
+    "notaIzquierdo": "From here the right vagus is followed: in the atlas, the left one stops as it enters the thorax and its course to the abdomen is pending tracing.",
     "anterior": "Previous",
     "siguiente": "Next",
     "terminar": "Finish",
@@ -476,6 +477,8 @@
     "aproximada": "Traced (approximate, for teaching)",
     "marcador": "Marker: labelled point, no volume",
     "soloEscaneada": "Scanned geometry only",
-    "aviso": "Approximate tracing for teaching. The overall position follows the cited source; calibre and exact course vary between people."
+    "aviso": "Approximate tracing for teaching. The overall position follows the cited source; calibre and exact course vary between people.",
+    "toracico": "Gap in the thorax: one segment of each vagus nerve is pending tracing.",
+    "huecoFicha": "In the atlas, a thoracic segment of this nerve is pending tracing: in the right vagus, between the subclavian artery and the main bronchus; the left vagus stops as it enters the thorax. The source model mirrors that segment from one side to the other, with relations that do not match, so a gap is left."
   }
 }

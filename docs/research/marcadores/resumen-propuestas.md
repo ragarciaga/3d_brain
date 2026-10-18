@@ -68,11 +68,12 @@ Lo escribe `node scripts/aplicar-marcadores.ts` a partir de las propuestas de `p
 
 ## m-thoracic-cardiac-branches-of-vagus-nerve
 
-- Resultado: actualizado
-- Antes: sin_ubicar; posición sin posición; ancla ninguna
-- Después: aproximada; posición {"l":[0.01746,1.37425,0.00055],"r":[-0.01791,1.3941,-0.00282]}; ancla ninguna
+- Resultado: actualizado a mano (Plan B): perdió su posición
+- Antes: aproximada; posición {"l":[0.01746,1.37425,0.00055],"r":[-0.01791,1.3941,-0.00282]}; ancla ninguna
+- Después: sin_ubicar; posición sin posición; ancla ninguna
 - Regla: Sobre el tronco del vago escaneado del modelo, a la altura media entre el asa del recurrente y el borde superior del bronquio principal de ese lado (derivado: punto medio del tramo entre el origen del recurrente, bajo el cual sale el ramo según la fuente, y el bronquio; el límite en el bronquio y el punto medio son elección de la regla). Ojo: ese tramo del modelo es un espejo (ADR 0010), por lo que se vuelve a ubicar cuando se publique el vago torácico trazado.
 - Fuente: Zandstra TE, Notenboom RGE, Wink J, et al. Asymmetry and Heterogeneity: Part and Parcel in Cardiac Autonomic Innervation and Function. Front Physiol. 2021. PMID 34603069. PMCID PMC8481575. DOI 10.3389/fphys.2021.665298.; Liu X, Chen Z, Zhang S. Application of Vagus Nerve Branch Preservation in Thoracoscopic Surgery for Early-Stage Lung Cancer. Biomed Res Int. 2022. PMID 35445140. PMCID PMC9015860. DOI 10.1155/2022/5143383.; Bahadir S, Chen FL, Tamas IP, McGonagle ER, Nassrallah Z, Pelcher I, Sun J, Xing T, Titunick M, Knutson S, Levy T, Chang EH, Hill RV, Zanos TP, Barbe MF, Zanos S. A standardized, surgically relevant map for emergence of organ-specific branches from the human vagus nerve. Brain Stimul. 2026. PMID 42595102. PMCID PMC13634496. DOI 10.1016/j.brs.2026.103182.
+- Motivo: sin posición: la regla de `pipeline/reglas-marcadores.yaml` lo puso sobre el tronco escaneado del vago, y ese tramo del modelo es un espejo izquierda-derecha (ADR 0010) que el atlas no publica en el lanzamiento docente (Plan B, 18 de octubre de 2026): el punto quedaba a 0,5 mm (izquierdo) y 0,7 mm (derecho) del tronco retirado y, en el izquierdo, donde el espejo pasa por dentro del arco aórtico. Se retiró a mano, sin volver a correr `pipeline/ubicar-marcadores.py`; si se vuelve a correr, la regla lo devuelve al tronco espejo. Se ubica de nuevo cuando se trace el vago torácico.
 
 ## m-bronchial-branches-of-vagus-nerve
 
