@@ -68,12 +68,13 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: pipeline/anclajes-vago.json, pipeline/rutas-vago.yaml, public/modelos/rutas-vago.json, public/modelos/atlas.glb, pipeline/cajas.json, docs/research/vago/auditoria-vago.md, tests/rutas-vago-pipeline.test.ts, tests/asimetrias.test.ts
 - Verify: regeneración en orden con `.venv-pipeline` (bpy): `auditar-vago.py`, `generar-ramas-vago.py`, `extraer.py`, `node scripts/comprimir-modelo.ts`. Luego `npm test` en verde, con el bloque del modelo real que deja de saltarse y falla si no se cumple cada punto: `public/modelos/rutas-vago.json` trae exactamente las 5 rutas en estado `en_revision`; empalmes de 2,5 mm o menos y recurrentes a 2,5 mm o menos de su tramo torácico, medidos sobre los archivos reales; `reemplaza` coincide con las alturas de `anclajes-vago.json`; las cuatro asimetrías pasan. Luego `npm run check:modelo` en verde (cajas a 0,1 mm, ningún vértice en banda, `atlas.glb` de 15 MB o menos). Si una asimetría no pasa, solo se ajustan pasos del YAML por nombre de anclaje, nunca la prueba
 - Issue: #50
-- Status: todo
+- Status: done
 - Plan B (2026-10-18): GLB y cajas de 6f7f286, `anclajes-vago.json` y `huecos` en `rutas-vago.json`; sin rutas publicadas
 
 ### Decision log
 - Ronda 1: rewrite. Las pruebas del modelo real exigen las 5 rutas y miden empalmes sobre los archivos reales, para que el Verify pueda fallar; se nombra el orden de regeneración.
 - Ronda 2: keep.
+- 2026-10-18: cerrada con el plan B (PR #222): tres vueltas del generador no lograron rutas fuera de los órganos (el pulmón izquierdo y el arco se solapan cerca de 1 mm; el asa del recurrente derecho es una vuelta en U); el editor decidió publicar el corte con el hueco explicado. El trabajo del generador queda en la rama `rb/02-T5`.
 
 ## T6: Mostrar el vago torácico en la app
 - Purpose: que el estudiante vea los tramos torácicos como trazados, entienda el hueco del filtro y los siga en el recorrido, y que el E2E pueda comprobar qué rutas se dibujan y con qué acabado.
@@ -83,12 +84,13 @@ Spec: docs/specs/02-thoracic-vagus-tracing/  |  Status: approved  |  Converged: 
 - Files: src/components/LeyendaOrigen.tsx, src/components/RutasTrazadas.tsx, src/main.tsx, src/i18n/es.json, src/i18n/en.json, e2e/vago-toracico.spec.ts
 - Verify: `npm run test:e2e -- e2e/vago-toracico.spec.ts` contra el `rutas-vago.json` y el GLB reales, con un gancho solo de desarrollo `window.__rutasDibujadas()` (en `main.tsx`, alimentado por `RutasTrazadas.tsx`) que lista por ruta dibujada `{id, punteado, cortadaPorRecorrido, enPantalla}`: (1) las dos rutas torácicas aparecen con `punteado` y `cortadaPorRecorrido` verdaderos (R4.1); (2) con "Solo geometría escaneada" no aparece ninguna ruta torácica y `data-testid="leyenda-toracico"` se ve con su texto; al apagar el filtro vuelven (R4.2); (3) en el recorrido, en cada parada, los puntos de cada ruta torácica con `y` mayor o igual a `__recorte()` son 0 en la primera parada, todos en la última y nunca bajan entre paradas (R4.3); (4) un clic en `enPantalla` de cada ruta torácica abre la ficha de `vagus-nerve-x` con `aviso-aproximada` y el bloque `ruta-trazado_<id>` en "Pendiente de revisión docente" (R4.4); `npm run check:i18n`; el texto `recorrido.notaIzquierdo` (es y en) deja de decir que el izquierdo termina en el tórax
 - Issue: #51
-- Status: todo
+- Status: done
 - Plan B (2026-10-18): la leyenda, la ficha del vago y el recorrido avisan del hueco; `e2e/vago-hueco.spec.ts` sustituye a `e2e/vago-toracico.spec.ts`
 
 ### Decision log
 - Ronda 1: rewrite. Gancho DEV para observar las rutas dibujadas y su posición en pantalla; casos binarios del recorrido y del clic; se corrige el texto del recorrido que queda falso.
 - Ronda 2: keep.
+- 2026-10-18: cerrada con el plan B (PR #222): la leyenda, la ficha y el recorrido avisan del hueco; la parte de rutas dibujadas queda en la rama `rb/02-T6`.
 
 ## T7: Documentar la aprobación docente de cada ruta
 - Purpose: que el editor sepa cómo pasar cada ruta trazada a aprobada solo con la revisión de un docente: qué campo mira, cómo aplica la aprobación en el YAML y cómo regenera el JSON de rutas desde su portátil.
