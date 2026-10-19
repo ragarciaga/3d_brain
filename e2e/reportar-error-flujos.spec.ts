@@ -145,6 +145,13 @@ test('F1-H: desde la búsqueda, el botón está en el pie de la ficha y el diál
   await expect(page.locator('details.ficha-fuentes')).not.toHaveAttribute('open', /.*/);
   expect(await reportar.evaluate((el) => el.closest('details.ficha-fuentes'))).toBeNull();
   expect(await reportar.evaluate((el) => !!el.closest('[data-testid="ficha"]'))).toBe(true);
+  // El pie va después del bloque de fuentes en el orden del documento: subir el pie por encima de ellas fallaría.
+  expect(
+    await reportar.evaluate((el) => {
+      const fuentes = el.closest('[data-testid="ficha"]')!.querySelector('details.ficha-fuentes')!;
+      return (fuentes.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    }),
+  ).toBe(true);
   await expect(dialogo(page)).toHaveCount(0);
 
   // R1.3: el diálogo aparece con el foco en su título, que nombra la estructura.
@@ -574,7 +581,11 @@ test('F3-H: llenar el reporte y pulsar GitHub y correo no escribe en ningún alm
   expect(hrefCorreo).toMatch(new RegExp(`^mailto:${CORREO_REPORTES.replace('.', '\\.')}\\?`));
   const peticionesAntesDelCorreo = [...red.pagina];
   await correo.click();
-  await page.waitForTimeout(1000);
+  // Condición, no pausa: la navegación a `mailto:` aparece en la lista; luego se espera un rato sin ninguna petición.
+  await expect
+    .poll(() => red.pagina.includes(`GET ${hrefCorreo} document`), { message: 'la navegación mailto: no apareció entre las peticiones' })
+    .toBe(true);
+  await esperarSilencio(red);
   const dialogoVisible = await dialogo(page).isVisible();
   const fotoCorreo = await foto(page);
 
