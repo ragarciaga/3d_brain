@@ -1,11 +1,12 @@
-// Uso: node scripts/aplicar-trazos.ts [--medidos <ruta>] [--trazos <ruta>] [--marcadores <ruta>] [--resumen <ruta>] [--rutas <ruta>]
+// Uso: node scripts/aplicar-trazos.ts [--medidos <ruta>] [--trazos <ruta>] [--marcadores <ruta>] [--resumen <ruta>] [--rutas <ruta>] [--nombres <ruta>]
 // Lleva las mediciones de pipeline/auditar-vago.py (por defecto pipeline/salida/trazos-medidos.json) a
 // src/data/trazos-vago.json y escribe el resumen antes y después en docs/research/vago/resumen-trazos.md.
 // Rutas relativas al directorio de trabajo. Solo cambian auditoria, propuesta, fuente, evidencia y confianza.
 // Todo se lee, valida y calcula antes de escribir: si algo falla no se escribe nada. Nunca escribe marcadores.json:
 // solo lo lee para saber qué ramos se pueden proponer. Lee public/modelos/rutas-vago.json (que escribe
 // pipeline/generar-ramas-vago.py) para las bandas del tronco cortado (ADR 0010): la evidencia de esos trazos
-// dice qué parte se publica.
+// dice qué parte se publica. Lee pipeline/nombres-anclajes.json (que escribe pipeline/nombrar-anclajes.py) para
+// nombrar en la evidencia las piezas cercanas a cada trazo, como las nombra la app.
 // La corrida sobre los datos reales es del PR de datos (spec 04, T7), que aprueba el editor.
 // La lógica vive en scripts/lib/trazos.ts; aquí solo se lee y se escribe.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -17,7 +18,7 @@ import { aplicarMediciones, argumentosAplicarTrazos, ramosDeMarcadores, serializ
 
 const args = argumentosAplicarTrazos(process.argv.slice(2));
 if (!args) {
-  console.error('Uso: node scripts/aplicar-trazos.ts [--medidos <ruta>] [--trazos <ruta>] [--marcadores <ruta>] [--resumen <ruta>] [--rutas <ruta>]');
+  console.error('Uso: node scripts/aplicar-trazos.ts [--medidos <ruta>] [--trazos <ruta>] [--marcadores <ruta>] [--resumen <ruta>] [--rutas <ruta>] [--nombres <ruta>]');
   process.exit(2);
 }
 const rutaMedidos = resolve(args.medidos);
@@ -25,12 +26,17 @@ const rutaTrazos = resolve(args.trazos);
 const rutaMarcadores = resolve(args.marcadores);
 const rutaResumen = resolve(args.resumen);
 const rutaRutas = resolve(args.rutas);
+const rutaNombres = resolve(args.nombres);
 if (!existsSync(rutaMedidos)) {
   console.error(`No está el archivo de mediciones en ${args.medidos}. Genéralo con: python pipeline/auditar-vago.py`);
   process.exit(2);
 }
 if (!existsSync(rutaRutas)) {
   console.error(`No está el archivo de rutas en ${args.rutas}. Genéralo con: python pipeline/generar-ramas-vago.py`);
+  process.exit(2);
+}
+if (!existsSync(rutaNombres)) {
+  console.error(`No está el archivo de nombres de las piezas en ${args.nombres}. Genéralo con: python pipeline/nombrar-anclajes.py`);
   process.exit(2);
 }
 
@@ -44,7 +50,8 @@ try {
   if (typeof rutas !== 'object' || rutas === null || typeof (rutas as { rutas?: unknown }).rutas !== 'object') {
     throw new Error(`${args.rutas} no trae el objeto "rutas"`);
   }
-  resultado = aplicarMediciones(trazos, medidos, ramosDeMarcadores(marcadores as Marcador[]), bandas(rutas as Rutas));
+  const nombres: unknown = JSON.parse(readFileSync(rutaNombres, 'utf8'));
+  resultado = aplicarMediciones(trazos, medidos, ramosDeMarcadores(marcadores as Marcador[]), bandas(rutas as Rutas), nombres);
 } catch (e) {
   console.error(e instanceof Error ? e.message : String(e));
   process.exit(1);
