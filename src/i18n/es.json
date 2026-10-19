@@ -240,6 +240,8 @@
     "sinEnviar_other": "{{count}} sin enviar",
     "retirosEnEspera_one": "Quitaste {{count}} marca; se guardará cuando el editor actualice el canal",
     "retirosEnEspera_other": "Quitaste {{count}} marcas; se guardarán cuando el editor actualice el canal",
+    "retirosSinLectura_one": "Quitaste {{count}} marca; no se pudo leer el canal y se volverá a intentar solo",
+    "retirosSinLectura_other": "Quitaste {{count}} marcas; no se pudo leer el canal y se volverá a intentar solo",
     "parteSinAbrir": "sin abrir",
     "parteAbierta": "abierta",
     "parteConfirmada": "confirmada",
