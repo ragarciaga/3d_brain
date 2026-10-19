@@ -1,9 +1,10 @@
-// "Reportar un error" (F12, spec 05, T5 y T6): el botón del pie de la ficha, su ausencia en modo revisión, el
-// diálogo (foco, Escape, aislamiento y desplazamiento en celular) y el formulario (tipo, parte, descripción,
-// enlaces a GitHub y al correo). Nombres, slugs, versión y textos se leen de los datos y de i18n (oráculo de
+// "Reportar un error" (F12, spec 05, T5, T6 y T7): el botón del pie de la ficha, su ausencia en modo revisión, el
+// diálogo (foco, Escape, aislamiento y desplazamiento en celular), el formulario (tipo, parte, descripción,
+// enlaces a GitHub y al correo), el silencio de la app (almacenes y red), el borrador que no sobrevive al cierre
+// y el estado de revisión bloqueada. Nombres, slugs, versión y textos se leen de los datos y de i18n (oráculo de
 // solo lectura); los códigos de revisión son de prueba.
 import { readFileSync } from 'node:fs';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { CORREO_REPORTES, MAX_DESCRIPCION, PLANTILLA, URL_ISSUES, type TipoReporte } from '../src/config/reporte';
 import { protegerCanalReal } from './canal-real';
 
@@ -469,4 +470,344 @@ test('Escape cierra el diálogo con el foco en el textarea o en el select y el f
   await page.keyboard.press('Escape');
   await expect(dialogo(page)).toHaveCount(0);
   await expect(reportar).toBeFocused();
+});
+
+// --- Silencio, borrador y estado bloqueado (T7) ---
+
+/**
+ * Como en revision-privacidad.spec.ts: estas pruebas solo miran la ficha, el diálogo, los almacenes y la red, que no
+ * dependen del modelo 3D. Abortar su descarga quita además de la red una fuente de peticiones de fondo.
+ */
+const sinModelo = (context: BrowserContext) => context.route('**/modelos/atlas.glb', (ruta) => ruta.abort());
+
+type Pares = [string, string | null][];
+interface Foto {
+  localStorage: Pares;
+  sessionStorage: Pares;
+  cookie: string;
+  indexedDB: { nombre: string; version: number; almacenes: { nombre: string; llaves: string; valores: string }[] }[];
+}
+
+/**
+ * Todo lo que la página puede haber guardado, con los valores y no solo las llaves. De IndexedDB solo abre las
+ * bases que lista `indexedDB.databases()`: abrir `keyval-store` a ciegas la crearía y la foto cambiaría el estado.
+ */
+const foto = (page: Page): Promise<Foto> =>
+  page.evaluate(async () => {
+    const pares = (s: Storage): Pares => Object.keys(s).sort().map((k) => [k, s.getItem(k)]);
+    const abrirBase = (nombre: string) =>
+      new Promise<IDBDatabase>((ok, mal) => {
+        const pedido = indexedDB.open(nombre);
+        pedido.onsuccess = () => ok(pedido.result);
+        pedido.onerror = () => mal(pedido.error);
+        pedido.onblocked = () => mal(new Error(`base bloqueada: ${nombre}`));
+        // Una base borrada entre `databases()` y `open()` se crearía vacía: se cancela en vez de crearla.
+        pedido.onupgradeneeded = () => {
+          pedido.transaction?.abort();
+          mal(new Error(`la base ya no existe: ${nombre}`));
+        };
+      });
+    const leer = <T,>(pedido: IDBRequest<T>) =>
+      new Promise<T>((ok, mal) => {
+        pedido.onsuccess = () => ok(pedido.result);
+        pedido.onerror = () => mal(pedido.error);
+      });
+    const bases = (await indexedDB.databases()).filter((b) => typeof b.name === 'string').sort((a, b) => a.name!.localeCompare(b.name!));
+    const indexedDBFoto: Foto['indexedDB'] = [];
+    for (const b of bases) {
+      const db = await abrirBase(b.name!);
+      const nombres = [...db.objectStoreNames].sort();
+      const almacenes: Foto['indexedDB'][number]['almacenes'] = [];
+      if (nombres.length > 0) {
+        const tx = db.transaction(nombres, 'readonly');
+        for (const nombre of nombres) {
+          const almacen = tx.objectStore(nombre);
+          const [llaves, valores] = await Promise.all([leer(almacen.getAllKeys()), leer(almacen.getAll())]);
+          almacenes.push({ nombre, llaves: JSON.stringify(llaves), valores: JSON.stringify(valores) });
+        }
+      }
+      indexedDBFoto.push({ nombre: b.name!, version: db.version, almacenes });
+      db.close();
+    }
+    return { localStorage: pares(localStorage), sessionStorage: pares(sessionStorage), cookie: document.cookie, indexedDB: indexedDBFoto };
+  });
+
+interface Red {
+  /** Peticiones de la página principal, `método url tipo`, desde la última vez que se vaciaron. */
+  pagina: string[];
+  /** Peticiones de cualquier otra página del contexto (las pestañas nuevas). */
+  otras: string[];
+  paginasNuevas: Page[];
+  /** Hora de la última petición de cualquier página. */
+  ultima: number;
+}
+
+/** Cuenta las peticiones de todas las páginas del contexto, también las de una pestaña nueva desde su primera. */
+function registrarRed(context: BrowserContext, page: Page): Red {
+  const red: Red = { pagina: [], otras: [], paginasNuevas: [], ultima: Date.now() };
+  context.on('request', (peticion) => {
+    red.ultima = Date.now();
+    let propia = false;
+    try {
+      propia = peticion.frame().page() === page;
+    } catch {
+      // Una petición sin marco (un service worker) cuenta como ajena a la página.
+    }
+    (propia ? red.pagina : red.otras).push(`${peticion.method()} ${peticion.url()} ${peticion.resourceType()}`);
+  });
+  context.on('page', (nueva) => red.paginasNuevas.push(nueva));
+  return red;
+}
+
+/** Espera a que pase más de un segundo sin ninguna petición, para que el conteo posterior no dependa del azar. */
+const esperarSilencio = (red: Red) =>
+  expect.poll(() => Date.now() - red.ultima, { message: 'la red no se calmó antes de abrir el diálogo' }).toBeGreaterThan(1000);
+
+const baseFoto = (page: Page) =>
+  page.evaluate(() => ({
+    beacons: document.querySelectorAll('script[data-cf-beacon]').length,
+    marca: document.documentElement.hasAttribute('data-beacon-cargado'),
+  }));
+
+/** Un control prueba que `foto` ve el cambio y que, al deshacerlo, vuelve a la base. */
+async function controlDetecta(page: Page, base: Foto, nombre: string, poner: () => Promise<unknown>, quitar: () => Promise<unknown>) {
+  await poner();
+  expect(await foto(page), `control ${nombre}: la foto no vio el cambio`).not.toEqual(base);
+  await quitar();
+  expect(await foto(page), `control ${nombre}: no volvió a la base`).toEqual(base);
+}
+
+const ponerIdb = (page: Page, valor: string) =>
+  page.evaluate(
+    (v) =>
+      new Promise<void>((ok, mal) => {
+        const pedido = indexedDB.open('e2e-control', 1);
+        pedido.onupgradeneeded = () => pedido.result.createObjectStore('x');
+        pedido.onerror = () => mal(pedido.error);
+        pedido.onsuccess = () => {
+          const db = pedido.result;
+          const tx = db.transaction('x', 'readwrite');
+          tx.objectStore('x').put(v, 'k');
+          tx.oncomplete = () => {
+            db.close();
+            ok();
+          };
+          tx.onerror = () => mal(tx.error);
+        };
+      }),
+    valor,
+  );
+
+const quitarIdb = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<void>((ok, mal) => {
+        const pedido = indexedDB.deleteDatabase('e2e-control');
+        pedido.onsuccess = () => ok();
+        pedido.onerror = () => mal(pedido.error);
+        pedido.onblocked = () => mal(new Error('base de control bloqueada'));
+      }),
+  );
+
+test('R5.1: abrir, escribir y pulsar GitHub y correo no guarda nada en el navegador ni sale a la red', async ({ page, context }) => {
+  await sinModelo(context);
+  const rutaGithub: string[] = [];
+  await context.route(
+    (url) => url.hostname === 'github.com',
+    async (ruta) => {
+      rutaGithub.push(ruta.request().url());
+      await ruta.abort('blockedbyclient');
+    },
+  );
+  const red = registrarRed(context, page);
+  await abrir(page, `/es/${HIPOCAMPO.slug.es}`);
+  await fichaLista(page, 'hippocampus', HIPOCAMPO.nombre.es);
+
+  // Precondiciones: sin analítica en el documento (el build la lleva) y un registro que sí ve la carga.
+  expect(await baseFoto(page), 'el documento ya trae el beacon de analítica: esta prueba corre contra el servidor de desarrollo').toEqual({ beacons: 0, marca: false });
+  expect(red.pagina.length, 'el registro no vio ninguna petición de la carga').toBeGreaterThan(0);
+  await esperarSilencio(red);
+  const base = await foto(page);
+  expect(base.localStorage, 'la foto no lee localStorage').toContainEqual(['atlas:aviso-visto', '1']);
+
+  // Desde aquí, la página no puede hacer ninguna petición.
+  red.pagina.length = 0;
+  red.otras.length = 0;
+  const reportar = boton(page, tr('es', 'reporte.boton'));
+  await reportar.scrollIntoViewIfNeeded();
+  await reportar.click();
+  await expect(dialogo(page)).toBeVisible();
+  const fotoVacio = await foto(page);
+
+  await elegirTipo(page, 'es', 'contenido');
+  await parteDe(page).selectOption('que_es');
+  const marcador = 'zqxr51marcador';
+  const texto = `El dato ${marcador} está mal escrito`;
+  const mitad = Math.floor(texto.length / 2);
+  await descripcionDe(page).pressSequentially(texto.slice(0, mitad));
+  const fotoMitad = await foto(page);
+  await descripcionDe(page).pressSequentially(texto.slice(mitad));
+  await expect(descripcionDe(page)).toHaveValue(texto);
+  const fotoTexto = await foto(page);
+
+  const github = enlaceGithubDe(page, 'es');
+  const hrefGithub = (await github.getAttribute('href'))!;
+  expect(hrefGithub).toContain(marcador);
+  const [nueva] = await Promise.all([context.waitForEvent('page'), github.click()]);
+  await expect.poll(() => rutaGithub.length, { message: 'la pestaña de GitHub no pidió su dirección' }).toBe(1);
+  const fotoGithub = await foto(page);
+
+  // El correo se pulsa de verdad, sin interceptarlo ni filtrarlo. Chromium informa la navegación a `mailto:` como un
+  // evento `request` (`GET mailto:... document`), aunque nada sale a la red: el sistema operativo se la entrega al
+  // programa de correo. Por eso la lista de la página debe quedar con esa única entrada, igual al `href` del enlace;
+  // cualquier otra petición hace fallar la prueba.
+  const correo = enlaceCorreoDe(page, 'es');
+  const hrefCorreo = (await correo.getAttribute('href'))!;
+  expect(hrefCorreo).toMatch(/^mailto:info@maysasp\.com\?/);
+  const peticionesAntesDelCorreo = [...red.pagina];
+  const urlAntes = page.url();
+  await correo.click();
+  await page.waitForTimeout(1000);
+  const urlDespues = page.url();
+  const dialogoVisible = await dialogo(page).isVisible();
+  const fotoFinal = await foto(page);
+
+  // Todo se lee una vez, al final.
+  const peticionesPagina = [...red.pagina];
+  const peticionesOtras = red.otras.map((linea) => linea.split(' ')[1]);
+  const nuevas = red.paginasNuevas.length;
+  expect(peticionesAntesDelCorreo, 'peticiones de la página desde que se abre el diálogo hasta pulsar el correo').toEqual([]);
+  expect(peticionesPagina, 'peticiones de la página tras pulsar el correo').toEqual([`GET ${hrefCorreo} document`]);
+  expect(nuevas, 'pestañas nuevas').toBe(1);
+  expect(peticionesOtras, 'peticiones de la pestaña nueva').toEqual([hrefGithub]);
+  expect(rutaGithub).toEqual([hrefGithub]);
+  expect(urlDespues).toBe(urlAntes);
+  expect(dialogoVisible).toBe(true);
+  expect(fotoVacio, 'con el diálogo vacío').toEqual(base);
+  expect(fotoMitad, 'a mitad del texto').toEqual(base);
+  expect(fotoTexto, 'con el texto completo').toEqual(base);
+  expect(fotoGithub, 'después de GitHub').toEqual(base);
+  expect(fotoFinal, 'después del correo').toEqual(base);
+  expect(JSON.stringify(fotoFinal)).not.toContain(marcador);
+  await nueva.close();
+
+  // Controles: la foto ve un cambio en cada almacén y vuelve a la base al deshacerlo.
+  await controlDetecta(
+    page,
+    base,
+    'localStorage',
+    () => page.evaluate(() => localStorage.setItem('e2e-control', '1')),
+    () => page.evaluate(() => localStorage.removeItem('e2e-control')),
+  );
+  await controlDetecta(
+    page,
+    base,
+    'sessionStorage',
+    () => page.evaluate(() => sessionStorage.setItem('e2e-control', '1')),
+    () => page.evaluate(() => sessionStorage.removeItem('e2e-control')),
+  );
+  await controlDetecta(
+    page,
+    base,
+    'cookie',
+    () => page.evaluate(() => (document.cookie = 'e2e-control=1; path=/')),
+    () => page.evaluate(() => (document.cookie = 'e2e-control=; path=/; max-age=0')),
+  );
+  // IndexedDB: además de las llaves, la foto lee los valores (la misma llave con otro valor cambia la foto).
+  await ponerIdb(page, 'a');
+  const conA = await foto(page);
+  expect(conA, 'control IndexedDB: la foto no vio la base nueva').not.toEqual(base);
+  await ponerIdb(page, 'b');
+  expect(await foto(page), 'control IndexedDB: la foto no lee los valores').not.toEqual(conA);
+  await quitarIdb(page);
+  expect(await foto(page), 'control IndexedDB: no volvió a la base').toEqual(base);
+});
+
+/** Formulario recién abierto: nada marcado, parte `general`, descripción vacía, contador en cero y enlaces apagados. */
+async function formularioVacio(page: Page) {
+  const caja = dialogo(page);
+  await expect(caja.getByRole('radio')).toHaveCount(4);
+  for (const tipo of TIPOS_FORM) {
+    await expect(caja.getByRole('radio', { name: tr('es', `reporte.tipo.${tipo}`), exact: true })).not.toBeChecked();
+  }
+  await expect(parteDe(page)).toHaveValue('general');
+  await expect(descripcionDe(page)).toHaveValue('');
+  await expect(caja.getByText(tr('es', 'reporte.contador', { n: 0, max: MAX_DESCRIPCION }), { exact: true })).toBeVisible();
+  await desactivado(enlaceGithubDe(page, 'es'));
+  await desactivado(enlaceCorreoDe(page, 'es'));
+}
+
+test('R5.2: cerrar con Escape o con "Cerrar" descarta el borrador y al reabrir el formulario está vacío', async ({ page }) => {
+  const reportar = await abrirDialogo(page, 'es');
+  const caja = dialogo(page);
+  await formularioVacio(page);
+
+  const rondas: { tipo: TipoReporte; parte: string; cerrar: () => Promise<void> }[] = [
+    { tipo: 'pieza', parte: 'que_es', cerrar: () => page.keyboard.press('Escape') },
+    { tipo: 'traduccion', parte: 'ubicacion', cerrar: () => caja.getByRole('button', { name: tr('es', 'reporte.cerrar') }).click() },
+  ];
+  for (const ronda of rondas) {
+    const escrito = 'texto de prueba';
+    await elegirTipo(page, 'es', ronda.tipo);
+    await parteDe(page).selectOption(ronda.parte);
+    await descripcionDe(page).fill(escrito);
+    // El formulario sí quedó lleno: sin esto, "vacío" al reabrir no probaría nada.
+    await expect(caja.getByRole('radio', { name: tr('es', `reporte.tipo.${ronda.tipo}`), exact: true })).toBeChecked();
+    await expect(parteDe(page)).toHaveValue(ronda.parte);
+    await expect(descripcionDe(page)).toHaveValue(escrito);
+    await expect(caja.getByText(tr('es', 'reporte.contador', { n: escrito.length, max: MAX_DESCRIPCION }), { exact: true })).toBeVisible();
+    await expect(enlaceGithubDe(page, 'es')).toHaveAttribute('href', /^https:\/\/github\.com\//);
+
+    await ronda.cerrar();
+    await expect(dialogo(page)).toHaveCount(0);
+    await expect(reportar).toBeFocused();
+    await reportar.click();
+    await expect(dialogo(page)).toBeVisible();
+    await formularioVacio(page);
+  }
+});
+
+test('D1: en revisión bloqueada, con r=PRUEBA01 en la URL, ningún enlace del reporte lleva el código', async ({ page, context }) => {
+  await sinModelo(context);
+  await page.addInitScript(() => {
+    sessionStorage.setItem('e2e-cargas', String(Number(sessionStorage.getItem('e2e-cargas') ?? '0') + 1));
+    // Como un beacon que no se quita con la recarga: <html> lleva la marca del cargador en cada carga.
+    const marcar = () => document.documentElement?.setAttribute('data-beacon-cargado', '1');
+    marcar();
+    new MutationObserver(marcar).observe(document, { childList: true, subtree: true });
+  });
+  // Carga 1: la app recarga para adoptar el código; carga 2: la marca sigue puesta y la revisión queda bloqueada.
+  await abrir(page, '/es/revision?r=PRUEBA01');
+  await expect(page.getByTestId('revision-bloqueada')).toBeVisible();
+  const estado = await page.evaluate(() => ({
+    cargas: sessionStorage.getItem('e2e-cargas'),
+    revisor: (window as unknown as { __atlas: { getState(): { revisor: string | null } } }).__atlas.getState().revisor,
+  }));
+  expect(estado).toEqual({ cargas: '2', revisor: null });
+  expect(page.url()).toContain('r=PRUEBA01');
+
+  // Navegación del cliente a la ficha conservando `?r=` (sin recargar, para no volver a la carga 1).
+  await page.evaluate((ruta) => {
+    history.pushState({}, '', ruta);
+    dispatchEvent(new PopStateEvent('popstate'));
+  }, `/es/${HIPOCAMPO.slug.es}?r=PRUEBA01`);
+  await fichaLista(page, 'hippocampus', HIPOCAMPO.nombre.es);
+  expect(page.url()).toContain('r=PRUEBA01');
+  const reportar = boton(page, tr('es', 'reporte.boton'));
+  await expect(reportar).toBeVisible();
+  await reportar.scrollIntoViewIfNeeded();
+  await reportar.click();
+  await expect(dialogo(page)).toBeVisible();
+  await elegirTipo(page, 'es', 'contenido');
+  await descripcionDe(page).fill('texto de prueba');
+
+  const hrefGithub = (await enlaceGithubDe(page, 'es').getAttribute('href'))!;
+  const hrefCorreo = (await enlaceCorreoDe(page, 'es').getAttribute('href'))!;
+  expect(hrefGithub).toMatch(/^https:\/\/github\.com\//);
+  expect(hrefCorreo).toMatch(/^mailto:/);
+  // Tal cual y decodificado: `?r=PRUEBA01` pegado a la descripción saldría como `%3Fr%3DPRUEBA01`.
+  for (const href of [hrefGithub, hrefCorreo, decodeURIComponent(hrefGithub), decodeURIComponent(hrefCorreo)]) {
+    expect(href).not.toContain('PRUEBA01');
+    expect(href).not.toContain('r=');
+  }
 });
