@@ -219,7 +219,9 @@ Cada pieza tiene su propia lista de recursos: título, enlace, tipo (video, art�
 
 - Cada ficha tiene "Reportar un error". Abre un formulario corto con tipo (contenido, traducción, enlace roto, pieza mal ubicada) y descripción.
 - Al enviarlo se abre un issue prellenado en GitHub con el ID de la estructura, el idioma y la versión del contenido.
-- Alternativa para quien no tiene cuenta de GitHub: correo del proyecto con asunto prellenado.
+- Alternativa para quien no tiene cuenta de GitHub: correo a info@maysasp.com con asunto y cuerpo prellenados.
+- No se muestra en modo revisión: los docentes usan F24.
+- Cuatro formularios de issue en `.github/ISSUE_TEMPLATE/`, uno por tipo, con su etiqueta (ADR 0016; spec docs/specs/05-error-report/).
 - La app no guarda datos de quien reporta.
 - Comparte con F24 el formato de cada reporte (estructura, campo, idioma, versión).
 
