@@ -15,6 +15,7 @@ describe('esCampoDeTexto', () => {
 describe('accionEscape', () => {
   const base = {
     confirmandoSalida: false,
+    dialogoReporte: false,
     dialogoRevision: false,
     menuAbierto: false,
     cortesAbierto: false,
@@ -22,12 +23,34 @@ describe('accionEscape', () => {
     aislado: false,
     enCampo: false,
   };
-  it('con un diálogo de revisión abierto, Escape lo cierra', () =>
-    expect(accionEscape({ ...base, dialogoRevision: true })).toBe('cerrar-revision'));
-  it('sin confirmación de salida, el diálogo de revisión va antes que cualquier otra acción', () =>
+  it('con el diálogo de reportar un error abierto, Escape lo cierra', () =>
+    expect(accionEscape({ ...base, dialogoReporte: true })).toBe('cerrar-reporte'));
+  it('el diálogo de reporte va antes que todo salvo la confirmación de salida', () =>
     expect(
       accionEscape({
         confirmandoSalida: false,
+        dialogoReporte: true,
+        dialogoRevision: true,
+        menuAbierto: true,
+        cortesAbierto: true,
+        ubicando: true,
+        aislado: true,
+        enCampo: true,
+      }),
+    ).toBe('cerrar-reporte'));
+  it('la confirmación de salida va antes que el diálogo de reporte', () =>
+    expect(accionEscape({ ...base, confirmandoSalida: true, dialogoReporte: true })).toBe('cancelar-salida'));
+  it('el diálogo de reporte va antes que el de revisión', () =>
+    expect(accionEscape({ ...base, dialogoReporte: true, dialogoRevision: true })).toBe('cerrar-reporte'));
+  it('el diálogo de reporte se cierra aunque el foco esté en un campo y haya aislamiento', () =>
+    expect(accionEscape({ ...base, dialogoReporte: true, aislado: true, enCampo: true })).toBe('cerrar-reporte'));
+  it('con un diálogo de revisión abierto, Escape lo cierra', () =>
+    expect(accionEscape({ ...base, dialogoRevision: true })).toBe('cerrar-revision'));
+  it('sin confirmación de salida, el diálogo de revisión va antes que cualquier otra acción salvo el diálogo de reporte', () =>
+    expect(
+      accionEscape({
+        confirmandoSalida: false,
+        dialogoReporte: false,
         dialogoRevision: true,
         menuAbierto: true,
         cortesAbierto: true,
@@ -40,6 +63,7 @@ describe('accionEscape', () => {
     expect(
       accionEscape({
         confirmandoSalida: true,
+        dialogoReporte: true,
         dialogoRevision: true,
         menuAbierto: true,
         cortesAbierto: true,

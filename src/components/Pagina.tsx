@@ -254,6 +254,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       const s = useAtlas.getState();
       const accion = accionEscape({
         confirmandoSalida: confirmarSalida,
+        dialogoReporte: s.dialogoReporte,
         dialogoRevision: s.dialogoRevision,
         menuAbierto: menu,
         cortesAbierto,
@@ -262,6 +263,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
         enCampo: esCampoDeTexto(e.target as HTMLElement | null),
       });
       if (accion === 'cancelar-salida') cancelarSalida();
+      else if (accion === 'cerrar-reporte') window.dispatchEvent(new CustomEvent('atlas:cerrar-reporte'));
       else if (accion === 'cerrar-revision') window.dispatchEvent(new CustomEvent('atlas:cerrar-revision'));
       else if (accion === 'cerrar-menu') {
         setMenu(false);
