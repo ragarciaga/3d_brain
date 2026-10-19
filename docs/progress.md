@@ -163,7 +163,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 ## Next steps
 1. Revisión docente: la spec 04 y sus seguimientos están en main: cita completa de la fuente del trazo (#226), evidencia con nombres de TA2 y la regla más cercana por la altura media del trazo (#227) y retiro de marcas por el canal (#228).
-2. F12 (reportar un error, #10): requisitos en borrador en `docs/specs/05-error-report/requirements.md` (rama `rb/spec-05-error-report`), esperan la aprobación del editor y su línea base; después, diseño y tareas.
+2. F12 (reportar un error, #10): spec 05 aprobada (requisitos, diseño y ADR 0016) con 8 tareas, #231 a #238. Se construye cuando el PR del spec esté en main; T4 (#234, plantillas en `.github/`) y T8 (#238, texto de Privacidad) son de nivel C.
 3. Vago torácico trazado: después del lanzamiento (docs/v2.md). El trabajo del generador está en las ramas `rb/02-T5`, `rb/02-T6` y `rb/i216`; #52 (T7) queda diferido.
 4. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
 
@@ -172,7 +172,7 @@ Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medició
 
 Sigue, en este orden:
 1. Desplegar el script nuevo del canal (#228): `docs/revision-docente.md`, "Actualización: quitar una marca se guarda (#217)". Primero termina el workflow `pages`, después el script (nueva versión de la implementación existente).
-2. Aprobar los requisitos de F12 (spec 05) y dar la línea base de horas.
+2. Fusionar el PR del spec 05 (F12) y, cuando se construya T4 (#234), crear en GitHub las cuatro etiquetas `reporte:*` (pasos en `docs/operacion.md`).
 3. Abrir https://brain.maysasp.com/es/revision con un código de prueba y mirar un trazo del vago, un marcador y el hueco del tórax (leyenda y ficha del vago).
 4. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado y la hoja quedó limpia.
 
