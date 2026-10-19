@@ -484,5 +484,46 @@
     "aviso": "Approximate tracing for teaching. The overall position follows the cited source; calibre and exact course vary between people.",
     "toracico": "Gap in the thorax: one segment of each vagus nerve is pending tracing.",
     "huecoFicha": "In the atlas, a thoracic segment of this nerve is pending tracing: in the right vagus, between the subclavian artery and the main bronchus; the left vagus stops as it enters the thorax. The source model mirrors that segment from one side to the other, with relations that do not match, so a gap is left."
+  },
+  "reporte": {
+    "boton": "Report an error",
+    "titulo": "Report an error in {{nombre}}",
+    "tipoLeyenda": "Type of error",
+    "tipo": {
+      "contenido": "Content",
+      "traduccion": "Translation",
+      "enlace-roto": "Broken link",
+      "pieza": "Misplaced piece"
+    },
+    "tipoAyuda": {
+      "contenido": "A name, fact or source on the card is wrong or incomplete.",
+      "traduccion": "The text in the other language does not say the same or reads badly.",
+      "enlace-roto": "A link on the card does not open or leads to another page.",
+      "pieza": "The 3D model piece does not match this structure or is in the wrong place."
+    },
+    "parte": "Part of the card",
+    "parteGeneral": "General",
+    "parteRecursos": "Resources",
+    "parteNombre": "Name",
+    "parteSinonimos": "Other names",
+    "partePieza": "3D model piece",
+    "parteRelevancia": "Relevance in psychology, statement {{n}}",
+    "parteFuente": "Source {{n}}",
+    "descripcion": "What is wrong?",
+    "contador": "{{n}} / {{max}}",
+    "aviso": "A report on GitHub is public. Do not write personal data.",
+    "abrirGithub": "Open on GitHub",
+    "enviarCorreo": "Send by email",
+    "correoTexto": "or write to {{correo}}",
+    "falta": {
+      "tipo": "Choose the type of error.",
+      "descripcion": "Write what is wrong."
+    },
+    "muyLargo": "The text is too long to open on GitHub. Shorten it or send it by email.",
+    "correo": {
+      "asunto": "[Maysa Brain] {{tipo}}: {{id}} ({{idioma}}, version {{version}})",
+      "cuerpo": "Structure: {{estructura}}\nLanguage: {{idioma}}\nVersion: {{version}}\nPart: {{parte}}\n\nDescription:\n{{descripcion}}"
+    },
+    "cerrar": "Close"
   }
 }
