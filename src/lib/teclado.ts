@@ -8,6 +8,7 @@ export function esCampoDeTexto(t: { tagName?: string; isContentEditable?: boolea
 
 export type AccionEscape =
   | 'cancelar-salida'
+  | 'cerrar-reporte'
   | 'cerrar-revision'
   | 'cerrar-menu'
   | 'cerrar-cortes'
@@ -17,13 +18,15 @@ export type AccionEscape =
 
 /**
  * Qué hace Escape, en orden: cancelar la confirmación de salida del modo revisión (es modal y puede
- * estar sobre un diálogo de revisión), cerrar el diálogo de revisión, cerrar el cajón del celular,
- * cerrar el panel de cortes, cancelar "proponer posición", salir del aislamiento. La confirmación,
- * el diálogo de revisión y el panel de cortes se cierran aunque el foco esté en un campo (el
- * deslizador del panel es un INPUT); el aislamiento no se sale desde un campo.
+ * estar sobre un diálogo de revisión), cerrar el diálogo de reportar un error, cerrar el diálogo de
+ * revisión, cerrar el cajón del celular, cerrar el panel de cortes, cancelar "proponer posición",
+ * salir del aislamiento. La confirmación, el diálogo de reporte, el diálogo de revisión y el panel
+ * de cortes se cierran aunque el foco esté en un campo (el deslizador del panel es un INPUT); el
+ * aislamiento no se sale desde un campo.
  */
 export function accionEscape(p: {
   confirmandoSalida: boolean;
+  dialogoReporte: boolean;
   dialogoRevision: boolean;
   menuAbierto: boolean;
   cortesAbierto: boolean;
@@ -32,6 +35,7 @@ export function accionEscape(p: {
   enCampo: boolean;
 }): AccionEscape {
   if (p.confirmandoSalida) return 'cancelar-salida';
+  if (p.dialogoReporte) return 'cerrar-reporte';
   if (p.dialogoRevision) return 'cerrar-revision';
   if (p.menuAbierto) return 'cerrar-menu';
   if (p.cortesAbierto) return 'cerrar-cortes';

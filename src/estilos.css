@@ -1731,6 +1731,19 @@ a {
   max-width: 460px;
 }
 
+/* Diálogo de "Reportar un error": en celular de poca altura la caja se desplaza en vez de salirse de la pantalla. */
+.reporte-caja {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ficha-pie {
+  margin-top: 0.6rem;
+  font-size: 0.82em;
+}
+
 .pagina-texto {
   max-width: 720px;
   margin: 0 auto;
