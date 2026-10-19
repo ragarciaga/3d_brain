@@ -235,3 +235,22 @@ describe('docs/revision-docente.md', () => {
     expect(texto).not.toMatch(/\/macros\/s\//);
   });
 });
+
+describe('AGENTS.md: la bibliografía de las reglas del vago (#241)', () => {
+  const agents = leer('AGENTS.md');
+  const inicio = agents.indexOf('**Geometría y contenido separados.**');
+  const fin = agents.indexOf('\n- **', inicio + 1);
+  const convencion = agents.slice(inicio, fin);
+
+  it('la convención de contenido nombra fuentes.md como la bibliografía que la app lee al construir', () => {
+    expect(inicio).toBeGreaterThan(0);
+    expect(fin).toBeGreaterThan(inicio);
+    expect(convencion).toContain('`docs/research/marcadores/fuentes.md`');
+    expect(convencion).toMatch(/la app la\s+lee al construir/);
+    expect(convencion).toContain('`src/lib/trazos.ts`');
+  });
+
+  it('src/lib/trazos.ts de verdad importa esa bibliografía como texto', () => {
+    expect(leer('src/lib/trazos.ts')).toContain("from '../../docs/research/marcadores/fuentes.md?raw'");
+  });
+});

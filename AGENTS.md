@@ -41,7 +41,9 @@ Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y 
   `pipeline/cajas.json` (medida en Blender) y falla si alguna se corre más de 0,1 mm.
 - **Geometría y contenido separados.** `public/modelos/*.glb` solo tiene mallas; todo texto vive
   en `src/data/*.json`. La llave entre ambos es el nombre de la malla tal como sale de
-  `pipeline/mapeo.csv`. Corregir contenido nunca exige regenerar el GLB.
+  `pipeline/mapeo.csv`. Corregir contenido nunca exige regenerar el GLB. Excepción: la
+  bibliografía de las reglas del vago vive en `docs/research/marcadores/fuentes.md`; la app la
+  lee al construir (`src/lib/trazos.ts`), así que cambiarla cambia lo que ve el docente.
 - **El GLB no se edita a mano.** Se regenera con `pipeline/` desde Z-Anatomy fijado por commit
   (ver docs/adr/). Al borrar objetos en Blender se conserva `matrix_world` de cada pieza; se
   aplican modificadores y las curvas se convierten a malla.
