@@ -1,6 +1,7 @@
 // Panel del trazo del vago (F24): qué ramo es la malla seleccionada, con la propuesta de la auditoría
 // del modelo (cuando es una sola opción de la lista) y su confianza, o "Sin propuesta"; la evidencia y la
-// fuente de la regla salen con o sin propuesta. Después, un comentario opcional y "Siguiente trazo".
+// fuente de la regla (la cita de la bibliografía con sus enlaces, o la clave con un aviso si la bibliografía no
+// la trae completa) salen con o sin propuesta. Después, un comentario opcional y "Siguiente trazo".
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { estructuras } from '../data/atlas';
@@ -102,7 +103,21 @@ export default function RevisionTrazo({ malla, version, idioma }: { malla: strin
       )}
       {auditoria?.fuente && (
         <p className="recurso-nota" data-testid="trazo-fuente">
-          {t('revision.trazoFuente', { fuente: auditoria.fuente })}
+          {auditoria.cita ? (
+            <>
+              {t('revision.trazoFuente', { fuente: auditoria.cita.texto })}
+              {auditoria.cita.identificadores.map((id) => (
+                <span key={id.url}>
+                  {' '}
+                  <a href={id.url} target="_blank" rel="noopener noreferrer">
+                    {id.texto}
+                  </a>
+                </span>
+              ))}
+            </>
+          ) : (
+            t('revision.trazoFuenteSinCita', { fuente: auditoria.fuente })
+          )}
         </p>
       )}
       <label htmlFor={idSelect}>{t('revision.trazoPregunta')}</label>

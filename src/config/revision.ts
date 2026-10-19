@@ -31,3 +31,10 @@ export const configRevision = {
  * la '3' nombra al responsable y el contacto y enlaza la página Privacidad (#168).
  */
 export const VERSION_AUTORIZACION = '3';
+
+/**
+ * Versión del protocolo del canal. La 2 agrega la fila de retiro (quitar una marca se guarda, #217): `leer` la declara
+ * en `canal` y el cliente solo manda retiros si `canal >= VERSION_CANAL`. Hay una copia en apps-script/Codigo.js: se
+ * cambian juntas, y una prueba de tests/apps-script.test.ts falla si difieren.
+ */
+export const VERSION_CANAL = 2;

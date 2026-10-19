@@ -10,7 +10,7 @@
 // Con el CSV de Autorizaciones, todas las respuestas (del vago o no) de un alias con algún código sin
 // ninguna fila salen solo en "Descartadas: sin autorización", con alias, campo, idioma y estructura
 // (`seccionSinAutorizacion`): sin autorización de tratamiento de datos no se publica su texto.
-import { CLAVES_V2, esObjeto, fechaValida, respuestaValida, REVISOR_VALIDO, type Respuesta } from '../../src/lib/revision.ts';
+import { CLAVES_V2, esObjeto, fechaValida, respuestaValida, retiroValido, REVISOR_VALIDO, type Respuesta, type Retiro } from '../../src/lib/revision.ts';
 
 export function parsearCsv(texto: string): string[][] {
   const filas: string[][] = [];
@@ -48,6 +48,18 @@ export interface Envio {
   revisor: string;
   estructura: string;
   respuestas: Respuesta[];
+  /**
+   * Retiros de marcas (#217) de esta estructura, solo en filas `v:2` de la pestaña Respuestas que los traen. Ausente
+   * si no hay. `quitarRetiradas` los aplica solo a las respuestas anteriores del mismo revisor que llegaron en filas `v:2` con la forma de la
+   * pestaña Respuestas (`deHoja`), nunca a las del formulario ni a las `v:1`.
+   */
+  retiros?: Retiro[];
+  /**
+   * La fila es una carga `v:2` con la forma de la pestaña Respuestas (`esFilaDeRespuestas`). Solo los envíos de ahí
+   * pueden traer retiros y solo a ellos los quita un retiro (#217, R7.3): lo que llegó por el formulario o en `v:1`
+   * se corrige con otro veredicto, nunca con un retiro. Ausente en los demás.
+   */
+  deHoja?: true;
   marcaTemporal: string;
 }
 
@@ -61,8 +73,16 @@ export const ALIAS_VALIDO = /^D\d{2,3}$/;
  * la estructura de su clave y pasan `respuestaValida`. Si traen `f` (la fecha de la respuesta), debe
  * pasar `fechaValida` (texto de hasta 40 caracteres que `Date.parse` entiende); sin `f` la fecha queda
  * ''. Devuelve null si algo está mal: una respuesta mala invalida la fila entera, igual que en `v:1`.
+ * Un elemento con `d` vacío es un retiro (#217): pasa por `retiroValido` y va a `Envio.retiros`. Solo se acepta si
+ * `admiteRetiros` (la fila tiene la forma de la pestaña Respuestas); si no, la fila entera es inválida. La misma
+ * clave como retiro y como veredicto en una estructura también la invalida (el script hace lo mismo).
  */
-function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, marcaTemporal: string): Envio[] | null {
+function expandirV2(
+  d: Record<string, unknown>,
+  idOk: (id: unknown) => boolean,
+  marcaTemporal: string,
+  admiteRetiros: boolean,
+): Envio[] | null {
   const revisor = d['r'];
   const e = d['e'];
   if (typeof revisor !== 'string' || !REVISOR_VALIDO.test(revisor)) return null;
@@ -73,6 +93,8 @@ function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, 
   for (const [id, valor] of entradas) {
     if (!idOk(id) || !Array.isArray(valor) || valor.length === 0) return null;
     const respuestas: Respuesta[] = [];
+    const retiros: Retiro[] = [];
+    const tipos = new Map<string, boolean>(); // campo|idioma -> es retiro
     for (const el of valor as unknown[]) {
       if (!esObjeto(el)) return null;
       const r: Record<string, unknown> = { estructura: id, fecha: '' };
@@ -80,15 +102,34 @@ function expandirV2(d: Record<string, unknown>, idOk: (id: unknown) => boolean, 
         if (Object.hasOwn(el, corto)) r[largo] = el[corto];
       }
       if (Object.hasOwn(el, CLAVES_V2.fecha) && !fechaValida(el[CLAVES_V2.fecha])) return null;
-      if (!respuestaValida(r, idOk)) return null;
-      respuestas.push(r);
+      const esRetiro = r['veredicto'] === '';
+      if (esRetiro) {
+        if (!admiteRetiros || !retiroValido(r, idOk)) return null;
+      } else if (!respuestaValida(r, idOk)) return null;
+      const clave = `${r['campo'] as string}|${r['idioma'] === undefined ? '' : (r['idioma'] as string)}`;
+      if (tipos.has(clave) && tipos.get(clave) !== esRetiro) return null;
+      tipos.set(clave, esRetiro);
+      if (esRetiro) retiros.push(r as unknown as Retiro);
+      else respuestas.push(r as unknown as Respuesta);
     }
-    envios.push({ revisor, estructura: id, respuestas, marcaTemporal });
+    envios.push({ revisor, estructura: id, respuestas, ...(retiros.length ? { retiros } : {}), ...(admiteRetiros ? { deHoja: true as const } : {}), marcaTemporal });
   }
   return envios;
 }
 
 const SI_NO = ['sí', 'no'];
+
+/** Fecha de recepción que escribe el script en la columna A de `Respuestas`: `toISOString()`. */
+const RECIBIDO_ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+/**
+ * La fila tiene la forma de la pestaña Respuestas del Apps Script (R7.3, #217): cuatro columnas, A con la fecha de
+ * recepción ISO, B igual al código `r` de la carga (el script exige que coincidan) y la carga en D. Solo esas filas
+ * pueden traer retiros: el formulario de respaldo no los lleva, así que un retiro en otra fila es inválido.
+ */
+function esFilaDeRespuestas(fila: string[], r: unknown): boolean {
+  return fila.length === 4 && typeof r === 'string' && fila[1] === r && RECIBIDO_ISO.test(fila[0] ?? '') && (fila[3] ?? '').trim().startsWith('{"v":');
+}
 
 /**
  * Fila con la forma exacta de las otras pestañas de la hoja del Apps Script, que no son envíos:
@@ -124,7 +165,7 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
       }
       const d: unknown = JSON.parse(celda);
       if (esObjeto(d) && d['v'] === 2) {
-        const expandidos = expandirV2(d, idOk, fila[0] ?? '');
+        const expandidos = expandirV2(d, idOk, fila[0] ?? '', esFilaDeRespuestas(fila, d['r']));
         if (expandidos) envios.push(...expandidos);
         else invalidas++;
         continue;
@@ -159,6 +200,71 @@ export function ultimasRespuestas(envios: Envio[]): { revisor: string; r: Respue
     for (const r of e.respuestas) m.set(`${e.revisor}|${r.estructura}|${r.campo}|${r.idioma ?? ''}`, { revisor: e.revisor, r, marcaTemporal: e.marcaTemporal });
   }
   return [...m.values()];
+}
+
+/** Una marca que un retiro quitó: revisor (código o, después de `aplicarPadron`, alias), estructura, campo e idioma ('' si no tiene). Sin veredicto, propuesta ni comentario; el campo de un trazo admite hasta 120 caracteres. */
+export interface MarcaRetirada {
+  revisor: string;
+  estructura: string;
+  campo: string;
+  idioma: string;
+}
+
+/**
+ * Aplica los retiros (#217): cada retiro de un envío quita las respuestas de la misma clave
+ * revisor|estructura|campo|idioma de los envíos anteriores a ese envío, en el orden de las filas (la última fila por
+ * clave manda, R3.6), pero solo de los envíos con `deHoja` (carga `v:2` con la forma de la pestaña Respuestas): los `v:1` y
+ * lo que llegó por el formulario nunca se quitan (R7.3). Un veredicto posterior al retiro, el de otro revisor y el de otra clave no se tocan. El idioma
+ * ausente cuenta como '', igual que en `ultimasRespuestas`. Devuelve los envíos sin las respuestas quitadas (los
+ * envíos sin retiros salen tal cual, y los que un retiro dejó sin respuestas o que solo traían retiros no salen) y
+ * las claves que quitaron algo y siguen sin respuesta, sin repetir. No muta la entrada.
+ */
+export function quitarRetiradas(envios: Envio[]): { envios: Envio[]; retiradas: MarcaRetirada[] } {
+  const clave = (revisor: string, estructura: string, campo: string, idioma: string | undefined) => `${revisor}|${estructura}|${campo}|${idioma ?? ''}`;
+  const salida = envios.map((e) => ({ ...e, respuestas: [...e.respuestas] }));
+  // Índices de los envíos que un retiro dejó sin ninguna respuesta.
+  const vaciados = new Set<number>();
+  // Clave -> la marca del último retiro que quitó algo de ella.
+  const quitadas = new Map<string, { marca: MarcaRetirada }>();
+  salida.forEach((e, i) => {
+    for (const retiro of e.retiros ?? []) {
+      const k = clave(e.revisor, retiro.estructura, retiro.campo, retiro.idioma);
+      for (const [j, previo] of salida.slice(0, i).entries()) {
+        if (!previo.deHoja) continue; // lo del formulario y los `v:1` no se retiran (R7.3)
+        const quedan = previo.respuestas.filter((r) => clave(previo.revisor, r.estructura, r.campo, r.idioma) !== k);
+        if (quedan.length === previo.respuestas.length) continue;
+        previo.respuestas = quedan;
+        if (quedan.length === 0) vaciados.add(j);
+        quitadas.set(k, { marca: { revisor: e.revisor, estructura: retiro.estructura, campo: retiro.campo, idioma: retiro.idioma ?? '' } });
+      }
+    }
+  });
+  // Solo siguen quitadas las que quedan sin ninguna respuesta: ni un veredicto posterior al retiro ni uno del formulario.
+  const retiradas = [...quitadas.entries()]
+    .filter(([k]) => !salida.some((e) => e.respuestas.some((r) => clave(e.revisor, r.estructura, r.campo, r.idioma) === k)))
+    .map(([, { marca }]) => marca);
+  // Un envío que se quedó sin nada por un retiro, o que solo traía retiros, ya no tiene qué mostrar.
+  const conservados = salida.filter((e, i) => !vaciados.has(i) && !(e.retiros && e.respuestas.length === 0));
+  return { envios: conservados, retiradas };
+}
+
+/**
+ * Sección de `resumen.md` con las marcas que un retiro quitó (#217), para que el editor vea qué desapareció además
+ * del conteo. Solo alias, estructura, campo e idioma: nunca el veredicto, la propuesta ni el comentario. Devuelve ''
+ * si no hay ninguna.
+ */
+export function seccionRetiradas(retiradas: MarcaRetirada[]): string {
+  if (retiradas.length === 0) return '';
+  const filas = [...retiradas].sort((a, b) => cmp(a.estructura, b.estructura) || cmp(a.revisor, b.revisor) || cmp(a.campo, b.campo) || cmp(a.idioma, b.idioma));
+  return [
+    '## Marcas retiradas',
+    '',
+    `${retiradas.length} marcas que el docente quitó después de responderlas. Sus respuestas anteriores ya no están en las tablas ni en las secciones "Descartadas"; aquí solo van el alias, el campo, el idioma y la estructura.`,
+    '',
+    '| Revisor (alias) | Campo | Idioma | Estructura |',
+    '|---|---|---|---|',
+    ...filas.map((f) => `| ${codigo(f.revisor)} | ${codigo(f.campo)} | ${f.idioma} | ${codigo(f.estructura)} |`),
+  ].join('\n');
 }
 
 /**
@@ -375,6 +481,7 @@ export function resumenConsolidado(
   desconocidos = 0,
   vago: { descartadas: Envio[]; sinArchivo: boolean } = { descartadas: [], sinArchivo: false },
   sinAutorizacion: Envio[] = [],
+  retiradas: MarcaRetirada[] = [],
 ): string {
   const ids = [...new Set(envios.map((e) => e.estructura))].sort();
   const partes = ids.map((id) => resumenMarkdown(id, envios.filter((e) => e.estructura === id), versionDe(id)));
@@ -384,7 +491,16 @@ export function resumenConsolidado(
     : [];
   const sinAut = seccionSinAutorizacion(sinAutorizacion);
   const sinVago = seccionSinVago(vago.descartadas, versionDe, vago.sinArchivo);
-  return [`# Revisiones docentes (${total} respuestas, ${ids.length} estructuras)`, '', ...aviso, ...partes, ...(sinAut ? [sinAut] : []), ...(sinVago ? [sinVago] : [])].join('\n\n');
+  const quitadas = seccionRetiradas(retiradas);
+  return [
+    `# Revisiones docentes (${total} respuestas, ${ids.length} estructuras)`,
+    '',
+    ...aviso,
+    ...partes,
+    ...(quitadas ? [quitadas] : []),
+    ...(sinAut ? [sinAut] : []),
+    ...(sinVago ? [sinVago] : []),
+  ].join('\n\n');
 }
 
 export interface Importacion {
@@ -409,6 +525,8 @@ export interface Importacion {
   sinAutorizacion: number | null;
   /** Alias (nunca códigos) de esas respuestas, en orden alfabético; vacío si no hay o no se pasó el CSV. */
   aliasSinAutorizacion: string[];
+  /** Claves únicas que un retiro dejó sin ninguna respuesta (#217), de revisores del padrón; salen en "Marcas retiradas" de `resumen.md`. */
+  retiradas: number;
 }
 
 /**
@@ -422,6 +540,11 @@ export interface Importacion {
  * sin ninguna fila en Autorizaciones se apartan antes de separar las del vago: salen solo en la sección
  * "Descartadas: sin autorización" de `resumen.md` (alias, campo, idioma y estructura, sin texto libre) y
  * nunca en las tablas ni en los `<id>.md`. `sinAutorizacion` las cuenta y se devuelven sus alias.
+ * Los retiros (#217, `quitarRetiradas`) se aplican justo después de leer, antes del padrón y de todo lo anterior: las
+ * respuestas anteriores de la clave retirada de ese mismo revisor que llegaron en filas `v:2` de la pestaña Respuestas
+ * (`deHoja`) no salen en las tablas, en los `<id>.md` ni en ninguna sección "Descartadas"; un retiro nunca quita lo del
+ * formulario ni los `v:1`. `retiradas` cuenta, y "Marcas retiradas" de `resumen.md` lista, solo las claves que quedaron
+ * sin ninguna respuesta (no las que un veredicto posterior o el formulario conservan), así que puede valer 0.
  */
 export function importar(
   csvTexto: string,
@@ -432,7 +555,17 @@ export function importar(
   const ids = new Set(Object.keys(estructuras));
   const versionDe = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
   const leidos = leerEnvios(parsearCsv(csvTexto), ids);
-  const { envios: conAlias, desconocidos } = aplicarPadron(leidos.envios, padron);
+  // Los retiros se aplican antes que el padrón, la autorización y la casilla del vago: lo retirado no sale en ninguna sección.
+  const sinRetiradas = quitarRetiradas(leidos.envios);
+  // Las cuentas (`validos`, `desconocidos`) son de los envíos leídos, también los que un retiro dejó sin nada.
+  const { envios: conRetiros, desconocidos } = aplicarPadron(leidos.envios, padron);
+  const { envios: conAlias } = aplicarPadron(sinRetiradas.envios, padron);
+  // Con alias, sin repetir (dos códigos del mismo alias pueden retirar la misma clave); los códigos fuera del padrón no salen.
+  const retiradas = [
+    ...new Map(
+      sinRetiradas.retiradas.flatMap((m) => (Object.hasOwn(padron, m.revisor) ? [{ ...m, revisor: padron[m.revisor]! }] : [])).map((m) => [JSON.stringify(m), m] as const),
+    ).values(),
+  ];
   const invalidas = leidos.invalidas;
   const codigos = autorizacionesCsv === null ? new Map<string, boolean>() : leerAutorizaciones(parsearCsv(autorizacionesCsv));
   // Falla cerrada: un alias solo puede con el vago si todos sus códigos del padrón tienen vago = sí.
@@ -455,17 +588,18 @@ export function importar(
   for (const [id, lista] of porEstructura) archivos.set(`${id}.md`, resumenMarkdown(id, lista, versionDe(id)));
   archivos.set(
     'resumen.md',
-    resumenConsolidado(envios, versionDe, desconocidos, { descartadas: sinVago, sinArchivo: autorizacionesCsv === null }, apartadas),
+    resumenConsolidado(envios, versionDe, desconocidos, { descartadas: sinVago, sinArchivo: autorizacionesCsv === null }, apartadas, retiradas),
   );
   return {
     archivos,
-    validos: conAlias.length,
+    validos: conRetiros.length,
     invalidas,
     desconocidos,
     sinVago: ultimasRespuestas(sinVago).length,
     autorizaciones: autorizacionesCsv === null ? null : codigos.size,
     sinAutorizacion,
     aliasSinAutorizacion,
+    retiradas: retiradas.length,
   };
 }
 

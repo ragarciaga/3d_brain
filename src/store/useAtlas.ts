@@ -29,7 +29,7 @@ import { vagoRevisable } from '../lib/prioridad';
 import { encuadreDeParada, paradasVago, piezasDelRecorrido } from '../lib/recorrido';
 import type { Reemplaza, RutaTrazada } from '../lib/rutas';
 import { fusionarRespuestas, piezasQueSiguen } from '../lib/respaldo';
-import { claveRespuesta, type Respuesta } from '../lib/revision';
+import { claveRespuesta, type Respuesta, type Retiro } from '../lib/revision';
 import { ENTRADA_VAGO } from '../lib/trazos';
 
 /**
@@ -125,6 +125,8 @@ interface Estado {
   autorizacion: Autorizacion | null; // vigente para el revisor actual; null es "falta autorizar o no se sabe"
   lecturaCanal: LecturaCanal; // estado del canal para el revisor actual: la lectura inicial `leer`, y `inactivo` también por `autorizar` o `guardar`
   respuestas: Record<string, Respuesta>;
+  retiradas: Record<string, string>; // clave de respuesta -> fecha del retiro: marcas que el docente quitó y el canal aún debe recibir (#217); una clave no está aquí y en `respuestas`
+  canalRetiros: boolean; // el script del canal declaró `canal >= VERSION_CANAL` en la lectura de este revisor: solo entonces se mandan retiros
   piezaPropuesta: Record<string, string>; // estructura -> id de la pieza tocada al proponer su posición; solo en esta sesión, no se envía
   dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra (después de la confirmación de salida)
   cargaRespuestas: number; // sube cada vez que se cargan las respuestas guardadas; la ficha remonta sus controles
@@ -173,11 +175,15 @@ interface Estado {
    */
   cambiarAutorizacion(vago: boolean): Promise<void>;
   responder(r: Respuesta): void;
-  borrarRespuesta(clave: string): void;
+  /** Quita la respuesta de esa clave y, si había una, anota el retiro con `fecha` (por defecto ahora) para que el canal también la quite. */
+  borrarRespuesta(clave: string, fecha?: string): void;
   cargarRespuestas(r: Record<string, Respuesta>, piezas?: Record<string, string>): void;
-  importarRespuestas(nuevas: Respuesta[]): { agregadas: number; actualizadas: number; sinCambio: number };
+  cargarRetiradas(r: Record<string, string>): void;
+  setCanalRetiros(v: boolean): void;
+  /** Fusiona por fecha lo que trae el canal: respuestas y retiros. Devuelve solo el conteo de las respuestas. */
+  importarRespuestas(nuevas: Respuesta[], retiros?: Retiro[]): { agregadas: number; actualizadas: number; sinCambio: number };
   proponerPosicion(r: Respuesta, pieza: string): void;
-  deshacerPosicion(estructura: string): void;
+  deshacerPosicion(estructura: string, fecha?: string): void;
   setDialogoRevision(v: boolean): void;
   setUbicando(id: string | null): void;
   setShift(v: boolean): void;
@@ -241,6 +247,14 @@ export function fueraDeSitio(s: Estado, pieza: string): boolean {
   return o[0] !== 0 || o[1] !== 0 || o[2] !== 0;
 }
 
+/** Copia de `retiradas` sin esa clave; el mismo objeto si no estaba. */
+function sinRetiro(retiradas: Record<string, string>, clave: string): Record<string, string> {
+  if (!Object.hasOwn(retiradas, clave)) return retiradas;
+  const copia = { ...retiradas };
+  delete copia[clave];
+  return copia;
+}
+
 export const useAtlas = create<Estado>((set, get) => ({
   ocultas: new Set(),
   seleccion: { entrada: null, pieza: null, malla: null },
@@ -262,6 +276,8 @@ export const useAtlas = create<Estado>((set, get) => ({
   autorizacion: null,
   lecturaCanal: 'pendiente',
   respuestas: {},
+  retiradas: {},
+  canalRetiros: false,
   piezaPropuesta: {},
   dialogoRevision: false,
   cargaRespuestas: 0,
@@ -408,7 +424,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   // Otro código es otro revisor: su autorización y su lectura del canal se vuelven a obtener.
   setRevisor: (codigo) => {
     if (codigo === get().revisor) return;
-    set({ revisor: codigo, autorizacion: null, lecturaCanal: 'pendiente' });
+    set({ revisor: codigo, autorizacion: null, lecturaCanal: 'pendiente', retiradas: {}, canalRetiros: false });
   },
   setRevisionBloqueada: (v) => {
     if (get().revisionBloqueada !== v) set({ revisionBloqueada: v });
@@ -428,33 +444,45 @@ export const useAtlas = create<Estado>((set, get) => ({
     }
     if (get().revisor === codigo) set({ autorizacion: { version: VERSION_AUTORIZACION, vago } });
   },
-  responder: (r) => set({ respuestas: { ...get().respuestas, [claveRespuesta(r)]: r } }),
-  borrarRespuesta: (clave) => {
-    const respuestas = { ...get().respuestas };
+  // Una respuesta nueva sobre una clave retirada deja sin efecto el retiro (una clave no está en `respuestas` y en `retiradas`).
+  responder: (r) => set({ respuestas: { ...get().respuestas, [claveRespuesta(r)]: r }, retiradas: sinRetiro(get().retiradas, claveRespuesta(r)) }),
+  borrarRespuesta: (clave, fecha = new Date().toISOString()) => {
+    const s = get();
+    const respuestas = { ...s.respuestas };
+    const habia = Object.hasOwn(respuestas, clave);
     delete respuestas[clave];
-    set({ respuestas });
+    set(habia ? { respuestas, retiradas: { ...s.retiradas, [clave]: fecha } } : { respuestas });
   },
   // Sin `piezas` se olvidan las piezas tocadas (#61); `importarRespuestas` pasa las que siguen valiendo.
   cargarRespuestas: (r, piezas = {}) => set({ respuestas: r, piezaPropuesta: piezas, cargaRespuestas: get().cargaRespuestas + 1 }),
-  // Respuestas que trae el canal al abrir (spec 03, R4.1): se fusionan con lo local por fecha; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
-  importarRespuestas: (nuevas) => {
-    const { respuestas, piezaPropuesta } = get();
-    const { respuestas: fusion, ...conteo } = fusionarRespuestas(respuestas, nuevas);
+  cargarRetiradas: (r) => set({ retiradas: r }),
+  setCanalRetiros: (v) => {
+    if (get().canalRetiros !== v) set({ canalRetiros: v });
+  },
+  // Respuestas y retiros que trae el canal al abrir (spec 03, R4.1): se fusionan con lo local por fecha; solo si algo cambia se recarga, y se conservan las piezas de los marcadores que no cambiaron.
+  importarRespuestas: (nuevas, retiros = []) => {
+    const { respuestas, retiradas, piezaPropuesta } = get();
+    const { respuestas: fusion, retiradas: retiradasFusion, ...conteo } = fusionarRespuestas(respuestas, nuevas, retiradas, retiros);
+    if (JSON.stringify(retiradasFusion) !== JSON.stringify(retiradas)) set({ retiradas: retiradasFusion });
     if (conteo.agregadas + conteo.actualizadas > 0) get().cargarRespuestas(fusion, piezasQueSiguen(piezaPropuesta, respuestas, fusion));
     return conteo;
   },
   proponerPosicion: (r, pieza) =>
     set({
       respuestas: { ...get().respuestas, [claveRespuesta(r)]: r },
+      retiradas: sinRetiro(get().retiradas, claveRespuesta(r)),
       piezaPropuesta: { ...get().piezaPropuesta, [r.estructura]: pieza },
       ubicando: null,
     }),
-  deshacerPosicion: (estructura) => {
-    const respuestas = { ...get().respuestas };
-    delete respuestas[claveRespuesta({ estructura, campo: 'posicion' })];
-    const piezaPropuesta = { ...get().piezaPropuesta };
+  deshacerPosicion: (estructura, fecha = new Date().toISOString()) => {
+    const clave = claveRespuesta({ estructura, campo: 'posicion' });
+    const s = get();
+    const respuestas = { ...s.respuestas };
+    const habia = Object.hasOwn(respuestas, clave);
+    delete respuestas[clave];
+    const piezaPropuesta = { ...s.piezaPropuesta };
     delete piezaPropuesta[estructura];
-    set({ respuestas, piezaPropuesta, ubicando: estructura });
+    set({ respuestas, piezaPropuesta, ubicando: estructura, ...(habia ? { retiradas: { ...s.retiradas, [clave]: fecha } } : {}) });
   },
   setDialogoRevision: (v) => {
     if (get().dialogoRevision !== v) set({ dialogoRevision: v });

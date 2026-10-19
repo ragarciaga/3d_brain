@@ -135,7 +135,7 @@ Spec: docs/specs/04-teacher-review-proposals/  |  Status: approved  |  Converged
 - Files: src/lib/trazos.ts, src/components/RevisionTrazo.tsx, tests/trazos.test.ts, e2e/trazos-vago.spec.ts
 - Verify: `npm test -- tests/trazos.test.ts` (cada clave `fuente` de `src/data/trazos-vago.json` se resuelve a una cita con autores, título, año e identificador tomada de la bibliografía registrada en `docs/research/marcadores/fuentes.md`, sin texto inventado; una clave sin entrada no muestra una cita vacía); `npm run test:e2e -- e2e/trazos-vago.spec.ts` (al abrir un trazo con propuesta en es y en, el bloque de la fuente muestra la cita completa y no la clave sola); `npm run check:i18n`; `npm run typecheck`. Si la cita tiene que vivir en `src/data/`, el plan lo declara nivel C.
 - Issue: #218
-- Status: todo
+- Status: done
 
 ### Decision log
 - 2026-10-18: creada por la verificación de la feature (auditoría de objetivo, G4 parcial): R4.5 y R5.1 piden la fuente y hoy se ve solo la clave.

@@ -16,13 +16,14 @@ import {
   ofrecerRespaldo,
   pendientes,
   porEnviar,
+  retirosPendientes,
   siguienteEspera,
   trasEnvio,
   type EstadoCola,
   type ResultadoEnvio,
 } from '../src/lib/colaGuardado';
 import { cuerpoGuardar } from '../src/lib/canal';
-import { claveRespuesta, ESPERA_GUARDADO_MS, type Respuesta } from '../src/lib/revision';
+import { claveRespuesta, ESPERA_GUARDADO_MS, type Respuesta, type Retiro } from '../src/lib/revision';
 
 const CODIGO = 'D03-ok_1';
 const a: Respuesta = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: 'correcto', version: '0.1.0', fecha: '2026-10-10T10:00:00.000Z' };
@@ -377,5 +378,153 @@ describe('fusionarConCanal (R4.2)', () => {
     expect(confirmadas).toEqual(c0);
     expect(r.confirmadas).not.toBe(confirmadas);
     expect(r.respuestas).not.toBe(locales);
+  });
+});
+
+describe('retiros (#217)', () => {
+  const FECHA_RETIRO = '2026-10-10T12:00:00.000Z';
+  const retiroDeA: Retiro = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: '', fecha: FECHA_RETIRO };
+  const retiroDeB: Retiro = { estructura: 'thalamus', campo: 'que_es', idioma: 'es', veredicto: '', fecha: FECHA_RETIRO };
+  const retiradas = { [kA]: FECHA_RETIRO };
+  const recibeRetiros = (...l: Retiro[]): ResultadoEnvio => ({ ok: true, recibidas: new Set(l.map(claveConfirmacion)) });
+
+  describe('retirosPendientes', () => {
+    it('arma un Retiro por clave retirada, con idioma, veredicto vacío y la fecha del retiro', () => {
+      expect(retirosPendientes(retiradas, {})).toEqual([retiroDeA]);
+    });
+
+    it('una clave sin idioma sale sin la propiedad idioma', () => {
+      const k = 'hippocampus|posicion|';
+      const [r] = retirosPendientes({ [k]: FECHA_RETIRO }, {});
+      expect(r).toEqual({ estructura: 'hippocampus', campo: 'posicion', veredicto: '', fecha: FECHA_RETIRO });
+      expect(claveConfirmacion(r!)).toBe(`hippocampus|posicion||${FECHA_RETIRO}`);
+    });
+
+    it('lo confirmado con esa misma fecha ya no está pendiente; con otra fecha sí', () => {
+      expect(retirosPendientes(retiradas, { [kA]: FECHA_RETIRO })).toEqual([]);
+      expect(retirosPendientes(retiradas, { [kA]: a.fecha })).toEqual([retiroDeA]);
+    });
+
+    it('salta las claves que no se pueden leer en vez de lanzar', () => {
+      const r = retirosPendientes({ 'sin-barras': FECHA_RETIRO, 'a|b|fr': FECHA_RETIRO, 'a|b|c|d': FECHA_RETIRO, [kA]: FECHA_RETIRO }, {});
+      expect(r).toEqual([retiroDeA]);
+    });
+  });
+
+  describe('porEnviar con retiros', () => {
+    it('sin el cuarto argumento no hay retiros (el script no los admite)', () => {
+      expect(porEnviar([b], {}, {})).toEqual([b]);
+    });
+
+    it('con retiros salen después de las respuestas', () => {
+      expect(porEnviar([b], {}, {}, [retiroDeA])).toEqual([b, retiroDeA]);
+    });
+
+    it('un retiro rechazado solo con esa fecha no sale; con otra fecha vuelve', () => {
+      expect(porEnviar([], {}, { [kA]: FECHA_RETIRO }, [retiroDeA])).toEqual([]);
+      expect(porEnviar([], {}, { [kA]: a.fecha }, [retiroDeA])).toEqual([retiroDeA]);
+    });
+
+    it('el rechazo de un retiro no frena las respuestas ni los otros retiros', () => {
+      expect(porEnviar([b], {}, { [kA]: FECHA_RETIRO }, [retiroDeA, retiroDeB])).toEqual([b, retiroDeB]);
+    });
+  });
+
+  describe('armarLotes', () => {
+    it('cuenta los retiros en el tope de respuestas por lote y los mantiene en orden', () => {
+      const retiros: Retiro[] = Array.from({ length: 60 }, (_, i) => ({ ...retiroDeA, campo: `relevancia.${i}` }));
+      const lotes = armarLotes(CODIGO, [a, ...retiros]);
+      expect(lotes.map((l) => l.length)).toEqual([50, 11]);
+      expect(lotes.flat()).toEqual([a, ...retiros]);
+    });
+  });
+
+  describe('trasEnvio', () => {
+    it('un lote con un retiro que el canal recibió lo confirma con su fecha', () => {
+      const r = trasEnvio(estadoInicial(), [a, retiroDeB], recibeRetiros(retiroDeB, a as unknown as Retiro), T0);
+      expect(r.espera).toBe(0);
+      expect(r.estado.confirmadas).toEqual({ [kA]: a.fecha, [kB]: FECHA_RETIRO });
+    });
+
+    it('el retiro rechazado solo queda en rechazadas y los demás siguen por enviar', () => {
+      const r = trasEnvio(estadoInicial(), [retiroDeA], falla('formato'), T0);
+      expect(r.espera).toBe(0);
+      expect(r.estado.rechazadas).toEqual({ [kA]: FECHA_RETIRO });
+      expect(r.estado.confirmadas).toEqual({});
+      expect(porEnviar([b], r.estado.confirmadas, r.estado.rechazadas, [retiroDeA, retiroDeB])).toEqual([b, retiroDeB]);
+    });
+
+    it('formato con un lote de 2 (un retiro y una respuesta) parte el lote en vez de rechazar', () => {
+      const r = trasEnvio(estadoInicial(), [b, retiroDeA], falla('formato'), T0);
+      expect(r.estado.tope).toBe(1);
+      expect(r.estado.rechazadas).toEqual({});
+      expect(r.espera).toBe(0);
+    });
+
+    it.each([
+      ['red', 2000],
+      ['interno', 2000],
+    ] as const)('%s con un retiro reintenta a los %i ms y duplica el siguiente', (error, ms) => {
+      const uno = trasEnvio(estadoInicial(), [retiroDeA], falla(error), T0);
+      expect(uno.espera).toBe(ms);
+      expect(trasEnvio(uno.estado, [retiroDeA], falla(error), T0).espera).toBe(ms * 2);
+      expect(uno.estado.confirmadas).toEqual({});
+    });
+
+    it('un ok que no devuelve la clave del retiro no lo confirma y sigue pendiente', () => {
+      const r = trasEnvio(estadoInicial(), [retiroDeA], { ok: true, recibidas: new Set() }, T0);
+      expect(r.estado.confirmadas).toEqual({});
+      expect(r.espera).toBe(2000);
+      expect(retirosPendientes(retiradas, r.estado.confirmadas)).toEqual([retiroDeA]);
+    });
+  });
+
+  describe('fusionarConCanal con retiros', () => {
+    it('un retiro del canal más nuevo borra la respuesta local y queda confirmado', () => {
+      const r = fusionarConCanal({ [kA]: a }, { [kA]: a.fecha }, [], {}, [retiroDeA]);
+      expect(r.respuestas).toEqual({});
+      expect(r.retiradas).toEqual({ [kA]: FECHA_RETIRO });
+      expect(r.confirmadas).toEqual({ [kA]: FECHA_RETIRO });
+      expect(retirosPendientes(r.retiradas, r.confirmadas)).toEqual([]);
+    });
+
+    it('un retiro del canal más viejo no borra la respuesta local y no queda confirmado', () => {
+      const vieja = { ...retiroDeA, fecha: '2026-10-10T09:00:00.000Z' };
+      const r = fusionarConCanal({ [kA]: a }, {}, [], {}, [vieja]);
+      expect(r.respuestas[kA]).toBe(a);
+      expect(r.retiradas).toEqual({});
+      expect(r.confirmadas).toEqual({});
+    });
+
+    it('un veredicto del canal más viejo que el retiro local no vuelve ni se confirma, y el retiro sigue pendiente', () => {
+      const r = fusionarConCanal({}, {}, [a], retiradas, []);
+      expect(r.respuestas).toEqual({});
+      expect(r.confirmadas).toEqual({});
+      expect(retirosPendientes(r.retiradas, r.confirmadas)).toEqual([retiroDeA]);
+    });
+
+    it('un veredicto del canal más nuevo que el retiro local entra, lo borra y queda confirmado', () => {
+      const nueva = { ...a, fecha: '2026-10-10T13:00:00.000Z' };
+      const r = fusionarConCanal({}, {}, [nueva], retiradas, []);
+      expect(r.respuestas[kA]).toBe(nueva);
+      expect(r.retiradas).toEqual({});
+      expect(r.confirmadas).toEqual({ [kA]: nueva.fecha });
+    });
+
+    it('un retiro del canal más viejo que el local deja el local pendiente', () => {
+      const delCanal = { ...retiroDeA, fecha: '2026-10-10T11:00:00.000Z' };
+      const r = fusionarConCanal({}, {}, [], retiradas, [delCanal]);
+      expect(r.retiradas).toEqual({ [kA]: FECHA_RETIRO });
+      expect(r.confirmadas).toEqual({});
+    });
+
+    it('no muta retiradas ni confirmadas', () => {
+      const ret0 = structuredClone(retiradas);
+      const conf = { [kB]: b.fecha };
+      const conf0 = structuredClone(conf);
+      fusionarConCanal({ [kA]: a }, conf, [], retiradas, [retiroDeA]);
+      expect(retiradas).toEqual(ret0);
+      expect(conf).toEqual(conf0);
+    });
   });
 });

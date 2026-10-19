@@ -9,7 +9,12 @@
 //     `{ok:true, recibidas:[<estructura|campo|idioma|fecha>, ...]}`.
 //   - `{accion:'autorizar', r:<código>, version, vago}`. Responde `{ok:true}`.
 //   - `{accion:'leer', r:<código>}`. Responde
-//     `{ok:true, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, autorizacion:{version, vago} | null}`.
+//     `{ok:true, canal:<número>, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}},
+//     retiradas:{v:2, r:<código>, e:{<id>:[{c, i?, d:"", f}]}}, autorizacion:{version, vago} | null}`. `canal` (2 o más)
+//     dice que el script entiende los retiros; un script anterior no lo responde. `respuestas` no trae las claves
+//     cuya última fila es un retiro (#217).
+//   - Un retiro viaja en la carga de `guardar` como un elemento `{c, i?, d:"", f}`: no lleva propuesta, comentario
+//     ni posición. El cliente solo lo manda si `leer` declaró `canal >= VERSION_CANAL`.
 // - Ninguna petición lleva el código ni una query en la URL (S4, #162). El script ya no lee por GET (#169):
 //   responde `formato` a cualquier GET, y este cliente nunca lo usa.
 // - Un error siempre responde `{ok:false, error}` con `error` en `codigo_no_activo`, `demasiado_grande`,
@@ -19,9 +24,9 @@
 //   `autorizar` responde `formato` si `version` no es la vigente (#169).
 //
 // Red caída, tiempo agotado (10 s), HTTP que no es 2xx y cuerpo que no es JSON valen `red`.
-import { configRevision, VERSION_AUTORIZACION } from '../config/revision';
-import { CLAVES_V2, cargaRevisionV2, esObjeto, fechaValida, respuestaValida } from './revision';
-import type { Respuesta } from './revision';
+import { configRevision, VERSION_AUTORIZACION, VERSION_CANAL } from '../config/revision';
+import { CLAVES_V2, cargaRevisionV2, esObjeto, fechaValida, respuestaValida, retiroValido } from './revision';
+import type { Respuesta, Retiro } from './revision';
 
 export interface Autorizacion {
   version: string;
@@ -66,7 +71,7 @@ export function canalConfigurado(): boolean {
 }
 
 /** Cuerpo del POST `guardar`: la carga `v:2` va como texto, igual que la guarda el script. */
-export function cuerpoGuardar(codigo: string, respuestas: Respuesta[]): string {
+export function cuerpoGuardar(codigo: string, respuestas: readonly (Respuesta | Retiro)[]): string {
   return JSON.stringify({ accion: 'guardar', carga: cargaRevisionV2(codigo, respuestas) });
 }
 
@@ -112,20 +117,20 @@ const CLAVES_CORTAS: readonly string[] = Object.values(CLAVES_V2);
 export const MARGEN_FECHA_FUTURA_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Única puerta de entrada de las respuestas del canal a la app. `d` es la carga `{v:2, r, e}`. Una carga
- * de otro código, de otra versión o sin `e` objeto da cero respuestas. Una respuesta se descarta entera
- * si no es objeto, si trae alguna clave fuera de `CLAVES_V2` (incluida `__proto__`), si no tiene `f`
- * válida, si su `f` pasa de la hora actual más `MARGEN_FECHA_FUTURA_MS` o si no pasa `respuestaValida`.
- * Solo copia claves conocidas a un objeto nuevo.
+ * Recorre una carga `{v:2, r, e}` del canal y se queda con los elementos que pasan `valido`. Una carga de otro código,
+ * de otra versión o sin `e` objeto da cero elementos. Un elemento se descarta entero si no es objeto, si trae alguna
+ * clave fuera de `CLAVES_V2` (incluida `__proto__`), si no tiene `f` válida, si su `f` pasa de la hora actual más
+ * `MARGEN_FECHA_FUTURA_MS` o si no pasa `valido`. Solo copia claves conocidas a un objeto nuevo.
  */
-export function respuestasDelCanal(
+function elementosDelCanal<T>(
   d: unknown,
   codigo: string,
   idOk: (id: unknown) => boolean,
-): { respuestas: Respuesta[]; descartadas: number } {
-  const respuestas: Respuesta[] = [];
-  if (d === undefined || d === null) return { respuestas, descartadas: 0 };
-  if (!esObjeto(d) || d['v'] !== 2 || d['r'] !== codigo || !esObjeto(d['e'])) return { respuestas, descartadas: 1 };
+  valido: (r: unknown, idOk: (id: unknown) => boolean) => boolean,
+): { elementos: T[]; descartadas: number } {
+  const elementos: T[] = [];
+  if (d === undefined || d === null) return { elementos, descartadas: 0 };
+  if (!esObjeto(d) || d['v'] !== 2 || d['r'] !== codigo || !esObjeto(d['e'])) return { elementos, descartadas: 1 };
   let descartadas = 0;
   const tope = Date.now() + MARGEN_FECHA_FUTURA_MS;
   for (const [id, lista] of Object.entries(d['e'])) {
@@ -144,27 +149,57 @@ export function respuestasDelCanal(
       }
       const copia: Record<string, unknown> = { estructura: id };
       for (const [largo, corto] of Object.entries(CLAVES_V2)) if (Object.hasOwn(el, corto)) copia[largo] = el[corto];
-      if (Object.hasOwn(el, 'f') && fechaValida(el['f']) && Date.parse(el['f']) <= tope && respuestaValida(copia, idOk)) respuestas.push(copia);
+      if (Object.hasOwn(el, 'f') && fechaValida(el['f']) && Date.parse(el['f']) <= tope && valido(copia, idOk)) elementos.push(copia as T);
       else descartadas++;
     }
   }
-  return { respuestas, descartadas };
+  return { elementos, descartadas };
 }
 
-/** Lo que el canal guarda de un código: sus respuestas validadas y su autorización vigente (o null). */
+/**
+ * Única puerta de entrada de las respuestas del canal a la app. `d` es la carga `{v:2, r, e}`: pasa por
+ * `elementosDelCanal` con `respuestaValida`. Un elemento con `d` vacío (un retiro) no es una respuesta: se descarta.
+ */
+export function respuestasDelCanal(
+  d: unknown,
+  codigo: string,
+  idOk: (id: unknown) => boolean,
+): { respuestas: Respuesta[]; descartadas: number } {
+  const { elementos, descartadas } = elementosDelCanal<Respuesta>(d, codigo, idOk, respuestaValida);
+  return { respuestas: elementos, descartadas };
+}
+
+/**
+ * Única puerta de entrada de los retiros del canal (el campo `retiradas` de `leer`, #217), con las mismas puertas
+ * que `respuestasDelCanal` pero con `retiroValido`: solo `{c, i?, d:"", f}`.
+ */
+export function retirosDelCanal(
+  d: unknown,
+  codigo: string,
+  idOk: (id: unknown) => boolean,
+): { retiros: Retiro[]; descartadas: number } {
+  const { elementos, descartadas } = elementosDelCanal<Retiro>(d, codigo, idOk, retiroValido);
+  return { retiros: elementos, descartadas };
+}
+
+/** Lo que el canal guarda de un código: sus respuestas y retiros validados, si el script entiende los retiros, y su autorización vigente (o null). */
 export async function leer(
   codigo: string,
   idOk: (id: unknown) => boolean,
-): Promise<{ respuestas: Respuesta[]; autorizacion: Autorizacion | null }> {
+): Promise<{ respuestas: Respuesta[]; retiros: Retiro[]; retirosAdmitidos: boolean; autorizacion: Autorizacion | null }> {
   const res = await pedir(JSON.stringify({ accion: 'leer', r: codigo }));
   const { respuestas, descartadas } = respuestasDelCanal(res['respuestas'], codigo, idOk);
+  const { retiros, descartadas: retirosDescartados } = retirosDelCanal(res['retiradas'], codigo, idOk);
+  const total = descartadas + retirosDescartados;
   // Solo el número: nunca el código ni el contenido.
-  if (descartadas > 0) console.warn(`Canal: ${descartadas} respuesta(s) descartada(s) por no ser válidas`);
-  return { respuestas, autorizacion: autorizacionVigente(res['autorizacion']) };
+  if (total > 0) console.warn(`Canal: ${total} respuesta(s) descartada(s) por no ser válidas`);
+  // Un script anterior no responde `canal`: no entiende los retiros y rechazaría con `formato` una carga que los lleve.
+  const retirosAdmitidos = typeof res['canal'] === 'number' && res['canal'] >= VERSION_CANAL;
+  return { respuestas, retiros, retirosAdmitidos, autorizacion: autorizacionVigente(res['autorizacion']) };
 }
 
-/** Envía las respuestas y devuelve las claves de confirmación (`estructura|campo|idioma|fecha`) que el canal recibió. */
-export async function guardar(codigo: string, respuestas: Respuesta[]): Promise<Set<string>> {
+/** Envía las respuestas (y los retiros) y devuelve las claves de confirmación (`estructura|campo|idioma|fecha`) que el canal recibió. */
+export async function guardar(codigo: string, respuestas: readonly (Respuesta | Retiro)[]): Promise<Set<string>> {
   const res = await pedir(cuerpoGuardar(codigo, respuestas));
   const recibidas = res['recibidas'];
   return new Set(Array.isArray(recibidas) ? recibidas.filter((x): x is string => typeof x === 'string') : []);

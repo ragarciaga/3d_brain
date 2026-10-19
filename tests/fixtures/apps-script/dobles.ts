@@ -456,3 +456,97 @@ export const casosCarga: [string, string, boolean][] = [
       return [`carga con ${n}`, JSON.stringify(v2({ [estructura]: [aCorta({ ...resto, fecha: undefined })] })), false];
     }),
 ];
+
+// ---------------------------------------------------------------------------------------------
+// Retiros (#217): la fila que quita una marca. Las dos tablas se pasan al script y a la app.
+// ---------------------------------------------------------------------------------------------
+
+const retiroBase = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es' as const, veredicto: '', fecha: '2026-10-11T10:00:00.000Z' };
+
+/** [nombre, retiro, ¿vale?]: se pasan a `retiroValido` del script y de la app. */
+export const casosRetiro: [string, unknown, boolean][] = [
+  ...(
+    [
+      ['veredicto correcto', { ...retiroBase, veredicto: 'correcto' }],
+      ['veredicto ausente', { ...retiroBase, veredicto: undefined }],
+      ['veredicto null', { ...retiroBase, veredicto: null }],
+      ['veredicto con un espacio', { ...retiroBase, veredicto: ' ' }],
+      ['fecha ausente', { ...retiroBase, fecha: undefined }],
+      ['fecha vacía', { ...retiroBase, fecha: '' }],
+      ['fecha ilegible', { ...retiroBase, fecha: 'ayer' }],
+      ['fecha que no es texto', { ...retiroBase, fecha: 1760000000000 }],
+      ['fecha de 41 caracteres', { ...retiroBase, fecha: `2026-10-10T10:00:00.${'0'.repeat(20)}Z` }],
+      ['propuesta', { ...retiroBase, propuesta: 'x' }],
+      ['propuesta vacía', { ...retiroBase, propuesta: '' }],
+      ['comentario', { ...retiroBase, comentario: 'x' }],
+      ['posicion', { ...retiroBase, posicion: [0, 0, 0] }],
+      ['malla', { ...retiroBase, malla: 'm' }],
+      ['ramo', { ...retiroBase, ramo: 'no_se' }],
+      ['version', { ...retiroBase, version: '0.1.0' }],
+      ['idioma fr', { ...retiroBase, idioma: 'fr' }],
+      ['idioma que no es texto', { ...retiroBase, idioma: 5 }],
+      ['campo que no es texto', { ...retiroBase, campo: 7 }],
+      ['campo ausente', { ...retiroBase, campo: undefined }],
+      ['campo con almohadilla', { ...retiroBase, campo: '#123' }],
+      ['campo trazo con barra vertical', { ...retiroBase, campo: 'trazo:a|b' }],
+      ['campo trazo con 121 caracteres tras el prefijo', { ...retiroBase, campo: `trazo:${'a'.repeat(121)}` }],
+      ['estructura con forma de ruta', { ...retiroBase, estructura: '../../x' }],
+      ['estructura ausente', { ...retiroBase, estructura: undefined }],
+      ['retiro que es null', null],
+      ['retiro que es un texto', 'hola'],
+      ['retiro que es un arreglo', [retiroBase]],
+    ] as [string, unknown][]
+  ).map(([n, r]): [string, unknown, boolean] => [n, r, false]),
+  ...(
+    [
+      ['retiro mínimo', retiroBase],
+      ['idioma ausente', { ...retiroBase, idioma: undefined }],
+      ['idioma en', { ...retiroBase, idioma: 'en' }],
+      ['campo posicion', { ...retiroBase, campo: 'posicion' }],
+      ['campo relevancia.0', { ...retiroBase, campo: 'relevancia.0' }],
+      ['campo trazo justo en el tope', { ...retiroBase, campo: `trazo:${'e'.repeat(120)}` }],
+      ['fecha de 40 caracteres', { ...retiroBase, fecha: `2026-10-10T10:00:00.${'0'.repeat(19)}Z` }],
+      ['fecha con espacio', { ...retiroBase, fecha: '2026-10-14 10:00' }],
+    ] as [string, unknown][]
+  ).map(([n, r]): [string, unknown, boolean] => [n, r, true]),
+];
+
+const retiroCorto = { c: 'ubicacion', i: 'es', d: '', f: '2026-10-14T10:00:00.000Z' };
+
+/**
+ * [nombre, texto de la carga, ¿vale?]: como `casosCarga`, pero con retiros. Cada texto va como `carga` de `guardar` al
+ * script (con la casilla del vago en `sí`) y, como celda D de una fila con la forma de la pestaña Respuestas, a
+ * `leerEnvios` de la app. El código es `CODIGO_ACTIVO`.
+ */
+export const casosCargaRetiro: [string, string, boolean][] = [
+  ...(
+    [
+      ['un retiro sin f', v2({ hippocampus: [{ c: 'ubicacion', d: '' }] })],
+      ['un retiro con f vacía', v2({ hippocampus: [{ ...retiroCorto, f: '' }] })],
+      ['un retiro con f ilegible', v2({ hippocampus: [{ ...retiroCorto, f: 'ayer' }] })],
+      ['un retiro con propuesta', v2({ hippocampus: [{ ...retiroCorto, p: 'x' }] })],
+      ['un retiro con comentario', v2({ hippocampus: [{ ...retiroCorto, k: 'x' }] })],
+      ['un retiro con posición', v2({ hippocampus: [{ ...retiroCorto, x: [0, 0, 0] }] })],
+      ['un retiro con malla', v2({ hippocampus: [{ ...retiroCorto, m: 'm' }] })],
+      ['un retiro con ramo', v2({ hippocampus: [{ ...retiroCorto, a: 'no_se' }] })],
+      ['un retiro con versión', v2({ hippocampus: [{ ...retiroCorto, s: '0.1.0' }] })],
+      ['un retiro con idioma fr', v2({ hippocampus: [{ ...retiroCorto, i: 'fr' }] })],
+      ['un retiro con campo inválido', v2({ hippocampus: [{ ...retiroCorto, c: '#123' }] })],
+      ['un retiro bueno y otro malo', v2({ hippocampus: [retiroCorto, { ...retiroCorto, c: 'que_es', p: 'x' }] })],
+      ['la misma clave como retiro y después como veredicto', v2({ hippocampus: [retiroCorto, { ...bueno, f: '2026-10-14T10:00:01.000Z' }] })],
+      ['la misma clave como veredicto y después como retiro', v2({ hippocampus: [{ ...bueno, f: '2026-10-14T10:00:01.000Z' }, retiroCorto] })],
+    ] as [string, object][]
+  ).map(([n, c]): [string, string, boolean] => [n, JSON.stringify(c), false]),
+  ...(
+    [
+      ['un retiro', v2({ hippocampus: [retiroCorto] })],
+      ['un retiro sin idioma', v2({ hippocampus: [{ c: 'ubicacion', d: '', f: '2026-10-14T10:00:00.000Z' }] })],
+      ['dos retiros de claves distintas', v2({ hippocampus: [retiroCorto, { ...retiroCorto, c: 'que_es' }] })],
+      ['el mismo retiro dos veces', v2({ hippocampus: [retiroCorto, retiroCorto] })],
+      ['un retiro de es y un veredicto de en con el mismo campo', v2({ hippocampus: [retiroCorto, { ...bueno, i: 'en', f: '2026-10-14T10:00:01.000Z' }] })],
+      ['un retiro y un veredicto de otra estructura con la misma clave', v2({ hippocampus: [retiroCorto], 'm-periaqueductal-grey': [{ ...bueno, f: '2026-10-14T10:00:01.000Z' }] })],
+      ['un retiro de un trazo', v2({ 'vagus-nerve-x': [{ c: 'trazo:Vagus_nerve.R', d: '', f: '2026-10-14T10:00:00.000Z' }] })],
+      ['retiros de dos estructuras', v2({ hippocampus: [retiroCorto], 'm-periaqueductal-grey': [retiroCorto] })],
+    ] as [string, object][]
+  ).map(([n, c]): [string, string, boolean] => [n, JSON.stringify(c), true]),
+];
