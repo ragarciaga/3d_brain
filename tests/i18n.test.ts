@@ -275,8 +275,8 @@ describe('página Privacidad (#168)', () => {
     'responsableTitulo', 'responsable', 'visitasTitulo', 'visitas', 'alojamiento',
     'revisionTitulo', 'revision', 'respaldo', 'publicacion', 'reportesTitulo', 'reportes',
     'finalidadesTitulo', 'finalidades', 'baseTitulo', 'base',
-    'proveedoresTitulo', 'proveedorCloudflare', 'proveedorGoogle', 'proveedorGithub', 'transferencia',
-    'conservacionTitulo', 'conservacionRevision', 'conservacionProveedores',
+    'proveedoresTitulo', 'proveedorCloudflare', 'proveedorGoogle', 'proveedorGithub', 'proveedorHostinger', 'transferencia',
+    'conservacionTitulo', 'conservacionRevision', 'conservacionReportes', 'conservacionProveedores',
     'derechosTitulo', 'derechos', 'autoridad', 'cookiesTitulo', 'cookies', 'volver',
   ];
   const pagina = readFileSync('src/components/Privacidad.tsx', 'utf8');
@@ -347,12 +347,18 @@ describe('página Privacidad (#168)', () => {
     });
 
     it(`(${idioma}) dice las finalidades, la base, los proveedores y la transferencia`, () => {
-      dice('finalidades', es ? 'analítica' : 'Analytics');
-      dice('base', ...(es ? ['interés legítimo', 'autorización'] : ['legitimate interest', 'authorization']));
+      dice('finalidades', es ? 'analítica' : 'Analytics', es ? 'reportes de error' : 'Error reports');
+      dice('base', ...(es ? ['interés legítimo', 'autorización', 'Un reporte lo envías tú'] : ['legitimate interest', 'authorization', 'You send a report yourself']));
       dice('proveedorCloudflare', 'Cloudflare');
       dice('proveedorGoogle', 'Google');
       dice('proveedorGithub', 'GitHub');
-      dice('transferencia', es ? 'Estados Unidos' : 'United States');
+      dice('proveedorHostinger', 'Hostinger', 'info@maysasp.com');
+      dice('transferencia', es ? 'Estados Unidos' : 'United States', 'Hostinger', es ? 'Chipre' : 'Cyprus');
+    });
+
+    it(`(${idioma}) dice cuánto se conservan los reportes y quién puede borrar los issues`, () => {
+      dice('conservacionReportes', ...(es ? ['12 meses', 'solo el editor'] : ['12 months', 'only the editor']));
+      dice('conservacionProveedores', 'Hostinger');
     });
 
     it(`(${idioma}) dice la conservación y los derechos`, () => {

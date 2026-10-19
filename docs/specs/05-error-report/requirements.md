@@ -2,6 +2,7 @@
 
 Status: approved  |  Date: 2026-10-19  |  Spec: docs/specs/05-error-report/
 Línea base: desconocida
+Amended: 2026-10-19, R1.1 (decisión del editor tras la verificación, #255)
 Brief: docs/brief.md  |  ADRs: docs/adr/0012-apps-script-canal-revision.md, docs/adr/0015-analitica-sin-cookies.md  |  Issue: #10  |  SPEC.md F12
 
 ## Context
@@ -31,7 +32,7 @@ El atlas sale al público en el hito 2 y cualquier estudiante puede encontrar un
 ## R1: Botón en la ficha
 Como visitante, quiero un botón visible en la ficha, para avisar de un error justo donde lo vi.
 
-- R1.1 Mientras el modo revisión no está activo, el sistema deberá mostrar "Reportar un error" en el pie de cada ficha, junto a la versión, también en una entrada que no tiene ficha (versión `sin-ficha`). `[e2e]`
+- R1.1 Mientras el modo revisión no está activo, el sistema deberá mostrar "Reportar un error" en el pie de cada ficha, después del bloque de fuentes (que trae la versión de la ficha), también en una entrada que no tiene ficha (versión `sin-ficha`). `[e2e]`
 - R1.2 Mientras el modo revisión está activo (código en la URL o recordado), el sistema no deberá mostrar "Reportar un error". `[e2e]`
 - R1.3 Cuando el visitante pulsa "Reportar un error", el sistema deberá abrir un diálogo con el foco en su título; Escape o "Cerrar" deberán cerrarlo y devolver el foco al botón. `[e2e]`
 - R1.4 Mientras la pantalla mide 390 px de ancho, el sistema deberá mostrar el diálogo completo o desplazable hasta su último botón, sin tapar el contenido con elementos fijos. `[e2e]`

@@ -717,7 +717,7 @@ para que la hoja no las tape. No hay riel.
 - Así el proyecto no almacena datos personales de usuarios, lo que simplifica mucho frente a la Ley 1581 de 2012. Antes de agregar cuentas, formularios propios o analítica con datos personales, se revisa con asesoría legal.
 - **Revisores docentes (F24):** sus revisiones se guardan en la hoja de Google del editor mediante un Apps Script de su cuenta (ADR 0012). La app pide una sola vez autorización explícita de tratamiento de datos y no muestra datos personales de los revisores.
 - Si se quiere saber qué estructuras se usan más, la analítica debe ser sin cookies y sin datos personales.
-- Página "Privacidad" (`/es/privacidad`, `/en/privacy`), enlazada desde el pie junto a "Fuentes y licencia" y desde el diálogo de autorización: responsable (Maysa Strategy Partners), contacto (info@maysasp.com), datos de visitantes (Cloudflare Web Analytics, ADR 0015) y de revisores docentes (ADR 0012), finalidades, base, proveedores con transferencia a EE. UU., conservación y derechos. Sin banner: no hay cookies de rastreo (#168).
+- Página "Privacidad" (`/es/privacidad`, `/en/privacy`), enlazada desde el pie junto a "Fuentes y licencia" y desde el diálogo de autorización: responsable (Maysa Strategy Partners), contacto (info@maysasp.com), datos de visitantes (Cloudflare Web Analytics, ADR 0015), de revisores docentes (ADR 0012) y reportes de error (F12, ADR 0016), finalidades, base, proveedores con transferencia a EE. UU. y a la Unión Europea (Hostinger, buzón de correo), conservación y derechos. Sin banner: no hay cookies de rastreo (#168).
 
 **Licencias**
 
