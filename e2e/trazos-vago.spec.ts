@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { protegerCanalReal } from './canal-real';
+import { esperarCitaVisible } from './citas';
 
 protegerCanalReal();
 
@@ -284,7 +285,7 @@ test('el panel del trazo muestra la propuesta con confianza, evidencia y fuente 
   await expect(panel(page).getByText(`La auditoría del modelo propone: ${nombreDePropuesta(con.propuesta!)}`)).toBeVisible();
   await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confianza: ${confianzaEs[con.confianza!]}`);
   await expect(page.getByTestId('trazo-evidencia')).toHaveText(con.evidencia!.es);
-  await expect(page.getByTestId('trazo-fuente')).toHaveText(`Fuente de la regla: ${con.fuente}`);
+  await esperarCitaVisible(page, con.fuente, 'Fuente de la regla: ');
   await expect(page.getByTestId('trazo-sin-propuesta')).toHaveCount(0);
 
   // En inglés, con el mismo trazo seleccionado.
@@ -293,7 +294,7 @@ test('el panel del trazo muestra la propuesta con confianza, evidencia y fuente 
   await expect.poll(async () => (await seleccion(page)).malla).toBe(CON);
   await expect(page.getByTestId('trazo-evidencia')).toHaveText(con.evidencia!.en);
   await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confidence: ${confianzaEn[con.confianza!]}`);
-  await expect(page.getByTestId('trazo-fuente')).toHaveText(`Rule source: ${con.fuente}`);
+  await esperarCitaVisible(page, con.fuente, 'Rule source: ');
   await expect(panel(page).getByText(`The model audit proposes: ${nombreDePropuestaEn(con.propuesta!)}`, { exact: true })).toBeVisible();
   await expect(page.getByTestId('trazo-evidencia')).not.toContainText(con.evidencia!.es);
 

@@ -200,6 +200,7 @@
     "confianza_baja": "low",
     "trazoSinPropuesta": "No proposal from the audit",
     "trazoFuente": "Rule source: {{fuente}}",
+    "trazoFuenteSinCita": "Rule source: {{fuente}} (not in the bibliography)",
     "fuentePosicion": "Method and source of the position",
     "posicionCorrecta": "Correct, the proposed position is right",
     "noEsRamo": "Not a branch (trunk or rootlet)",

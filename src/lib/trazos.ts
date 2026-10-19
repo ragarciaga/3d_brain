@@ -2,6 +2,7 @@
 // qué ramo es cada una. Lógica pura: sin React, sin store y sin `window`.
 import { esMallaDeToque, GRUPO_VAGO, marcadores, trazoDeMalla, trazosAuditados } from '../data/atlas';
 import type { Bilingue, ConfianzaTrazo } from '../data/tipos';
+import fuentesMd from '../../docs/research/marcadores/fuentes.md?raw';
 import { claveRespuesta, respuestaCompleta, type Respuesta } from './revision';
 
 /** Entrada de estructuras.json donde se guardan las respuestas de los trazos del vago. */
@@ -52,9 +53,76 @@ export function propuestaDeTrazo(malla: string): string | null {
   return trazosAuditados.find((t) => t.malla === malla)?.propuesta ?? null;
 }
 
+/** Un identificador de una cita: el texto que se ve ("PMID 42595102") y a dónde lleva (siempre https). */
+export interface IdentificadorCita {
+  tipo: 'pmid' | 'doi' | 'url';
+  texto: string;
+  url: string;
+}
+
+/** Una entrada de la bibliografía de reglas (`## Referencias` de docs/research/marcadores/fuentes.md). */
+export interface Cita {
+  clave: string;
+  autores: string;
+  titulo: string;
+  revista: string | null;
+  anio: string;
+  /** "Autores. Título. [Revista. ]Año.", tal como está escrito en la línea de la bibliografía. */
+  texto: string;
+  identificadores: IdentificadorCita[];
+}
+
+/**
+ * Lee la sección `## Referencias` de fuentes.md: una cita por línea `- [Clave] Autores. Título. [Revista. ]Año.
+ * PMID n. [PMCID x.] [DOI d.] [nota].` (o con una URL en vez de los identificadores). Solo cuenta lo que va
+ * entre `## Referencias` y el siguiente `## `; una clave que aparece antes (en la tabla) no es una referencia.
+ * Una entrada sin autores, título, año o identificador no se registra, para no mostrar nunca una cita a medias.
+ * El PMCID y la nota de lectura se ignoran; un enlace que no es `https:` se descarta.
+ */
+export function leerReferencias(md: string): Map<string, Cita> {
+  const refs = new Map<string, Cita>();
+  const inicio = md.indexOf('\n## Referencias');
+  if (inicio < 0) return refs;
+  const resto = md.slice(inicio + 1);
+  const fin = resto.indexOf('\n## ');
+  const seccion = fin < 0 ? resto : resto.slice(0, fin);
+  for (const linea of seccion.split('\n')) {
+    const m = /^- \[([^\]]+)\] (.+)$/.exec(linea.trimEnd());
+    if (!m) continue;
+    const clave = m[1]!;
+    const partes = m[2]!.replace(/\.$/, '').split('. ');
+    const i = partes.findIndex((p, k) => k >= 2 && /^\d{4}$/.test(p));
+    if (i < 0) continue;
+    const autores = partes[0]!.trim();
+    const titulo = partes[1]!.trim();
+    const revista = partes.slice(2, i).join('. ').trim() || null;
+    const identificadores: IdentificadorCita[] = [];
+    for (const p of partes.slice(i + 1)) {
+      const pmid = /^PMID (\d+)$/.exec(p);
+      const doi = /^DOI (10\.\S+)$/.exec(p);
+      if (pmid) identificadores.push({ tipo: 'pmid', texto: p, url: `https://pubmed.ncbi.nlm.nih.gov/${pmid[1]}/` });
+      else if (doi) identificadores.push({ tipo: 'doi', texto: p, url: `https://doi.org/${doi[1]}` });
+      else if (/^https:\/\/\S+$/.test(p)) identificadores.push({ tipo: 'url', texto: p, url: p });
+    }
+    if (!autores || !titulo || identificadores.length === 0) continue;
+    const texto = `${autores}. ${titulo}. ${revista ? `${revista}. ` : ''}${partes[i]}.`;
+    refs.set(clave, { clave, autores, titulo, revista, anio: partes[i]!, texto, identificadores });
+  }
+  return refs;
+}
+
+/** La bibliografía de reglas, leída una vez del mismo archivo que mantiene el editor (una sola fuente de verdad). */
+const REFERENCIAS = leerReferencias(fuentesMd);
+
+/** La cita de una clave de fuente (p. ej. "Bahadir2026"); null si la clave falta o la bibliografía no la trae completa. */
+export function citaDeFuente(clave: string | null, refs: Map<string, Cita> = REFERENCIAS): Cita | null {
+  return clave ? (refs.get(clave) ?? null) : null;
+}
+
 /**
  * Todo lo que la auditoría dejó para un trazo, para mostrarlo al docente: la propuesta (o null), la
- * confianza, la evidencia en los dos idiomas y la clave de la fuente. Null si la malla no se auditó.
+ * confianza, la evidencia en los dos idiomas, la clave de la fuente y su cita (autores, título, año e
+ * identificadores de la bibliografía; null si la bibliografía no la trae completa). Null si la malla no se auditó.
  * La evidencia y la confianza faltan (null) en un registro que no las trae.
  */
 export function auditoriaDeTrazo(malla: string): {
@@ -62,9 +130,11 @@ export function auditoriaDeTrazo(malla: string): {
   confianza: ConfianzaTrazo | null;
   evidencia: Bilingue | null;
   fuente: string | null;
+  cita: Cita | null;
 } | null {
   const t = trazosAuditados.find((x) => x.malla === malla);
   if (!t) return null;
   const evidencia = t.evidencia && (t.evidencia.es || t.evidencia.en) ? t.evidencia : null;
-  return { propuesta: t.propuesta ?? null, confianza: t.confianza ?? null, evidencia, fuente: t.fuente || null };
+  const fuente = t.fuente || null;
+  return { propuesta: t.propuesta ?? null, confianza: t.confianza ?? null, evidencia, fuente, cita: citaDeFuente(fuente) };
 }
