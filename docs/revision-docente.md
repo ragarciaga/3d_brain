@@ -283,10 +283,12 @@ lo contaba y, al abrir el enlace en otro equipo, la marca volvía. Desde #217 la
   la pestaña `Respuestas` (cuatro columnas, con la fecha ISO en A y en B el mismo código de la carga). Un
   retiro en cualquier otra fila, por ejemplo la del CSV del formulario, cuenta como fila descartada.
 - El importador aplica cada retiro antes del padrón y de las autorizaciones: quita las respuestas
-  anteriores de esa clave del mismo revisor, en las tablas, en los archivos por estructura y en las dos
-  secciones "Descartadas". Un veredicto posterior al retiro gana, y las respuestas de otros revisores no se
-  tocan. `resumen.md` trae la sección "Marcas retiradas" con el alias, el campo, el idioma y la estructura
-  de lo que desapareció (sin veredicto ni texto), y la consola suma cuántas marcas se retiraron.
+  anteriores de esa clave del mismo revisor que llegaron por la pestaña `Respuestas`, en las tablas, en los
+  archivos por estructura y en las dos secciones "Descartadas"; lo que llegó por el formulario o en `v:1` no se quita.
+  Un veredicto posterior al retiro gana, y las respuestas de otros revisores no se tocan. `resumen.md` trae
+  la sección "Marcas retiradas" con el alias, el campo, el idioma y la estructura de lo que desapareció (sin
+  veredicto, propuesta ni comentario; el campo de un trazo admite hasta 120 caracteres), y la consola suma
+  cuántas marcas se retiraron.
 
 Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementación existente. En este
 orden, con el sitio primero y el script después (la app nueva funciona con el script viejo: solo deja los
@@ -524,8 +526,9 @@ confirmación.
 
 El formulario no lleva retiros (R7.3, #217): su carga trae solo veredictos, nunca un elemento con
 `"d":""`. Un veredicto que llegó por el formulario solo se corrige con otro veredicto; quitar la marca en
-la app no lo retira de lo que el formulario ya guardó, y el importador descarta un retiro que venga en
-una fila del formulario.
+la app no lo retira de lo que el formulario ya guardó. El importador descarta un retiro que venga en
+una fila del formulario y un retiro de la hoja nunca quita lo que llegó por el formulario ni en `v:1`: eso
+se corrige con otro veredicto.
 
 ### Formulario de registro (se retira)
 

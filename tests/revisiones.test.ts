@@ -1490,16 +1490,40 @@ describe('retiros: quitar una marca se guarda (#217)', () => {
       for (const md of r.archivos.values()) expect(md).not.toContain('FUERA01');
     });
 
-    it('los envíos v:1 del formulario siguen igual y un retiro de la hoja no los quita', () => {
+    it('un retiro de la hoja no quita lo del formulario (v:1 ni v:2 del formulario), esté el CSV del formulario antes o después de la hoja', () => {
       const v1 = { v: 1, revisor: 'ANAT01', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: 'correcto' }] };
-      const csv = `${cabecera}\n${fila(v1, 'Ana', '2026-10-11 10:00')}\n${filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1))}\n`;
+      const v2Form = { v: 2, r: 'ANAT01', e: { hippocampus: [el({ c: 'ubicacion', i: 'es' })] } };
+      const delFormulario = [fila(v1, 'Ana', '2026-10-11 10:00'), fila(v2Form, 'Ana', '10/14/2026 10:00:00')];
+      const delRetiro = filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1));
+      for (const orden of [[...delFormulario, delRetiro], [delRetiro, ...delFormulario]]) {
+        const r = importar(`${cabecera}\n${orden.join('\n')}\n`, ESTRUCTURAS, PADRON);
+        expect(r.invalidas).toBe(0);
+        expect(r.retiradas).toBe(0);
+        expect(r.archivos.get('resumen.md')).not.toContain('## Marcas retiradas');
+        expect(tabla(r.archivos.get('hippocampus.md')!, 'D01')).toHaveLength(1);
+      }
+    });
+
+    it('un veredicto v:2 que llegó por el formulario tampoco lo quita un retiro de la hoja', () => {
+      const v2Form = { v: 2, r: 'ANAT01', e: { hippocampus: [el({ p: 'DEL_FORMULARIO', d: 'corregir' })] } };
+      const delRetiro = filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1));
+      for (const orden of [[fila(v2Form, 'Ana', '10/14/2026 10:00:00'), delRetiro], [delRetiro, fila(v2Form, 'Ana', '10/14/2026 10:00:00')]]) {
+        const r = importar(`${cabecera}\n${orden.join('\n')}\n`, ESTRUCTURAS, PADRON);
+        expect(r.retiradas).toBe(0);
+        expect(r.archivos.get('hippocampus.md')).toContain('DEL_FORMULARIO');
+      }
+    });
+
+    it('con la hoja y el formulario del mismo revisor, el retiro quita solo lo de la hoja y deja el veredicto del formulario', () => {
+      const v1 = { v: 1, revisor: 'ANAT01', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: 'corregir', propuesta: 'DEL_FORMULARIO' }] };
+      const csv = `${cabecera}\n${fila(v1, 'Ana', '2026-10-11 10:00')}\n${filaHoja({ r: 'ANAT01', e: { hippocampus: [el({ p: 'DE_LA_HOJA', d: 'corregir' }), el({ c: 'que_es' })] } }, iso(0))}\n${filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1))}\n`;
       const r = importar(csv, ESTRUCTURAS, PADRON);
-      expect(r.invalidas).toBe(0);
-      // El retiro es posterior a la fila del formulario en el CSV: la quita, como cualquier fila posterior (R3.6).
-      expect(r.retiradas).toBe(1);
-      const solo = importar(`${cabecera}\n${fila(v1, 'Ana', '2026-10-11 10:00')}\n`, ESTRUCTURAS, PADRON);
-      expect(solo.retiradas).toBe(0);
-      expect(tabla(solo.archivos.get('hippocampus.md')!, 'D01')).toHaveLength(1);
+      const md = r.archivos.get('hippocampus.md')!;
+      expect(md).toContain('DEL_FORMULARIO');
+      expect(md).not.toContain('DE_LA_HOJA');
+      expect(md).toContain('`que_es`');
+      // La clave de `ubicacion` sigue con la respuesta del formulario: no se cuenta como retirada.
+      expect(r.retiradas).toBe(0);
     });
   });
 
@@ -1551,12 +1575,30 @@ describe('retiros: quitar una marca se guarda (#217)', () => {
   describe('quitarRetiradas', () => {
     const resp = (campo: string, idioma?: 'es' | 'en'): Respuesta => ({ estructura: 'hippocampus', campo, idioma, veredicto: 'correcto', version: '0.1.0', fecha: iso(0) });
     const ret1 = (campo: string, idioma?: 'es' | 'en') => ({ estructura: 'hippocampus', campo, idioma, veredicto: '' as const, fecha: iso(5) });
-    const envio = (revisor: string, respuestas: Respuesta[], retiros?: ReturnType<typeof ret1>[]): Envio => ({
+    // `deHoja`: el envío viene de una fila con la forma de la pestaña Respuestas; el del formulario o `v:1` no lo trae.
+    const envio = (revisor: string, respuestas: Respuesta[], retiros?: ReturnType<typeof ret1>[], deHoja = true): Envio => ({
       revisor,
       estructura: 'hippocampus',
       marcaTemporal: '',
       respuestas,
       ...(retiros ? { retiros } : {}),
+      ...(deHoja ? { deHoja: true as const } : {}),
+    });
+
+    it('un retiro solo quita de los envíos de la hoja: el formulario y los v:1 quedan, antes o después', () => {
+      const formulario = envio('A', [resp('x')], undefined, false);
+      const delRetiro = envio('A', [], [ret1('x')]);
+      // Solo formulario y retiro: el retiro no encuentra nada de la hoja que quitar.
+      const solo = quitarRetiradas([formulario, delRetiro]);
+      expect(solo.envios).toEqual([formulario]);
+      expect(solo.retiradas).toEqual([]);
+      // Con una respuesta de la hoja, se va la de la hoja y queda la del formulario, esté antes o después del retiro.
+      for (const entrada of [[envio('A', [resp('x')]), delRetiro, formulario], [formulario, envio('A', [resp('x')]), delRetiro]]) {
+        const { envios, retiradas } = quitarRetiradas(entrada);
+        expect(envios).toEqual([formulario]);
+        // La clave sigue con una respuesta (la del formulario): no cuenta como retirada.
+        expect(retiradas).toEqual([]);
+      }
     });
 
     it('no muta la entrada y deja los envíos sin retiros tal cual', () => {

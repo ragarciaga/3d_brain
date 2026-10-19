@@ -53,6 +53,12 @@ export interface Envio {
    * si no hay. `quitarRetiradas` los aplica a las respuestas de envíos anteriores del mismo revisor.
    */
   retiros?: Retiro[];
+  /**
+   * La fila es una carga `v:2` con la forma de la pestaña Respuestas (`esFilaDeRespuestas`). Solo los envíos de ahí
+   * pueden traer retiros y solo a ellos los quita un retiro (#217, R7.3): lo que llegó por el formulario o en `v:1`
+   * se corrige con otro veredicto, nunca con un retiro. Ausente en los demás.
+   */
+  deHoja?: true;
   marcaTemporal: string;
 }
 
@@ -105,7 +111,7 @@ function expandirV2(
       if (esRetiro) retiros.push(r as unknown as Retiro);
       else respuestas.push(r as unknown as Respuesta);
     }
-    envios.push({ revisor, estructura: id, respuestas, ...(retiros.length ? { retiros } : {}), marcaTemporal });
+    envios.push({ revisor, estructura: id, respuestas, ...(retiros.length ? { retiros } : {}), ...(admiteRetiros ? { deHoja: true as const } : {}), marcaTemporal });
   }
   return envios;
 }
@@ -195,7 +201,7 @@ export function ultimasRespuestas(envios: Envio[]): { revisor: string; r: Respue
   return [...m.values()];
 }
 
-/** Una marca que un retiro quitó: revisor (código o, después de `aplicarPadron`, alias), estructura, campo e idioma ('' si no tiene). Sin texto libre. */
+/** Una marca que un retiro quitó: revisor (código o, después de `aplicarPadron`, alias), estructura, campo e idioma ('' si no tiene). Sin veredicto, propuesta ni comentario; el campo de un trazo admite hasta 120 caracteres. */
 export interface MarcaRetirada {
   revisor: string;
   estructura: string;
@@ -206,33 +212,35 @@ export interface MarcaRetirada {
 /**
  * Aplica los retiros (#217): cada retiro de un envío quita las respuestas de la misma clave
  * revisor|estructura|campo|idioma de los envíos anteriores a ese envío, en el orden de las filas (la última fila por
- * clave manda, R3.6). Un veredicto posterior al retiro, el de otro revisor y el de otra clave no se tocan. El idioma
+ * clave manda, R3.6), pero solo de los envíos con `deHoja` (carga `v:2` con la forma de la pestaña Respuestas): los `v:1` y
+ * lo que llegó por el formulario nunca se quitan (R7.3). Un veredicto posterior al retiro, el de otro revisor y el de otra clave no se tocan. El idioma
  * ausente cuenta como '', igual que en `ultimasRespuestas`. Devuelve los envíos sin las respuestas quitadas (los
  * envíos sin retiros salen tal cual, y los que un retiro dejó sin respuestas o que solo traían retiros no salen) y
- * las claves que quitaron algo y siguen quitadas, sin repetir. No muta la entrada.
+ * las claves que quitaron algo y siguen sin respuesta, sin repetir. No muta la entrada.
  */
 export function quitarRetiradas(envios: Envio[]): { envios: Envio[]; retiradas: MarcaRetirada[] } {
   const clave = (revisor: string, estructura: string, campo: string, idioma: string | undefined) => `${revisor}|${estructura}|${campo}|${idioma ?? ''}`;
   const salida = envios.map((e) => ({ ...e, respuestas: [...e.respuestas] }));
   // Índices de los envíos que un retiro dejó sin ninguna respuesta.
   const vaciados = new Set<number>();
-  // Clave -> la marca y el índice del envío del último retiro que quitó algo de ella.
-  const quitadas = new Map<string, { marca: MarcaRetirada; indice: number }>();
+  // Clave -> la marca del último retiro que quitó algo de ella.
+  const quitadas = new Map<string, { marca: MarcaRetirada }>();
   salida.forEach((e, i) => {
     for (const retiro of e.retiros ?? []) {
       const k = clave(e.revisor, retiro.estructura, retiro.campo, retiro.idioma);
       for (const [j, previo] of salida.slice(0, i).entries()) {
+        if (!previo.deHoja) continue; // lo del formulario y los `v:1` no se retiran (R7.3)
         const quedan = previo.respuestas.filter((r) => clave(previo.revisor, r.estructura, r.campo, r.idioma) !== k);
         if (quedan.length === previo.respuestas.length) continue;
         previo.respuestas = quedan;
         if (quedan.length === 0) vaciados.add(j);
-        quitadas.set(k, { marca: { revisor: e.revisor, estructura: retiro.estructura, campo: retiro.campo, idioma: retiro.idioma ?? '' }, indice: i });
+        quitadas.set(k, { marca: { revisor: e.revisor, estructura: retiro.estructura, campo: retiro.campo, idioma: retiro.idioma ?? '' } });
       }
     }
   });
-  // Solo siguen quitadas las que ningún veredicto posterior al retiro volvió a poner.
+  // Solo siguen quitadas las que no queda con ninguna respuesta: ni un veredicto posterior al retiro ni uno del formulario.
   const retiradas = [...quitadas.entries()]
-    .filter(([k, { indice }]) => !salida.slice(indice + 1).some((e) => e.respuestas.some((r) => clave(e.revisor, r.estructura, r.campo, r.idioma) === k)))
+    .filter(([k]) => !salida.some((e) => e.respuestas.some((r) => clave(e.revisor, r.estructura, r.campo, r.idioma) === k)))
     .map(([, { marca }]) => marca);
   // Un envío que se quedó sin nada por un retiro, o que solo traía retiros, ya no tiene qué mostrar.
   const conservados = salida.filter((e, i) => !vaciados.has(i) && !(e.retiros && e.respuestas.length === 0));

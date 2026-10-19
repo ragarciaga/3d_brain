@@ -97,7 +97,7 @@ Como editor, quiero importar lo que llegó con el mismo importador, para revisar
 
 - R8.1 Cuando el editor exporta la hoja de respuestas a CSV, el importador deberá leerla y producir los mismos resúmenes por estructura y el consolidado que produce hoy con el CSV del formulario. `[unit]`
 - R8.2 El importador deberá ignorar las filas de autorización y de padrón. `[unit]`
-- R8.3 Cuando una fila de `Respuestas` trae un retiro, el importador deberá quitar las respuestas anteriores de esa clave del mismo revisor de las tablas, de los archivos por estructura y de las secciones "Descartadas", dejar ganar a un veredicto posterior, y listar en `resumen.md` las marcas retiradas (alias, estructura, campo e idioma, sin texto libre). `[unit]` (#217)
+- R8.3 Cuando una fila de `Respuestas` trae un retiro, el importador deberá quitar las respuestas anteriores de esa clave del mismo revisor de las tablas, de los archivos por estructura y de las secciones "Descartadas", dejar ganar a un veredicto posterior, y listar en `resumen.md` las marcas retiradas (alias, estructura, campo e idioma, sin veredicto, propuesta ni comentario; el campo de un trazo admite hasta 120 caracteres). Solo quita lo que llegó en filas con la forma de `Respuestas`: nunca lo del formulario ni los `v:1`. `[unit]` (#217)
 
 ## R9: Revisión visible sin datos personales
 Como estudiante, quiero saber que una ficha fue revisada por un docente, sin conocer datos personales del revisor.

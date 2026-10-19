@@ -47,4 +47,4 @@ Auditoría de objetivo, ciega y sobre la app en marcha, 2026-10-18 (head de la a
 Otras notas de la auditoría (sin tarea):
 - Con el locus caeruleo seleccionado y el cerebro armado, las dos etiquetas (una por lado) se montan una sobre otra.
 - En la sesión de estudiante, la consola mostró 2 veces "Attempted to synchronously unmount a root while React was already rendering". La auditoría no pudo decir si es nuevo.
-- Deshacer un veredicto no llega al canal (vale para todo el modo revisión, spec 03): escalado en #217.
+- Deshacer un veredicto no llega al canal (vale para todo el modo revisión, spec 03): escalado en #217 (cerrado en #217).

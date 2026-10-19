@@ -35,7 +35,7 @@ flowchart LR
 | Panel de revisión | code | "Guardado ✓", "Sin conexión...", sin pasos de envío, sin botones de respaldo, menú Acciones con la casilla del vago | `src/components/PanelRevision.tsx` | R3.2, R3.7, R4.4, R5.3, R7.1, R7.2 |
 | Apps Script | code | `doPost` (leer, guardar, autorizar) y `doGet` (responde siempre `formato`, sin leer, #169): padrón, tamaño, ritmo, formato, escritura con bloqueo; acepta retiros y `leer` declara `canal` (#217) | `apps-script/Codigo.js` (nuevo, sin datos) | R2.3, R3.8, R4.3, R6.1 a R6.5 |
 | Formulario de respaldo | code | El flujo actual de partes (`partesEnvio`) queda detrás de la condición de R7 | `src/lib/revision.ts`, `PanelRevision.tsx` | R7.1, R7.2 |
-| Importador | code | Leer el CSV de la pestaña Respuestas y, con `--autorizaciones`, el de la pestaña Autorizaciones para la casilla del vago (#163); ignorar las filas de otras pestañas que traiga el CSV de respuestas; aplicar los retiros (#217) | `scripts/importar-revisiones.ts`, `scripts/lib/revisiones.ts` | R7.3, R8.1, R8.2, R8.3 |
+| Importador | code | Leer el CSV de la pestaña Respuestas y, con `--autorizaciones`, el de la pestaña Autorizaciones para la casilla del vago (#163); ignorar las filas de otras pestañas que traiga el CSV de respuestas; aplicar los retiros (#217), solo a lo que llegó en filas de `Respuestas` | `scripts/importar-revisiones.ts`, `scripts/lib/revisiones.ts` | R7.3, R8.1, R8.2, R8.3 |
 | Ficha | code | "Revisado por un docente universitario" y fecha; nunca `revisado_por` | `src/components/Ficha.tsx` | R9.1, R9.2 |
 | Prueba de datos | code | `revisado_por` en `src/data/` y en rutas: `null` o un alias `D\d{2}` | `tests/datos.test.ts` | R9.3 |
 

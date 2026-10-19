@@ -196,6 +196,27 @@ describe('quitar una marca se guarda (#217)', () => {
     for (const texto of [requisitos, diseno, spec, adr, guia]) expect(texto).not.toMatch(/retiro[^.\n]*no lleva texto libre|sin texto libre[^.\n]*retiro/i);
   });
 
+  it('nada de lo que habla del retiro o de las marcas retiradas dice "sin texto libre": el campo de un trazo admite 120 caracteres', () => {
+    // R8.3 va a un issue público con el campo de la marca; el comentario de `MarcaRetirada` y los de `Retiro` lo describen.
+    expect(requisitos).not.toMatch(/sin texto libre/i);
+    const comentarioDe = (ruta: string, simbolo: string) => {
+      const texto = leer(ruta);
+      const fin = texto.indexOf(simbolo);
+      expect(fin, `${simbolo} en ${ruta}`).toBeGreaterThan(-1);
+      return texto.slice(Math.max(0, fin - 700), fin);
+    };
+    for (const [ruta, simbolo] of [
+      ['scripts/lib/revisiones.ts', 'export interface MarcaRetirada'],
+      ['src/lib/revision.ts', 'export interface Retiro '],
+      ['src/lib/revision.ts', 'const CAMPOS_PROHIBIDOS_EN_RETIRO'],
+      ['apps-script/Codigo.js', 'const CAMPOS_PROHIBIDOS_EN_RETIRO'],
+    ] as const) {
+      expect(comentarioDe(ruta, simbolo), `${simbolo} en ${ruta}`).not.toMatch(/sin texto libre|ni texto libre|no lleva texto libre/i);
+    }
+    expect(comentarioDe('scripts/lib/revisiones.ts', 'export interface MarcaRetirada')).toContain('el campo de un trazo admite hasta 120 caracteres');
+    expect(requisitos).toContain('el campo de un trazo admite hasta 120 caracteres');
+  });
+
   it('la tabla "Verification summary" de la spec 03 coincide con las etiquetas de los requisitos', () => {
     const lineas = requisitos.split('\n').filter((l) => /^- R\d+\.\d+ /.test(l));
     for (const etiqueta of ['unit', 'integration', 'e2e', 'eval', 'manual']) {
