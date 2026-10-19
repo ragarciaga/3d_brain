@@ -10,7 +10,10 @@ Salidas:
 - pipeline/anclajes-vago.json: anclajes y trazos medidos, en coordenadas glTF (Y arriba, metros).
   Lo leen pipeline/generar-ramas-vago.py y la prueba de asimetrías (tests/asimetrias.test.ts).
 - pipeline/salida/trazos-medidos.json: por trazo, su altura, largo, las dos piezas más cercanas a cada extremo,
-  la regla que se cumple, el ramo propuesto con su confianza y la fuente. Lo leerá scripts/aplicar-trazos.ts (spec 04, T6).
+  la regla que se cumple, el ramo propuesto con su confianza y la fuente. Si ninguna regla se cumple (`sin_regla`),
+  `fallas` lista, para la regla o las reglas más cercanas, las condiciones que no se cumplen con su margen en mm;
+  con regla, `fallas` es null. Lo lee scripts/aplicar-trazos.ts (spec 04, T6), junto con pipeline/nombres-anclajes.json
+  (pipeline/nombrar-anclajes.py), que da el nombre de cada pieza cercana.
 - pipeline/salida/auditoria-vago.md: tabla para revisar (anclaje presente o ausente, y cada trazo).
 
 Uso: python pipeline/auditar-vago.py  (o blender -b --python pipeline/auditar-vago.py)

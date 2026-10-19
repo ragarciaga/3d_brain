@@ -6,8 +6,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1470,8 a 1455,0 mm. Largo: 17,4 mm. Cerca del extremo superior: Left common carotid artery (0,8 mm), Internal jugular vein.l (5,3 mm). Cerca del extremo inferior: Left common carotid artery (2,8 mm), Internal jugular vein.l (12,1 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1470.8 to 1455.0 mm. Length: 17.4 mm. Near the upper end: Left common carotid artery (0.8 mm), Internal jugular vein.l (5.3 mm). Near the lower end: Left common carotid artery (2.8 mm), Internal jugular vein.l (12.1 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1470,8 a 1455,0 mm. Largo: 17,4 mm. Cerca del extremo superior: Arteria carótida común izquierda (0,8 mm), Vena yugular interna (izquierdo) (5,3 mm). Cerca del extremo inferior: Arteria carótida común izquierda (2,8 mm), Vena yugular interna (izquierdo) (12,1 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, las reglas más cercanas son la del ramo faríngeo y la del nervio laríngeo superior. En la del ramo faríngeo, no se cumple que su extremo superior quede, a lo largo del tronco, como máximo a la distancia máxima bajo el foramen yugular (falla por 68,2 mm) y que su extremo inferior quede más cerca de la faringe que del cartílago tiroides (falla por 1,4 mm). En la del nervio laríngeo superior, no se cumple que su extremo superior quede, a lo largo del tronco, como máximo a la distancia máxima bajo el foramen yugular (falla por 55,2 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1470.8 to 1455.0 mm. Length: 17.4 mm. Near the upper end: Left common carotid artery (0.8 mm), Internal jugular vein (left) (5.3 mm). Near the lower end: Left common carotid artery (2.8 mm), Internal jugular vein (left) (12.1 mm). No rule is met: no proposal. By the trace's mean height, the closest rules are the pharyngeal branch rule and the superior laryngeal nerve rule. In the pharyngeal branch rule, not met: its upper end lies, measured along the trunk, at most the maximum distance below the jugular foramen (fails by 68.2 mm); its lower end lies closer to the pharynx than to the thyroid cartilage (fails by 1.4 mm). In the superior laryngeal nerve rule, not met: its upper end lies, measured along the trunk, at most the maximum distance below the jugular foramen (fails by 55.2 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -17,8 +17,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1537,5 a 1525,2 mm. Largo: 37,6 mm. Cerca del extremo superior: Internal jugular vein.l (2,5 mm), Medulla oblongata.l (31,9 mm). Cerca del extremo inferior: Laryngopharynx (19,0 mm), Internal jugular vein.l (32,1 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1537.5 to 1525.2 mm. Length: 37.6 mm. Near the upper end: Internal jugular vein.l (2.5 mm), Medulla oblongata.l (31.9 mm). Near the lower end: Laryngopharynx (19.0 mm), Internal jugular vein.l (32.1 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1537,5 a 1525,2 mm. Largo: 37,6 mm. Cerca del extremo superior: Vena yugular interna (izquierdo) (2,5 mm), Bulbo (izquierdo) (31,9 mm). Cerca del extremo inferior: Porción laríngea de la farínge (19,0 mm), Vena yugular interna (izquierdo) (32,1 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, las reglas más cercanas son la del ramo faríngeo y la del nervio laríngeo superior. En la del ramo faríngeo, no se cumple que su extremo superior quede, a lo largo del tronco, como máximo a la distancia máxima bajo el foramen yugular (falla por 1,2 mm) y que su extremo inferior quede en la cara posterior de la faringe (falla por 14,7 mm). En la del nervio laríngeo superior, no se cumple que su extremo inferior quede más cerca del cartílago tiroides que de la faringe (falla por 16,5 mm) y que su extremo inferior quede cerca del cartílago tiroides (falla por 10,5 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1537.5 to 1525.2 mm. Length: 37.6 mm. Near the upper end: Internal jugular vein (left) (2.5 mm), Medulla oblongata (left) (31.9 mm). Near the lower end: Laryngopharynx (19.0 mm), Internal jugular vein (left) (32.1 mm). No rule is met: no proposal. By the trace's mean height, the closest rules are the pharyngeal branch rule and the superior laryngeal nerve rule. In the pharyngeal branch rule, not met: its upper end lies, measured along the trunk, at most the maximum distance below the jugular foramen (fails by 1.2 mm); its lower end lies on the posterior side of the pharynx (fails by 14.7 mm). In the superior laryngeal nerve rule, not met: its lower end lies closer to the thyroid cartilage than to the pharynx (fails by 16.5 mm); its lower end lies near the thyroid cartilage (fails by 10.5 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -28,8 +28,8 @@
       "propuesta": "no_es_ramo",
       "fuente": "In2026",
       "evidencia": {
-        "es": "Altura: de 1573,4 a 1346,6 mm. Largo: 290,6 mm. Cerca del extremo superior: Olive.l (2,4 mm), Medulla oblongata.l (5,5 mm). Cerca del extremo inferior: Thoracic aorta (5,4 mm), Oesophagus (11,0 mm). En el atlas publicado se retira lo que este trazo tiene por debajo de 1424,8 mm (ADR 0010): el tramo torácico está pendiente de trazado y ahí queda un hueco. Lo publicado va de 1573,4 a 1424,8 mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar. Regla del tronco: el largo del trazo supera el máximo de un ramo; se propone que no es un ramo. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: In2026.",
-        "en": "Height: from 1573.4 to 1346.6 mm. Length: 290.6 mm. Near the upper end: Olive.l (2.4 mm), Medulla oblongata.l (5.5 mm). Near the lower end: Thoracic aorta (5.4 mm), Oesophagus (11.0 mm). In the published atlas, the part of this trace below 1424.8 mm is removed (ADR 0010): the thoracic segment is pending tracing and a gap is left there. What is published runs from 1573.4 to 1424.8 mm. The earlier measurements are those of the uncut Z-Anatomy trace. Trunk rule: the length of the trace exceeds the maximum for a branch; it is proposed not to be a branch. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: In2026."
+        "es": "Altura: de 1573,4 a 1346,6 mm. Largo: 290,6 mm. Cerca del extremo superior: Oliva (izquierdo) (2,4 mm), Bulbo (izquierdo) (5,5 mm). Cerca del extremo inferior: Aorta torácica (5,4 mm), Esófago (11,0 mm). En el atlas publicado se retira lo que este trazo tiene por debajo de 1424,8 mm (ADR 0010): el tramo torácico está pendiente de trazado y ahí queda un hueco. Lo publicado va de 1573,4 a 1424,8 mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar. Regla del tronco: el largo del trazo supera el máximo de un ramo; se propone que no es un ramo. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: In2026.",
+        "en": "Height: from 1573.4 to 1346.6 mm. Length: 290.6 mm. Near the upper end: Olive (left) (2.4 mm), Medulla oblongata (left) (5.5 mm). Near the lower end: Thoracic aorta (5.4 mm), Oesophagus (11.0 mm). In the published atlas, the part of this trace below 1424.8 mm is removed (ADR 0010): the thoracic segment is pending tracing and a gap is left there. What is published runs from 1573.4 to 1424.8 mm. The earlier measurements are those of the uncut Z-Anatomy trace. Trunk rule: the length of the trace exceeds the maximum for a branch; it is proposed not to be a branch. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: In2026."
       },
       "confianza": "alta"
     },
@@ -39,8 +39,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1575,6 a 1571,8 mm. Largo: 16,4 mm. Cerca del extremo superior: Olive.l (2,5 mm), Medulla oblongata.l (3,5 mm). Cerca del extremo inferior: Medulla oblongata.l (3,6 mm), Olive.l (3,9 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1575.6 to 1571.8 mm. Length: 16.4 mm. Near the upper end: Olive.l (2.5 mm), Medulla oblongata.l (3.5 mm). Near the lower end: Medulla oblongata.l (3.6 mm), Olive.l (3.9 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1575,6 a 1571,8 mm. Largo: 16,4 mm. Cerca del extremo superior: Oliva (izquierdo) (2,5 mm), Bulbo (izquierdo) (3,5 mm). Cerca del extremo inferior: Bulbo (izquierdo) (3,6 mm), Oliva (izquierdo) (3,9 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por 1,2 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1575.6 to 1571.8 mm. Length: 16.4 mm. Near the upper end: Olive (left) (2.5 mm), Medulla oblongata (left) (3.5 mm). Near the lower end: Medulla oblongata (left) (3.6 mm), Olive (left) (3.9 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; not met: its upper end lies dorsal to the olive (fails by 1.2 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -50,8 +50,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1571,8 a 1569,5 mm. Largo: 16,2 mm. Cerca del extremo superior: Medulla oblongata.l (3,6 mm), Olive.l (3,9 mm). Cerca del extremo inferior: Olive.l (2,4 mm), Medulla oblongata.l (5,5 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1571.8 to 1569.5 mm. Length: 16.2 mm. Near the upper end: Medulla oblongata.l (3.6 mm), Olive.l (3.9 mm). Near the lower end: Olive.l (2.4 mm), Medulla oblongata.l (5.5 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1571,8 a 1569,5 mm. Largo: 16,2 mm. Cerca del extremo superior: Bulbo (izquierdo) (3,6 mm), Oliva (izquierdo) (3,9 mm). Cerca del extremo inferior: Oliva (izquierdo) (2,4 mm), Bulbo (izquierdo) (5,5 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por 0,6 mm) y que todo el trazo quede por encima del foramen yugular (falla por 0,4 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1571.8 to 1569.5 mm. Length: 16.2 mm. Near the upper end: Medulla oblongata (left) (3.6 mm), Olive (left) (3.9 mm). Near the lower end: Olive (left) (2.4 mm), Medulla oblongata (left) (5.5 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; not met: its upper end lies dorsal to the olive (fails by 0.6 mm); the whole trace lies above the jugular foramen (fails by 0.4 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -61,8 +61,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1572,1 a 1571,0 mm. Largo: 14,6 mm. Cerca del extremo superior: Medulla oblongata.l (3,6 mm), Olive.l (3,9 mm). Cerca del extremo inferior: Medulla oblongata.l (3,7 mm), Medulla oblongata.r (3,8 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1572.1 to 1571.0 mm. Length: 14.6 mm. Near the upper end: Medulla oblongata.l (3.6 mm), Olive.l (3.9 mm). Near the lower end: Medulla oblongata.l (3.7 mm), Medulla oblongata.r (3.8 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1572,1 a 1571,0 mm. Largo: 14,6 mm. Cerca del extremo superior: Bulbo (izquierdo) (3,6 mm), Oliva (izquierdo) (3,9 mm). Cerca del extremo inferior: Bulbo (izquierdo) (3,7 mm), Bulbo (derecho) (3,8 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por 0,6 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1572.1 to 1571.0 mm. Length: 14.6 mm. Near the upper end: Medulla oblongata (left) (3.6 mm), Olive (left) (3.9 mm). Near the lower end: Medulla oblongata (left) (3.7 mm), Medulla oblongata (right) (3.8 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; not met: its upper end lies dorsal to the olive (fails by 0.6 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -72,8 +72,8 @@
       "propuesta": "no_es_ramo",
       "fuente": "Kim2022",
       "evidencia": {
-        "es": "Altura: de 1572,0 a 1572,0 mm. Largo: 5,6 mm. Cerca del extremo superior: Olive.l (1,6 mm), Medulla oblongata.l (4,0 mm). Cerca del extremo inferior: Medulla oblongata.l (1,9 mm), Medulla oblongata.r (2,0 mm). Raicilla: trazo corto cuyo extremo superior queda junto a la superficie del bulbo y por detrás de la oliva, y todo el trazo queda por encima del foramen yugular; se propone que no es un ramo. Confianza baja: alguna medida de la regla queda a menos de 3 mm de su umbral. Fuente: Kim2022.",
-        "en": "Height: from 1572.0 to 1572.0 mm. Length: 5.6 mm. Near the upper end: Olive.l (1.6 mm), Medulla oblongata.l (4.0 mm). Near the lower end: Medulla oblongata.l (1.9 mm), Medulla oblongata.r (2.0 mm). Rootlet: short trace whose upper end lies next to the surface of the medulla and dorsal to the olive, and the whole trace lies above the jugular foramen; it is proposed not to be a branch. Low confidence: some measure of the rule is less than 3 mm from its threshold. Source: Kim2022."
+        "es": "Altura: de 1572,0 a 1572,0 mm. Largo: 5,6 mm. Cerca del extremo superior: Oliva (izquierdo) (1,6 mm), Bulbo (izquierdo) (4,0 mm). Cerca del extremo inferior: Bulbo (izquierdo) (1,9 mm), Bulbo (derecho) (2,0 mm). Raicilla: trazo corto cuyo extremo superior queda junto a la superficie del bulbo y por detrás de la oliva, y todo el trazo queda por encima del foramen yugular; se propone que no es un ramo. Confianza baja: alguna medida de la regla queda a menos de 3 mm de su umbral. Fuente: Kim2022.",
+        "en": "Height: from 1572.0 to 1572.0 mm. Length: 5.6 mm. Near the upper end: Olive (left) (1.6 mm), Medulla oblongata (left) (4.0 mm). Near the lower end: Medulla oblongata (left) (1.9 mm), Medulla oblongata (right) (2.0 mm). Rootlet: short trace whose upper end lies next to the surface of the medulla and dorsal to the olive, and the whole trace lies above the jugular foramen; it is proposed not to be a branch. Low confidence: some measure of the rule is less than 3 mm from its threshold. Source: Kim2022."
       },
       "confianza": "baja"
     },
@@ -83,8 +83,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1470,8 a 1455,0 mm. Largo: 17,4 mm. Cerca del extremo superior: Right common carotid artery (1,3 mm), Internal jugular vein.r (5,3 mm). Cerca del extremo inferior: Right common carotid artery (3,9 mm), Internal jugular vein.r (12,1 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1470.8 to 1455.0 mm. Length: 17.4 mm. Near the upper end: Right common carotid artery (1.3 mm), Internal jugular vein.r (5.3 mm). Near the lower end: Right common carotid artery (3.9 mm), Internal jugular vein.r (12.1 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1470,8 a 1455,0 mm. Largo: 17,4 mm. Cerca del extremo superior: Arteria carótida común derecha (1,3 mm), Vena yugular interna (derecho) (5,3 mm). Cerca del extremo inferior: Arteria carótida común derecha (3,9 mm), Vena yugular interna (derecho) (12,1 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, las reglas más cercanas son la del ramo faríngeo y la del nervio laríngeo superior. En la del ramo faríngeo, no se cumple que su extremo superior quede, a lo largo del tronco, como máximo a la distancia máxima bajo el foramen yugular (falla por 68,2 mm) y que su extremo inferior quede más cerca de la faringe que del cartílago tiroides (falla por 1,4 mm). En la del nervio laríngeo superior, no se cumple que su extremo superior quede, a lo largo del tronco, como máximo a la distancia máxima bajo el foramen yugular (falla por 55,2 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1470.8 to 1455.0 mm. Length: 17.4 mm. Near the upper end: Right common carotid artery (1.3 mm), Internal jugular vein (right) (5.3 mm). Near the lower end: Right common carotid artery (3.9 mm), Internal jugular vein (right) (12.1 mm). No rule is met: no proposal. By the trace's mean height, the closest rules are the pharyngeal branch rule and the superior laryngeal nerve rule. In the pharyngeal branch rule, not met: its upper end lies, measured along the trunk, at most the maximum distance below the jugular foramen (fails by 68.2 mm); its lower end lies closer to the pharynx than to the thyroid cartilage (fails by 1.4 mm). In the superior laryngeal nerve rule, not met: its upper end lies, measured along the trunk, at most the maximum distance below the jugular foramen (fails by 55.2 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -94,8 +94,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1537,5 a 1525,2 mm. Largo: 37,6 mm. Cerca del extremo superior: Internal jugular vein.r (2,5 mm), Medulla oblongata.r (31,9 mm). Cerca del extremo inferior: Laryngopharynx (19,0 mm), Internal jugular vein.r (32,1 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1537.5 to 1525.2 mm. Length: 37.6 mm. Near the upper end: Internal jugular vein.r (2.5 mm), Medulla oblongata.r (31.9 mm). Near the lower end: Laryngopharynx (19.0 mm), Internal jugular vein.r (32.1 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1537,5 a 1525,2 mm. Largo: 37,6 mm. Cerca del extremo superior: Vena yugular interna (derecho) (2,5 mm), Bulbo (derecho) (31,9 mm). Cerca del extremo inferior: Porción laríngea de la farínge (19,0 mm), Vena yugular interna (derecho) (32,1 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, las reglas más cercanas son la del ramo faríngeo y la del nervio laríngeo superior. En la del ramo faríngeo, no se cumple que su extremo superior quede, a lo largo del tronco, como máximo a la distancia máxima bajo el foramen yugular (falla por 1,2 mm) y que su extremo inferior quede en la cara posterior de la faringe (falla por 14,7 mm). En la del nervio laríngeo superior, no se cumple que su extremo inferior quede más cerca del cartílago tiroides que de la faringe (falla por 16,5 mm) y que su extremo inferior quede cerca del cartílago tiroides (falla por 10,5 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1537.5 to 1525.2 mm. Length: 37.6 mm. Near the upper end: Internal jugular vein (right) (2.5 mm), Medulla oblongata (right) (31.9 mm). Near the lower end: Laryngopharynx (19.0 mm), Internal jugular vein (right) (32.1 mm). No rule is met: no proposal. By the trace's mean height, the closest rules are the pharyngeal branch rule and the superior laryngeal nerve rule. In the pharyngeal branch rule, not met: its upper end lies, measured along the trunk, at most the maximum distance below the jugular foramen (fails by 1.2 mm); its lower end lies on the posterior side of the pharynx (fails by 14.7 mm). In the superior laryngeal nerve rule, not met: its lower end lies closer to the thyroid cartilage than to the pharynx (fails by 16.5 mm); its lower end lies near the thyroid cartilage (fails by 10.5 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -105,8 +105,8 @@
       "propuesta": "no_es_ramo",
       "fuente": "In2026",
       "evidencia": {
-        "es": "Altura: de 1573,4 a 1128,2 mm. Largo: 601,2 mm. Cerca del extremo superior: Olive.r (2,4 mm), Medulla oblongata.r (5,5 mm). Cerca del extremo inferior: Stomach (5,0 mm), Diaphragm (31,0 mm). En el atlas publicado se retira lo que este trazo tiene entre 1421,1 y 1348,2 mm (ADR 0010): el tramo torácico está pendiente de trazado y ahí queda un hueco. Lo publicado queda en dos partes, de 1573,4 a 1421,1 mm y de 1348,2 a 1128,2 mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar. Regla del tronco: el largo del trazo supera el máximo de un ramo; se propone que no es un ramo. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: In2026.",
-        "en": "Height: from 1573.4 to 1128.2 mm. Length: 601.2 mm. Near the upper end: Olive.r (2.4 mm), Medulla oblongata.r (5.5 mm). Near the lower end: Stomach (5.0 mm), Diaphragm (31.0 mm). In the published atlas, the part of this trace between 1421.1 and 1348.2 mm is removed (ADR 0010): the thoracic segment is pending tracing and a gap is left there. What is published stays in two parts, from 1573.4 to 1421.1 mm and from 1348.2 to 1128.2 mm. The earlier measurements are those of the uncut Z-Anatomy trace. Trunk rule: the length of the trace exceeds the maximum for a branch; it is proposed not to be a branch. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: In2026."
+        "es": "Altura: de 1573,4 a 1128,2 mm. Largo: 601,2 mm. Cerca del extremo superior: Oliva (derecho) (2,4 mm), Bulbo (derecho) (5,5 mm). Cerca del extremo inferior: Estómago (5,0 mm), Diafragma (31,0 mm). En el atlas publicado se retira lo que este trazo tiene entre 1421,1 y 1348,2 mm (ADR 0010): el tramo torácico está pendiente de trazado y ahí queda un hueco. Lo publicado queda en dos partes, de 1573,4 a 1421,1 mm y de 1348,2 a 1128,2 mm. Las medidas anteriores son las del trazo de Z-Anatomy sin cortar. Regla del tronco: el largo del trazo supera el máximo de un ramo; se propone que no es un ramo. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: In2026.",
+        "en": "Height: from 1573.4 to 1128.2 mm. Length: 601.2 mm. Near the upper end: Olive (right) (2.4 mm), Medulla oblongata (right) (5.5 mm). Near the lower end: Stomach (5.0 mm), Diaphragm (31.0 mm). In the published atlas, the part of this trace between 1421.1 and 1348.2 mm is removed (ADR 0010): the thoracic segment is pending tracing and a gap is left there. What is published stays in two parts, from 1573.4 to 1421.1 mm and from 1348.2 to 1128.2 mm. The earlier measurements are those of the uncut Z-Anatomy trace. Trunk rule: the length of the trace exceeds the maximum for a branch; it is proposed not to be a branch. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: In2026."
       },
       "confianza": "alta"
     },
@@ -116,8 +116,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1140,1 a 1130,0 mm. Largo: 18,6 mm. Cerca del extremo superior: Stomach (2,1 mm), Diaphragm (27,6 mm). Cerca del extremo inferior: Stomach (5,9 mm), Diaphragm (39,5 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1140.1 to 1130.0 mm. Length: 18.6 mm. Near the upper end: Stomach (2.1 mm), Diaphragm (27.6 mm). Near the lower end: Stomach (5.9 mm), Diaphragm (39.5 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1140,1 a 1130,0 mm. Largo: 18,6 mm. Cerca del extremo superior: Estómago (2,1 mm), Diafragma (27,6 mm). Cerca del extremo inferior: Estómago (5,9 mm), Diafragma (39,5 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo gástrico posterior; no se cumple que su extremo inferior quede en la cara posterior del estómago (falla por 3,0 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1140.1 to 1130.0 mm. Length: 18.6 mm. Near the upper end: Stomach (2.1 mm), Diaphragm (27.6 mm). Near the lower end: Stomach (5.9 mm), Diaphragm (39.5 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the posterior gastric branch rule; not met: its lower end lies on the posterior side of the stomach (fails by 3.0 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -127,8 +127,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1132,6 a 1130,7 mm. Largo: 12,5 mm. Cerca del extremo superior: Stomach (6,4 mm), Diaphragm (40,0 mm). Cerca del extremo inferior: Stomach (6,8 mm), Diaphragm (43,9 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1132.6 to 1130.7 mm. Length: 12.5 mm. Near the upper end: Stomach (6.4 mm), Diaphragm (40.0 mm). Near the lower end: Stomach (6.8 mm), Diaphragm (43.9 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1132,6 a 1130,7 mm. Largo: 12,5 mm. Cerca del extremo superior: Estómago (6,4 mm), Diafragma (40,0 mm). Cerca del extremo inferior: Estómago (6,8 mm), Diafragma (43,9 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo gástrico posterior; no se cumple que su extremo inferior quede en la cara posterior del estómago (falla por 3,8 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1132.6 to 1130.7 mm. Length: 12.5 mm. Near the upper end: Stomach (6.4 mm), Diaphragm (40.0 mm). Near the lower end: Stomach (6.8 mm), Diaphragm (43.9 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the posterior gastric branch rule; not met: its lower end lies on the posterior side of the stomach (fails by 3.8 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -138,8 +138,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1131,4 a 1130,2 mm. Largo: 5,4 mm. Cerca del extremo superior: Stomach (6,4 mm), Diaphragm (43,4 mm). Cerca del extremo inferior: Stomach (6,7 mm), Diaphragm (44,8 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1131.4 to 1130.2 mm. Length: 5.4 mm. Near the upper end: Stomach (6.4 mm), Diaphragm (43.4 mm). Near the lower end: Stomach (6.7 mm), Diaphragm (44.8 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1131,4 a 1130,2 mm. Largo: 5,4 mm. Cerca del extremo superior: Estómago (6,4 mm), Diafragma (43,4 mm). Cerca del extremo inferior: Estómago (6,7 mm), Diafragma (44,8 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo gástrico posterior; no se cumple que su extremo inferior quede en la cara posterior del estómago (falla por 2,4 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1131.4 to 1130.2 mm. Length: 5.4 mm. Near the upper end: Stomach (6.4 mm), Diaphragm (43.4 mm). Near the lower end: Stomach (6.7 mm), Diaphragm (44.8 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the posterior gastric branch rule; not met: its lower end lies on the posterior side of the stomach (fails by 2.4 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -149,7 +149,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1141,1 a 1137,4 mm. Largo: 14,6 mm. Cerca del extremo superior: Stomach (5,5 mm), Diaphragm (47,9 mm). Cerca del extremo inferior: Stomach (4,7 mm), Diaphragm (37,2 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1141,1 a 1137,4 mm. Largo: 14,6 mm. Cerca del extremo superior: Estómago (5,5 mm), Diafragma (47,9 mm). Cerca del extremo inferior: Estómago (4,7 mm), Diafragma (37,2 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1141.1 to 1137.4 mm. Length: 14.6 mm. Near the upper end: Stomach (5.5 mm), Diaphragm (47.9 mm). Near the lower end: Stomach (4.7 mm), Diaphragm (37.2 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "alta"
@@ -160,7 +160,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1183,6 a 1163,5 mm. Largo: 29,1 mm. Cerca del extremo superior: Stomach (1,3 mm), Diaphragm (21,2 mm). Cerca del extremo inferior: Stomach (3,4 mm), Diaphragm (14,5 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1183,6 a 1163,5 mm. Largo: 29,1 mm. Cerca del extremo superior: Estómago (1,3 mm), Diafragma (21,2 mm). Cerca del extremo inferior: Estómago (3,4 mm), Diafragma (14,5 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1183.6 to 1163.5 mm. Length: 29.1 mm. Near the upper end: Stomach (1.3 mm), Diaphragm (21.2 mm). Near the lower end: Stomach (3.4 mm), Diaphragm (14.5 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "alta"
@@ -171,7 +171,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1170,8 a 1168,0 mm. Largo: 8,3 mm. Cerca del extremo superior: Stomach (4,1 mm), Diaphragm (11,4 mm). Cerca del extremo inferior: Stomach (3,1 mm), Diaphragm (14,9 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1170,8 a 1168,0 mm. Largo: 8,3 mm. Cerca del extremo superior: Estómago (4,1 mm), Diafragma (11,4 mm). Cerca del extremo inferior: Estómago (3,1 mm), Diafragma (14,9 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1170.8 to 1168.0 mm. Length: 8.3 mm. Near the upper end: Stomach (4.1 mm), Diaphragm (11.4 mm). Near the lower end: Stomach (3.1 mm), Diaphragm (14.9 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "alta"
@@ -182,8 +182,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1217,9 a 1210,9 mm. Largo: 46,0 mm. Cerca del extremo superior: Stomach (2,5 mm), Diaphragm (20,2 mm). Cerca del extremo inferior: Liver (1,8 mm), Stomach (2,2 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1217.9 to 1210.9 mm. Length: 46.0 mm. Near the upper end: Stomach (2.5 mm), Diaphragm (20.2 mm). Near the lower end: Liver (1.8 mm), Stomach (2.2 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1217,9 a 1210,9 mm. Largo: 46,0 mm. Cerca del extremo superior: Estómago (2,5 mm), Diafragma (20,2 mm). Cerca del extremo inferior: Hígado (1,8 mm), Estómago (2,2 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo hepático; no se cumple que todo el trazo quede por debajo del hiato esofágico (falla por 0,2 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1217.9 to 1210.9 mm. Length: 46.0 mm. Near the upper end: Stomach (2.5 mm), Diaphragm (20.2 mm). Near the lower end: Liver (1.8 mm), Stomach (2.2 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the hepatic branch rule; not met: the whole trace lies below the oesophageal hiatus (fails by 0.2 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -193,7 +193,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1211,1 a 1190,5 mm. Largo: 32,3 mm. Cerca del extremo superior: Stomach (2,3 mm), Liver (13,8 mm). Cerca del extremo inferior: Stomach (2,1 mm), Diaphragm (38,0 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1211,1 a 1190,5 mm. Largo: 32,3 mm. Cerca del extremo superior: Estómago (2,3 mm), Hígado (13,8 mm). Cerca del extremo inferior: Estómago (2,1 mm), Diafragma (38,0 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1211.1 to 1190.5 mm. Length: 32.3 mm. Near the upper end: Stomach (2.3 mm), Liver (13.8 mm). Near the lower end: Stomach (2.1 mm), Diaphragm (38.0 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "alta"
@@ -204,7 +204,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1207,4 a 1202,5 mm. Largo: 20,4 mm. Cerca del extremo superior: Stomach (2,9 mm), Liver (24,9 mm). Cerca del extremo inferior: Stomach (1,8 mm), Diaphragm (30,6 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1207,4 a 1202,5 mm. Largo: 20,4 mm. Cerca del extremo superior: Estómago (2,9 mm), Hígado (24,9 mm). Cerca del extremo inferior: Estómago (1,8 mm), Diafragma (30,6 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1207.4 to 1202.5 mm. Length: 20.4 mm. Near the upper end: Stomach (2.9 mm), Liver (24.9 mm). Near the lower end: Stomach (1.8 mm), Diaphragm (30.6 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "alta"
@@ -215,8 +215,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1215,9 a 1110,6 mm. Largo: 123,5 mm. Cerca del extremo superior: Liver (1,8 mm), Stomach (2,2 mm). Cerca del extremo inferior: Stomach (17,2 mm), Diaphragm (27,9 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1215.9 to 1110.6 mm. Length: 123.5 mm. Near the upper end: Liver (1.8 mm), Stomach (2.2 mm). Near the lower end: Stomach (17.2 mm), Diaphragm (27.9 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1215,9 a 1110,6 mm. Largo: 123,5 mm. Cerca del extremo superior: Hígado (1,8 mm), Estómago (2,2 mm). Cerca del extremo inferior: Estómago (17,2 mm), Diafragma (27,9 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo gástrico posterior; no se cumple que su extremo inferior quede cerca del estómago (falla por 2,2 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1215.9 to 1110.6 mm. Length: 123.5 mm. Near the upper end: Liver (1.8 mm), Stomach (2.2 mm). Near the lower end: Stomach (17.2 mm), Diaphragm (27.9 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the posterior gastric branch rule; not met: its lower end lies near the stomach (fails by 2.2 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -226,8 +226,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1150,8 a 1104,9 mm. Largo: 49,8 mm. Cerca del extremo superior: Stomach (4,8 mm), Diaphragm (9,3 mm). Cerca del extremo inferior: Stomach (23,9 mm), Diaphragm (24,3 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1150.8 to 1104.9 mm. Length: 49.8 mm. Near the upper end: Stomach (4.8 mm), Diaphragm (9.3 mm). Near the lower end: Stomach (23.9 mm), Diaphragm (24.3 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1150,8 a 1104,9 mm. Largo: 49,8 mm. Cerca del extremo superior: Estómago (4,8 mm), Diafragma (9,3 mm). Cerca del extremo inferior: Estómago (23,9 mm), Diafragma (24,3 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo gástrico posterior; no se cumple que su extremo inferior quede cerca del estómago (falla por 8,9 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1150.8 to 1104.9 mm. Length: 49.8 mm. Near the upper end: Stomach (4.8 mm), Diaphragm (9.3 mm). Near the lower end: Stomach (23.9 mm), Diaphragm (24.3 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the posterior gastric branch rule; not met: its lower end lies near the stomach (fails by 8.9 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -237,8 +237,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1154,2 a 1142,6 mm. Largo: 52,0 mm. Cerca del extremo superior: Diaphragm (6,7 mm), Stomach (7,3 mm). Cerca del extremo inferior: Diaphragm (3,9 mm), Liver (24,5 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1154.2 to 1142.6 mm. Length: 52.0 mm. Near the upper end: Diaphragm (6.7 mm), Stomach (7.3 mm). Near the lower end: Diaphragm (3.9 mm), Liver (24.5 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1154,2 a 1142,6 mm. Largo: 52,0 mm. Cerca del extremo superior: Diafragma (6,7 mm), Estómago (7,3 mm). Cerca del extremo inferior: Diafragma (3,9 mm), Hígado (24,5 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la del ramo hepático; no se cumple que su extremo inferior quede cerca del hígado (falla por 9,5 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1154.2 to 1142.6 mm. Length: 52.0 mm. Near the upper end: Diaphragm (6.7 mm), Stomach (7.3 mm). Near the lower end: Diaphragm (3.9 mm), Liver (24.5 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the hepatic branch rule; not met: its lower end lies near the liver (fails by 9.5 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -248,7 +248,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1188,3 a 1149,8 mm. Largo: 46,4 mm. Cerca del extremo superior: Stomach (1,7 mm), Diaphragm (5,6 mm). Cerca del extremo inferior: Stomach (3,1 mm), Diaphragm (18,6 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1188,3 a 1149,8 mm. Largo: 46,4 mm. Cerca del extremo superior: Estómago (1,7 mm), Diafragma (5,6 mm). Cerca del extremo inferior: Estómago (3,1 mm), Diafragma (18,6 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza alta: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1188.3 to 1149.8 mm. Length: 46.4 mm. Near the upper end: Stomach (1.7 mm), Diaphragm (5.6 mm). Near the lower end: Stomach (3.1 mm), Diaphragm (18.6 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. High confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "alta"
@@ -259,7 +259,7 @@
       "propuesta": "m-posterior-gastric-branches-of-posterior-vagal-trunk",
       "fuente": "Guo2024",
       "evidencia": {
-        "es": "Altura: de 1155,1 a 1147,9 mm. Largo: 48,2 mm. Cerca del extremo superior: Stomach (1,7 mm), Diaphragm (37,8 mm). Cerca del extremo inferior: Diaphragm (6,7 mm), Stomach (7,3 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza media: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a no más del doble de distancia que la primera. Fuente: Guo2024.",
+        "es": "Altura: de 1155,1 a 1147,9 mm. Largo: 48,2 mm. Cerca del extremo superior: Estómago (1,7 mm), Diafragma (37,8 mm). Cerca del extremo inferior: Diafragma (6,7 mm), Estómago (7,3 mm). Regla del ramo gástrico posterior: todo el trazo queda por debajo del hiato esofágico y su extremo inferior queda cerca del estómago, más cerca de él que de las otras piezas de destino, en su cara posterior, en el vago derecho. Confianza media: ninguna medida de la regla queda a menos de 3 mm de su umbral y, en el extremo inferior, la segunda pieza más cercana está a no más del doble de distancia que la primera. Fuente: Guo2024.",
         "en": "Height: from 1155.1 to 1147.9 mm. Length: 48.2 mm. Near the upper end: Stomach (1.7 mm), Diaphragm (37.8 mm). Near the lower end: Diaphragm (6.7 mm), Stomach (7.3 mm). Posterior gastric branch rule: the whole trace lies below the oesophageal hiatus and its lower end lies near the stomach, closer to it than to the other target pieces, on its posterior side, in the right vagus. Medium confidence: no measure of the rule is less than 3 mm from its threshold and, at the lower end, the second closest piece is no more than twice as far as the first. Source: Guo2024."
       },
       "confianza": "media"
@@ -270,8 +270,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1575,6 a 1571,8 mm. Largo: 16,4 mm. Cerca del extremo superior: Olive.r (2,5 mm), Medulla oblongata.r (3,5 mm). Cerca del extremo inferior: Medulla oblongata.r (3,6 mm), Olive.r (3,9 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1575.6 to 1571.8 mm. Length: 16.4 mm. Near the upper end: Olive.r (2.5 mm), Medulla oblongata.r (3.5 mm). Near the lower end: Medulla oblongata.r (3.6 mm), Olive.r (3.9 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1575,6 a 1571,8 mm. Largo: 16,4 mm. Cerca del extremo superior: Oliva (derecho) (2,5 mm), Bulbo (derecho) (3,5 mm). Cerca del extremo inferior: Bulbo (derecho) (3,6 mm), Oliva (derecho) (3,9 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por 1,2 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1575.6 to 1571.8 mm. Length: 16.4 mm. Near the upper end: Olive (right) (2.5 mm), Medulla oblongata (right) (3.5 mm). Near the lower end: Medulla oblongata (right) (3.6 mm), Olive (right) (3.9 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; not met: its upper end lies dorsal to the olive (fails by 1.2 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -281,8 +281,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1571,8 a 1569,5 mm. Largo: 16,2 mm. Cerca del extremo superior: Medulla oblongata.r (3,6 mm), Olive.r (3,9 mm). Cerca del extremo inferior: Olive.r (2,4 mm), Medulla oblongata.r (5,5 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1571.8 to 1569.5 mm. Length: 16.2 mm. Near the upper end: Medulla oblongata.r (3.6 mm), Olive.r (3.9 mm). Near the lower end: Olive.r (2.4 mm), Medulla oblongata.r (5.5 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1571,8 a 1569,5 mm. Largo: 16,2 mm. Cerca del extremo superior: Bulbo (derecho) (3,6 mm), Oliva (derecho) (3,9 mm). Cerca del extremo inferior: Oliva (derecho) (2,4 mm), Bulbo (derecho) (5,5 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por 0,6 mm) y que todo el trazo quede por encima del foramen yugular (falla por 0,4 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1571.8 to 1569.5 mm. Length: 16.2 mm. Near the upper end: Medulla oblongata (right) (3.6 mm), Olive (right) (3.9 mm). Near the lower end: Olive (right) (2.4 mm), Medulla oblongata (right) (5.5 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; not met: its upper end lies dorsal to the olive (fails by 0.6 mm); the whole trace lies above the jugular foramen (fails by 0.4 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -292,8 +292,8 @@
       "propuesta": null,
       "fuente": "Bahadir2026",
       "evidencia": {
-        "es": "Altura: de 1572,1 a 1571,0 mm. Largo: 14,6 mm. Cerca del extremo superior: Medulla oblongata.r (3,6 mm), Olive.r (3,9 mm). Cerca del extremo inferior: Medulla oblongata.r (3,7 mm), Medulla oblongata.l (3,8 mm). La regla no distingue entre ramos: queda sin propuesta. Fuente: Bahadir2026.",
-        "en": "Height: from 1572.1 to 1571.0 mm. Length: 14.6 mm. Near the upper end: Medulla oblongata.r (3.6 mm), Olive.r (3.9 mm). Near the lower end: Medulla oblongata.r (3.7 mm), Medulla oblongata.l (3.8 mm). The rule does not distinguish between branches: no proposal. Source: Bahadir2026."
+        "es": "Altura: de 1572,1 a 1571,0 mm. Largo: 14,6 mm. Cerca del extremo superior: Bulbo (derecho) (3,6 mm), Oliva (derecho) (3,9 mm). Cerca del extremo inferior: Bulbo (derecho) (3,7 mm), Bulbo (izquierdo) (3,8 mm). Ninguna regla se cumple: queda sin propuesta. Por la altura media del trazo, la regla más cercana es la de la raicilla; no se cumple que su extremo superior quede por detrás de la oliva (falla por 0,6 mm). Fuente: Bahadir2026.",
+        "en": "Height: from 1572.1 to 1571.0 mm. Length: 14.6 mm. Near the upper end: Medulla oblongata (right) (3.6 mm), Olive (right) (3.9 mm). Near the lower end: Medulla oblongata (right) (3.7 mm), Medulla oblongata (left) (3.8 mm). No rule is met: no proposal. By the trace's mean height, the closest rule is the rootlet rule; not met: its upper end lies dorsal to the olive (fails by 0.6 mm). Source: Bahadir2026."
       },
       "confianza": null
     },
@@ -303,8 +303,8 @@
       "propuesta": "no_es_ramo",
       "fuente": "Kim2022",
       "evidencia": {
-        "es": "Altura: de 1572,0 a 1572,0 mm. Largo: 5,6 mm. Cerca del extremo superior: Olive.r (1,6 mm), Medulla oblongata.r (4,0 mm). Cerca del extremo inferior: Medulla oblongata.r (1,9 mm), Medulla oblongata.l (2,0 mm). Raicilla: trazo corto cuyo extremo superior queda junto a la superficie del bulbo y por detrás de la oliva, y todo el trazo queda por encima del foramen yugular; se propone que no es un ramo. Confianza baja: alguna medida de la regla queda a menos de 3 mm de su umbral. Fuente: Kim2022.",
-        "en": "Height: from 1572.0 to 1572.0 mm. Length: 5.6 mm. Near the upper end: Olive.r (1.6 mm), Medulla oblongata.r (4.0 mm). Near the lower end: Medulla oblongata.r (1.9 mm), Medulla oblongata.l (2.0 mm). Rootlet: short trace whose upper end lies next to the surface of the medulla and dorsal to the olive, and the whole trace lies above the jugular foramen; it is proposed not to be a branch. Low confidence: some measure of the rule is less than 3 mm from its threshold. Source: Kim2022."
+        "es": "Altura: de 1572,0 a 1572,0 mm. Largo: 5,6 mm. Cerca del extremo superior: Oliva (derecho) (1,6 mm), Bulbo (derecho) (4,0 mm). Cerca del extremo inferior: Bulbo (derecho) (1,9 mm), Bulbo (izquierdo) (2,0 mm). Raicilla: trazo corto cuyo extremo superior queda junto a la superficie del bulbo y por detrás de la oliva, y todo el trazo queda por encima del foramen yugular; se propone que no es un ramo. Confianza baja: alguna medida de la regla queda a menos de 3 mm de su umbral. Fuente: Kim2022.",
+        "en": "Height: from 1572.0 to 1572.0 mm. Length: 5.6 mm. Near the upper end: Olive (right) (1.6 mm), Medulla oblongata (right) (4.0 mm). Near the lower end: Medulla oblongata (right) (1.9 mm), Medulla oblongata (left) (2.0 mm). Rootlet: short trace whose upper end lies next to the surface of the medulla and dorsal to the olive, and the whole trace lies above the jugular foramen; it is proposed not to be a branch. Low confidence: some measure of the rule is less than 3 mm from its threshold. Source: Kim2022."
       },
       "confianza": "baja"
     }
