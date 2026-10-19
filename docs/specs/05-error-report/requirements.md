@@ -1,6 +1,7 @@
 # Requirements: Reportar un error desde la ficha (F12)
 
-Status: draft  |  Date: 2026-10-19  |  Spec: docs/specs/05-error-report/
+Status: approved  |  Date: 2026-10-19  |  Spec: docs/specs/05-error-report/
+Línea base: desconocida
 Brief: docs/brief.md  |  ADRs: docs/adr/0012-apps-script-canal-revision.md, docs/adr/0015-analitica-sin-cookies.md  |  Issue: #10  |  SPEC.md F12
 
 ## Context
@@ -49,7 +50,8 @@ Como visitante con cuenta de GitHub, quiero que el issue se abra ya llenado, par
 
 - R3.1 Cuando el visitante pulsa "Abrir en GitHub", el sistema deberá abrir en una pestaña nueva, con `rel="noopener noreferrer"`, el formulario de issue del tipo elegido en `github.com/ragarciaga/3d_brain`, con estructura, idioma, versión, parte y descripción ya llenos y un título "[<tipo>] <nombre de la estructura> (<id>)". `[unit]`
 - R3.2 El sistema deberá armar el enlace solo con el tipo, el id de la estructura, el idioma, la versión de la ficha, la parte y la descripción; nunca deberá incluir el código del revisor, `location.search`, `location.hash` ni ningún otro dato de la URL o del navegador. `[unit]`
-- R3.3 El sistema deberá codificar cada valor de modo que cualquier carácter de la descripción (`#`, `&`, saltos de línea, comillas, tildes) llegue intacto, y el enlace más largo posible (1500 caracteres en la descripción) deberá medir 8000 caracteres o menos. `[unit]`
+- R3.3 El sistema deberá codificar cada valor de modo que cualquier carácter de la descripción (`#`, `&`, saltos de línea, comillas, tildes) llegue intacto, y el enlace que abre deberá medir 8000 caracteres o menos. `[unit]`
+- R3.4 Si con la descripción escrita el enlace a GitHub pasaría de 8000 caracteres (texto con muchos emojis o símbolos), entonces el sistema deberá desactivar "Abrir en GitHub", decir que se acorte el texto o se use el correo, y dejar activo "Enviar por correo". `[unit]`
 
 ## R4: Reportar por correo
 Como visitante sin cuenta de GitHub, quiero enviar el mismo reporte por correo, para no tener que registrarme.
@@ -86,7 +88,7 @@ Como visitante, quiero leer todo en mi idioma y saber qué pasa con mi reporte.
 ## Verification summary
 | Tag | Count |
 |---|---|
-| unit | 13 |
+| unit | 14 |
 | integration | 0 |
 | e2e | 10 |
 | eval | 0 |
