@@ -288,7 +288,10 @@ lo contaba y, al abrir el enlace en otro equipo, la marca volvía. Desde #217 la
   Un veredicto posterior al retiro gana, y las respuestas de otros revisores no se tocan. `resumen.md` trae
   la sección "Marcas retiradas" con el alias, el campo, el idioma y la estructura de lo que desapareció (sin
   veredicto, propuesta ni comentario; el campo de un trazo admite hasta 120 caracteres), y la consola suma
-  cuántas marcas se retiraron.
+  cuántas marcas se retiraron. Esa lista y ese conteo incluyen solo las claves que quedaron sin ninguna
+  respuesta: si el formulario conserva la clave, el conteo puede ser 0 aunque el retiro haya quitado la
+  respuesta de la hoja. Por ejemplo, con un veredicto del formulario, después uno de la hoja y después un
+  retiro, el visible vuelve a ser el del formulario.
 
 Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementación existente. En este
 orden, con el sitio primero y el script después (la app nueva funciona con el script viejo: solo deja los

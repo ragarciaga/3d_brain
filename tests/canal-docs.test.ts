@@ -217,6 +217,32 @@ describe('quitar una marca se guarda (#217)', () => {
     expect(requisitos).toContain('el campo de un trazo admite hasta 120 caracteres');
   });
 
+  it('el docstring de importar, el encabezado del script y el comentario de Envio.retiros dicen que solo se quita lo de la hoja y que se cuentan las claves sin respuesta', () => {
+    const normal = (t: string) => t.replace(/^\s*(\/\/|\*|\/\*\*)\s?/gm, '').replace(/\s+/g, ' ');
+    const lib = leer('scripts/lib/revisiones.ts');
+    const docstringImportar = normal(lib.slice(lib.lastIndexOf('/**', lib.indexOf('export function importar(')), lib.indexOf('export function importar(')));
+    const comentarioRetiros = normal(lib.slice(lib.lastIndexOf('/**', lib.indexOf('  retiros?: Retiro[]')), lib.indexOf('  retiros?: Retiro[]')));
+    const encabezado = normal(leer('scripts/importar-revisiones.ts').split('\n').slice(0, 25).join('\n'));
+    for (const [nombre, texto] of [['docstring de importar', docstringImportar], ['comentario de Envio.retiros', comentarioRetiros], ['encabezado del script', encabezado]] as const) {
+      expect(texto, nombre).toMatch(/formulario/);
+      expect(texto, nombre).toMatch(/v:1/);
+      expect(texto, nombre).toMatch(/Respuestas/);
+    }
+    expect(docstringImportar).toMatch(/solo las claves que quedaron sin ninguna respuesta/);
+    expect(encabezado).toMatch(/solo las claves que quedan sin ninguna respuesta/);
+    expect(comentarioRetiros).toMatch(/nunca a las del formulario ni a las `v:1`/);
+    // Lo viejo: "cuenta las marcas quitadas" sin condición, y "las aplica a las respuestas de envíos anteriores del mismo revisor".
+    expect(docstringImportar).not.toMatch(/cuenta las marcas quitadas/);
+    expect(comentarioRetiros).not.toMatch(/a las respuestas de envíos anteriores del mismo revisor\./);
+  });
+
+  it('la guía dice que el conteo de marcas retiradas puede ser 0 y que el formulario vuelve a verse', () => {
+    const bullet = guia.replace(/\s+/g, ' ');
+    expect(bullet).toContain('solo las claves que quedaron sin ninguna respuesta');
+    expect(bullet).toContain('el conteo puede ser 0');
+    expect(bullet).toContain('el visible vuelve a ser el del formulario');
+  });
+
   it('la tabla "Verification summary" de la spec 03 coincide con las etiquetas de los requisitos', () => {
     const lineas = requisitos.split('\n').filter((l) => /^- R\d+\.\d+ /.test(l));
     for (const etiqueta of ['unit', 'integration', 'e2e', 'eval', 'manual']) {

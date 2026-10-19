@@ -50,7 +50,8 @@ export interface Envio {
   respuestas: Respuesta[];
   /**
    * Retiros de marcas (#217) de esta estructura, solo en filas `v:2` de la pestaña Respuestas que los traen. Ausente
-   * si no hay. `quitarRetiradas` los aplica a las respuestas de envíos anteriores del mismo revisor.
+   * si no hay. `quitarRetiradas` los aplica solo a las respuestas anteriores del mismo revisor que llegaron en filas `v:2` con la forma de la
+   * pestaña Respuestas (`deHoja`), nunca a las del formulario ni a las `v:1`.
    */
   retiros?: Retiro[];
   /**
@@ -238,7 +239,7 @@ export function quitarRetiradas(envios: Envio[]): { envios: Envio[]; retiradas: 
       }
     }
   });
-  // Solo siguen quitadas las que no queda con ninguna respuesta: ni un veredicto posterior al retiro ni uno del formulario.
+  // Solo siguen quitadas las que quedan sin ninguna respuesta: ni un veredicto posterior al retiro ni uno del formulario.
   const retiradas = [...quitadas.entries()]
     .filter(([k]) => !salida.some((e) => e.respuestas.some((r) => clave(e.revisor, r.estructura, r.campo, r.idioma) === k)))
     .map(([, { marca }]) => marca);
@@ -524,7 +525,7 @@ export interface Importacion {
   sinAutorizacion: number | null;
   /** Alias (nunca códigos) de esas respuestas, en orden alfabético; vacío si no hay o no se pasó el CSV. */
   aliasSinAutorizacion: string[];
-  /** Marcas únicas que un retiro quitó (#217) de revisores del padrón; salen en "Marcas retiradas" de `resumen.md`. */
+  /** Claves únicas que un retiro dejó sin ninguna respuesta (#217), de revisores del padrón; salen en "Marcas retiradas" de `resumen.md`. */
   retiradas: number;
 }
 
@@ -540,8 +541,10 @@ export interface Importacion {
  * "Descartadas: sin autorización" de `resumen.md` (alias, campo, idioma y estructura, sin texto libre) y
  * nunca en las tablas ni en los `<id>.md`. `sinAutorizacion` las cuenta y se devuelven sus alias.
  * Los retiros (#217, `quitarRetiradas`) se aplican justo después de leer, antes del padrón y de todo lo anterior: las
- * respuestas anteriores de la clave retirada de ese mismo revisor no salen en las tablas, en los `<id>.md` ni en
- * ninguna sección "Descartadas". `retiradas` cuenta las marcas quitadas y "Marcas retiradas" de `resumen.md` las lista.
+ * respuestas anteriores de la clave retirada de ese mismo revisor que llegaron en filas `v:2` de la pestaña Respuestas
+ * (`deHoja`) no salen en las tablas, en los `<id>.md` ni en ninguna sección "Descartadas"; un retiro nunca quita lo del
+ * formulario ni los `v:1`. `retiradas` cuenta, y "Marcas retiradas" de `resumen.md` lista, solo las claves que quedaron
+ * sin ninguna respuesta (no las que un veredicto posterior o el formulario conservan), así que puede valer 0.
  */
 export function importar(
   csvTexto: string,
