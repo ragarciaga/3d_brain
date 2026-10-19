@@ -1,9 +1,12 @@
-// Reportar un error (F12): las partes que se pueden señalar salen de la ficha y la descripción se valida.
-import { describe, expect, it } from 'vitest';
-import { MAX_DESCRIPCION, MAX_URL } from '../src/config/reporte';
+// Reportar un error (F12): las partes que se pueden señalar salen de la ficha, la descripción se valida, el enlace
+// a GitHub se arma solo con los datos del reporte y los textos del reporte existen en los dos idiomas.
+import { readFileSync } from 'node:fs';
+import i18next from 'i18next';
+import { describe, expect, it, vi } from 'vitest';
+import { MAX_DESCRIPCION, MAX_URL, PLANTILLA, TIPOS, URL_ISSUES, type TipoReporte } from '../src/config/reporte';
 import { estructuras } from '../src/data/atlas';
 import { camposDeFicha } from '../src/lib/prioridad';
-import { descripcionValida, partesDeFicha } from '../src/lib/reporte';
+import { cabeEnGithub, descripcionValida, enlaceGithub, partesDeFicha, type Reporte } from '../src/lib/reporte';
 
 const COPIA = 'copia-de-prueba-reporte';
 const conFicha = Object.keys(estructuras).filter((id) => estructuras[id]!.ficha);
@@ -117,4 +120,196 @@ describe('constantes del reporte', () => {
     expect(MAX_DESCRIPCION).toBe(1500);
     expect(MAX_URL).toBe(8000);
   });
+});
+
+const leerJson = (lng: 'es' | 'en') => JSON.parse(readFileSync(new URL(`../src/i18n/${lng}.json`, import.meta.url), 'utf8'));
+const crearT = async (lng: 'es' | 'en') => {
+  const i = i18next.createInstance();
+  await i.init({ lng, resources: { [lng]: { translation: leerJson(lng) } }, interpolation: { escapeValue: false } });
+  return i.getFixedT(lng);
+};
+
+const ID = 'gracile-lobule';
+const base = (parcial: Partial<Reporte> = {}): Reporte => ({
+  tipo: 'contenido',
+  estructura: ID,
+  nombre: 'Lóbulo grácil',
+  idioma: 'es',
+  version: estructuras[ID]!.ficha!.version,
+  parte: 'que_es',
+  descripcion: 'Falta una fuente.',
+  ...parcial,
+});
+const PARAMS = ['template', 'title', 'estructura', 'idioma', 'version', 'parte', 'descripcion'];
+
+describe('enlaceGithub (R3.1 a R3.3)', () => {
+  it('empieza por la URL de issues nueva y trae la plantilla de cada tipo', async () => {
+    const t = await crearT('es');
+    for (const tipo of TIPOS) {
+      const enlace = enlaceGithub(base({ tipo }), t);
+      expect(enlace.startsWith('https://github.com/ragarciaga/3d_brain/issues/new?'), tipo).toBe(true);
+      expect(enlace.startsWith(`${URL_ISSUES}?`), tipo).toBe(true);
+      expect(new URL(enlace).searchParams.get('template'), tipo).toBe(PLANTILLA[tipo]);
+    }
+  });
+
+  it('cada parámetro trae su valor exacto', async () => {
+    const t = await crearT('es');
+    const r = base({ parte: 'relevancia.1', descripcion: 'Dice otra cosa.' });
+    const p = new URL(enlaceGithub(r, t)).searchParams;
+    expect(p.get('estructura')).toBe(ID);
+    expect(p.get('idioma')).toBe('es');
+    expect(p.get('version')).toBe(estructuras[ID]!.ficha!.version);
+    expect(p.get('version')).toBeTruthy();
+    expect(p.get('parte')).toBe('relevancia.1');
+    expect(p.get('descripcion')).toBe('Dice otra cosa.');
+  });
+
+  it('title es "[<tipo traducido>] <nombre> (<id>)" con el JSON del idioma, para los cuatro tipos', async () => {
+    for (const idioma of ['es', 'en'] as const) {
+      const t = await crearT(idioma);
+      const json = leerJson(idioma);
+      for (const tipo of TIPOS) {
+        const params = new URL(enlaceGithub(base({ tipo, idioma }), t)).searchParams;
+        expect(params.get('idioma'), `${idioma} ${tipo}`).toBe(idioma);
+        const title = params.get('title');
+        expect(title, `${idioma} ${tipo}`).toBe(`[${json.reporte.tipo[tipo]}] Lóbulo grácil (${ID})`);
+      }
+    }
+    const es = new URL(enlaceGithub(base(), await crearT('es'))).searchParams.get('title');
+    const en = new URL(enlaceGithub(base({ idioma: 'en' }), await crearT('en'))).searchParams.get('title');
+    expect(es).toBe('[Contenido] Lóbulo grácil (gracile-lobule)');
+    expect(en).toBe('[Content] Lóbulo grácil (gracile-lobule)');
+  });
+
+  it('los parámetros son exactamente siete, en este orden', async () => {
+    const t = await crearT('es');
+    for (const tipo of TIPOS) {
+      expect([...new URL(enlaceGithub(base({ tipo }), t)).searchParams.keys()], tipo).toEqual(PARAMS);
+    }
+  });
+
+  it('no lee la ubicación de la página: ?r= y #r= no salen en el enlace (R3.2)', async () => {
+    const t = await crearT('es');
+    const location = { search: '?r=PRUEBA01', hash: '#r=PRUEBA01', href: 'https://x.test/?r=PRUEBA01#r=PRUEBA01' };
+    vi.stubGlobal('location', location);
+    vi.stubGlobal('window', { location });
+    try {
+      const enlace = enlaceGithub(base(), t);
+      expect(enlace).not.toContain('PRUEBA01');
+      expect(enlace).not.toContain('r=');
+      const url = new URL(enlace);
+      expect(url.searchParams.has('r')).toBe(false);
+      expect([...url.searchParams.keys()]).toEqual(PARAMS);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('un texto con #, &, +, %20, salto de línea, comillas y tildes vuelve intacto y el enlace no tiene hash (R3.3)', async () => {
+    const t = await crearT('es');
+    const texto = 'Dice "núcleo" #3 & más + 50%20\nñ á ü \'ok\'';
+    const enlace = enlaceGithub(base({ descripcion: texto, parte: 'a&b#c' }), t);
+    const url = new URL(enlace);
+    expect(url.searchParams.get('descripcion')).toBe(texto);
+    expect(url.searchParams.get('parte')).toBe('a&b#c');
+    expect(url.hash).toBe('');
+    expect(enlace).not.toContain('#');
+    expect([...url.searchParams.keys()]).toEqual(PARAMS);
+  });
+
+  it('1500 caracteres ASCII con espacios dan un enlace de 8000 o menos', async () => {
+    const t = await crearT('es');
+    const descripcion = 'palabra '.repeat(188).slice(0, 1500);
+    expect(descripcion).toHaveLength(1500);
+    expect(enlaceGithub(base({ descripcion }), t).length).toBeLessThanOrEqual(MAX_URL);
+  });
+});
+
+describe('cabeEnGithub (R3.4)', () => {
+  it('es verdadero en exactamente MAX_URL caracteres y falso en uno más', async () => {
+    const t = await crearT('es');
+    const l0 = enlaceGithub(base({ descripcion: '' }), t).length;
+    const exacto = base({ descripcion: 'a'.repeat(MAX_URL - l0) });
+    expect(enlaceGithub(exacto, t)).toHaveLength(MAX_URL);
+    expect(cabeEnGithub(exacto, t)).toBe(true);
+    const pasado = base({ descripcion: 'a'.repeat(MAX_URL - l0 + 1) });
+    expect(enlaceGithub(pasado, t)).toHaveLength(MAX_URL + 1);
+    expect(cabeEnGithub(pasado, t)).toBe(false);
+  });
+
+  it('es verdadero con 1500 caracteres ASCII con espacios', async () => {
+    const t = await crearT('es');
+    expect(cabeEnGithub(base({ descripcion: 'palabra '.repeat(188).slice(0, 1500) }), t)).toBe(true);
+  });
+
+  it('es falso con 1500 emojis y con 750 emojis (descripción válida)', async () => {
+    const t = await crearT('es');
+    const mil500 = '😀'.repeat(1500);
+    const sete50 = '😀'.repeat(750);
+    expect(sete50.length).toBe(1500);
+    expect(descripcionValida(sete50)).toBe(true);
+    expect(cabeEnGithub(base({ descripcion: mil500 }), t)).toBe(false);
+    expect(cabeEnGithub(base({ descripcion: sete50 }), t)).toBe(false);
+  });
+});
+
+describe('tipo fuera de TIPOS (D1)', () => {
+  it("enlaceGithub y cabeEnGithub lanzan con 'otro' y con 'constructor'", async () => {
+    const t = await crearT('es');
+    for (const tipo of ['otro', 'constructor', '__proto__', 'toString']) {
+      const r = base({ tipo: tipo as TipoReporte });
+      expect(() => enlaceGithub(r, t), tipo).toThrow();
+      expect(() => cabeEnGithub(r, t), tipo).toThrow();
+    }
+  });
+});
+
+describe('textos del reporte (D2)', () => {
+  const CLAVES = [
+    'boton', 'titulo', 'tipoLeyenda',
+    'tipo.contenido', 'tipo.traduccion', 'tipo.enlace-roto', 'tipo.pieza',
+    'tipoAyuda.contenido', 'tipoAyuda.traduccion', 'tipoAyuda.enlace-roto', 'tipoAyuda.pieza',
+    'parte', 'parteGeneral', 'parteRecursos', 'parteNombre', 'parteSinonimos', 'partePieza', 'parteRelevancia', 'parteFuente',
+    'descripcion', 'contador', 'aviso', 'abrirGithub', 'enviarCorreo', 'correoTexto',
+    'falta.tipo', 'falta.descripcion', 'muyLargo', 'correo.asunto', 'correo.cuerpo', 'cerrar',
+  ];
+  const valor = (lng: 'es' | 'en', clave: string): unknown =>
+    clave.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], leerJson(lng).reporte);
+
+  for (const lng of ['es', 'en'] as const) {
+    it(`(${lng}) cada clave existe, no está vacía, sin guion largo${lng === 'es' ? ' ni voseo' : ''}`, () => {
+      for (const clave of CLAVES) {
+        const v = valor(lng, clave);
+        expect(typeof v, `${lng} ${clave}`).toBe('string');
+        expect((v as string).trim(), `${lng} ${clave}`).not.toBe('');
+        expect(v as string, `${lng} ${clave}`).not.toContain('\u2014');
+        if (lng === 'es') expect(v as string, clave).not.toMatch(/\bvos\b|podés|tenés|querés|escribís/i);
+      }
+    });
+
+    it(`(${lng}) los marcadores están`, () => {
+      const v = (clave: string) => valor(lng, clave) as string;
+      expect(v('titulo')).toContain('{{nombre}}');
+      expect(v('contador')).toContain('{{n}}');
+      expect(v('contador')).toContain('{{max}}');
+      expect(v('correoTexto')).toContain('{{correo}}');
+      expect(v('parteRelevancia')).toContain('{{n}}');
+      expect(v('parteFuente')).toContain('{{n}}');
+      const asunto = v('correo.asunto');
+      for (const m of ['[Maysa Brain]', '{{tipo}}', '{{id}}', '{{idioma}}', '{{version}}']) expect(asunto).toContain(m);
+      expect(asunto).toContain(lng === 'es' ? 'versión' : 'version');
+      for (const m of ['{{estructura}}', '{{idioma}}', '{{version}}', '{{parte}}', '{{descripcion}}']) {
+        expect(v('correo.cuerpo')).toContain(m);
+      }
+    });
+
+    it(`(${lng}) el bloque reporte no trae claves fuera de la lista`, () => {
+      const hojas = (o: unknown, pre = ''): string[] =>
+        Object.entries(o as Record<string, unknown>).flatMap(([k, x]) =>
+          typeof x === 'object' && x !== null ? hojas(x, `${pre}${k}.`) : [`${pre}${k}`],
+        );
+      expect(hojas(leerJson(lng).reporte).sort()).toEqual([...CLAVES].sort());
+    });
+  }
 });

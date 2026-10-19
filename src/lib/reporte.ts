@@ -1,6 +1,8 @@
 // Reportar un error (F12, ADR 0016): funciones puras del reporte. Sin `window` ni `document`.
-import { MAX_DESCRIPCION } from '../config/reporte';
+import type { TFunction } from 'i18next';
+import { MAX_DESCRIPCION, MAX_URL, PLANTILLA, TIPOS, URL_ISSUES, type TipoReporte } from '../config/reporte';
 import { estructuras } from '../data/atlas';
+import type { Idioma } from '../data/tipos';
 import { camposDeFicha } from './prioridad';
 
 // Campos que `camposDeFicha` no debería producir para un reporte: dudas abiertas, posición del marcador y trazos.
@@ -24,4 +26,40 @@ export function partesDeFicha(id: string): string[] {
 /** La descripción tiene al menos un carácter que no es espacio y cabe en `MAX_DESCRIPCION` (largo del texto crudo). */
 export function descripcionValida(texto: string): boolean {
   return texto.trim().length > 0 && texto.length <= MAX_DESCRIPCION;
+}
+
+/** Lo que el visitante reporta. `parte` es una de `partesDeFicha`; `version` es la `ficha.version` de la estructura. */
+export interface Reporte {
+  tipo: TipoReporte;
+  estructura: string;
+  nombre: string;
+  idioma: Idioma;
+  version: string;
+  parte: string;
+  descripcion: string;
+}
+
+/**
+ * Enlace al formulario de issue de GitHub con el reporte ya llenado. Solo usa los campos de `r`: nunca lee la
+ * ubicación de la página, así el código de un revisor docente (`?r=`/`#r=`) no sale en el enlace. El largo de la
+ * descripción no se valida aquí (ver `descripcionValida`). Lanza si `r.tipo` no es uno de `TIPOS`.
+ */
+export function enlaceGithub(r: Reporte, t: TFunction): string {
+  // `includes` y no `in PLANTILLA`: 'constructor' y otros nombres heredados no son tipos.
+  if (!(TIPOS as readonly string[]).includes(r.tipo)) throw new Error(`Tipo de reporte desconocido: ${String(r.tipo)}`);
+  const params = new URLSearchParams({
+    template: PLANTILLA[r.tipo],
+    title: `[${t(`reporte.tipo.${r.tipo}`)}] ${r.nombre} (${r.estructura})`,
+    estructura: r.estructura,
+    idioma: r.idioma,
+    version: r.version,
+    parte: r.parte,
+    descripcion: r.descripcion,
+  });
+  return `${URL_ISSUES}?${params.toString()}`;
+}
+
+/** El enlace de `enlaceGithub` mide `MAX_URL` o menos. Si no cabe, el visitante usa el correo. */
+export function cabeEnGithub(r: Reporte, t: TFunction): boolean {
+  return enlaceGithub(r, t).length <= MAX_URL;
 }
