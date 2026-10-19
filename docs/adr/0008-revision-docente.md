@@ -37,8 +37,8 @@ bastaba para enviar revisiones a su nombre. Ahora:
 - Actualización 2026-10-19 (#257): el padrón ya no es `pipeline/revisores.local.json` ni lo crea
   `scripts/crear-revisores.ts` (se retiraron). La única fuente es la pestaña `Padrón` de la hoja del
   canal: los códigos nuevos los crea el menú "Maysa Brain" de esa hoja y el importador lee su copia en
-  CSV con `--padron`. El resto de esta decisión (alias públicos, códigos aleatorios, issues solo con
-  alias) sigue igual.
+  CSV con `--padron`. Los códigos nuevos tienen 10 caracteres (los de 8 que ya existan siguen valiendo).
+  El resto de esta decisión (alias públicos, códigos aleatorios, issues solo con alias) sigue igual.
 - Antes de marcar una ficha como verificada con el nombre de un docente, el editor se lo confirma
   por un canal propio.
 

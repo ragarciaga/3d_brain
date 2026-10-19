@@ -103,10 +103,11 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    comentario.
 7. Prueba rápida, desde PowerShell, con una fila de prueba y no con el código de un docente real.
    En la hoja, menú Maysa Brain, Crear revisor: crea un código de prueba aleatorio de 10 caracteres con
-   el alias siguiente y Activo `sí`. Después de agregar la fila, espera un minuto (el menú vacía la caché
-   del `Padrón`, pero una petición en curso puede volver a guardar la lista vieja) antes de pegar el
-   bloque: si la caché está caliente, la primera prueba puede responder `codigo_no_activo` aunque la fila
-   ya diga `sí`. La primera vez, Google pide permisos para el menú (ver la subsección "Actualización: el
+   el alias siguiente y Activo `sí`. Después de agregar la fila, espera un minuto (solo si la escribiste
+   a mano en vez de usar el menú) antes de pegar el bloque. Un código creado con el menú sirve enseguida,
+   porque el menú vacía la caché del `Padrón`. Una fila escrita a mano puede tardar hasta un minuto, porque
+   el script guarda `Padrón` unos 60 s: con la caché caliente, la primera prueba puede responder
+   `codigo_no_activo` aunque la fila ya diga `sí`. La primera vez, Google pide permisos para el menú (ver la subsección "Actualización: el
    Padrón es la única fuente (#257)"). Copia el código de la fila nueva de `Padrón`, columna A.
    Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
@@ -187,14 +188,17 @@ guardar y recargar la hoja; aun así, haz "Nueva versión" en el mismo paso para
    "Nueva implementación". Comprueba que la URL de la aplicación web es la misma que ya está en
    `src/config/revision.ts`; si cambió, avísalo por chat y no la pegues en ningún issue.
 5. Recarga la hoja (F5). Aparece el menú "Maysa Brain". Al elegir una opción por primera vez, Google
-   pide autorizar el script. Los permisos esperados son solo estos: ver y modificar "esta hoja de
-   cálculo" (la de este proyecto, no todas) y, si lo muestra, mostrar contenido en avisos o diálogos
-   dentro de la hoja (o un texto parecido). Si pide cualquier otro (Drive, todas tus hojas de cálculo, servicios externos,
-   correo), detente, no aceptes y avísalo por chat. Si Google avisa que la app no está verificada,
+   pide autorizar el script. Los permisos esperados son solo estos dos: ver, editar, crear y borrar
+   solo esta hoja de cálculo (la de este proyecto, no todas) y "Mostrar y ejecutar contenido web de
+   terceros en mensajes y barras laterales" (en inglés: "Display and run third-party web content in
+   prompts and sidebars inside Google applications"), que es lo que deja al menú mostrar sus avisos. El
+   texto exacto de estos permisos se confirma en la prueba manual D10. Si pide cualquier otro (Drive,
+   todas tus hojas de cálculo, servicios externos, correo), detente, no aceptes y avísalo por chat. Si Google avisa que la app no está verificada,
    pulsa Configuración avanzada e Ir a (nombre del proyecto): es tu propio script.
 6. Migra el padrón. Como todavía no has repartido ningún código, no hace falta conservar los viejos:
    1. Borra las filas de prueba de `Respuestas` y de `Autorizaciones`.
-   2. Borra todas las filas de `Padrón` salvo la cabecera (D01 a D10).
+   2. Si ya repartiste algún código a un docente, detente y avísalo por chat antes de borrar nada: esa
+      fila dejaría de valer. Si no, borra todas las filas de `Padrón` salvo la cabecera.
    3. Crea los nuevos con el menú: "Crear revisores…" y el número que necesites. La numeración empieza
       de nuevo en D01.
    4. Borra del Drive el archivo `revisores.local.json` y el documento "Enlaces de docentes Maysa Brain
@@ -208,10 +212,11 @@ guardar y recargar la hoja; aun así, haz "Nueva versión" en el mismo paso para
       Remove-Item pipeline\salida\enlaces-docentes.md -WhatIf
       ```
 
-      Si PowerShell dice que no encuentra el archivo, ya no está: no hace falta hacer nada.
+      Si PowerShell dice que no encuentra el archivo, ya no está: no hace falta hacer nada. Cuando la
+      lista sea la correcta, ejecuta los mismos comandos otra vez sin `-WhatIf`.
 7. Comprueba que funciona: elige "Crear revisor", mira la fila nueva en `Padrón` y repite
-   la prueba rápida del paso 7 con ese código, a menos de un minuto de crearlo. Limpia como dice el
-   paso 7.
+   la prueba rápida del paso 7 con ese código, enseguida: el menú vacía la caché y no hace falta esperar.
+   Limpia como dice el paso 7.
 
 ### Actualización: guardar exige la autorización (#157)
 
@@ -408,7 +413,7 @@ las respuestas de ese docente.
   usa su CSV (sección 4). La cabecera es exactamente `Código`, `Alias`, `Activo`, sin más columnas: el
   nombre del docente no va ahí (sección 3).
 - Para docentes nuevos, usa el menú "Maysa Brain" de la hoja (sección 3). Si alguna vez pegas filas a
-  mano, límpiate después: el aviso del menú trae enlaces con el código, y lo que copies queda en el
+  mano, limpia el portapapeles después: el aviso del menú trae enlaces con el código, y lo que copies queda en el
   portapapeles. Limpia el portapapeles (`Set-Clipboard -Value $null` en PowerShell) y borra el
   historial del portapapeles de Windows (Win+V, Borrar todo).
 - Activo decide qué códigos pueden escribir en el canal, pero no filtra lo que el importador lee de

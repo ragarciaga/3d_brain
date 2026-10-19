@@ -156,10 +156,25 @@ function esFilaDeOtraPestana(fila: string[]): boolean {
  * se cuenta como inválida y nunca aborta la importación completa.
  */
 export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envios: Envio[]; invalidas: number } {
+  const { envios, invalidas } = leerEnviosConFila(filas, idsValidos);
+  return { envios, invalidas };
+}
+
+/**
+ * Como `leerEnvios`, y además `filas[i]` es el índice de la fila del CSV de la que salió `envios[i]` (una carga `v:2`
+ * con varias estructuras da varios envíos de la misma fila). Sirve para contar filas y no envíos (#257).
+ */
+export function leerEnviosConFila(filas: string[][], idsValidos?: Set<string>): { envios: Envio[]; invalidas: number; filas: number[] } {
   const envios: Envio[] = [];
+  const filaDe: number[] = [];
   let invalidas = 0;
   const idOk = (id: unknown) => typeof id === 'string' && ID_VALIDO.test(id) && (!idsValidos || idsValidos.has(id));
-  for (const fila of filas.slice(1)) {
+  for (const [indice, fila] of filas.entries()) {
+    if (indice === 0) continue; // la cabecera
+    const agregar = (...nuevos: Envio[]) => {
+      envios.push(...nuevos);
+      for (let k = 0; k < nuevos.length; k++) filaDe.push(indice);
+    };
     try {
       const celda = fila.find((c) => c.trim().startsWith('{"v":'));
       if (!celda) {
@@ -169,7 +184,7 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
       const d: unknown = JSON.parse(celda);
       if (esObjeto(d) && d['v'] === 2) {
         const expandidos = expandirV2(d, idOk, fila[0] ?? '', esFilaDeRespuestas(fila, d['r']));
-        if (expandidos) envios.push(...expandidos);
+        if (expandidos) agregar(...expandidos);
         else invalidas++;
         continue;
       }
@@ -185,12 +200,12 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
         invalidas++;
         continue;
       }
-      envios.push({ revisor: d['revisor'], estructura: d['estructura'] as string, respuestas: d['respuestas'] as Respuesta[], marcaTemporal: fila[0] ?? '' });
+      agregar({ revisor: d['revisor'], estructura: d['estructura'] as string, respuestas: d['respuestas'] as Respuesta[], marcaTemporal: fila[0] ?? '' });
     } catch {
       invalidas++;
     }
   }
-  return { envios, invalidas };
+  return { envios, invalidas, filas: filaDe };
 }
 
 /**
@@ -323,8 +338,9 @@ export interface PadronLeido {
  * Lee las filas de `parsearCsv` del CSV de la pestaña `Padrón` (A código, B alias, C activo). La primera fila,
  * recortada (también de la BOM), debe ser exactamente `Código,Alias,Activo`: si no, el error es un texto fijo (la fila
  * podría ser un código). Código y alias se recortan, como hace el script. Una fila con código o alias inválido
- * se descarta con un aviso (`entrada N del padrón`, con el alias solo si es válido). El mismo código con otro alias es un
- * error que nombra las entradas y los alias; con el mismo alias, las filas se juntan. Un alias en dos códigos
+ * se descarta con un aviso (`fila N de la pestaña Padrón`, con el alias solo si es válido). N es el número de fila de la hoja
+ * (la cabecera es la 1) para que el editor la encuentre; `parsearCsv` no cuenta las filas totalmente vacías, así que una en medio la corre. El mismo código con otro alias es un
+ * error que nombra las filas y los alias; con el mismo alias, las filas se juntan. Un alias en dos códigos
  * es un error (`errorDePadron`). Sin ningún código válido es un error. Activo no filtra aquí: solo se anota en `inactivos`.
  * Nunca imprime ni devuelve un código en un mensaje.
  */
@@ -336,27 +352,28 @@ export function padronDeCsv(filas: string[][]): PadronLeido {
     return vacio('la primera fila no es la cabecera Código,Alias,Activo: descarga el CSV de la pestaña Padrón de la hoja del canal');
   }
   const padron = Object.create(null) as Padron;
-  const entradas = new Map<string, number>(); // código -> número de su primera entrada
+  const filasDe = new Map<string, number>(); // código -> número de fila (en la hoja) de su primera aparición
   const inactivos = new Set<string>();
   const avisos: string[] = [];
   for (const [i, fila] of filas.slice(1).entries()) {
-    const posicion = i + 1;
+    // Número de fila en la pestaña Padrón: la cabecera es la 1, así que la primera de datos es la 2.
+    const posicion = i + 2;
     const codigo = (fila[0] ?? '').trim();
     const alias = (fila[1] ?? '').trim();
     const aliasValido = ALIAS_VALIDO.test(alias);
     if (!REVISOR_VALIDO.test(codigo)) {
-      avisos.push(`código inválido en la entrada ${posicion} del padrón${aliasValido ? ` (alias ${alias})` : ''}: se descartó`);
+      avisos.push(`código inválido en la fila ${posicion} de la pestaña Padrón${aliasValido ? ` (alias ${alias})` : ''}: se descartó`);
       continue;
     }
     if (!aliasValido) {
-      avisos.push(`alias inválido en la entrada ${posicion} del padrón (usa D01, D02...): se descartó`);
+      avisos.push(`alias inválido en la fila ${posicion} de la pestaña Padrón (usa D01, D02...): se descartó`);
       continue;
     }
     if (Object.hasOwn(padron, codigo) && padron[codigo] !== alias) {
-      return vacio(`el mismo código está en las entradas ${entradas.get(codigo)} y ${posicion} del padrón con los alias ${padron[codigo]} y ${alias}`);
+      return vacio(`el mismo código está en las filas ${filasDe.get(codigo)} y ${posicion} de la pestaña Padrón con los alias ${padron[codigo]} y ${alias}`);
     }
     padron[codigo] = alias;
-    if (!entradas.has(codigo)) entradas.set(codigo, posicion);
+    if (!filasDe.has(codigo)) filasDe.set(codigo, posicion);
     if ((fila[2] ?? '').trim() !== ACTIVO_SI) inactivos.add(codigo);
   }
   if (Object.keys(padron).length === 0) return vacio('el padrón no tiene ningún código válido: revisa que sea el CSV de la pestaña Padrón');
@@ -520,9 +537,9 @@ const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 /** Lo que un código del padrón con Activo distinto de `sí` aportó al CSV, por alias (nunca por código). */
 export interface AporteInactivo {
   alias: string;
-  /** Envíos de la pestaña Respuestas (`deHoja`) que se importaron. */
+  /** Filas del CSV de la pestaña Respuestas (`deHoja`) que se importaron (una fila `v:2` con varias estructuras cuenta una vez). */
   aceptadas: number;
-  /** Envíos del formulario de respaldo (o `v:1`) que se descartaron. */
+  /** Filas del CSV del formulario de respaldo (o `v:1`) que se descartaron. */
   descartadasFormulario: number;
 }
 
@@ -623,7 +640,7 @@ export interface Importacion {
  * `inactivos` (#257): códigos del padrón con Activo distinto de `sí`. Sus envíos de la pestaña Respuestas (`deHoja`)
  * entran como los de cualquier código del padrón; los del formulario de respaldo (y los `v:1`) se descartan antes de
  * todo lo demás y no cuentan en `validos`. `Importacion.inactivos` y la sección "Códigos inactivos" de `resumen.md`
- * dicen, por alias, cuántos envíos se importaron y cuántos se descartaron. Sin ese conjunto, Activo no cambia nada.
+ * dicen, por alias, cuántas filas del CSV se importaron y cuántas se descartaron (filas, no envíos). Sin ese conjunto, Activo no cambia nada.
  */
 export function importar(
   csvTexto: string,
@@ -634,22 +651,24 @@ export function importar(
 ): Importacion {
   const ids = new Set(Object.keys(estructuras));
   const versionDe = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
-  const todos = leerEnvios(parsearCsv(csvTexto), ids);
+  const todos = leerEnviosConFila(parsearCsv(csvTexto), ids);
   // Activo (#257): lo que llegó por el formulario de respaldo de un código inactivo se descarta; lo de la pestaña Respuestas no.
-  const aportes = new Map<string, AporteInactivo>();
+  // Se cuentan filas del CSV, no envíos: una carga `v:2` con varias estructuras es una sola fila.
+  const aportes = new Map<string, { aceptadas: Set<number>; descartadas: Set<number> }>();
   const leidos = {
     invalidas: todos.invalidas,
-    envios: todos.envios.filter((e) => {
+    envios: todos.envios.filter((e, i) => {
       if (!inactivosDelPadron.has(e.revisor) || !Object.hasOwn(padron, e.revisor)) return true;
       const alias = padron[e.revisor]!;
-      const aporte = aportes.get(alias) ?? { alias, aceptadas: 0, descartadasFormulario: 0 };
+      const aporte = aportes.get(alias) ?? { aceptadas: new Set<number>(), descartadas: new Set<number>() };
       aportes.set(alias, aporte);
-      if (e.deHoja) aporte.aceptadas++;
-      else aporte.descartadasFormulario++;
+      (e.deHoja ? aporte.aceptadas : aporte.descartadas).add(todos.filas[i]!);
       return e.deHoja === true;
     }),
   };
-  const inactivos = [...aportes.values()].sort((a, b) => cmp(a.alias, b.alias));
+  const inactivos: AporteInactivo[] = [...aportes.entries()]
+    .map(([alias, a]) => ({ alias, aceptadas: a.aceptadas.size, descartadasFormulario: a.descartadas.size }))
+    .sort((a, b) => cmp(a.alias, b.alias));
   // Los retiros se aplican antes que el padrón, la autorización y la casilla del vago: lo retirado no sale en ninguna sección.
   const sinRetiradas = quitarRetiradas(leidos.envios);
   // Las cuentas (`validos`, `desconocidos`) son de los envíos leídos, también los que un retiro dejó sin nada.

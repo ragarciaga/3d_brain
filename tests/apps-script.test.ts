@@ -1429,7 +1429,8 @@ describe('(h) el archivo no lleva datos (R6.5)', () => {
   });
 
   it('limita el acceso a la hoja vinculada y es un script clásico', () => {
-    expect(fuente).toContain('@OnlyCurrentDoc');
+    // La anotación va en la primera línea: Google solo la lee ahí.
+    expect(fuente.split(/\r?\n/)[0]).toBe('/** @OnlyCurrentDoc */');
     expect(fuente).not.toMatch(/\bimport /);
     expect(fuente).not.toMatch(/\bexport /);
   });

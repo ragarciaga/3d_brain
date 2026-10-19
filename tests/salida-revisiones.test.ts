@@ -264,20 +264,20 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       const doble = padronCsv(tmp, 'codigo.csv', 'Código,Alias,Activo\nQQSECRETOX,D07,sí\nQQSECRETOX,D08,sí\n');
       const dos = correr(tmp, HOJA, '--padron', doble, '--autorizaciones', AUT);
       expect(dos.status).toBe(2);
-      expect(dos.stderr).toContain('el mismo código está en las entradas 1 y 2 del padrón con los alias D07 y D08');
+      expect(dos.stderr).toContain('el mismo código está en las filas 2 y 3 de la pestaña Padrón con los alias D07 y D08');
       sinSecreto(dos);
       sinRastro(dos);
       expect(igual()).toBe(true);
     });
 
-    it('una fila con código o alias inválido se descarta con un aviso por su posición: sale con 0 y el código no sale en ningún flujo', () => {
+    it('una fila con código o alias inválido se descarta con un aviso por su fila de la hoja: sale con 0 y el código no sale en ningún flujo', () => {
       const { tmp } = conCorridaBuena();
       const original = readFileSync(PADRON, 'utf8');
       const conMala = padronCsv(tmp, 'con-mala.csv', `${original}QQSECRETOX,D07x,sí\nQQBUENOXYZ 2,D08,sí\n`);
       const r = correr(tmp, HOJA, '--padron', conMala, '--autorizaciones', AUT);
       expect(r.status, r.stderr).toBe(0);
-      expect(r.stderr).toContain('alias inválido en la entrada 4 del padrón');
-      expect(r.stderr).toContain('código inválido en la entrada 5 del padrón (alias D08)');
+      expect(r.stderr).toContain('alias inválido en la fila 5 de la pestaña Padrón');
+      expect(r.stderr).toContain('código inválido en la fila 6 de la pestaña Padrón (alias D08)');
       sinSecreto(r);
       for (const c of ['VAGO01', 'NOVAGO01', 'SINAUT01']) {
         expect(r.stdout).not.toContain(c);
@@ -289,8 +289,8 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       const { tmp } = conCorridaBuena();
       const r = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', AUT);
       expect(r.status, r.stderr).toBe(0);
-      expect(r.stderr).toContain('Código inactivo (Activo distinto de sí) del alias D93: 2 filas de Respuestas importadas, 0 del formulario descartadas.');
-      expect(readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8')).toContain('| `D93` | 2 | 0 |');
+      expect(r.stderr).toContain('Código inactivo (Activo distinto de sí) del alias D93: 1 filas de Respuestas importadas, 0 del formulario descartadas.');
+      expect(readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8')).toContain('| `D93` | 1 | 0 |');
       sinCodigos(r);
     });
 
@@ -302,9 +302,9 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       escribir(hoja, readFileSync(HOJA, 'utf8').replace(/\r?\n?$/, '\n') + filaForm);
       const con = correr(tmp, hoja, '--padron', PADRON, '--autorizaciones', AUT);
       expect(con.status, con.stderr).toBe(0);
-      expect(con.stderr).toContain('del alias D93: 2 filas de Respuestas importadas, 1 del formulario descartadas.');
+      expect(con.stderr).toContain('del alias D93: 1 filas de Respuestas importadas, 1 del formulario descartadas.');
       const resumen = readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8');
-      expect(resumen).toContain('| `D93` | 2 | 1 |');
+      expect(resumen).toContain('| `D93` | 1 | 1 |');
       expect(resumen).not.toContain('`latin`');
       sinCodigos(con);
       // Con el mismo código en sí, esa fila del formulario sí entra: lo que descarta la fila es su Activo.

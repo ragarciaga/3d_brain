@@ -304,9 +304,35 @@ describe('la pestaña Padrón es la única fuente (#257)', () => {
   it('pide Nueva versión (nunca Nueva implementación), nombra los permisos esperados y manda detenerse ante cualquier otro', () => {
     expect(cuerpo).toMatch(/Nueva\s+versión/);
     expect(cuerpo).toMatch(/Nunca\s+"Nueva\s+implementación"/);
-    expect(cuerpo).toContain('esta hoja de\n   cálculo');
-    expect(cuerpo.replace(/\s+/g, ' ')).toMatch(/mostrar contenido en avisos/);
+    const plano = cuerpo.replace(/\s+/g, ' ');
+    expect(plano).toContain('ver, editar, crear y borrar solo esta hoja de cálculo');
+    expect(plano).toContain('"Mostrar y ejecutar contenido web de terceros en mensajes y barras laterales"');
+    expect(plano).toContain('"Display and run third-party web content in prompts and sidebars inside Google applications"');
+    expect(plano).toMatch(/texto exacto de estos permisos se confirma en la prueba manual D10/);
     expect(cuerpo.replace(/\s+/g, ' ')).toMatch(/Drive, todas tus hojas de cálculo, servicios externos, correo\), detente, no aceptes y avísalo por chat/);
+  });
+
+  it('la migración se detiene si ya repartiste un código, no nombra D01 a D10 y manda repetir sin -WhatIf', () => {
+    const plano = cuerpo.replace(/\s+/g, ' ');
+    expect(plano).not.toMatch(/D01 a D10/);
+    expect(plano).toMatch(/Si ya repartiste algún código a un docente, detente y avísalo por chat antes de borrar nada/);
+    expect(plano).toMatch(/ejecuta los mismos comandos otra vez sin `-WhatIf`/);
+  });
+
+  it('un código creado con el menú sirve enseguida y uno escrito a mano tarda hasta un minuto, en el paso 7 y en la migración', () => {
+    const paso7 = guia.slice(guia.indexOf('7. Prueba rápida'), guia.indexOf('Para actualizar el script'));
+    const plano7 = paso7.replace(/\s+/g, ' ');
+    expect(plano7).toContain('Un código creado con el menú sirve enseguida, porque el menú vacía la caché del `Padrón`');
+    expect(plano7).toMatch(/Una fila escrita a mano puede tardar hasta un minuto/);
+    const plano = cuerpo.replace(/\s+/g, ' ');
+    expect(plano).toContain('enseguida: el menú vacía la caché y no hace falta esperar');
+    expect(plano).not.toMatch(/a menos de un minuto de crearlo/);
+  });
+
+  it('la sección 2 pide limpiar el portapapeles, no "límpiate"', () => {
+    const seccion = tramo(guia, /^## 2\./);
+    expect(seccion).toContain('limpia el portapapeles después');
+    expect(seccion).not.toMatch(/límpiate/);
   });
 
   it('la migración borra el padrón viejo del Drive y de los equipos, y vacía la papelera', () => {

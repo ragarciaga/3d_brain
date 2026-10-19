@@ -553,16 +553,16 @@ describe('padronDeCsv: la pestaña Padrón es la fuente del padrón (#257, D4)',
     expect(Object.keys(r.padron)).toEqual([]);
   });
 
-  it('descarta la fila con código o alias inválido con un aviso por su posición, con el alias si es válido y nunca el código', () => {
+  it('descarta la fila con código o alias inválido con un aviso por su fila de la hoja (la cabecera es la 1), con el alias si es válido y nunca el código', () => {
     const r = leer('QQBUENOXYZ,D01,sí', 'QQTYPO XYZ,D02,sí', 'QQSECRETO7,Ana,sí', 'QQSECRETO8,,sí', 'QQ.MALO,Ana,sí', ',D06,sí');
     expect(r.error).toBeNull();
     expect(plano(r.padron)).toEqual({ QQBUENOXYZ: 'D01' });
     expect(r.avisos).toEqual([
-      'código inválido en la entrada 2 del padrón (alias D02): se descartó',
-      'alias inválido en la entrada 3 del padrón (usa D01, D02...): se descartó',
-      'alias inválido en la entrada 4 del padrón (usa D01, D02...): se descartó',
-      'código inválido en la entrada 5 del padrón: se descartó',
-      'código inválido en la entrada 6 del padrón (alias D06): se descartó',
+      'código inválido en la fila 3 de la pestaña Padrón (alias D02): se descartó',
+      'alias inválido en la fila 4 de la pestaña Padrón (usa D01, D02...): se descartó',
+      'alias inválido en la fila 5 de la pestaña Padrón (usa D01, D02...): se descartó',
+      'código inválido en la fila 6 de la pestaña Padrón: se descartó',
+      'código inválido en la fila 7 de la pestaña Padrón (alias D06): se descartó',
     ]);
     for (const aviso of r.avisos) for (const c of ['QQBUENO', 'QQTYPO', 'QQSECRETO', 'QQ.MALO', 'Ana']) expect(aviso).not.toContain(c);
   });
@@ -578,9 +578,9 @@ describe('padronDeCsv: la pestaña Padrón es la fuente del padrón (#257, D4)',
     expect(r.error).not.toContain('QQSECRETO');
   });
 
-  it('el mismo código con otro alias es un error que nombra las entradas y los alias', () => {
+  it('el mismo código con otro alias es un error que nombra las filas de la hoja y los alias', () => {
     const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D02,sí', 'QQSECRETOX,D03,sí');
-    expect(r.error).toBe('el mismo código está en las entradas 1 y 3 del padrón con los alias D01 y D03');
+    expect(r.error).toBe('el mismo código está en las filas 2 y 4 de la pestaña Padrón con los alias D01 y D03');
     expect(r.error).not.toContain('QQSECRETO');
   });
 
@@ -672,10 +672,30 @@ describe('Activo al importar (#257, S1)', () => {
     expect(r.validos).toBe(6);
   });
 
-  it('un código inactivo sin envíos, o fuera del padrón, no deja rastro', () => {
-    const r = importar(csv, estructuras, padron, null, new Set(['P1', 'DESCONOCIDO']));
+  it('cuenta filas del CSV, no envíos: una fila v:2 con dos estructuras es una sola fila', () => {
+    const dos = (r: string, recibido: string) =>
+      filaHoja({ r, e: { hippocampus: [{ ...elemento, c: 'que_es' }], 'm-periaqueductal-grey': [{ ...elemento, c: 'que_es' }] } }, recibido);
+    const csvDos = [CABH, dos('PROF01', '2026-10-14T10:00:00.000Z'), deHoja('PROF01', 'nombre', '2026-10-14T10:01:00.000Z'), ''].join('\n');
+    const r = importar(csvDos, estructuras, padron, null, new Set(['PROF01']));
+    // Tres envíos (dos estructuras en la primera fila, una en la segunda) y solo dos filas.
+    expect(r.validos).toBe(3);
+    expect(r.inactivos).toEqual([{ alias: 'D02', aceptadas: 2, descartadasFormulario: 0 }]);
+    expect(r.archivos.get('resumen.md')).toContain('| `D02` | 2 | 0 |');
+  });
+
+  it('un código inactivo sin envíos no deja rastro', () => {
+    const r = importar(csv, estructuras, padron, null, new Set(['P1']));
     expect(r.inactivos).toEqual([]);
     expect(r.archivos.get('resumen.md')).not.toContain('Códigos inactivos');
+  });
+
+  it('un código inactivo fuera del padrón (con filas en el CSV) no deja rastro y cuenta como desconocido', () => {
+    const fuera = [CABH, deHoja('FUERA01', 'que_es', '2026-10-14T10:00:00.000Z'), delFormulario('FUERA01', 'latin'), ''].join('\n');
+    const r = importar(fuera, estructuras, padron, null, new Set(['FUERA01']));
+    expect(r.inactivos).toEqual([]);
+    expect(r.desconocidos).toBe(2);
+    expect(r.archivos.get('resumen.md')).not.toContain('Códigos inactivos');
+    expect(r.archivos.get('resumen.md')).not.toContain('FUERA01');
   });
 
   it('seccionInactivos lista solo alias y cuentas, en el orden recibido, y es vacía sin filas', () => {

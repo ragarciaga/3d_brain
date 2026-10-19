@@ -225,6 +225,34 @@ describe('crearRevisor (D3)', () => {
     expect(env.alertas[0]!.bloqueoTomado).toBe(false);
   });
 
+  it('con los alias agotados: no escribe y el aviso dice que no quedan alias, no que falte la pestaña', () => {
+    const env = crearEntorno({ padron: [['AAAAAAAAAA', 'D999', 'sí']] });
+    env.fn<() => void>('crearRevisor')();
+    expect(nuevas(env, 1)).toHaveLength(0);
+    expect(env.candado.liberaciones).toBe(1);
+    expect(env.removidos).toEqual([]);
+    expect(env.alertas).toHaveLength(1);
+    const texto = env.alertas[0]!.texto;
+    expect(texto).toContain('ya no quedan alias libres');
+    expect(texto).not.toContain('Revisa que la pestaña');
+    expect(texto).not.toContain('sin_alias');
+    expect(texto).not.toContain('D999');
+    expect(texto).not.toContain('AAAAAAAAAA');
+  });
+
+  it('con el azar atascado: no escribe y el aviso dice que no se pudo generar un código, no que falte la pestaña', () => {
+    const env = crearEntorno();
+    env.sembrarBytes(...Array.from({ length: 200 }, () => [255]));
+    env.fn<() => void>('crearRevisor')();
+    expect(nuevas(env)).toHaveLength(0);
+    expect(env.candado.liberaciones).toBe(1);
+    expect(env.alertas).toHaveLength(1);
+    const texto = env.alertas[0]!.texto;
+    expect(texto).toContain('no se pudo generar un código nuevo');
+    expect(texto).not.toContain('Revisa que la pestaña');
+    expect(texto).not.toContain('azar_agotado');
+  });
+
   it('sin el bloqueo: no escribe, no libera lo que no tomó y avisa con un texto fijo', () => {
     const env = crearEntorno();
     env.candado.obtener = false;

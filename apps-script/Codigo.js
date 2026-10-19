@@ -476,6 +476,8 @@ function aliasSiguiente(aliases) {
 }
 
 const AVISO_FALLO = 'No se creó ningún revisor. Revisa que la pestaña Padrón exista y vuelve a intentarlo; si sigue igual, agrega la fila a mano.';
+const AVISO_SIN_ALIAS = 'No se creó ningún revisor: ya no quedan alias libres (el tope es el 999). Avísalo por chat antes de seguir.';
+const AVISO_SIN_CODIGO = 'No se creó ningún revisor: no se pudo generar un código nuevo. Vuelve a intentarlo; si sigue igual, avísalo por chat.';
 const AVISO_OCUPADO = 'No se creó ningún revisor: la hoja está ocupada. Espera unos segundos y vuelve a intentarlo.';
 const AVISO_REVISAR = 'La fila se escribió, pero algo falló después. Revisa la última fila de la pestaña Padrón antes de volver a intentarlo.';
 const AVISO_PRIVADO =
@@ -512,8 +514,13 @@ function crearEnPadron(cantidad) {
       // sin caché que vaciar: el código nuevo sirve al vencer los VIDA_PADRON_S segundos
     }
     return { nuevos: nuevos };
-  } catch {
-    return { aviso: escrito ? AVISO_REVISAR : AVISO_FALLO };
+  } catch (e) {
+    // El mensaje de la excepción solo escoge entre textos fijos: nunca se muestra.
+    const causa = e && typeof e.message === 'string' ? e.message : '';
+    if (escrito) return { aviso: AVISO_REVISAR };
+    if (causa === 'sin_alias') return { aviso: AVISO_SIN_ALIAS };
+    if (causa === 'sin_codigo' || causa === 'azar_agotado' || causa === 'azar_invalido') return { aviso: AVISO_SIN_CODIGO };
+    return { aviso: AVISO_FALLO };
   } finally {
     if (tomado) bloqueo.releaseLock();
   }
