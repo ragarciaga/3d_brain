@@ -395,6 +395,179 @@ describe('proponer posición (F24)', () => {
   });
 });
 
+describe('retiros: deshacer una marca deja un retiro (#217)', () => {
+  const M = 'm-periaqueductal-grey';
+  const ahora = '2026-10-18T12:00:00.000Z';
+  const verdicto = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es' as const, veredicto: 'correcto' as const, version: '0.1.0', fecha: '2026-10-11T00:00:00.000Z' };
+  const kV = 'hippocampus|ubicacion|es';
+  const posicion = {
+    estructura: M,
+    campo: 'posicion',
+    veredicto: 'corregir' as const,
+    posicion: [0.1, 0.2, 0.3] as [number, number, number],
+    version: 'sin-ficha',
+    fecha: '2026-10-11T00:00:00.000Z',
+  };
+  const kP = `${M}|posicion|`;
+  const retiroDe = (estructura: string, campo: string, fecha: string, idioma?: 'es' | 'en') => ({ estructura, campo, idioma, veredicto: '' as const, fecha });
+
+  beforeEach(() => {
+    useAtlas.setState({ respuestas: {}, retiradas: {}, canalRetiros: false, piezaPropuesta: {}, ubicando: null });
+  });
+
+  it('borrarRespuesta quita la respuesta y anota el retiro con la fecha dada', () => {
+    useAtlas.setState({ respuestas: { [kV]: verdicto } });
+    useAtlas.getState().borrarRespuesta(kV, ahora);
+    const s = useAtlas.getState();
+    expect(s.respuestas).toEqual({});
+    expect(s.retiradas).toEqual({ [kV]: ahora });
+  });
+
+  it('borrarRespuesta sin fecha usa la hora actual, que es posterior a la respuesta', () => {
+    useAtlas.setState({ respuestas: { [kV]: verdicto } });
+    const antes = Date.now();
+    useAtlas.getState().borrarRespuesta(kV);
+    const fecha = useAtlas.getState().retiradas[kV]!;
+    expect(Date.parse(fecha)).toBeGreaterThanOrEqual(antes);
+    expect(Date.parse(fecha)).toBeGreaterThan(Date.parse(verdicto.fecha));
+  });
+
+  it('borrarRespuesta de una clave sin respuesta no anota ningún retiro', () => {
+    useAtlas.getState().borrarRespuesta(kV, ahora);
+    expect(useAtlas.getState().retiradas).toEqual({});
+  });
+
+  it('borrarRespuesta deja las demás respuestas y los demás retiros', () => {
+    useAtlas.setState({ respuestas: { [kV]: verdicto, [kP]: posicion }, retiradas: { 'otra|campo|': '2026-10-01T00:00:00.000Z' } });
+    useAtlas.getState().borrarRespuesta(kV, ahora);
+    const s = useAtlas.getState();
+    expect(Object.keys(s.respuestas)).toEqual([kP]);
+    expect(s.retiradas).toEqual({ 'otra|campo|': '2026-10-01T00:00:00.000Z', [kV]: ahora });
+  });
+
+  it('deshacerPosicion borra la respuesta y la pieza, anota el retiro de posicion y sigue esperando el toque', () => {
+    useAtlas.getState().proponerPosicion(posicion, 'stomach');
+    useAtlas.getState().deshacerPosicion(M, ahora);
+    const s = useAtlas.getState();
+    expect(s.respuestas).toEqual({});
+    expect(s.piezaPropuesta[M]).toBeUndefined();
+    expect(s.ubicando).toBe(M);
+    expect(s.retiradas).toEqual({ [kP]: ahora });
+  });
+
+  it('deshacerPosicion sin propuesta previa no anota ningún retiro', () => {
+    useAtlas.getState().deshacerPosicion(M, ahora);
+    expect(useAtlas.getState().retiradas).toEqual({});
+    expect(useAtlas.getState().ubicando).toBe(M);
+  });
+
+  it('responder sobre una clave retirada quita el retiro y no toca los demás', () => {
+    useAtlas.setState({ retiradas: { [kV]: ahora, [kP]: ahora } });
+    useAtlas.getState().responder({ ...verdicto, fecha: '2026-10-18T13:00:00.000Z' });
+    expect(useAtlas.getState().retiradas).toEqual({ [kP]: ahora });
+    expect(useAtlas.getState().respuestas[kV]?.fecha).toBe('2026-10-18T13:00:00.000Z');
+  });
+
+  it('proponerPosicion sobre una clave retirada quita el retiro', () => {
+    useAtlas.setState({ retiradas: { [kP]: ahora, [kV]: ahora } });
+    useAtlas.getState().proponerPosicion(posicion, 'stomach');
+    expect(useAtlas.getState().retiradas).toEqual({ [kV]: ahora });
+  });
+
+  it('deshacer, volver a responder y deshacer otra vez deja un solo retiro con la fecha más nueva', () => {
+    useAtlas.getState().responder(verdicto);
+    useAtlas.getState().borrarRespuesta(kV, '2026-10-18T12:00:00.000Z');
+    useAtlas.getState().responder({ ...verdicto, fecha: '2026-10-18T12:01:00.000Z' });
+    expect(useAtlas.getState().retiradas).toEqual({});
+    useAtlas.getState().borrarRespuesta(kV, '2026-10-18T12:02:00.000Z');
+    expect(useAtlas.getState().retiradas).toEqual({ [kV]: '2026-10-18T12:02:00.000Z' });
+  });
+
+  describe('importarRespuestas con retiros (D7)', () => {
+    const nuevo = (fecha: string) => ({ ...verdicto, fecha });
+
+    it('un veredicto del canal igual o más viejo que un retiro local no vuelve y cuenta como sinCambio', () => {
+      for (const fecha of [ahora, '2026-10-18T11:00:00.000Z']) {
+        useAtlas.setState({ respuestas: {}, retiradas: { [kV]: ahora } });
+        const antes = useAtlas.getState().cargaRespuestas;
+        expect(useAtlas.getState().importarRespuestas([nuevo(fecha)])).toEqual({ agregadas: 0, actualizadas: 0, sinCambio: 1 });
+        expect(useAtlas.getState().respuestas).toEqual({});
+        expect(useAtlas.getState().retiradas).toEqual({ [kV]: ahora });
+        expect(useAtlas.getState().cargaRespuestas).toBe(antes);
+      }
+    });
+
+    it('un veredicto del canal más nuevo que el retiro local entra y quita el retiro', () => {
+      useAtlas.setState({ respuestas: {}, retiradas: { [kV]: ahora } });
+      const n = nuevo('2026-10-18T13:00:00.000Z');
+      expect(useAtlas.getState().importarRespuestas([n])).toEqual({ agregadas: 1, actualizadas: 0, sinCambio: 0 });
+      expect(useAtlas.getState().respuestas[kV]).toBe(n);
+      expect(useAtlas.getState().retiradas).toEqual({});
+    });
+
+    it('un retiro del canal más nuevo borra el veredicto local, recarga las respuestas y anota el retiro', () => {
+      useAtlas.setState({ respuestas: { [kV]: verdicto }, retiradas: {} });
+      const antes = useAtlas.getState().cargaRespuestas;
+      const r = useAtlas.getState().importarRespuestas([], [retiroDe('hippocampus', 'ubicacion', ahora, 'es')]);
+      expect(r).toEqual({ agregadas: 0, actualizadas: 1, sinCambio: 0 });
+      expect(useAtlas.getState().respuestas).toEqual({});
+      expect(useAtlas.getState().retiradas).toEqual({ [kV]: ahora });
+      expect(useAtlas.getState().cargaRespuestas).toBe(antes + 1);
+    });
+
+    it('un retiro del canal más viejo no borra el veredicto local', () => {
+      useAtlas.setState({ respuestas: { [kV]: verdicto }, retiradas: {} });
+      const antes = useAtlas.getState().cargaRespuestas;
+      const r = useAtlas.getState().importarRespuestas([], [retiroDe('hippocampus', 'ubicacion', '2026-10-01T00:00:00.000Z', 'es')]);
+      expect(r).toEqual({ agregadas: 0, actualizadas: 0, sinCambio: 0 });
+      expect(useAtlas.getState().respuestas[kV]).toBe(verdicto);
+      expect(useAtlas.getState().retiradas).toEqual({});
+      expect(useAtlas.getState().cargaRespuestas).toBe(antes);
+    });
+
+    it('un retiro del canal de una posición borra también la pieza propuesta', () => {
+      useAtlas.getState().proponerPosicion(posicion, 'stomach');
+      useAtlas.getState().importarRespuestas([], [retiroDe(M, 'posicion', ahora)]);
+      expect(useAtlas.getState().respuestas).toEqual({});
+      expect(useAtlas.getState().piezaPropuesta).toEqual({});
+    });
+
+    it('solo un retiro nuevo en retiradas (sin respuesta local) no recarga las respuestas', () => {
+      const antes = useAtlas.getState().cargaRespuestas;
+      useAtlas.getState().importarRespuestas([], [retiroDe('hippocampus', 'ubicacion', ahora, 'es')]);
+      expect(useAtlas.getState().retiradas).toEqual({ [kV]: ahora });
+      expect(useAtlas.getState().cargaRespuestas).toBe(antes);
+    });
+  });
+
+  describe('cargarRetiradas, setCanalRetiros y setRevisor', () => {
+    it('cargarRetiradas reemplaza los retiros', () => {
+      useAtlas.getState().cargarRetiradas({ [kV]: ahora });
+      expect(useAtlas.getState().retiradas).toEqual({ [kV]: ahora });
+      useAtlas.getState().cargarRetiradas({});
+      expect(useAtlas.getState().retiradas).toEqual({});
+    });
+
+    it('setCanalRetiros guarda si el script entiende los retiros', () => {
+      useAtlas.getState().setCanalRetiros(true);
+      expect(useAtlas.getState().canalRetiros).toBe(true);
+      useAtlas.getState().setCanalRetiros(false);
+      expect(useAtlas.getState().canalRetiros).toBe(false);
+    });
+
+    it('otro código es otro revisor: los retiros y la declaración del script se reinician; el mismo código no', () => {
+      useAtlas.setState({ revisor: 'AAAA1111', retiradas: { [kV]: ahora }, canalRetiros: true });
+      useAtlas.getState().setRevisor('AAAA1111');
+      expect(useAtlas.getState().retiradas).toEqual({ [kV]: ahora });
+      expect(useAtlas.getState().canalRetiros).toBe(true);
+      useAtlas.getState().setRevisor('BBBB2222');
+      expect(useAtlas.getState().retiradas).toEqual({});
+      expect(useAtlas.getState().canalRetiros).toBe(false);
+      useAtlas.getState().setRevisor(null);
+    });
+  });
+});
+
 describe('trazos del vago (#62)', () => {
   const MALLA = 'Vagus nerve (X).r#t03';
   beforeEach(() => {

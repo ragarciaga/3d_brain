@@ -363,3 +363,32 @@ describe('página Privacidad (#168)', () => {
     });
   }
 });
+
+describe('textos de los retiros (#217)', () => {
+  type Textos = { revision: Record<string, string> & { guia: Record<string, string> } };
+  const leer = (idioma: 'es' | 'en') => JSON.parse(readFileSync(`src/i18n/${idioma}.json`, 'utf8')) as Textos;
+  // La hoja solo agrega filas y no se suprime desde la app: ningún texto puede sugerir que quitar una marca borra datos personales.
+  const SUGIERE_BORRADO = { es: /borr|elimin|suprim|datos personales/i, en: /delet|erase|remov\w+ your data|personal data/i } as const;
+
+  it('la frase interina de la guía es exactamente la del spec en español', () => {
+    expect(leer('es').revision.guia.quitarSinCanal).toBe('Si te equivocas, elige el veredicto correcto; quitar la marca no se guarda.');
+    expect(leer('en').revision.guia.quitarSinCanal).toBe('If you make a mistake, choose the right verdict; removing a mark is not saved.');
+  });
+
+  it.each(['es', 'en'] as const)('las claves de los retiros existen en %s, con singular y plural', (idioma) => {
+    const { revision } = leer(idioma);
+    expect(revision.guia.quitarSinCanal?.trim()).toBeTruthy();
+    expect(revision['retirosEnEspera_one']).toContain('{{count}}');
+    expect(revision['retirosEnEspera_other']).toContain('{{count}}');
+    expect(revision['retirosEnEspera_one']).not.toBe(revision['retirosEnEspera_other']);
+  });
+
+  it.each(['es', 'en'] as const)('ningún texto de los retiros (%s) sugiere que se borren datos personales ni usa el guion largo', (idioma) => {
+    const { revision } = leer(idioma);
+    for (const texto of [revision.guia.quitarSinCanal!, revision['retirosEnEspera_one']!, revision['retirosEnEspera_other']!]) {
+      expect(texto).not.toMatch(SUGIERE_BORRADO[idioma]);
+      expect(texto).not.toContain('—');
+    }
+    if (idioma === 'es') for (const texto of [revision.guia.quitarSinCanal!, revision['retirosEnEspera_one']!]) expect(texto).not.toMatch(/\bvos\b|elegí|equivocás/i);
+  });
+});

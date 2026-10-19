@@ -10,8 +10,10 @@ import {
   leerAutorizaciones,
   leerEnvios,
   parsearCsv,
+  quitarRetiradas,
   resumenConsolidado,
   resumenMarkdown,
+  seccionRetiradas,
   seccionSinAutorizacion,
   separarSinVago,
   ultimasRespuestas,
@@ -1330,5 +1332,331 @@ describe('casilla del vago (S2, #163)', () => {
       ]);
       expect(separarSinVago(entrada, () => true)).toEqual({ envios: entrada, sinVago: [] });
     });
+  });
+});
+
+describe('retiros: quitar una marca se guarda (#217)', () => {
+  const T0 = Date.parse('2026-10-14T10:00:00.000Z');
+  const iso = (min: number) => new Date(T0 + min * 60_000).toISOString();
+  const el = (extra: Record<string, unknown> = {}) => ({ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: iso(0), ...extra });
+  const ret = (extra: Record<string, unknown> = {}) => ({ c: 'ubicacion', i: 'es', d: '', f: iso(5), ...extra });
+  const CAB = 'Recibido,Código,Estructuras,Carga';
+  const PADRON = { ANAT01: 'D01', PROF01: 'D02', VAGO01: 'D03' };
+  const ESTRUCTURAS = { hippocampus: { ficha: { version: '0.1.0' } }, 'm-periaqueductal-grey': { ficha: null }, 'vagus-nerve-x': { ficha: { version: '0.1.0' } } };
+  /** Pestaña Respuestas del script: cada carga en su fila, con la recepción ISO en A y el código en B. */
+  const hoja = (...cargas: { r: string; e: object }[]) => `${CAB}\n${cargas.map((c, i) => filaHoja(c, iso(i))).join('\n')}\n`;
+  const tabla = (md: string, alias: string) => md.split('\n').filter((l) => l.startsWith(`| \`${alias}\``));
+  const AUT = 'Código,Fecha,Versión,Vago\nANAT01,2026-10-14T09:00:00.000Z,3,no\nPROF01,2026-10-14T09:00:00.000Z,3,sí\nVAGO01,2026-10-14T09:00:00.000Z,3,no\n';
+  const seccion = (md: string, titulo: string) => md.split(/\n\n(?=## )/).find((x) => x.startsWith(titulo)) ?? '';
+
+  describe('importar (D5)', () => {
+    it('quita de las tablas y del <id>.md las respuestas anteriores de la clave retirada, y solo esa clave', () => {
+      const csv = hoja(
+        { r: 'ANAT01', e: { hippocampus: [el({ p: 'PROPUESTA_QUITADA', d: 'corregir' }), el({ c: 'que_es' })] } },
+        { r: 'ANAT01', e: { hippocampus: [ret()] } },
+      );
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      expect(r.invalidas).toBe(0);
+      expect(r.retiradas).toBe(1);
+      const resumen = r.archivos.get('resumen.md')!;
+      const md = r.archivos.get('hippocampus.md')!;
+      expect(tabla(md, 'D01')).toHaveLength(1);
+      expect(tabla(md, 'D01')[0]).toContain('`que_es`');
+      expect(tabla(resumen.split('## Marcas retiradas')[0]!, 'D01')).toHaveLength(1);
+      for (const texto of [resumen, md]) expect(texto).not.toContain('PROPUESTA_QUITADA');
+      expect(resumen).toContain('# Revisiones docentes (1 respuestas, 1 estructuras)');
+    });
+
+    it('un veredicto posterior al retiro gana', () => {
+      const csv = hoja(
+        { r: 'ANAT01', e: { hippocampus: [el({ p: 'VIEJA', d: 'corregir' })] } },
+        { r: 'ANAT01', e: { hippocampus: [ret()] } },
+        { r: 'ANAT01', e: { hippocampus: [el({ p: 'NUEVA', d: 'corregir', f: iso(10) })] } },
+      );
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      const md = r.archivos.get('hippocampus.md')!;
+      expect(md).toContain('NUEVA');
+      expect(md).not.toContain('VIEJA');
+      expect(tabla(md, 'D01')).toHaveLength(1);
+      // Lo retirado y puesto otra vez no desapareció: no sale como retirada.
+      expect(r.retiradas).toBe(0);
+      expect(r.archivos.get('resumen.md')).not.toContain('## Marcas retiradas');
+    });
+
+    it('un retiro anterior al veredicto no lo toca', () => {
+      const csv = hoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(-5) })] } }, { r: 'ANAT01', e: { hippocampus: [el()] } });
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      expect(tabla(r.archivos.get('hippocampus.md')!, 'D01')).toHaveLength(1);
+      expect(r.retiradas).toBe(0);
+    });
+
+    it('otro revisor no se toca', () => {
+      const csv = hoja(
+        { r: 'ANAT01', e: { hippocampus: [el()] } },
+        { r: 'PROF01', e: { hippocampus: [el()] } },
+        { r: 'PROF01', e: { hippocampus: [ret()] } },
+      );
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      const md = r.archivos.get('hippocampus.md')!;
+      expect(tabla(md, 'D01')).toHaveLength(1);
+      expect(tabla(md, 'D02')).toHaveLength(0);
+      expect(r.retiradas).toBe(1);
+    });
+
+    it('el idioma distingue la clave: retirar es no quita en, y una respuesta sin idioma solo la quita un retiro sin idioma', () => {
+      const csv = hoja(
+        { r: 'ANAT01', e: { hippocampus: [el(), el({ i: 'en' }), el({ i: undefined }), el({ c: 'que_es', i: undefined })] } },
+        { r: 'ANAT01', e: { hippocampus: [ret(), ret({ c: 'que_es', i: undefined })] } },
+      );
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      const filas = tabla(r.archivos.get('hippocampus.md')!, 'D01').map((f) => f.split('|').map((c) => c.trim()).slice(2, 4));
+      // Quedan en y la respuesta sin idioma de `ubicacion`; se fueron es de `ubicacion` y `que_es` sin idioma.
+      expect(filas).toEqual([
+        ['`ubicacion`', 'en'],
+        ['`ubicacion`', ''],
+      ]);
+      expect(r.retiradas).toBe(2);
+    });
+
+    it('un retiro con idioma no quita la respuesta sin idioma de la misma clave', () => {
+      const csv = hoja({ r: 'ANAT01', e: { hippocampus: [el({ i: undefined })] } }, { r: 'ANAT01', e: { hippocampus: [ret()] } });
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      expect(tabla(r.archivos.get('hippocampus.md')!, 'D01')).toHaveLength(1);
+      expect(r.retiradas).toBe(0);
+    });
+
+    it('quita también de "Descartadas: sin autorización" y de "Descartadas: sin la casilla del vago"', () => {
+      const trazo = { c: 'trazo:Vagus_nerve.R#t01', i: undefined };
+      const csv = hoja(
+        { r: 'SINAUT01', e: { hippocampus: [el(), el({ c: 'que_es' })] } },
+        { r: 'VAGO01', e: { 'vagus-nerve-x': [el({ ...trazo }), el({ ...trazo, c: 'trazo:Vagus_nerve.L#t02' })] } },
+        { r: 'SINAUT01', e: { hippocampus: [ret()] } },
+        { r: 'VAGO01', e: { 'vagus-nerve-x': [{ ...ret(), ...trazo }] } },
+      );
+      const padron = { ...PADRON, SINAUT01: 'D93' };
+      const r = importar(csv, ESTRUCTURAS, padron, AUT);
+      const resumen = r.archivos.get('resumen.md')!;
+      const sinAut = seccion(resumen, '## Descartadas: sin autorización');
+      expect(sinAut).toContain('`que_es`');
+      expect(sinAut).not.toContain('`ubicacion`');
+      expect(r.sinAutorizacion).toBe(1);
+      const sinVago = seccion(resumen, '## Descartadas: sin la casilla del vago');
+      expect(sinVago).toContain('Vagus_nerve.L#t02');
+      expect(sinVago).not.toContain('Vagus_nerve.R#t01');
+      expect(r.sinVago).toBe(1);
+      expect(r.retiradas).toBe(2);
+    });
+
+    it('una fila con la misma clave como retiro y como veredicto cuenta como inválida y no quita nada', () => {
+      const csv = hoja(
+        { r: 'ANAT01', e: { hippocampus: [el()] } },
+        { r: 'ANAT01', e: { hippocampus: [ret(), el({ f: iso(6), d: 'corregir', p: 'otra' })] } },
+        { r: 'ANAT01', e: { hippocampus: [el({ f: iso(7), d: 'corregir', p: 'otra' }), ret({ f: iso(8) })] } },
+      );
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      expect(r.invalidas).toBe(2);
+      expect(r.retiradas).toBe(0);
+      expect(tabla(r.archivos.get('hippocampus.md')!, 'D01')).toHaveLength(1);
+    });
+
+    it('un envío que solo trae retiros cuenta como válido pero no genera <id>.md ni suma a la cabecera', () => {
+      const csv = hoja({ r: 'ANAT01', e: { hippocampus: [el()] } }, { r: 'ANAT01', e: { hippocampus: [ret()], 'm-periaqueductal-grey': [el({ c: 'nombre' })] } });
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      expect(r.validos).toBe(3);
+      expect([...r.archivos.keys()].sort()).toEqual(['m-periaqueductal-grey.md', 'resumen.md']);
+      expect(r.archivos.get('resumen.md')).toContain('# Revisiones docentes (1 respuestas, 1 estructuras)');
+    });
+
+    it('con la casilla del vago en sí, un envío que un retiro dejó sin nada tampoco genera <id>.md ni cuenta en la cabecera, pero sí como válido', () => {
+      // PROF01 tiene la casilla del vago: sus envíos pasan enteros, así que uno vacío saldría como un <id>.md sin filas.
+      const csv = hoja(
+        { r: 'PROF01', e: { hippocampus: [el()] } },
+        { r: 'PROF01', e: { hippocampus: [ret()] } },
+        { r: 'PROF01', e: { 'm-periaqueductal-grey': [el({ c: 'nombre' })] } },
+      );
+      const r = importar(csv, ESTRUCTURAS, PADRON, AUT);
+      expect(r.validos).toBe(3);
+      expect(r.invalidas).toBe(0);
+      expect([...r.archivos.keys()].sort()).toEqual(['m-periaqueductal-grey.md', 'resumen.md']);
+      expect(r.archivos.get('resumen.md')).toContain('# Revisiones docentes (1 respuestas, 1 estructuras)');
+      expect(r.retiradas).toBe(1);
+    });
+
+    it('un retiro de un código fuera del padrón no sale en ningún archivo, ni el código', () => {
+      const csv = hoja({ r: 'FUERA01', e: { hippocampus: [el()] } }, { r: 'FUERA01', e: { hippocampus: [ret()] } });
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      expect(r.desconocidos).toBe(2);
+      expect(r.retiradas).toBe(0);
+      for (const md of r.archivos.values()) expect(md).not.toContain('FUERA01');
+    });
+
+    it('un retiro de la hoja no quita lo del formulario (v:1 ni v:2 del formulario), esté el CSV del formulario antes o después de la hoja', () => {
+      const v1 = { v: 1, revisor: 'ANAT01', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: 'correcto' }] };
+      const v2Form = { v: 2, r: 'ANAT01', e: { hippocampus: [el({ c: 'ubicacion', i: 'es' })] } };
+      const delFormulario = [fila(v1, 'Ana', '2026-10-11 10:00'), fila(v2Form, 'Ana', '10/14/2026 10:00:00')];
+      const delRetiro = filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1));
+      for (const orden of [[...delFormulario, delRetiro], [delRetiro, ...delFormulario]]) {
+        const r = importar(`${cabecera}\n${orden.join('\n')}\n`, ESTRUCTURAS, PADRON);
+        expect(r.invalidas).toBe(0);
+        expect(r.retiradas).toBe(0);
+        expect(r.archivos.get('resumen.md')).not.toContain('## Marcas retiradas');
+        expect(tabla(r.archivos.get('hippocampus.md')!, 'D01')).toHaveLength(1);
+      }
+    });
+
+    it('un veredicto v:2 que llegó por el formulario tampoco lo quita un retiro de la hoja', () => {
+      const v2Form = { v: 2, r: 'ANAT01', e: { hippocampus: [el({ p: 'DEL_FORMULARIO', d: 'corregir' })] } };
+      const delRetiro = filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1));
+      for (const orden of [[fila(v2Form, 'Ana', '10/14/2026 10:00:00'), delRetiro], [delRetiro, fila(v2Form, 'Ana', '10/14/2026 10:00:00')]]) {
+        const r = importar(`${cabecera}\n${orden.join('\n')}\n`, ESTRUCTURAS, PADRON);
+        expect(r.retiradas).toBe(0);
+        expect(r.archivos.get('hippocampus.md')).toContain('DEL_FORMULARIO');
+      }
+    });
+
+    it('con la hoja y el formulario del mismo revisor, el retiro quita solo lo de la hoja y deja el veredicto del formulario', () => {
+      const v1 = { v: 1, revisor: 'ANAT01', estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: 'corregir', propuesta: 'DEL_FORMULARIO' }] };
+      const csv = `${cabecera}\n${fila(v1, 'Ana', '2026-10-11 10:00')}\n${filaHoja({ r: 'ANAT01', e: { hippocampus: [el({ p: 'DE_LA_HOJA', d: 'corregir' }), el({ c: 'que_es' })] } }, iso(0))}\n${filaHoja({ r: 'ANAT01', e: { hippocampus: [ret({ f: iso(5) })] } }, iso(1))}\n`;
+      const r = importar(csv, ESTRUCTURAS, PADRON);
+      const md = r.archivos.get('hippocampus.md')!;
+      expect(md).toContain('DEL_FORMULARIO');
+      expect(md).not.toContain('DE_LA_HOJA');
+      expect(md).toContain('`que_es`');
+      // La clave de `ubicacion` sigue con la respuesta del formulario: no se cuenta como retirada.
+      expect(r.retiradas).toBe(0);
+    });
+  });
+
+  describe('el retiro solo vale en una fila con la forma de la pestaña Respuestas (R7.3)', () => {
+    const carga = (extra: object = ret()) => ({ v: 2, r: 'ANAT01', e: { hippocampus: [extra] } });
+    const celda = (c: object) => `"${JSON.stringify(c).replace(/"/g, '""')}"`;
+    const leer = (filaCsv: string) => leerEnvios(parsearCsv(`${CAB}\n${filaCsv}\n`), new Set(['hippocampus']));
+
+    it('una fila de cuatro columnas con A ISO y B igual al código se acepta', () => {
+      const { envios, invalidas } = leer(`${iso(1)},ANAT01,hippocampus,${celda(carga())}`);
+      expect(invalidas).toBe(0);
+      expect(envios[0]!.retiros).toEqual([{ estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: '', fecha: iso(5) }]);
+      expect(envios[0]!.respuestas).toEqual([]);
+    });
+
+    it.each([
+      ['la fila del formulario público (cinco columnas)', `${iso(1)},ANAT01,hippocampus,${celda(carga())},Ana`],
+      ['un formulario de cuatro columnas con la marca temporal local', `10/14/2026 10:00:00,ANAT01,hippocampus,${celda(carga())}`],
+      ['B distinto del código de la carga', `${iso(1)},PROF01,hippocampus,${celda(carga())}`],
+      ['B vacío', `${iso(1)},,hippocampus,${celda(carga())}`],
+      ['tres columnas', `${iso(1)},ANAT01,${celda(carga())}`],
+      ['seis columnas', `${iso(1)},ANAT01,hippocampus,${celda(carga())},a,b`],
+    ])('%s con un retiro cuenta como inválida', (_n, filaCsv) => {
+      const { envios, invalidas } = leer(filaCsv);
+      expect(invalidas).toBe(1);
+      expect(envios).toEqual([]);
+    });
+
+    it('esas mismas filas con solo veredictos siguen siendo válidas', () => {
+      for (const filaCsv of [
+        `${iso(1)},ANAT01,hippocampus,${celda(carga(el()))},Ana`,
+        `10/14/2026 10:00:00,ANAT01,hippocampus,${celda(carga(el()))}`,
+        `${iso(1)},PROF01,hippocampus,${celda(carga(el()))}`,
+      ]) {
+        const { envios, invalidas } = leer(filaCsv);
+        expect(invalidas).toBe(0);
+        expect(envios).toHaveLength(1);
+      }
+    });
+
+    it('una fila de la hoja que mezcla veredictos y un retiro de otra clave es válida', () => {
+      const { envios, invalidas } = leer(`${iso(1)},ANAT01,hippocampus,${celda({ v: 2, r: 'ANAT01', e: { hippocampus: [el({ c: 'que_es' }), ret()] } })}`);
+      expect(invalidas).toBe(0);
+      expect(envios[0]!.respuestas).toHaveLength(1);
+      expect(envios[0]!.retiros).toHaveLength(1);
+    });
+  });
+
+  describe('quitarRetiradas', () => {
+    const resp = (campo: string, idioma?: 'es' | 'en'): Respuesta => ({ estructura: 'hippocampus', campo, idioma, veredicto: 'correcto', version: '0.1.0', fecha: iso(0) });
+    const ret1 = (campo: string, idioma?: 'es' | 'en') => ({ estructura: 'hippocampus', campo, idioma, veredicto: '' as const, fecha: iso(5) });
+    // `deHoja`: el envío viene de una fila con la forma de la pestaña Respuestas; el del formulario o `v:1` no lo trae.
+    const envio = (revisor: string, respuestas: Respuesta[], retiros?: ReturnType<typeof ret1>[], deHoja = true): Envio => ({
+      revisor,
+      estructura: 'hippocampus',
+      marcaTemporal: '',
+      respuestas,
+      ...(retiros ? { retiros } : {}),
+      ...(deHoja ? { deHoja: true as const } : {}),
+    });
+
+    it('un retiro solo quita de los envíos de la hoja: el formulario y los v:1 quedan, antes o después', () => {
+      const formulario = envio('A', [resp('x')], undefined, false);
+      const delRetiro = envio('A', [], [ret1('x')]);
+      // Solo formulario y retiro: el retiro no encuentra nada de la hoja que quitar.
+      const solo = quitarRetiradas([formulario, delRetiro]);
+      expect(solo.envios).toEqual([formulario]);
+      expect(solo.retiradas).toEqual([]);
+      // Con una respuesta de la hoja, se va la de la hoja y queda la del formulario, esté antes o después del retiro.
+      for (const entrada of [[envio('A', [resp('x')]), delRetiro, formulario], [formulario, envio('A', [resp('x')]), delRetiro]]) {
+        const { envios, retiradas } = quitarRetiradas(entrada);
+        expect(envios).toEqual([formulario]);
+        // La clave sigue con una respuesta (la del formulario): no cuenta como retirada.
+        expect(retiradas).toEqual([]);
+      }
+    });
+
+    it('no muta la entrada y deja los envíos sin retiros tal cual', () => {
+      const entrada = [envio('A', [resp('x'), resp('y')]), envio('A', [], [ret1('x')]), envio('B', [resp('z')])];
+      const copia = structuredClone(entrada);
+      const { envios, retiradas } = quitarRetiradas(entrada);
+      expect(entrada).toEqual(copia);
+      // El envío con solo el retiro ya no sale; el de otro revisor, que no tiene retiros, queda tal cual.
+      expect(envios).toEqual([envio('A', [resp('y')]), envio('B', [resp('z')])]);
+      expect(retiradas).toEqual([{ revisor: 'A', estructura: 'hippocampus', campo: 'x', idioma: '' }]);
+    });
+
+    it('un envío que un retiro dejó sin respuestas y uno que solo traía retiros no salen; uno vacío de antes sí', () => {
+      const vacioDeAntes = envio('C', []);
+      const { envios } = quitarRetiradas([envio('A', [resp('x')]), vacioDeAntes, envio('A', [], [ret1('x')])]);
+      expect(envios).toEqual([vacioDeAntes]);
+    });
+
+    it('un retiro solo quita de los envíos anteriores: el orden de las filas manda', () => {
+      const { envios, retiradas } = quitarRetiradas([envio('A', [], [ret1('x')]), envio('A', [resp('x')])]);
+      expect(envios).toEqual([envio('A', [resp('x')])]);
+      expect(retiradas).toEqual([]);
+    });
+
+    it('la llave incluye al revisor', () => {
+      const { envios } = quitarRetiradas([envio('A', [resp('x')]), envio('B', [resp('x')]), envio('B', [], [ret1('x')])]);
+      expect(envios.map((e) => [e.revisor, e.respuestas.length])).toEqual([['A', 1]]);
+    });
+
+    it('un retiro sin idioma y una respuesta sin idioma son la misma clave; con idioma son otra', () => {
+      const { envios } = quitarRetiradas([envio('A', [resp('x'), resp('y', 'es')]), envio('A', [], [ret1('x'), ret1('y')])]);
+      expect(envios).toHaveLength(1);
+      expect(envios[0]!.respuestas.map((r) => r.campo)).toEqual(['y']);
+    });
+
+    it('seccionRetiradas ordena, usa código en línea y no trae nada más que alias, campo, idioma y estructura', () => {
+      const md = seccionRetiradas([
+        { revisor: 'D02', estructura: 'b', campo: 'a|b', idioma: 'en' },
+        { revisor: 'D01', estructura: 'a', campo: 'z', idioma: '' },
+      ]);
+      expect(md.split('\n').filter((l) => l.startsWith('| `D'))).toEqual(['| `D01` | `z` |  | `a` |', '| `D02` | `a/b` | en | `b` |']);
+      expect(seccionRetiradas([])).toBe('');
+    });
+  });
+
+  it('"Marcas retiradas" va después de las tablas y antes de las secciones "Descartadas", y no trae texto libre', () => {
+    const csv = hoja(
+      { r: 'ANAT01', e: { hippocampus: [el({ d: 'corregir', p: 'PROPUESTA_PRIVADA', k: 'COMENTARIO_PRIVADO' }), el({ c: 'que_es' })] } },
+      { r: 'SINAUT01', e: { hippocampus: [el()] } },
+      { r: 'ANAT01', e: { hippocampus: [ret()] } },
+    );
+    const resumen = importar(csv, ESTRUCTURAS, { ...PADRON, SINAUT01: 'D93' }, AUT).archivos.get('resumen.md')!;
+    expect(resumen.indexOf('## Revisiones de')).toBeLessThan(resumen.indexOf('## Marcas retiradas'));
+    expect(resumen.indexOf('## Marcas retiradas')).toBeLessThan(resumen.indexOf('## Descartadas: sin autorización'));
+    const sec = seccion(resumen, '## Marcas retiradas');
+    expect(sec).toContain('| `D01` | `ubicacion` | es | `hippocampus` |');
+    expect(sec).toContain('1 marcas');
+    for (const privado of ['PROPUESTA_PRIVADA', 'COMENTARIO_PRIVADO', 'ANAT01']) expect(resumen, privado).not.toContain(privado);
+    for (const privado of ['correcto', 'corregir', iso(0), iso(5)]) expect(sec, privado).not.toContain(privado);
   });
 });

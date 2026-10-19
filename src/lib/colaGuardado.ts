@@ -4,8 +4,11 @@
 import { fusionarRespuestas } from './respaldo';
 import { cuerpoGuardar } from './canal';
 import type { TipoErrorCanal } from './canal';
-import { claveRespuesta, pendientesDeEnvio } from './revision';
-import type { Respuesta } from './revision';
+import { claveRespuesta, desdeClave, pendientesDeEnvio } from './revision';
+import type { Respuesta, Retiro } from './revision';
+
+/** Lo que viaja al canal: una respuesta o, con un script que lo entiende, el retiro de una marca (#217). */
+export type Envio = Respuesta | Retiro;
 
 /** Tope (ms) de R3.1 entre el último gesto del docente y el envío al canal. El panel no la usa directo: espera `ESPERA_ENVIO_MS`. Distinta de `ESPERA_GUARDADO_MS` (la de IndexedDB). */
 export const ESPERA_CANAL_MS = 3000;
@@ -36,7 +39,7 @@ export function siguienteEspera(intentos: number): number {
 }
 
 /** Clave con la que el canal confirma una respuesta: `estructura|campo|idioma|fecha`. */
-export const claveConfirmacion = (r: Respuesta) => `${claveRespuesta(r)}|${r.fecha}`;
+export const claveConfirmacion = (r: Envio) => `${claveRespuesta(r)}|${r.fecha}`;
 
 /** Respuestas completas cuya fecha aún no está confirmada. */
 export function pendientes(respuestas: Respuesta[], confirmadas: Record<string, string>): Respuesta[] {
@@ -44,15 +47,36 @@ export function pendientes(respuestas: Respuesta[], confirmadas: Record<string, 
 }
 
 /**
+ * Retiros por mandar (#217): uno por cada clave de `retiradas` cuya fecha el canal aún no confirmó. Las claves que no
+ * se pueden leer (`desdeClave` lanza) se saltan: nunca viajan.
+ */
+export function retirosPendientes(retiradas: Record<string, string>, confirmadas: Record<string, string>): Retiro[] {
+  const retiros: Retiro[] = [];
+  for (const [clave, fecha] of Object.entries(retiradas)) {
+    if (Object.hasOwn(confirmadas, clave) && confirmadas[clave] === fecha) continue;
+    try {
+      retiros.push({ ...desdeClave(clave), veredicto: '', fecha });
+    } catch {
+      continue;
+    }
+  }
+  return retiros;
+}
+
+/**
  * Pendientes que se pueden mandar: sin las que el canal rechazó solas con esa misma fecha. Esas siguen
- * pendientes (no se confirmaron) pero no se reintentan hasta que se editen (fecha nueva).
+ * pendientes (no se confirmaron) pero no se reintentan hasta que se editen (fecha nueva). `retiros` son los
+ * retiros pendientes (`retirosPendientes`) y pasan por el mismo filtro; el que llama los pasa solo si el script
+ * declaró `canal >= VERSION_CANAL`, y salen después de las respuestas.
  */
 export function porEnviar(
   respuestas: Respuesta[],
   confirmadas: Record<string, string>,
   rechazadas: Record<string, string>,
-): Respuesta[] {
-  return pendientes(respuestas, confirmadas).filter((r) => rechazadas[claveRespuesta(r)] !== r.fecha);
+  retiros: Retiro[] = [],
+): Envio[] {
+  const lista: Envio[] = [...pendientes(respuestas, confirmadas), ...retiros];
+  return lista.filter((r) => !(Object.hasOwn(rechazadas, claveRespuesta(r)) && rechazadas[claveRespuesta(r)] === r.fecha));
 }
 
 /**
@@ -60,11 +84,11 @@ export function porEnviar(
  * `MAX_LOTE_BYTES` bytes UTF-8 de cuerpo POST. Una respuesta que sola pasa el tope de bytes sale en su
  * propio lote (el canal dirá `demasiado_grande`). Sin respuestas da [].
  */
-export function armarLotes(codigo: string, respuestas: Respuesta[], tope: number = MAX_LOTE_RESPUESTAS): Respuesta[][] {
+export function armarLotes<T extends Envio>(codigo: string, respuestas: T[], tope: number = MAX_LOTE_RESPUESTAS): T[][] {
   const maximo = Math.max(1, Math.floor(tope));
   const codificador = new TextEncoder();
-  const lotes: Respuesta[][] = [];
-  let actual: Respuesta[] = [];
+  const lotes: T[][] = [];
+  let actual: T[] = [];
   for (const r of respuestas) {
     const cabe = actual.length < maximo && codificador.encode(cuerpoGuardar(codigo, [...actual, r])).length <= MAX_LOTE_BYTES;
     if (actual.length === 0 || cabe) {
@@ -81,7 +105,7 @@ export function armarLotes(codigo: string, respuestas: Respuesta[], tope: number
 /** Copia de `confirmadas` con las respuestas del lote cuya `claveConfirmacion` (con su fecha) está en `recibidas`. No muta la entrada. */
 export function confirmarRecibidas(
   confirmadas: Record<string, string>,
-  lote: Respuesta[],
+  lote: Envio[],
   recibidas: Set<string>,
 ): Record<string, string> {
   const nuevas = { ...confirmadas };
@@ -117,7 +141,7 @@ export type ResultadoEnvio = { ok: true; recibidas: Set<string> } | { ok: false;
  */
 export function trasEnvio(
   estado: EstadoCola,
-  lote: Respuesta[],
+  lote: Envio[],
   resultado: ResultadoEnvio,
   ahora: number,
 ): { estado: EstadoCola; espera: number | null } {
@@ -173,18 +197,25 @@ export function ofrecerRespaldo(ultimaConfirmacion: number | null, ahora: number
 
 /**
  * Une lo que trae el canal con lo local: por clave gana la fecha más reciente (con empate se queda la
- * local). La versión del canal queda confirmada solo si es la que quedó. No muta la entrada.
+ * local; un retiro más nuevo le gana al veredicto y un veredicto más nuevo le gana al retiro, #217). La versión del
+ * canal queda confirmada solo si es la que quedó, también para los retiros. No muta la entrada.
  */
 export function fusionarConCanal(
   locales: Record<string, Respuesta>,
   confirmadas: Record<string, string>,
   delCanal: Respuesta[],
-): { respuestas: Record<string, Respuesta>; confirmadas: Record<string, string> } {
-  const { respuestas } = fusionarRespuestas(locales, delCanal);
+  retiradas: Record<string, string> = {},
+  retirosCanal: Retiro[] = [],
+): { respuestas: Record<string, Respuesta>; retiradas: Record<string, string>; confirmadas: Record<string, string> } {
+  const fusion = fusionarRespuestas(locales, delCanal, retiradas, retirosCanal);
   const nuevas = { ...confirmadas };
   for (const n of delCanal) {
     const k = claveRespuesta(n);
-    if (respuestas[k]?.fecha === n.fecha) nuevas[k] = n.fecha;
+    if (fusion.respuestas[k]?.fecha === n.fecha) nuevas[k] = n.fecha;
   }
-  return { respuestas, confirmadas: nuevas };
+  for (const n of retirosCanal) {
+    const k = claveRespuesta(n);
+    if (Object.hasOwn(fusion.retiradas, k) && fusion.retiradas[k] === n.fecha) nuevas[k] = n.fecha;
+  }
+  return { respuestas: fusion.respuestas, retiradas: fusion.retiradas, confirmadas: nuevas };
 }

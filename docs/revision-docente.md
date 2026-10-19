@@ -256,6 +256,74 @@ responde `formato` a la lectura por POST) y `guardar` responde `sin_autorizacion
 y antes de mandar los enlaces. Después del despliegue, una pestaña abierta con la app anterior no
 registra una aceptación vieja: el diálogo muestra el aviso y basta recargar la página.
 
+### Actualización: quitar una marca se guarda (#217)
+
+Hasta #217, deshacer una marca (pulsar otra vez el mismo botón de un veredicto, o "Deshacer" una posición
+propuesta) solo la quitaba del equipo del docente: la hoja conservaba el veredicto deshecho, el importador
+lo contaba y, al abrir el enlace en otro equipo, la marca volvía. Desde #217 la app manda un retiro por
+`guardar`: un elemento `{c, i?, d:"", f}` dentro de la carga de siempre, con la misma clave del veredicto
+(estructura, campo e idioma) y una fecha nueva. No lleva propuesta ni comentario: es la clave y la fecha
+(el campo de un trazo, `trazo:...`, es parte de la clave y admite hasta 120 caracteres). Cambia esto:
+
+- La hoja solo agrega filas, así que el veredicto anterior sigue en ella y una fila nueva de `Respuestas`
+  lleva el retiro. Manda la última fila por clave (R3.6). `leer` deja fuera de `respuestas` las claves
+  cuyo último movimiento es un retiro, las devuelve aparte en `retiradas` y responde `canal: 2`.
+- Una fila de retiro no borra nada de la hoja ni suprime datos personales. Es una fila más del código del
+  docente y se borra junto con las demás en una supresión (sección 7).
+- La app solo manda retiros si `leer` responde `canal` 2 o más. Con el script anterior, el retiro queda
+  pendiente en el equipo del docente, los demás guardados siguen sin problema, la barra dice cuántas marcas
+  esperan y "Cómo revisar" muestra la frase "Si te equivocas, elige el veredicto correcto; quitar la marca
+  no se guarda." Esa frase y el aviso desaparecen solos cuando el docente reabre su enlace con el script
+  nuevo ya desplegado, y el retiro pendiente sale entonces solo. No hace falta otro PR.
+- Un retiro exige la autorización vigente, igual que un veredicto, pero no cuenta para la casilla del vago:
+  como no lleva contenido, el retiro de un trazo se guarda aunque la casilla esté en `no`.
+- Una carga con la misma clave como retiro y como veredicto se rechaza con `formato`.
+- El formulario de respaldo no lleva retiros (R7.3): un veredicto que llegó por el formulario solo se
+  corrige con otro veredicto. El importador lo exige igual: solo acepta retiros en filas con la forma de
+  la pestaña `Respuestas` (cuatro columnas, con la fecha ISO en A y en B el mismo código de la carga). Un
+  retiro en cualquier otra fila, por ejemplo la del CSV del formulario, cuenta como fila descartada.
+- El importador aplica cada retiro antes del padrón y de las autorizaciones: quita las respuestas
+  anteriores de esa clave del mismo revisor que llegaron por la pestaña `Respuestas`, en las tablas, en los
+  archivos por estructura y en las dos secciones "Descartadas"; lo que llegó por el formulario o en `v:1` no se quita.
+  Un veredicto posterior al retiro gana, y las respuestas de otros revisores no se tocan. `resumen.md` trae
+  la sección "Marcas retiradas" con el alias, el campo, el idioma y la estructura de lo que desapareció (sin
+  veredicto, propuesta ni comentario; el campo de un trazo admite hasta 120 caracteres), y la consola suma
+  cuántas marcas se retiraron. Esa lista y ese conteo incluyen solo las claves que quedaron sin ninguna
+  respuesta: si el formulario conserva la clave, el conteo puede ser 0 aunque el retiro haya quitado la
+  respuesta de la hoja. Por ejemplo, con un veredicto del formulario, después uno de la hoja y después un
+  retiro, el visible vuelve a ser el del formulario.
+
+Hay que volver a desplegar `Codigo.js` como "Nueva versión" de la implementación existente. En este
+orden, con el sitio primero y el script después (la app nueva funciona con el script viejo: solo deja los
+retiros en espera):
+
+1. Espera a que el PR de #217 esté fusionado y a que termine el workflow `pages`.
+2. En PowerShell, ponte en `main` al día y copia el script. Si `git status` lista cambios o `git pull`
+   falla, detente y avísalo por chat:
+
+   ```powershell
+   cd C:\Users\TU_USUARIO\proyectos\3d_brain
+   git switch main
+   git pull --ff-only
+   git status
+   Get-Content -Raw -Encoding UTF8 apps-script\Codigo.js | Set-Clipboard
+   ```
+
+3. En Apps Script, selecciona todo `Código.gs`, pega y pulsa Guardar.
+4. Implementar, Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. Nunca
+   "Nueva implementación". Si Google pide permisos nuevos al implementar, detente y avisa por chat: este
+   cambio no debería pedirlos.
+5. Comprueba que la URL de la aplicación web que muestra Google es la misma que ya está en
+   `src/config/revision.ts`. Si cambió, avísalo por chat y no la pegues en ningún issue.
+6. Comprueba que funciona, con el código de prueba del paso 7 de la sección 1:
+   1. Márcalo `sí` en `Padrón` y espera un minuto (la caché del `Padrón`).
+   2. Abre su enlace: "Cómo revisar" ya no debe mostrar la frase "Si te equivocas, elige el veredicto
+      correcto; quitar la marca no se guarda."
+   3. Marca Correcto en un campo y espera "Guardado ✓". Pulsa otra vez el mismo botón y espera "Guardado ✓".
+      `Respuestas` debe tener una fila nueva cuya carga trae `"d":""`.
+   4. Recarga: la marca no vuelve. Importa el CSV: ese campo no sale en el resumen.
+   5. Limpia como dice el paso 7.
+
 ## 2. Cuidar el padrón
 
 `Padrón` decide qué códigos pueden escribir. La hoja del canal no se comparte con nadie: quien tenga
@@ -459,6 +527,12 @@ canal publicado, esa confirmación no marca nada como enviado: las respuestas si
 que el guardado automático las confirme. Sin canal, una respuesta cuenta como enviada solo con esa
 confirmación.
 
+El formulario no lleva retiros (R7.3, #217): su carga trae solo veredictos, nunca un elemento con
+`"d":""`. Un veredicto que llegó por el formulario solo se corrige con otro veredicto; quitar la marca en
+la app no lo retira de lo que el formulario ya guardó. El importador descarta un retiro que venga en
+una fila del formulario y un retiro de la hoja nunca quita lo que llegó por el formulario ni en `v:1`: eso
+se corrige con otro veredicto.
+
 ### Formulario de registro (se retira)
 
 Lo pedía el flujo viejo: el docente se registraba con nombre, rol y código antes de su primera
@@ -490,7 +564,8 @@ por su canal propio. Los pasos, con el alias del docente:
    1. Pon `no` en su fila de `Padrón` (o bórrala). Así el código deja de escribir en un minuto como
       mucho (el script guarda `Padrón` unos 60 s).
    2. Borra todas sus filas de `Respuestas` y de `Autorizaciones` (en `Autorizaciones` hay una por
-      cada aceptación y por cada cambio de la casilla del vago).
+      cada aceptación y por cada cambio de la casilla del vago). En `Respuestas` van también las filas
+      de retiro (#217), que llevan su código como las demás.
    3. Borra su nombre del documento privado de enlaces.
    4. Borra sus filas del formulario de registro y del formulario de revisión.
    5. Quita sus propuestas y comentarios de los issues de importación. Esos issues son públicos y

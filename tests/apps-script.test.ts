@@ -5,15 +5,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { esRespuestaDelVago, importar, leerEnvios, parsearCsv } from '../scripts/lib/revisiones.ts';
-import { VERSION_AUTORIZACION } from '../src/config/revision';
+import { VERSION_AUTORIZACION, VERSION_CANAL } from '../src/config/revision';
 import { cuerpoGuardar, type TipoErrorCanal } from '../src/lib/canal';
-import { armarLotes, estadoInicial, pendientes, porEnviar, trasEnvio, type ResultadoEnvio } from '../src/lib/colaGuardado';
-import { cargaRevisionV2, claveRespuesta, fechaValida, REVISOR_VALIDO, respuestaValida, type Respuesta } from '../src/lib/revision';
+import { armarLotes, estadoInicial, pendientes, porEnviar, retirosPendientes, trasEnvio, type ResultadoEnvio } from '../src/lib/colaGuardado';
+import { cargaRevisionV2, claveRespuesta, fechaValida, REVISOR_VALIDO, respuestaValida, retiroValido, type Respuesta, type Retiro } from '../src/lib/revision';
 import {
   CABECERAS,
   casosCarga,
+  casosCargaRetiro,
   casosFecha,
   casosRespuesta,
+  casosRetiro,
   CODIGO_ACTIVO,
   CODIGO_AUSENTE,
   CODIGO_GUION,
@@ -37,6 +39,8 @@ const guardarCuerpo = (codigo: string, respuestas: Respuesta[]) => JSON.stringif
 const autorizarCuerpo = (codigo: string, extra: Record<string, unknown> = {}) => JSON.stringify({ accion: 'autorizar', r: codigo, version: VERSION_AUTORIZACION, vago: true, ...extra });
 const idForma = (id: unknown) => typeof id === 'string' && /^[a-z0-9-]+$/.test(id);
 const isoDe = (env: Entorno) => new Date(env.reloj.ahora).toISOString();
+/** Lo que `leer` responde en `respuestas` y en `retiradas` cuando el código no tiene nada. */
+const vacia = { v: 2, r: CODIGO_ACTIVO, e: {} };
 
 /** Las tres acciones del POST. El GET ya no lee (#169): se prueba aparte, en el describe (m). */
 type Accion = 'guardar' | 'autorizar' | 'leer';
@@ -518,7 +522,7 @@ describe('(f) leer devuelve solo lo del código (R4.3)', () => {
     const env = crearEntorno();
     env.hojas.Respuestas.filas.push(fila(OTRO_ACTIVO, cargaDe(OTRO_ACTIVO, { hippocampus: [el()] })));
     env.hojas.Autorizaciones.filas.push([OTRO_ACTIVO, '2026-10-14T09:00:00.000Z', '1', 'sí']);
-    expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
+    expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: true, canal: VERSION_CANAL, respuestas: vacia, retiradas: vacia, autorizacion: null });
   });
 
   it('autorizar y luego leer devuelve la autorización escrita', () => {
@@ -696,7 +700,7 @@ describe('(i) guardar exige la autorización vigente (S1, #157)', () => {
 
     it('leer sin autorización sigue dando ok con autorizacion null y autorizar no la exige', () => {
       const env = crearEntorno();
-      expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: true, respuestas: { v: 2, r: CODIGO_ACTIVO, e: {} }, autorizacion: null });
+      expect(env.postLeer(CODIGO_ACTIVO)).toEqual({ ok: true, canal: VERSION_CANAL, respuestas: vacia, retiradas: vacia, autorizacion: null });
       expect(env.post(autorizarCuerpo(CODIGO_ACTIVO))).toEqual({ ok: true });
     });
   });
@@ -1146,6 +1150,257 @@ describe('(o) guardar y la casilla del vago (S2, #166)', () => {
       expect(Object.keys(estado.confirmadas)).toHaveLength(4);
       expect(pendientes(lista, estado.confirmadas)).toEqual([]);
       expect(filasRespuestas(env)).toHaveLength(1);
+    });
+  });
+});
+
+describe('(p) retiros: quitar una marca se guarda (#217)', () => {
+  const FORMATO = { ok: false, error: 'formato' };
+  const FECHA = '2026-10-14T09:59:00.000Z';
+  const RETIRO_FECHA = '2026-10-14T10:05:00.000Z';
+  const VAGO = 'vagus-nerve-x';
+  const retiro = (extra: Partial<Retiro> = {}): Retiro => ({ estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: '', fecha: RETIRO_FECHA, ...extra });
+  const guardarRetiros = (codigo: string, items: (Respuesta | Retiro)[]) => JSON.stringify({ accion: 'guardar', carga: cargaRevisionV2(codigo, items) });
+  const filaDe = (b: string, e: unknown): Celda[] => ['2026-10-14T10:00:00.000Z', b, 'hippocampus', JSON.stringify({ v: 2, r: b, e })];
+  const corto = (extra: Record<string, unknown> = {}) => ({ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: FECHA, ...extra });
+  const ret = (extra: Record<string, unknown> = {}) => ({ c: 'ubicacion', i: 'es', d: '', f: RETIRO_FECHA, ...extra });
+
+  it('la versión del canal del script es la de la app y es la 2', () => {
+    const delScript = /const VERSION_CANAL = (\d+);/.exec(readFileSync(RUTA_SCRIPT, 'utf8'))?.[1];
+    expect(Number(delScript)).toBe(VERSION_CANAL);
+    expect(VERSION_CANAL).toBe(2);
+  });
+
+  describe('guardar (D1)', () => {
+    it('escribe una fila en Respuestas con formato de texto y devuelve id|c|i|f en recibidas', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      const res = env.post(guardarRetiros(CODIGO_ACTIVO, [retiro()]));
+      expect(res).toEqual({ ok: true, recibidas: [`hippocampus|ubicacion|es|${RETIRO_FECHA}`] });
+      const filas = env.escritas('Respuestas');
+      expect(filas).toHaveLength(1);
+      expect(filas[0]![1]).toBe(CODIGO_ACTIVO);
+      expect(filas[0]![2]).toBe('hippocampus');
+      expect(JSON.parse(String(filas[0]![3]))).toEqual({ v: 2, r: CODIGO_ACTIVO, e: { hippocampus: [{ c: 'ubicacion', i: 'es', d: '', f: RETIRO_FECHA }] } });
+      for (let c = 1; c <= 4; c++) expect(env.hojas.Respuestas.formatos.get(`2,${c}`)).toBe('@');
+      expect(env.hojas.Respuestas.formulas.size).toBe(0);
+    });
+
+    it('el retiro sin idioma devuelve una clave con el idioma vacío', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      const res = env.post(guardarRetiros(CODIGO_ACTIVO, [retiro({ idioma: undefined, campo: 'posicion' })]));
+      expect(res).toEqual({ ok: true, recibidas: [`hippocampus|posicion||${RETIRO_FECHA}`] });
+    });
+
+    it('un retiro y un veredicto en la misma carga se guardan en una sola fila', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      const res = env.post(guardarRetiros(CODIGO_ACTIVO, [resp({ campo: 'que_es' }), retiro()]));
+      expect(res['ok']).toBe(true);
+      expect(env.escritas('Respuestas')).toHaveLength(1);
+    });
+  });
+
+  describe('forma del retiro (D2)', () => {
+    it.each(casosRetiro)('retiroValido del script y de la app coinciden con %s', (_n, r, vale) => {
+      const env = crearEntorno();
+      const delScript = env.fn<(r: unknown, idOk: (id: unknown) => boolean) => boolean>('retiroValido')(r, idForma);
+      expect(delScript).toBe(retiroValido(r, idForma));
+      expect(delScript).toBe(vale);
+    });
+
+    it.each(casosCargaRetiro)('la carga con %s tiene el mismo veredicto en el script y en el importador', (_n, carga, vale) => {
+      // El importador solo acepta retiros en filas con la forma de la pestaña Respuestas: A ISO, B el código, D la carga.
+      const env = crearEntorno({ autorizados: AUTORIZADOS, vago: true });
+      const res = env.post(JSON.stringify({ accion: 'guardar', carga }));
+      const filaHoja = ['2026-10-14T10:00:00.000Z', CODIGO_ACTIVO, 'x', carga];
+      const { envios, invalidas } = leerEnvios([['Recibido', 'Código', 'Estructuras', 'Carga'], filaHoja]);
+      const laApp = invalidas === 0 && envios.length > 0;
+      expect(res['ok']).toBe(laApp);
+      expect(laApp).toBe(vale);
+      if (res['ok']) expect(env.escritas('Respuestas')).toHaveLength(1);
+      else {
+        expect(res['error']).toBe('formato');
+        expect(env.escritas('Respuestas')).toEqual([]);
+        expect(env.hojas.Respuestas.llamadasSetValues).toBe(0);
+        expect(env.candado.esperas).toEqual([]);
+      }
+    });
+
+    it('el código de otro revisor en la carga de un retiro da codigo_no_activo, igual que un veredicto', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      const carga = cargaRevisionV2(CODIGO_AUSENTE, [retiro()]);
+      expect(env.post(JSON.stringify({ accion: 'guardar', carga }))).toEqual({ ok: false, error: 'codigo_no_activo' });
+      expect(env.escritas('Respuestas')).toEqual([]);
+    });
+  });
+
+  describe('la casilla del vago (D3)', () => {
+    const retiroTrazo = retiro({ estructura: VAGO, campo: 'trazo:Vagus_nerve.R#t01' });
+    const trazo = resp({ estructura: VAGO, campo: 'trazo:Vagus_nerve.R#t01' });
+
+    it('con la casilla en no, el retiro de un trazo se guarda y el veredicto del mismo trazo da formato', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+      expect(env.post(guardarRetiros(CODIGO_ACTIVO, [trazo]))).toEqual(FORMATO);
+      expect(env.escritas('Respuestas')).toEqual([]);
+      expect(env.post(guardarRetiros(CODIGO_ACTIVO, [retiroTrazo]))).toEqual({ ok: true, recibidas: [`${VAGO}|trazo:Vagus_nerve.R#t01|es|${RETIRO_FECHA}`] });
+      expect(env.escritas('Respuestas')).toHaveLength(1);
+    });
+
+    it('con la casilla en no, un retiro de un trazado_ también se guarda', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+      expect(env.post(guardarRetiros(CODIGO_ACTIVO, [retiro({ estructura: VAGO, campo: 'trazado_derecho', idioma: undefined })]))['ok']).toBe(true);
+    });
+
+    it('con la casilla en no, un retiro y un veredicto del vago en la misma carga siguen dando formato', () => {
+      const env = crearEntorno({ autorizados: [CODIGO_ACTIVO] });
+      expect(env.post(guardarRetiros(CODIGO_ACTIVO, [retiroTrazo, resp({ estructura: VAGO, campo: 'trazo:otro' })]))).toEqual(FORMATO);
+      expect(env.escritas('Respuestas')).toEqual([]);
+    });
+  });
+
+  describe('leer (D4)', () => {
+    it('responde canal igual a VERSION_CANAL y retiradas vacías cuando no hay retiros', () => {
+      const env = crearEntorno();
+      env.hojas.Respuestas.filas.push(filaDe(CODIGO_ACTIVO, { hippocampus: [corto()] }));
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect(res['canal']).toBe(VERSION_CANAL);
+      expect(res['retiradas']).toEqual({ v: 2, r: CODIGO_ACTIVO, e: {} });
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [corto()] });
+    });
+
+    it('una clave retirada falta en respuestas y está en retiradas; las demás siguen', () => {
+      const env = crearEntorno();
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto(), corto({ c: 'que_es' })] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [ret()] }),
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [corto({ c: 'que_es' })] });
+      expect((res['retiradas'] as { e: object }).e).toEqual({ hippocampus: [ret()] });
+    });
+
+    it('un veredicto posterior al retiro gana: está en respuestas y no en retiradas', () => {
+      const env = crearEntorno();
+      const nuevo = corto({ d: 'corregir', p: 'nueva', f: '2026-10-14T10:10:00.000Z' });
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto()] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [ret()] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [nuevo] }),
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [nuevo] });
+      expect((res['retiradas'] as { e: object }).e).toEqual({});
+    });
+
+    it('un retiro posterior a un veredicto que a su vez seguía a otro retiro deja solo el último retiro', () => {
+      const env = crearEntorno();
+      const segundo = ret({ f: '2026-10-14T10:20:00.000Z' });
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [ret()] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto({ f: '2026-10-14T10:10:00.000Z' })] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [segundo] }),
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect((res['respuestas'] as { e: object }).e).toEqual({});
+      expect((res['retiradas'] as { e: object }).e).toEqual({ hippocampus: [segundo] });
+    });
+
+    it('el retiro y el veredicto se separan por idioma: retirar es no quita en', () => {
+      const env = crearEntorno();
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto(), corto({ i: 'en' }), corto({ i: undefined })] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [ret()] }),
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [corto({ i: 'en' }), corto({ i: undefined })] });
+    });
+
+    it('un retiro sin idioma solo quita la respuesta sin idioma: la clave con idioma vacío no es la de es', () => {
+      const env = crearEntorno();
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto({ i: undefined }), corto({ c: 'que_es', i: undefined }), corto({ c: 'que_es' })] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [ret({ i: undefined }), ret({ c: 'que_es' })] }),
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      // Quedan `que_es` sin idioma (el retiro era de es) y nada de `ubicacion` sin idioma ni de `que_es` en es.
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [corto({ c: 'que_es', i: undefined })] });
+      expect((res['retiradas'] as { e: object }).e).toEqual({ hippocampus: [ret({ i: undefined }), ret({ c: 'que_es' })] });
+    });
+
+    it('las filas de otro código no cuentan: ni un retiro de otro código ni uno cuya carga declara otro código', () => {
+      const env = crearEntorno();
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto()] }),
+        filaDe(OTRO_ACTIVO, { hippocampus: [ret()] }),
+        // B es el código pedido, pero la carga declara otro código.
+        ['2026-10-14T10:00:00.000Z', CODIGO_ACTIVO, 'hippocampus', JSON.stringify({ v: 2, r: OTRO_ACTIVO, e: { hippocampus: [ret()] } })],
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [corto()] });
+      expect((res['retiradas'] as { e: object }).e).toEqual({});
+      expect((env.postLeer(OTRO_ACTIVO)['retiradas'] as { e: object }).e).toEqual({ hippocampus: [ret()] });
+      expect((env.postLeer(OTRO_ACTIVO)['respuestas'] as { e: object }).e).toEqual({});
+    });
+
+    it('una fila con la misma clave como retiro y como veredicto es inválida y se salta', () => {
+      const env = crearEntorno();
+      env.hojas.Respuestas.filas.push(
+        filaDe(CODIGO_ACTIVO, { hippocampus: [corto()] }),
+        filaDe(CODIGO_ACTIVO, { hippocampus: [ret(), corto({ f: '2026-10-14T10:10:00.000Z' })] }),
+      );
+      const res = env.postLeer(CODIGO_ACTIVO);
+      expect((res['respuestas'] as { e: object }).e).toEqual({ hippocampus: [corto()] });
+      expect((res['retiradas'] as { e: object }).e).toEqual({});
+    });
+
+    it('lo que guardar escribió vuelve por leer: veredicto, retiro y veredicto otra vez', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      env.post(guardarRetiros(CODIGO_ACTIVO, [resp({ fecha: FECHA })]));
+      env.post(guardarRetiros(CODIGO_ACTIVO, [retiro()]));
+      const tras = env.postLeer(CODIGO_ACTIVO);
+      expect((tras['respuestas'] as { e: object }).e).toEqual({});
+      expect((tras['retiradas'] as { e: object }).e).toEqual({ hippocampus: [{ c: 'ubicacion', i: 'es', d: '', f: RETIRO_FECHA }] });
+      env.post(guardarRetiros(CODIGO_ACTIVO, [resp({ fecha: '2026-10-14T10:30:00.000Z' })]));
+      const final = env.postLeer(CODIGO_ACTIVO);
+      expect((final['respuestas'] as { e: Record<string, unknown[]> }).e['hippocampus']).toHaveLength(1);
+      expect((final['retiradas'] as { e: object }).e).toEqual({});
+    });
+  });
+
+  describe('lo que escribe el script se importa', () => {
+    const csvDe = (filas: Celda[][]) => filas.map((f) => f.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const estructuras = { hippocampus: { ficha: { version: '0.1.0' } } };
+    const padron = { [CODIGO_ACTIVO]: 'D01' };
+
+    it('las filas de retiro, exportadas a CSV, se importan sin inválidas y quitan la marca anterior', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      env.post(guardarRetiros(CODIGO_ACTIVO, [resp({ fecha: FECHA, campo: 'que_es' }), resp({ fecha: FECHA, propuesta: 'texto único' })]));
+      env.post(guardarRetiros(CODIGO_ACTIVO, [retiro()]));
+      const resultado = importar(`${csvDe(env.hojas.Respuestas.filas)}\n`, estructuras, padron);
+      expect(resultado.invalidas).toBe(0);
+      expect(resultado.retiradas).toBe(1);
+      const md = resultado.archivos.get('hippocampus.md')!;
+      expect(md).toContain('que_es');
+      expect(md).not.toContain('ubicacion');
+    });
+  });
+
+  describe('con la cola real de la app', () => {
+    it('la cola manda el retiro que arma retirosPendientes y lo confirma con la clave que devuelve el script', () => {
+      const env = crearEntorno({ autorizados: AUTORIZADOS });
+      const retiradas = { [claveRespuesta({ estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es' })]: RETIRO_FECHA };
+      const lista = porEnviar([], {}, {}, retirosPendientes(retiradas, {}));
+      const lote = armarLotes(CODIGO_ACTIVO, lista)[0]!;
+      const res = env.post(cuerpoGuardar(CODIGO_ACTIVO, lote));
+      expect(res['ok']).toBe(true);
+      const { estado } = trasEnvio(estadoInicial(), lote, { ok: true, recibidas: new Set(res['recibidas'] as string[]) }, Date.parse(RETIRO_FECHA));
+      expect(estado.confirmadas).toEqual(retiradas);
+      expect(retirosPendientes(retiradas, estado.confirmadas)).toEqual([]);
+    });
+
+    it('respuestaValida no admite el veredicto vacío: un retiro no es una respuesta', () => {
+      const env = crearEntorno();
+      expect(env.fn<(r: unknown, idOk: (id: unknown) => boolean) => boolean>('respuestaValida')(retiro(), idForma)).toBe(false);
+      expect(respuestaValida(retiro(), idForma)).toBe(false);
     });
   });
 });
