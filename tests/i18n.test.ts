@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { clavesFaltantes, diferencias } from '../scripts/lib/i18n.ts';
 
@@ -272,7 +273,7 @@ describe('página Privacidad (#168)', () => {
   const CLAVES = [
     'enlace', 'leer', 'titulo', 'intro', 'actualizado',
     'responsableTitulo', 'responsable', 'visitasTitulo', 'visitas', 'alojamiento',
-    'revisionTitulo', 'revision', 'respaldo', 'publicacion',
+    'revisionTitulo', 'revision', 'respaldo', 'publicacion', 'reportesTitulo', 'reportes',
     'finalidadesTitulo', 'finalidades', 'baseTitulo', 'base',
     'proveedoresTitulo', 'proveedorCloudflare', 'proveedorGoogle', 'proveedorGithub', 'transferencia',
     'conservacionTitulo', 'conservacionRevision', 'conservacionProveedores',
@@ -333,6 +334,10 @@ describe('página Privacidad (#168)', () => {
       dice('publicacion', 'alias', es ? 'issues públicos' : 'public issues');
     });
 
+    it(`(${idioma}) dice qué pasa con un reporte (F12)`, () => {
+      dice('reportes', 'GitHub', es ? 'público' : 'public', 'info@maysasp.com', es ? 'la app no guarda' : 'the app does not save');
+    });
+
     it(`(${idioma}) dice las finalidades, la base, los proveedores y la transferencia`, () => {
       dice('finalidades', es ? 'analítica' : 'Analytics');
       dice('base', ...(es ? ['interés legítimo', 'autorización'] : ['legitimate interest', 'authorization']));
@@ -362,6 +367,111 @@ describe('página Privacidad (#168)', () => {
       expect(todo.replace(/\n/g, ' ')).not.toMatch(/\b(?:[Rr]evisor(?:a|es)?|[Rr]eviewers?)\s*:?\s+\p{Lu}\p{Ll}+/u);
     });
   }
+});
+
+/**
+ * Busca texto visible escrito en duro en un archivo TSX, recorriendo el AST (una regex confunde genéricos,
+ * flechas y comentarios con texto JSX). Marca: `JsxText` con letras o dígitos (sin entidades), hijos
+ * `{...}` de un elemento cuyo valor pintado es un literal, y los atributos de texto visible
+ * (`aria-label`, `placeholder`, `title`, `alt`) con un literal. El valor pintado de una expresión es ella
+ * misma, las dos ramas de un ternario, el lado derecho de `&&`, `||` y `??`, y los paréntesis.
+ */
+function textosEnDuro(codigo: string): { literales: string[]; elementosJsx: number } {
+  const fuente = ts.createSourceFile('x.tsx', codigo, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const literales: string[] = [];
+  let elementosJsx = 0;
+  const conLetras = (texto: string) => /[\p{L}\p{N}]/u.test(texto);
+  const ATRIBUTOS = new Set(['aria-label', 'placeholder', 'title', 'alt']);
+
+  const pintado = (e: ts.Expression): string[] => {
+    if (ts.isParenthesizedExpression(e)) return pintado(e.expression);
+    if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return conLetras(e.text) ? [e.text] : [];
+    if (ts.isTemplateExpression(e)) {
+      const fijo = [e.head.text, ...e.templateSpans.map((s) => s.literal.text)].join('');
+      return conLetras(fijo) ? [fijo] : [];
+    }
+    if (ts.isConditionalExpression(e)) return [...pintado(e.whenTrue), ...pintado(e.whenFalse)];
+    if (ts.isBinaryExpression(e)) {
+      const op = e.operatorToken.kind;
+      if (op === ts.SyntaxKind.AmpersandAmpersandToken || op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
+        return pintado(e.right);
+      }
+    }
+    return [];
+  };
+
+  const visitar = (nodo: ts.Node): void => {
+    if (ts.isJsxElement(nodo) || ts.isJsxSelfClosingElement(nodo)) elementosJsx++;
+    if (ts.isJsxText(nodo)) {
+      const sinEntidades = nodo.text.replace(/&\w+;|&#\d+;/g, '');
+      if (conLetras(sinEntidades)) literales.push(nodo.text.trim());
+    } else if (ts.isJsxExpression(nodo) && nodo.expression && (ts.isJsxElement(nodo.parent) || ts.isJsxFragment(nodo.parent))) {
+      literales.push(...pintado(nodo.expression));
+    } else if (ts.isJsxAttribute(nodo) && nodo.initializer && ATRIBUTOS.has(nodo.name.getText(fuente))) {
+      const valor = nodo.initializer;
+      if (ts.isStringLiteral(valor)) {
+        if (conLetras(valor.text)) literales.push(valor.text);
+      } else if (ts.isJsxExpression(valor) && valor.expression) {
+        literales.push(...pintado(valor.expression));
+      }
+    }
+    ts.forEachChild(nodo, visitar);
+  };
+  visitar(fuente);
+  return { literales, elementosJsx };
+}
+
+describe('sin textos en duro en ReportarError.tsx (F12, R8.1)', () => {
+  const casos: Array<[string, string, string[]]> = [
+    ['texto suelto', '<p>Hola</p>', ['Hola']],
+    ['literal entre llaves', "<p>{'Hola'}</p>", ['Hola']],
+    ['plantilla con letras fijas', '<p>{`Hola ${n}`}</p>', ['Hola ']],
+    ['rama literal de un ternario', "<p>{x ? 'Sí' : t('a')}</p>", ['Sí']],
+    ['rama literal al final de un ternario', "<p>{x ? t('a') : 'No'}</p>", ['No']],
+    ['lado derecho de &&', "<p>{x && 'Falta'}</p>", ['Falta']],
+    ['aria-label', '<button aria-label="Cerrar" />', ['Cerrar']],
+    ['placeholder', '<input placeholder="Escribe" />', ['Escribe']],
+    ['title entre llaves', "<a title={'Abrir'} />", ['Abrir']],
+    ['alt', '<img alt="Foto" />', ['Foto']],
+  ];
+  for (const [nombre, jsx, esperado] of casos) {
+    it(`marca ${nombre}`, () => {
+      expect(textosEnDuro(`const a = (${jsx});`).literales).toEqual(esperado);
+    });
+  }
+
+  it('no marca llamadas a t(), atributos técnicos, genéricos, flechas, comentarios ni entidades', () => {
+    const limpio = [
+      '// Reportar un error',
+      'function F() {',
+      '  const boton = useRef<HTMLButtonElement>(null);',
+      '  return (',
+      '    <div className="aviso-caja reporte-caja" data-testid="dialogo-reporte" aria-labelledby="reporte-titulo">',
+      '      {/* Cerrar */}',
+      "      <button type=\"button\" onClick={() => setAbierto(true)} aria-label={t('reporte.cerrar')}>&nbsp;</button>",
+      '      <a target="_blank" rel="noopener noreferrer" href={enlaceGithub(r, t)}>',
+      "        {t('reporte.correoTexto', { correo: CORREO_REPORTES })}",
+      '      </a>',
+      "      {tipo === 'contenido' && <p>{t('x')}</p>}",
+      "      <label>{t('a')}{' '}{t('b')}</label>",
+      '      <span>{n} / {MAX_DESCRIPCION}</span>',
+      '    </div>',
+      '  );',
+      '}',
+    ].join('\n');
+    const r = textosEnDuro(limpio);
+    expect(r.literales).toEqual([]);
+    expect(r.elementosJsx).toBeGreaterThan(0);
+  });
+
+  it('el archivo real no trae textos en duro', () => {
+    const ruta = 'src/components/ReportarError.tsx';
+    expect(existsSync(ruta)).toBe(true);
+    const r = textosEnDuro(readFileSync(ruta, 'utf8'));
+    expect(r.literales).toEqual([]);
+    // Sin esto la prueba pasaría sin haber parseado JSX.
+    expect(r.elementosJsx).toBeGreaterThan(0);
+  });
 });
 
 describe('textos de los retiros (#217)', () => {

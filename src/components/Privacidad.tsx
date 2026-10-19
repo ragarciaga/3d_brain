@@ -1,4 +1,4 @@
-// Página "Privacidad" (SPEC sección 13, ADR 0012 y 0015, #168). Pública: nunca muestra alias ni códigos de revisor.
+// Página "Privacidad" (SPEC sección 13, ADR 0012, 0015 y 0016, #168). Pública: nunca muestra alias ni códigos de revisor.
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import type { Idioma } from '../data/tipos';
@@ -21,6 +21,8 @@ export default function Privacidad() {
       <p>{t('privacidad.revision')}</p>
       <p>{t('privacidad.respaldo')}</p>
       <p>{t('privacidad.publicacion')}</p>
+      <h2>{t('privacidad.reportesTitulo')}</h2>
+      <p>{t('privacidad.reportes')}</p>
       <h2>{t('privacidad.finalidadesTitulo')}</h2>
       <p>{t('privacidad.finalidades')}</p>
       <h2>{t('privacidad.baseTitulo')}</h2>
