@@ -275,8 +275,8 @@ describe('página Privacidad (#168)', () => {
     'responsableTitulo', 'responsable', 'visitasTitulo', 'visitas', 'alojamiento',
     'revisionTitulo', 'revision', 'respaldo', 'publicacion', 'reportesTitulo', 'reportes',
     'finalidadesTitulo', 'finalidades', 'baseTitulo', 'base',
-    'proveedoresTitulo', 'proveedorCloudflare', 'proveedorGoogle', 'proveedorGithub', 'transferencia',
-    'conservacionTitulo', 'conservacionRevision', 'conservacionProveedores',
+    'proveedoresTitulo', 'proveedorCloudflare', 'proveedorGoogle', 'proveedorGithub', 'proveedorHostinger', 'transferencia',
+    'conservacionTitulo', 'conservacionRevision', 'conservacionReportes', 'conservacionProveedores',
     'derechosTitulo', 'derechos', 'autoridad', 'cookiesTitulo', 'cookies', 'volver',
   ];
   const pagina = readFileSync('src/components/Privacidad.tsx', 'utf8');
@@ -347,12 +347,18 @@ describe('página Privacidad (#168)', () => {
     });
 
     it(`(${idioma}) dice las finalidades, la base, los proveedores y la transferencia`, () => {
-      dice('finalidades', es ? 'analítica' : 'Analytics');
-      dice('base', ...(es ? ['interés legítimo', 'autorización'] : ['legitimate interest', 'authorization']));
+      dice('finalidades', es ? 'analítica' : 'Analytics', es ? 'reportes de error' : 'Error reports');
+      dice('base', ...(es ? ['interés legítimo', 'autorización', 'Un reporte lo envías tú', 'al enviarlo autorizas que usemos lo que escribes'] : ['legitimate interest', 'authorization', 'You send a report yourself', 'by sending it you authorize us to use what you write']));
       dice('proveedorCloudflare', 'Cloudflare');
       dice('proveedorGoogle', 'Google');
       dice('proveedorGithub', 'GitHub');
-      dice('transferencia', es ? 'Estados Unidos' : 'United States');
+      dice('proveedorHostinger', 'Hostinger', 'info@maysasp.com', es ? 'donde llegan los reportes' : 'where reports');
+      dice('transferencia', es ? 'Estados Unidos' : 'United States', 'Hostinger', es ? 'Chipre' : 'Cyprus', es ? 'empresas procesan los datos fuera de Colombia' : 'companies process data outside Colombia');
+    });
+
+    it(`(${idioma}) dice cuánto se conservan los reportes y quién puede borrar los issues`, () => {
+      dice('conservacionReportes', ...(es ? ['como máximo 12 meses', 'solo el editor puede borrarlos'] : ['for at most 12 months', 'only the editor can delete them']));
+      dice('conservacionProveedores', 'Hostinger', es ? 'de Hostinger siguen el plazo de 12 meses' : 'mailbox follow the 12-month limit');
     });
 
     it(`(${idioma}) dice la conservación y los derechos`, () => {

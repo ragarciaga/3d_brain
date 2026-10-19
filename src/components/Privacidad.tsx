@@ -32,10 +32,12 @@ export default function Privacidad() {
         <li>{t('privacidad.proveedorCloudflare')}</li>
         <li>{t('privacidad.proveedorGoogle')}</li>
         <li>{t('privacidad.proveedorGithub')}</li>
+        <li>{t('privacidad.proveedorHostinger')}</li>
       </ul>
       <p>{t('privacidad.transferencia')}</p>
       <h2>{t('privacidad.conservacionTitulo')}</h2>
       <p>{t('privacidad.conservacionRevision')}</p>
+      <p>{t('privacidad.conservacionReportes')}</p>
       <p>{t('privacidad.conservacionProveedores')}</p>
       <h2>{t('privacidad.derechosTitulo')}</h2>
       <p>{t('privacidad.derechos')}</p>
