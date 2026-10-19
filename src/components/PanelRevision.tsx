@@ -7,7 +7,16 @@ import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import { autorizacionVigente, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS } from '../lib/canal';
+import {
+  autorizacionVigente,
+  canalConfigurado,
+  ErrorCanal,
+  ESPERA_LECTURA_INICIAL_MS,
+  guardar,
+  leer,
+  MARGEN_FECHA_FUTURA_MS,
+  siguienteLectura,
+} from '../lib/canal';
 import {
   armarLotes,
   AVISO_RESPALDO_MS,
@@ -128,6 +137,74 @@ export default function PanelRevision({
   useEffect(() => {
     if (!revisor) return;
     let vigente = true;
+    // Lectura del canal con reintento (#240). `leyendo` evita dos `leer` a la vez; `fallos` y `ultimoIntento` llevan la
+    // espera (`siguienteLectura`) y el mínimo de `online`. El estado pasa a `fallida` y no vuelve a `pendiente` mientras
+    // se reintenta: `pendiente` frenaría la cola de guardado.
+    let temporizador: ReturnType<typeof setTimeout> | undefined;
+    let leyendo = false;
+    let fallos = 0;
+    let ultimoIntento = 0;
+    // Sigue siendo esta lectura: el efecto no se limpió y el store no pasó a otro revisor (el store cambia antes de que
+    // React limpie el efecto, y un resultado tardío no debe tocar la lectura del revisor nuevo).
+    const sigueVigente = () => vigente && useAtlas.getState().revisor === revisor;
+    const porResolver = () => {
+      const l = useAtlas.getState().lecturaCanal;
+      return l === 'pendiente' || l === 'fallida';
+    };
+    // Sus respuestas se fusionan con las locales por fecha (gana la más reciente; con empate, la local) y las versiones
+    // del canal que quedan se marcan como guardadas, para no reenviarlas (R4.1, R4.2). Su autorización manda sobre la
+    // copia local, también cuando es null, salvo que el docente la haya cambiado mientras `leer` estaba en vuelo.
+    const leerCanal = () => {
+      if (!sigueVigente() || leyendo) return;
+      leyendo = true;
+      ultimoIntento = Date.now();
+      clearTimeout(temporizador);
+      const antesAut = useAtlas.getState().autorizacion;
+      leer(revisor, idEstructuraValido).then(
+        ({ respuestas: delCanal, retiros, retirosAdmitidos, autorizacion }) => {
+          leyendo = false;
+          if (!sigueVigente() || !porResolver()) return;
+          if (delCanal.length > 0 || retiros.length > 0) {
+            // Se lee al resolver, no al pedir: entran las ediciones hechas mientras `leer` estaba en vuelo. La ref
+            // se actualiza antes de pasar a `hecha`, así que la cola nunca reenvía lo traído.
+            const { respuestas: antes, retiradas: retiradasAntes } = useAtlas.getState();
+            confirmadasRef.current = fusionarConCanal(antes, confirmadasRef.current, delCanal, retiradasAntes, retiros).confirmadas;
+            setConfirmadas((c) => fusionarConCanal(antes, c, delCanal, retiradasAntes, retiros).confirmadas);
+            useAtlas.getState().importarRespuestas(delCanal, retiros);
+          }
+          // Antes de pasar a `hecha`: la cola nunca ve la lectura resuelta sin saber si el script entiende los retiros.
+          useAtlas.getState().setCanalRetiros(retirosAdmitidos);
+          if (useAtlas.getState().autorizacion === antesAut) useAtlas.getState().setAutorizacion(autorizacion);
+          useAtlas.getState().setLecturaCanal('hecha');
+          fallos = siguienteLectura(fallos, 'ok').fallos;
+        },
+        (e: unknown) => {
+          leyendo = false;
+          if (!sigueVigente() || !porResolver()) return;
+          if (e instanceof ErrorCanal && e.tipo === 'codigo_no_activo') {
+            useAtlas.getState().setLecturaCanal('inactivo');
+            fallos = siguienteLectura(fallos, 'inactivo').fallos;
+            return;
+          }
+          // Si falla, se queda la copia local de la autorización. Red, `interno`, `formato` (también un script anterior)
+          // y `demasiadas_peticiones` se reintentan sin límite mientras la página siga abierta.
+          useAtlas.getState().setLecturaCanal('fallida');
+          const siguiente = siguienteLectura(fallos, 'fallo');
+          fallos = siguiente.fallos;
+          if (siguiente.espera === null) return;
+          temporizador = setTimeout(() => {
+            if (sigueVigente() && useAtlas.getState().lecturaCanal === 'fallida') leerCanal();
+          }, siguiente.espera);
+        },
+      );
+    };
+    // Al volver la conexión se lee de inmediato, sin reiniciar la espera de `fallos` y respetando un mínimo desde el
+    // último intento (el navegador puede disparar `online` varias veces seguidas).
+    const alVolver = () => {
+      if (!sigueVigente() || leyendo || useAtlas.getState().lecturaCanal !== 'fallida') return;
+      if (Date.now() - ultimoIntento < ESPERA_LECTURA_INICIAL_MS) return;
+      leerCanal();
+    };
     get(claveRevisionIdb(revisor))
       .then(
         (
@@ -164,34 +241,14 @@ export default function PanelRevision({
         if (!vigente) return;
         setCargadoDe(revisor);
         if (!canalConfigurado()) return;
-        // Lectura inicial del canal: sus respuestas se fusionan con las locales por fecha (gana la más reciente; con
-        // empate, la local) y las versiones del canal que quedan se marcan como guardadas, para no reenviarlas (R4.1,
-        // R4.2). Su autorización manda sobre la copia local, también cuando es null.
-        leer(revisor, idEstructuraValido).then(
-          ({ respuestas: delCanal, retiros, retirosAdmitidos, autorizacion }) => {
-            if (!vigente) return;
-            if (delCanal.length > 0 || retiros.length > 0) {
-              // Se lee al resolver, no al pedir: entran las ediciones hechas mientras `leer` estaba en vuelo. La ref
-              // se actualiza antes de pasar a `hecha`, así que la cola nunca reenvía lo traído.
-              const { respuestas: antes, retiradas: retiradasAntes } = useAtlas.getState();
-              confirmadasRef.current = fusionarConCanal(antes, confirmadasRef.current, delCanal, retiradasAntes, retiros).confirmadas;
-              setConfirmadas((c) => fusionarConCanal(antes, c, delCanal, retiradasAntes, retiros).confirmadas);
-              useAtlas.getState().importarRespuestas(delCanal, retiros);
-            }
-            // Antes de pasar a `hecha`: la cola nunca ve la lectura resuelta sin saber si el script entiende los retiros.
-            useAtlas.getState().setCanalRetiros(retirosAdmitidos);
-            useAtlas.getState().setAutorizacion(autorizacion);
-            useAtlas.getState().setLecturaCanal('hecha');
-          },
-          (e: unknown) => {
-            if (!vigente) return;
-            // Si falla, se queda la copia local de la autorización.
-            useAtlas.getState().setLecturaCanal(e instanceof ErrorCanal && e.tipo === 'codigo_no_activo' ? 'inactivo' : 'fallida');
-          },
-        );
+        // Lectura del canal; si falla, se reintenta (`leerCanal`) y al volver la conexión.
+        window.addEventListener('online', alVolver);
+        leerCanal();
       });
     return () => {
       vigente = false;
+      clearTimeout(temporizador);
+      window.removeEventListener('online', alVolver);
     };
   }, [revisor]);
 
@@ -407,8 +464,9 @@ export default function PanelRevision({
   const clavesPendientes = new Set(pendientes.map(claveRespuesta));
   const hayCompletas = lista.some(respuestaCompleta);
   const conCanal = canalConfigurado();
-  // Retiros (#217): los que se pueden mandar cuentan como pendientes del estado; los que esperan a que el editor
-  // actualice el script (sin `canal >= VERSION_CANAL`) se avisan en las notas y en la guía, una vez resuelta la lectura.
+  // Retiros (#217): los que se pueden mandar cuentan como pendientes del estado; los demás se avisan en las notas y en
+  // la guía, una vez resuelta la lectura. Con la lectura `hecha` esperan a que el editor actualice el script (sin
+  // `canal >= VERSION_CANAL`); con la lectura `fallida` esperan a que se pueda leer el canal (#240), que se reintenta sola.
   const retirosSinConfirmar = retirosPendientes(retiradas, confirmadas);
   const retirosPorMandar = canalRetiros ? retirosSinConfirmar.length : 0;
   const lecturaResuelta = lecturaCanal === 'hecha' || lecturaCanal === 'fallida';
@@ -580,7 +638,9 @@ export default function PanelRevision({
       {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
       {retirosEnEspera > 0 && (
         <span className="etiqueta-aviso" data-testid="retiros-en-espera">
-          {t('revision.retirosEnEspera', { count: retirosEnEspera })}
+          {lecturaCanal === 'fallida'
+            ? t('revision.retirosSinLectura', { count: retirosEnEspera })
+            : t('revision.retirosEnEspera', { count: retirosEnEspera })}
         </span>
       )}
       {avisoLocal}
