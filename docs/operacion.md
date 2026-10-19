@@ -19,6 +19,7 @@ alcance, `SPEC.md`; para las reglas que siguen los agentes, `AGENTS.md`.
 | `src/i18n/` | Textos de la interfaz en español e inglés | Agentes (nivel A) |
 | `src/`, `scripts/`, `tests/`, `e2e/` | Código y pruebas | Agentes (nivel B) |
 | `tools/rockbuilt/`, `.claude/`, `.github/workflows/rockbuilt-ci.yml` | Harness | Solo con `rb vendor` |
+| `.github/ISSUE_TEMPLATE/` | Formularios de reporte de error (F12) | Agentes con tu aprobación (nivel C) |
 
 ## Publicar el sitio (GitHub Pages)
 
@@ -38,6 +39,23 @@ Todo el flujo (formularios, códigos, enlaces, importación y verificación de f
 carpeta "Maysa Brain (privado)" del Drive de Maysa Digital, nunca en el repositorio. A los docentes
 se les envía el mensaje de `docs/guia-docentes.md`; la guía, las dudas y la lista de qué revisar
 están dentro de la web, en el modo revisión.
+
+## Etiquetas de los reportes de error
+
+Los cuatro formularios de `.github/ISSUE_TEMPLATE/` (contenido, traducción, enlace roto y pieza mal
+ubicada) le ponen una etiqueta a cada reporte: `reporte:contenido`, `reporte:traduccion`,
+`reporte:enlace-roto` y `reporte:pieza`. Las cuatro ya existen en GitHub desde el 19 de octubre de
+2026 (en gris y sin descripción) y cada formulario pone la suya. El nombre debe ser exacto: si
+renombras o borras una etiqueta, los reportes llegan sin ella.
+
+Para recrear una etiqueta: Issues > Labels > New label, escribe el nombre exacto, elige un color y
+pulsa Create label.
+
+Para cambiar el color o la descripción: Issues > Labels > Edit en esa etiqueta (sin tocar el
+nombre) y pulsa Save changes.
+
+Para probar después de publicar: abre un reporte desde una ficha y revisa que el formulario llegue
+con los campos llenos y con la etiqueta puesta.
 
 ## Regenerar el modelo
 
