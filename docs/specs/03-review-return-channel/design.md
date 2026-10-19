@@ -27,15 +27,15 @@ flowchart LR
 | Nodo / componente | Tipo | Responsabilidad | Ubicación | Sirve |
 |---|---|---|---|---|
 | Entrada y validación del código | code | Validar `?r=` con `REVISOR_VALIDO` antes de guardar nada; mensaje si es inválido | `src/components/Pagina.tsx`, `src/lib/persistencia.ts` | R1.1, R1.2 |
-| Cliente del canal | code | `leer(codigo)`, `guardar(codigo, respuestas)`, `autorizar(...)` por `fetch`; valida lo que vuelve | `src/lib/canal.ts` (nuevo) | R1.3, R2.3, R3.1, R4.1, R6.6 |
-| Cola de guardado | code | Lógica pura: espera de 3 s, reintentos 2 s a 5 min, estado por clave y fecha, aviso de 10 min | `src/lib/colaGuardado.ts` (nuevo) | R3.1 a R3.6, R7.1 |
-| Fusión al abrir | code | Mezcla local y canal por fecha más reciente (reusa `fusionarRespuestas`) | `src/lib/respaldo.ts` (se queda solo la fusión) | R4.1, R4.2 |
+| Cliente del canal | code | `leer(codigo)`, `guardar(codigo, respuestas)`, `autorizar(...)` por `fetch`; valida lo que vuelve, incluidos los retiros (`retirosDelCanal`, #217) | `src/lib/canal.ts` (nuevo) | R1.3, R2.3, R3.1, R3.8, R4.1, R6.6 |
+| Cola de guardado | code | Lógica pura: espera de 3 s, reintentos 2 s a 5 min, estado por clave y fecha, aviso de 10 min; los retiros salen solo si el script declara `canal` 2 o más (#217) | `src/lib/colaGuardado.ts` (nuevo) | R3.1 a R3.6, R3.8, R3.9, R7.1 |
+| Fusión al abrir | code | Mezcla local y canal por fecha más reciente, respuestas y retiros (reusa `fusionarRespuestas`) | `src/lib/respaldo.ts` (se queda solo la fusión) | R4.1, R4.2, R4.5 |
 | Diálogo de autorización | code | Casilla obligatoria, casilla del vago, versión del texto | `src/components/DialogoAutorizacion.tsx` (nuevo) | R2.1, R2.2, R2.4, R2.5, R2.6 |
 | Filtro del vago | code | Quitar la sección `vago`, los trazos y los campos de rutas trazadas | `src/lib/prioridad.ts`, `src/components/SeccionTrazos.tsx`, `PanelRevision.tsx` | R5.1, R5.2, R5.3 |
 | Panel de revisión | code | "Guardado ✓", "Sin conexión...", sin pasos de envío, sin botones de respaldo, menú Acciones con la casilla del vago | `src/components/PanelRevision.tsx` | R3.2, R3.7, R4.4, R5.3, R7.1, R7.2 |
-| Apps Script | code | `doPost` (leer, guardar, autorizar) y `doGet` (responde siempre `formato`, sin leer, #169): padrón, tamaño, ritmo, formato, escritura con bloqueo | `apps-script/Codigo.js` (nuevo, sin datos) | R2.3, R4.3, R6.1 a R6.5 |
+| Apps Script | code | `doPost` (leer, guardar, autorizar) y `doGet` (responde siempre `formato`, sin leer, #169): padrón, tamaño, ritmo, formato, escritura con bloqueo; acepta retiros y `leer` declara `canal` (#217) | `apps-script/Codigo.js` (nuevo, sin datos) | R2.3, R3.8, R4.3, R6.1 a R6.5 |
 | Formulario de respaldo | code | El flujo actual de partes (`partesEnvio`) queda detrás de la condición de R7 | `src/lib/revision.ts`, `PanelRevision.tsx` | R7.1, R7.2 |
-| Importador | code | Leer el CSV de la pestaña Respuestas y, con `--autorizaciones`, el de la pestaña Autorizaciones para la casilla del vago (#163); ignorar las filas de otras pestañas que traiga el CSV de respuestas | `scripts/importar-revisiones.ts`, `scripts/lib/revisiones.ts` | R8.1, R8.2 |
+| Importador | code | Leer el CSV de la pestaña Respuestas y, con `--autorizaciones`, el de la pestaña Autorizaciones para la casilla del vago (#163); ignorar las filas de otras pestañas que traiga el CSV de respuestas; aplicar los retiros (#217) | `scripts/importar-revisiones.ts`, `scripts/lib/revisiones.ts` | R7.3, R8.1, R8.2, R8.3 |
 | Ficha | code | "Revisado por un docente universitario" y fecha; nunca `revisado_por` | `src/components/Ficha.tsx` | R9.1, R9.2 |
 | Prueba de datos | code | `revisado_por` en `src/data/` y en rutas: `null` o un alias `D\d{2}` | `tests/datos.test.ts` | R9.3 |
 
@@ -70,8 +70,8 @@ type RespuestaCanal =
   | { ok: true; recibidas?: string[]; respuestas?: unknown; autorizacion?: { version: string; vago: boolean } | null }
   | { ok: false; error: 'codigo_no_activo' | 'demasiado_grande' | 'formato' | 'demasiadas_peticiones' | 'sin_autorizacion' | 'interno' };
 
-leer(codigo: string): Promise<{ respuestas: Respuesta[]; autorizacion: Autorizacion | null }>; // POST {accion:'leer', r}
-guardar(codigo: string, respuestas: Respuesta[]): Promise<Set<string>>;                       // POST {accion:'guardar', carga v:2}; devuelve "clave|fecha" confirmadas
+leer(codigo: string): Promise<{ respuestas: Respuesta[]; retiros: Retiro[]; retirosAdmitidos: boolean; autorizacion: Autorizacion | null }>; // POST {accion:'leer', r}; retirosAdmitidos = canal >= 2 (#217)
+guardar(codigo: string, respuestas: (Respuesta | Retiro)[]): Promise<Set<string>>;                // POST {accion:'guardar', carga v:2}; devuelve "clave|fecha" confirmadas
 autorizar(codigo: string, a: { version: string; vago: boolean }): Promise<void>;              // POST {accion:'autorizar', ...}
 
 // src/lib/colaGuardado.ts, lógica pura sin red ni reloj (R3.1 a R3.6, R7.1)
@@ -81,8 +81,8 @@ ofrecerRespaldo(ultimaConfirmacion: number | null, ahora: number, hayPendientes:
 ```
 | Endpoint | Entrada | Salida | Errores | Sirve |
 |---|---|---|---|---|
-| `POST <urlCanal>` `{accion:'leer', r}` (el GET ya no lee, #169) | código | `{ok, respuestas (v:2 de ese código, la última por clave), autorizacion}` | `codigo_no_activo`, `demasiadas_peticiones` | R1.3, R2.4, R4.1, R4.3 |
-| `POST <urlCanal>` `{accion:'guardar', carga}` (cuerpo `text/plain`) | carga `v:2` con `f` | `{ok, recibidas:["est|campo|idioma|fecha", ...]}` | todos | R3.1, R3.3, R6.1 a R6.4 |
+| `POST <urlCanal>` `{accion:'leer', r}` (el GET ya no lee, #169) | código | `{ok, canal, respuestas (v:2 de ese código, la última por clave, sin las claves cuya última fila es un retiro), retiradas (v:2 con esos retiros), autorizacion}` (`canal` y `retiradas` desde #217) | `codigo_no_activo`, `demasiadas_peticiones` | R1.3, R2.4, R3.8, R4.1, R4.3, R4.5 |
+| `POST <urlCanal>` `{accion:'guardar', carga}` (cuerpo `text/plain`) | carga `v:2` con `f`; un elemento `{c, i?, d:"", f}` es un retiro (#217) | `{ok, recibidas:["est|campo|idioma|fecha", ...]}` | todos | R3.1, R3.3, R3.8, R6.1 a R6.4 |
 | `POST <urlCanal>` `{accion:'autorizar', r, version, vago}` | código, versión, vago | `{ok}` | `codigo_no_activo`, `formato` (también con una versión distinta de la vigente, #169), `demasiadas_peticiones` | R2.3, R5.3 |
 
 El cuerpo va como `text/plain` para que el navegador no haga petición previa (preflight); el script responde con `ContentService` en JSON. (R3.1)
@@ -99,14 +99,16 @@ El cuerpo va como `text/plain` para que el navegador no haga petición previa (p
 | 10 min sin confirmación con pendientes | sesión | Aviso con "Enviar por formulario" | La cola sigue intentando | R7.1 |
 | `urlCanal` vacía | sesión | Flujo de formulario de hoy | No aplica | R7.2 |
 | Respuesta del canal no válida al leer | por respuesta | Se descarta esa respuesta, se registra en consola | No | R6.6 |
+| Script sin `canal` 2 o más al leer (script anterior o lectura fallida), con retiros pendientes | por retiro | El retiro queda pendiente en el equipo y no cuenta como "Guardando..."; la barra y la guía dicen que quitar la marca no se guarda hasta que el editor actualice el canal; los demás guardados siguen | Sale solo cuando una lectura trae `canal` 2 o más | R3.9 |
+| `formato` a un retiro que va solo en el lote (el script lo rechaza) | por retiro | Queda en `rechazadas`; los veredictos siguen | No se reintenta ese retiro | R3.8 |
 
-- **Idempotencia:** cada respuesta viaja con su clave y fecha; reenviar la misma versión crea otra fila igual y el importador se queda con la última por código, estructura, campo e idioma, así que el resultado no cambia. La lectura del script aplica la misma regla. (R3.6, R4.2)
+- **Idempotencia:** cada respuesta viaja con su clave y fecha; reenviar la misma versión crea otra fila igual y el importador se queda con la última por código, estructura, campo e idioma, así que el resultado no cambia. La lectura del script aplica la misma regla. Un retiro (#217) es una fila más de la misma clave: si es la última, la clave sale de `respuestas` y queda en `retiradas`; un veredicto posterior la devuelve a `respuestas`. Una carga con la misma clave como retiro y como veredicto se rechaza con `formato`. (R3.6, R3.8, R4.2)
 - **Concurrencia:** el script escribe con `LockService` (una escritura a la vez, espera hasta 10 s); el cliente manda un lote a la vez por pestaña, con hasta 50 respuestas o 60 KB por lote. (R6.2, R6.4)
 - **Recarga:** las pendientes viven en IndexedDB; al abrir con el código, la cola arranca sola. (R3.5)
 
 ## Security considerations
 - **Autorización por código:** el código es privado y actúa como llave; en cada petición (lectura y escritura) el script lo compara con una copia del padrón que guarda unos 60 s (S3, #162). Cada código solo lee sus respuestas. `guardar` exige además que la última fila del código en `Autorizaciones` tenga la versión vigente (S1, #157). (R4.3, R6.1)
-- **Validación de entrada:** el script valida tamaño (64 KB), ritmo (120 por minuto por código, con `CacheService`) y la forma `v:2` con las mismas reglas de `respuestaValida`. `guardar` rechaza con `formato` la carga que trae respuestas del vago (`esRespuestaDelVago`) de un código cuya última autorización no marca la casilla del vago (S2, #166). La app valida lo que lee con `respuestaValida`. Una prueba carga `apps-script/Codigo.js` en Node y le pasa los mismos casos hostiles de `tests/revisiones.test.ts`, para que las dos validaciones no se separen. (R6.2, R6.3, R6.6)
+- **Validación de entrada:** el script valida tamaño (64 KB), ritmo (120 por minuto por código, con `CacheService`) y la forma `v:2` con las mismas reglas de `respuestaValida`. `guardar` rechaza con `formato` la carga que trae respuestas del vago (`esRespuestaDelVago`) de un código cuya última autorización no marca la casilla del vago (S2, #166). La app valida lo que lee con `respuestaValida` y, para los retiros, con `retiroValido` (#217): la clave, el idioma y una fecha obligatoria, sin propuesta, comentario, posición, malla, ramo ni versión, así que el retiro no lleva texto de propuesta ni de comentario (el campo de un trazo, parte de la clave, admite hasta 120 caracteres). Un retiro no cuenta para la casilla del vago. Una prueba carga `apps-script/Codigo.js` en Node y le pasa los mismos casos hostiles de `tests/revisiones.test.ts`, para que las dos validaciones no se separen. (R6.2, R6.3, R6.6)
 - **Inyección en la hoja:** la carga se escribe como texto plano (formato `@`), y el código ya validado con `REVISOR_VALIDO` no puede empezar con `=`, `+`, `-` ni `@`. (R6.4)
 - **Secretos:** ninguno. La URL del script es pública por diseño (va en el bundle); sin el código de un docente no sirve. El padrón y los códigos solo viven en la hoja y en `pipeline/revisores.local.json` (ignorado por git). (R6.5)
 - **Datos personales:** la app solo envía el código y las respuestas; nunca nombre ni correo. La autorización guarda código, fecha, versión del texto y la casilla del vago. Nada de esto llega al repositorio. (R2.3, R2.6, R9.2, R9.3)
@@ -117,10 +119,10 @@ El cuerpo va como `text/plain` para que el navegador no haga petición previa (p
 ## Testing strategy
 | Nivel | Qué | Cubre |
 |---|---|---|
-| unit | `colaGuardado` (espera, reintentos, versión confirmada, 10 min), fusión por fecha, versión de autorización, carga `v:2` con `f`, importador con la pestaña Respuestas y filas de otras pestañas, filtro del vago en `prioridad`, `revisado_por` en datos, guía sin registro | R2.5, R3.3, R3.4, R3.6, R4.2, R6.6, R8.1, R8.2, R9.3, R10.3 |
+| unit | `colaGuardado` (espera, reintentos, versión confirmada, 10 min, retiros), fusión por fecha (también retiros), versión de autorización, carga `v:2` con `f`, importador con la pestaña Respuestas y filas de otras pestañas (y retiros, solo en filas de Respuestas), filtro del vago en `prioridad`, `revisado_por` en datos, guía sin registro | R2.5, R3.3, R3.4, R3.6, R3.8, R4.2, R4.5, R6.6, R7.3, R8.1, R8.2, R8.3, R9.3, R10.3 |
 | unit (script) | `apps-script/Codigo.js` cargado en Node con dobles de `SpreadsheetApp`, `CacheService` y `LockService`: padrón, tamaño, ritmo, formato, columnas, sin datos personales en el archivo | R6.1 a R6.5 |
 | integration | El mismo script contra una hoja doble con las tres pestañas: autorizar escribe la fila; leer devuelve solo lo del código | R2.3, R4.3 |
-| e2e | Playwright con el canal simulado por `page.route` sobre `urlCanal`: entrada válida e inválida, código no activo, autorización (obligatoria, no se repite, sin datos personales), guardado y "Guardado ✓", sin conexión y reintento, recarga con pendientes, otro equipo (contexto nuevo) trae lo guardado, filtro del vago y cambio en Acciones, respaldo a los 10 min (reloj simulado), sin canal configurado, ficha verificada sin nombre | R1.1 a R1.3, R2.1, R2.2, R2.4, R2.6, R3.1, R3.2, R3.5, R3.7, R4.1, R4.4, R5.1 a R5.3, R7.1, R7.2, R9.1, R9.2 |
+| e2e | Playwright con el canal simulado por `page.route` sobre `urlCanal`: entrada válida e inválida, código no activo, autorización (obligatoria, no se repite, sin datos personales), guardado y "Guardado ✓", sin conexión y reintento, recarga con pendientes, otro equipo (contexto nuevo) trae lo guardado, filtro del vago y cambio en Acciones, respaldo a los 10 min (reloj simulado), quitar una marca con el script nuevo y con el anterior (retiro pendiente y frase de la guía), sin canal configurado, ficha verificada sin nombre | R1.1 a R1.3, R2.1, R2.2, R2.4, R2.6, R3.1, R3.2, R3.5, R3.7, R3.9, R4.1, R4.4, R5.1 a R5.3, R7.1, R7.2, R9.1, R9.2 |
 | manual | Montaje del script en la cuenta del editor y prueba real desde su navegador (la nube no alcanza `script.google.com`: el proxy responde 403); texto de contrato | R10.1, R10.2 |
 
 ## Risk and cost

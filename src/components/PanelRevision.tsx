@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { configRevision } from '../config/revision';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
-import { autorizacionVigente, canalConfigurado, ErrorCanal, guardar, leer } from '../lib/canal';
+import { autorizacionVigente, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS } from '../lib/canal';
 import {
   armarLotes,
   AVISO_RESPALDO_MS,
@@ -19,6 +19,7 @@ import {
   marcarPendientes,
   ofrecerRespaldo,
   porEnviar,
+  retirosPendientes,
   trasEnvio,
   type EstadoCola,
   type ResultadoEnvio,
@@ -31,11 +32,15 @@ import {
   claveRespuesta,
   confirmarParte,
   desactualizadas,
+  desdeClave,
+  esObjeto,
+  fechaValida,
   formularioConfigurado,
   nombreArchivoParte,
   partesEnvio,
   pendientesDeEnvio,
   respuestaCompleta,
+  retiroValido,
   separarIncompletas,
   type EstadoParte,
   type ParteEnvio,
@@ -50,6 +55,27 @@ const versionActual = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-fi
 type Vista = 'que' | 'como' | 'enviar' | null;
 const ID_TITULO = 'dialogo-revision-titulo'; // solo hay un diálogo abierto a la vez
 const idEstructuraValido = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
+
+/**
+ * Los retiros de la copia local son entrada no confiable: solo pasan los que se rearman como un `Retiro` válido
+ * (clave legible, estructura conocida, fecha válida y no más de 24 h en el futuro) y cuya clave no tiene respuesta.
+ */
+function retiradasGuardadas(x: unknown, respuestas: Record<string, Respuesta>): Record<string, string> {
+  const validas: Record<string, string> = {};
+  if (!esObjeto(x)) return validas;
+  const tope = Date.now() + MARGEN_FECHA_FUTURA_MS;
+  for (const [clave, fecha] of Object.entries(x)) {
+    try {
+      const retiro = { ...desdeClave(clave), veredicto: '', fecha };
+      if (!fechaValida(fecha) || Date.parse(fecha) > tope || !retiroValido(retiro, idEstructuraValido)) continue;
+      if (Object.hasOwn(respuestas, clave)) continue; // una clave no está en `respuestas` y en `retiradas`
+      validas[clave] = fecha;
+    } catch {
+      continue;
+    }
+  }
+  return validas;
+}
 
 function guiaVista(codigo: string): boolean {
   try {
@@ -83,6 +109,8 @@ export default function PanelRevision({
   const botonAcciones = useRef<HTMLButtonElement>(null);
   const revisor = useAtlas((s) => s.revisor);
   const respuestas = useAtlas((s) => s.respuestas);
+  const retiradas = useAtlas((s) => s.retiradas);
+  const canalRetiros = useAtlas((s) => s.canalRetiros);
   const autorizacion = useAtlas((s) => s.autorizacion);
   const lecturaCanal = useAtlas((s) => s.lecturaCanal);
   const [elegida, setElegida] = useState<Vista | 'ninguna'>(null);
@@ -104,11 +132,18 @@ export default function PanelRevision({
       .then(
         (
           guardado:
-            | { respuestas?: Record<string, Respuesta>; confirmadas?: Record<string, string>; autorizacion?: unknown }
+            | {
+                respuestas?: Record<string, Respuesta>;
+                retiradas?: unknown;
+                confirmadas?: Record<string, string>;
+                autorizacion?: unknown;
+              }
             | undefined,
         ) => {
           if (!vigente) return;
-          useAtlas.getState().cargarRespuestas(guardado?.respuestas ?? {});
+          const locales = guardado?.respuestas ?? {};
+          useAtlas.getState().cargarRespuestas(locales);
+          useAtlas.getState().cargarRetiradas(retiradasGuardadas(guardado?.retiradas, locales));
           const guardadas = guardado?.confirmadas ?? {}; // el `enviadas` de versiones anteriores se ignora
           confirmadasRef.current = guardadas;
           setConfirmadas(guardadas);
@@ -120,6 +155,7 @@ export default function PanelRevision({
         // Sin la copia local de este código, lo que haya en memoria es de otro código: nunca se envía con este.
         if (!vigente) return;
         useAtlas.getState().cargarRespuestas({});
+        useAtlas.getState().cargarRetiradas({});
         confirmadasRef.current = {};
         setConfirmadas({});
         setEnvio(null);
@@ -132,16 +168,18 @@ export default function PanelRevision({
         // empate, la local) y las versiones del canal que quedan se marcan como guardadas, para no reenviarlas (R4.1,
         // R4.2). Su autorización manda sobre la copia local, también cuando es null.
         leer(revisor, idEstructuraValido).then(
-          ({ respuestas: delCanal, autorizacion }) => {
+          ({ respuestas: delCanal, retiros, retirosAdmitidos, autorizacion }) => {
             if (!vigente) return;
-            if (delCanal.length > 0) {
+            if (delCanal.length > 0 || retiros.length > 0) {
               // Se lee al resolver, no al pedir: entran las ediciones hechas mientras `leer` estaba en vuelo. La ref
               // se actualiza antes de pasar a `hecha`, así que la cola nunca reenvía lo traído.
-              const antes = useAtlas.getState().respuestas;
-              confirmadasRef.current = fusionarConCanal(antes, confirmadasRef.current, delCanal).confirmadas;
-              setConfirmadas((c) => fusionarConCanal(antes, c, delCanal).confirmadas);
-              useAtlas.getState().importarRespuestas(delCanal);
+              const { respuestas: antes, retiradas: retiradasAntes } = useAtlas.getState();
+              confirmadasRef.current = fusionarConCanal(antes, confirmadasRef.current, delCanal, retiradasAntes, retiros).confirmadas;
+              setConfirmadas((c) => fusionarConCanal(antes, c, delCanal, retiradasAntes, retiros).confirmadas);
+              useAtlas.getState().importarRespuestas(delCanal, retiros);
             }
+            // Antes de pasar a `hecha`: la cola nunca ve la lectura resuelta sin saber si el script entiende los retiros.
+            useAtlas.getState().setCanalRetiros(retirosAdmitidos);
             useAtlas.getState().setAutorizacion(autorizacion);
             useAtlas.getState().setLecturaCanal('hecha');
           },
@@ -160,8 +198,8 @@ export default function PanelRevision({
   useEffect(() => {
     if (!revisor || cargadoDe !== revisor) return;
     if (codigoRetirado(revisor)) return; // otra pestaña salió y borró: no se recrea el registro
-    set(claveRevisionIdb(revisor), { respuestas, confirmadas, autorizacion }).catch(() => undefined);
-  }, [revisor, respuestas, confirmadas, autorizacion, cargadoDe]);
+    set(claveRevisionIdb(revisor), { respuestas, retiradas, confirmadas, autorizacion }).catch(() => undefined);
+  }, [revisor, respuestas, retiradas, confirmadas, autorizacion, cargadoDe]);
 
   // Guardado automático por el canal (R3.1 a R3.5). Solo con `urlCanal`, con la lectura del canal resuelta y con una
   // autorización vigente: sin ellas no se programa ni se envía nada, y con `inactivo` tampoco. El panel se monta una
@@ -205,7 +243,9 @@ export default function PanelRevision({
             s.autorizacion !== null &&
             (s.lecturaCanal === 'hecha' || s.lecturaCanal === 'fallida');
           if (!puede) return;
-          const lista = porEnviar(Object.values(s.respuestas), confirmadasRef.current, colaRef.current.rechazadas);
+          // Los retiros salen solo si el script declaró `canal >= VERSION_CANAL`: uno viejo respondería `formato` a la carga entera.
+          const retiros = s.canalRetiros ? retirosPendientes(s.retiradas, confirmadasRef.current) : [];
+          const lista = porEnviar(Object.values(s.respuestas), confirmadasRef.current, colaRef.current.rechazadas, retiros);
           const lote = armarLotes(revisor, lista, colaRef.current.tope)[0];
           if (!lote) return;
           let resultado: ResultadoEnvio;
@@ -256,10 +296,11 @@ export default function PanelRevision({
   // ESPERA_CANAL_MS: el texto llega al store 500 ms después de la última tecla y R3.1 cuenta desde la tecla.
   useEffect(() => {
     if (!listo) return;
-    if (porEnviar(Object.values(respuestas), confirmadasRef.current, colaRef.current.rechazadas).length === 0) return;
+    const retiros = canalRetiros ? retirosPendientes(retiradas, confirmadasRef.current) : [];
+    if (porEnviar(Object.values(respuestas), confirmadasRef.current, colaRef.current.rechazadas, retiros).length === 0) return;
     const id = setTimeout(() => void enviar(), Math.max(ESPERA_ENVIO_MS, noAntesDe.current - Date.now()));
     return () => clearTimeout(id);
-  }, [listo, respuestas, enviar]);
+  }, [listo, respuestas, retiradas, canalRetiros, enviar]);
 
   const porEstructura = useMemo(() => {
     const m = new Map<string, Respuesta[]>();
@@ -366,6 +407,13 @@ export default function PanelRevision({
   const clavesPendientes = new Set(pendientes.map(claveRespuesta));
   const hayCompletas = lista.some(respuestaCompleta);
   const conCanal = canalConfigurado();
+  // Retiros (#217): los que se pueden mandar cuentan como pendientes del estado; los que esperan a que el editor
+  // actualice el script (sin `canal >= VERSION_CANAL`) se avisan en las notas y en la guía, una vez resuelta la lectura.
+  const retirosSinConfirmar = retirosPendientes(retiradas, confirmadas);
+  const retirosPorMandar = canalRetiros ? retirosSinConfirmar.length : 0;
+  const lecturaResuelta = lecturaCanal === 'hecha' || lecturaCanal === 'fallida';
+  const guiaSinRetiros = conCanal && lecturaResuelta && !canalRetiros;
+  const retirosEnEspera = guiaSinRetiros ? retirosSinConfirmar.length : 0;
   // Estado del guardado (solo con canal). Llamadas literales a `t` para que check:i18n las vea. Sin autorización
   // (diálogo descartado) no dice nada: el diálogo vuelve con el siguiente cambio.
   const estadoGuardado =
@@ -373,11 +421,11 @@ export default function PanelRevision({
       ? t('revision.guardado.inactivo')
       : cargadoDe !== revisor || autorizacion === null
         ? ''
-        : pendientes.length > 0
+        : pendientes.length + retirosPorMandar > 0
           ? fallos > 0
             ? t('revision.guardado.sinConexion')
             : t('revision.guardado.guardando')
-          : hayCompletas
+          : hayCompletas || (canalRetiros && Object.keys(retiradas).length > 0)
             ? t('revision.guardado.listo')
             : '';
   // No abre nada solo: cada parte se abre con su propio enlace y solo se confirma a mano.
@@ -530,6 +578,11 @@ export default function PanelRevision({
   const notas = (
     <>
       {viejas.length > 0 && <span className="etiqueta-aviso">{t('revision.desactualizadas', { count: viejas.length })}</span>}
+      {retirosEnEspera > 0 && (
+        <span className="etiqueta-aviso" data-testid="retiros-en-espera">
+          {t('revision.retirosEnEspera', { count: retirosEnEspera })}
+        </span>
+      )}
       {avisoLocal}
     </>
   );
@@ -644,11 +697,13 @@ export default function PanelRevision({
           {/* La guía no menciona registro, envío ni respaldo en ningún modo (R10.3). El registro y el envío sin canal
               se explican en el diálogo de envío (vista 'enviar'), y el respaldo por formulario (R7.1), que sale del
               botón de la barra a los 10 min sin confirmación, en su propio diálogo. Con canal, la guía dice que todo
-              se guarda solo y que se sigue en otro equipo con el mismo enlace. */}
+              se guarda solo y que se sigue en otro equipo con el mismo enlace; mientras el script no declare
+              `canal >= VERSION_CANAL`, avisa también que quitar una marca no se guarda (#217). */}
           {(
             [
               'intro',
               'responder',
+              ...(guiaSinRetiros ? (['quitarSinCanal'] as const) : []),
               ...(conCanal ? (['guardado', 'otroEquipo'] as const) : []),
               'idiomas',
               'dudas',

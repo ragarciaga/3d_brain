@@ -13,6 +13,8 @@
 // solo en "Descartadas: sin autorización", con alias, campo, idioma y estructura, y la consola dice cuántas
 // son y de qué alias. Sin esa bandera el script corre, avisa y descarta todas las respuestas del vago; las
 // demás respuestas entran a las tablas sin saber quién autorizó.
+// Un retiro (#217, solo en las filas de la pestaña Respuestas) quita las respuestas anteriores de esa clave del mismo
+// revisor: no salen en ninguna tabla ni sección, y "Marcas retiradas" de resumen.md lista qué se quitó.
 // Nunca imprime un código.
 // La lógica vive en scripts/lib/revisiones.ts (importar); aquí solo se lee y se escribe.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -67,7 +69,7 @@ const datos = JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as {
 if (!args.autorizaciones) {
   console.error('Sin --autorizaciones: todas las respuestas de trazos y rutas del vago van a "Descartadas: sin la casilla del vago".');
 }
-const { archivos, validos, invalidas, desconocidos, sinVago, autorizaciones, sinAutorizacion, aliasSinAutorizacion } = importar(
+const { archivos, validos, invalidas, desconocidos, sinVago, autorizaciones, sinAutorizacion, aliasSinAutorizacion, retiradas } = importar(
   textoRespuestas,
   datos.estructuras,
   padron as Padron,
@@ -88,7 +90,7 @@ try {
 for (const [nombre, contenido] of archivos) writeFileSync(join(salida, nombre), contenido);
 const sinAut = sinAutorizacion === null ? '' : `, ${sinAutorizacion} respuestas de revisores sin ninguna autorización`;
 console.log(
-  `${validos} envíos válidos, ${invalidas} filas descartadas, ${desconocidos} con código fuera del padrón, ${sinVago} respuestas del vago sin la casilla${sinAut}. Resumen: ${join(salida, 'resumen.md')}`,
+  `${validos} envíos válidos, ${invalidas} filas descartadas, ${desconocidos} con código fuera del padrón, ${sinVago} respuestas del vago sin la casilla${sinAut}, ${retiradas} marcas retiradas. Resumen: ${join(salida, 'resumen.md')}`,
 );
 if (aliasSinAutorizacion.length) {
   console.log(`Alias con respuestas sin ninguna autorización (van solo a "Descartadas: sin autorización"): ${aliasSinAutorizacion.join(', ')}`);

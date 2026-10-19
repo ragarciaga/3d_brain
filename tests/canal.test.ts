@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
+import { configRevision, VERSION_AUTORIZACION, VERSION_CANAL } from '../src/config/revision';
 import { estructuras } from '../src/data/atlas';
-import { autorizacionVigente, autorizar, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS, TIEMPO_CANAL_MS, type TipoErrorCanal } from '../src/lib/canal';
-import { cargaRevisionV2, type Respuesta } from '../src/lib/revision';
+import { autorizacionVigente, autorizar, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS, retirosDelCanal, TIEMPO_CANAL_MS, type TipoErrorCanal } from '../src/lib/canal';
+import { cargaRevisionV2, type Respuesta, type Retiro } from '../src/lib/revision';
 
 const idOk = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
 const URL_PRUEBA = 'https://canal.prueba/exec';
@@ -367,5 +367,161 @@ describe('canalConfigurado', () => {
     expect(canalConfigurado()).toBe(false);
     configRevision.urlCanal = URL_PRUEBA;
     expect(canalConfigurado()).toBe(true);
+  });
+});
+
+describe('retiros del canal (#217)', () => {
+  const FECHA_RETIRO = '2026-10-10T12:00:00.000Z';
+  const retiro: Retiro = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: '', fecha: FECHA_RETIRO };
+  const corto = { c: 'ubicacion', i: 'es', d: '', f: FECHA_RETIRO };
+  const retiradas = (lista: unknown, id = 'hippocampus', r = CODIGO) => ({ v: 2, r, e: { [id]: lista } });
+
+  describe('retirosDelCanal', () => {
+    it('copia solo las claves conocidas a un objeto nuevo con la forma de Retiro', () => {
+      const { retiros, descartadas } = retirosDelCanal(retiradas([corto]), CODIGO, idOk);
+      expect(retiros).toEqual([retiro]);
+      expect(descartadas).toBe(0);
+      expect(Object.keys(retiros[0]!).sort()).toEqual(['campo', 'estructura', 'fecha', 'idioma', 'veredicto']);
+    });
+
+    it('un retiro sin idioma queda sin la clave idioma', () => {
+      const { retiros } = retirosDelCanal(retiradas([{ c: 'posicion', d: '', f: FECHA_RETIRO }]), CODIGO, idOk);
+      expect(retiros).toEqual([{ estructura: 'hippocampus', campo: 'posicion', veredicto: '', fecha: FECHA_RETIRO }]);
+      expect(Object.hasOwn(retiros[0]!, 'idioma')).toBe(false);
+    });
+
+    it.each([
+      ['clave extra z', { ...corto, z: 1 }],
+      ['sin f', { c: 'ubicacion', i: 'es', d: '' }],
+      ['f ilegible', { ...corto, f: 'ayer' }],
+      ['f vacía', { ...corto, f: '' }],
+      ['f que no es texto', { ...corto, f: 7 }],
+      ['propuesta', { ...corto, p: 'x' }],
+      ['comentario', { ...corto, k: 'x' }],
+      ['posición', { ...corto, x: [0, 0, 0] }],
+      ['malla', { ...corto, m: 'm' }],
+      ['ramo', { ...corto, a: 'no_se' }],
+      ['versión', { ...corto, s: '0.1.0' }],
+      ['veredicto de respuesta', { ...corto, d: 'correcto', s: '0.1.0' }],
+      ['idioma fr', { ...corto, i: 'fr' }],
+      ['campo inválido', { ...corto, c: 'que|es' }],
+      ['elemento que no es objeto', 'texto'],
+      ['elemento null', null],
+    ])('descarta y cuenta: %s', (_n, mala) => {
+      const r = retirosDelCanal(retiradas([corto, mala]), CODIGO, idOk);
+      expect(r.retiros).toEqual([retiro]);
+      expect(r.descartadas).toBe(1);
+    });
+
+    it('descarta una lista que no es array y un id desconocido', () => {
+      expect(retirosDelCanal(retiradas({ 0: corto }), CODIGO, idOk)).toEqual({ retiros: [], descartadas: 1 });
+      expect(retirosDelCanal(retiradas([corto], 'no-existe'), CODIGO, idOk)).toEqual({ retiros: [], descartadas: 1 });
+    });
+
+    it('"__proto__" en una clave del elemento o como id de estructura se descarta y no contamina nada', () => {
+      const clave = JSON.parse(`{"v":2,"r":"${CODIGO}","e":{"hippocampus":[{"c":"ubicacion","d":"","f":"${FECHA_RETIRO}","__proto__":{"veredicto":"correcto"}}]}}`);
+      expect(retirosDelCanal(clave, CODIGO, idOk)).toEqual({ retiros: [], descartadas: 1 });
+      const id = JSON.parse(`{"v":2,"r":"${CODIGO}","e":{"__proto__":[{"c":"ubicacion","d":"","f":"${FECHA_RETIRO}"}]}}`);
+      expect(retirosDelCanal(id, CODIGO, idOk).retiros).toEqual([]);
+      expect(({} as Record<string, unknown>)['veredicto']).toBeUndefined();
+    });
+
+    it('una f más de 24 h en el futuro se descarta; justo en el margen pasa', () => {
+      const AHORA = Date.parse('2026-10-14T12:00:00.000Z');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(AHORA);
+      const con = (ms: number) => ({ ...corto, f: new Date(AHORA + ms).toISOString() });
+      expect(retirosDelCanal(retiradas([con(MARGEN_FECHA_FUTURA_MS)]), CODIGO, idOk).retiros).toHaveLength(1);
+      expect(retirosDelCanal(retiradas([con(MARGEN_FECHA_FUTURA_MS + 1)]), CODIGO, idOk)).toMatchObject({ retiros: [], descartadas: 1 });
+    });
+
+    it.each([
+      ['de otro código', retiradas([corto], 'hippocampus', 'OTRO-01')],
+      ['v:1', { ...retiradas([corto]), v: 1 }],
+      ['e que es un array', { ...retiradas([corto]), e: [] }],
+      ['un texto', 'hola'],
+    ])('una carga %s da cero retiros', (_n, carga) => {
+      expect(retirosDelCanal(carga, CODIGO, idOk).retiros).toEqual([]);
+    });
+
+    it('ausente o null da cero retiros y ningún descarte (un script anterior no la responde)', () => {
+      expect(retirosDelCanal(undefined, CODIGO, idOk)).toEqual({ retiros: [], descartadas: 0 });
+      expect(retirosDelCanal(null, CODIGO, idOk)).toEqual({ retiros: [], descartadas: 0 });
+    });
+
+    it('ida y vuelta: lo que produce cargaRevisionV2 con un retiro vuelve igual', () => {
+      const cargado = JSON.parse(cargaRevisionV2(CODIGO, [retiro, { ...retiro, campo: 'posicion', idioma: undefined }]));
+      expect(retirosDelCanal(cargado, CODIGO, idOk).retiros).toEqual([retiro, { estructura: 'hippocampus', campo: 'posicion', veredicto: '', fecha: FECHA_RETIRO }]);
+    });
+  });
+
+  describe('leer', () => {
+    it('devuelve los retiros validados y no avisa cuando no hay descartes', async () => {
+      responder({ ok: true, canal: 2, respuestas: cargaCon([]), retiradas: retiradas([corto]), autorizacion: null });
+      const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = await leer(CODIGO, idOk);
+      expect(r.retiros).toEqual([retiro]);
+      expect(r.respuestas).toEqual([a]);
+      expect(aviso).not.toHaveBeenCalled();
+    });
+
+    it('un retiro malo en retiradas se descarta con un solo aviso que cuenta los de las dos cargas, sin el código', async () => {
+      responder({ ok: true, canal: 2, respuestas: cargaCon([{ ...buena, z: 1 }]), retiradas: retiradas([corto, { ...corto, p: 'x' }]), autorizacion: null });
+      const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = await leer(CODIGO, idOk);
+      expect(r.retiros).toEqual([retiro]);
+      expect(aviso).toHaveBeenCalledTimes(1);
+      expect(String(aviso.mock.calls[0]?.[0])).toMatch(/2 /);
+      expect(String(aviso.mock.calls[0]?.[0])).not.toContain(CODIGO);
+    });
+
+    it('un elemento de retiro dentro de respuestas no es una respuesta: se descarta', async () => {
+      responder({ ok: true, canal: 2, respuestas: cargaCon([corto]), retiradas: retiradas([]), autorizacion: null });
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = await leer(CODIGO, idOk);
+      expect(r.respuestas).toEqual([a]);
+    });
+
+    it.each([
+      ['ausente', undefined, false],
+      ['null', null, false],
+      ['1', 1, false],
+      ['0', 0, false],
+      ['2', 2, true],
+      ['3', 3, true],
+      ['el texto "2"', '2', false],
+      ['true', true, false],
+      ['un objeto', { n: 2 }, false],
+    ])('retirosAdmitidos con canal %s es %s', async (_n, canal, esperado) => {
+      responder({ ok: true, ...(canal === undefined ? {} : { canal }), respuestas: null, autorizacion: null });
+      expect((await leer(CODIGO, idOk)).retirosAdmitidos).toBe(esperado);
+    });
+
+    it('el mínimo que admite es VERSION_CANAL', async () => {
+      responder({ ok: true, canal: VERSION_CANAL, respuestas: null, autorizacion: null });
+      expect((await leer(CODIGO, idOk)).retirosAdmitidos).toBe(true);
+      responder({ ok: true, canal: VERSION_CANAL - 1, respuestas: null, autorizacion: null });
+      expect((await leer(CODIGO, idOk)).retirosAdmitidos).toBe(false);
+    });
+
+    it('un script anterior (sin canal ni retiradas) da retiros vacíos y no admite retiros', async () => {
+      responder({ ok: true, respuestas: cargaCon([]), autorizacion: null });
+      const r = await leer(CODIGO, idOk);
+      expect(r.retiros).toEqual([]);
+      expect(r.retirosAdmitidos).toBe(false);
+    });
+  });
+
+  describe('guardar', () => {
+    it('manda el retiro en la carga v:2 como {c, i, d:"", f}, sin otras claves', async () => {
+      const f = responder({ ok: true, recibidas: [`hippocampus|ubicacion|es|${FECHA_RETIRO}`] });
+      const recibidas = await guardar(CODIGO, [a, retiro]);
+      const carga = JSON.parse(String(cuerpo(f)['carga'])) as { e: Record<string, Record<string, unknown>[]> };
+      expect(carga.e['hippocampus']).toEqual([
+        { c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0', f: a.fecha },
+        { c: 'ubicacion', i: 'es', d: '', f: FECHA_RETIRO },
+      ]);
+      expect(recibidas.has(`hippocampus|ubicacion|es|${FECHA_RETIRO}`)).toBe(true);
+    });
   });
 });

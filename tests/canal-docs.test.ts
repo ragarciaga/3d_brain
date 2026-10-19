@@ -137,3 +137,94 @@ describe('el diseño de la spec 03 y el ADR 0012 (D11, D12)', () => {
     expect(leer('src/lib/canal.ts')).not.toContain('por compatibilidad');
   });
 });
+
+describe('quitar una marca se guarda (#217)', () => {
+  const titulos = guia.split('\n').filter((l) => /^###\s.*#217/.test(l));
+  const cuerpo = tramo(guia, /^###\s.*#217/);
+  const requisitos = leer('docs/specs/03-review-return-channel/requirements.md');
+  const spec = leer('SPEC.md');
+
+  it('la guía tiene una sola subsección con #217, con el bloque PowerShell que primero deja main al día', () => {
+    expect(titulos).toHaveLength(1);
+    const bloques = [...cuerpo.matchAll(/```powershell\n([\s\S]*?)```/g)].map((m) => m[1]!);
+    expect(bloques).toHaveLength(1);
+    const lineas = bloques[0]!.split('\n').map((l) => l.trim());
+    const idx = (inicio: string) => lineas.findIndex((l) => l.startsWith(inicio));
+    expect(idx('cd C:\\Users\\')).toBe(0);
+    expect(idx('git switch main')).toBeGreaterThan(0);
+    expect(idx('git pull --ff-only')).toBeGreaterThan(idx('git switch main'));
+    expect(idx('git status')).toBeGreaterThan(idx('git pull --ff-only'));
+    expect(idx('Get-Content -Raw -Encoding UTF8 apps-script\\Codigo.js | Set-Clipboard')).toBeGreaterThan(idx('git status'));
+  });
+
+  it('la subsección pide detenerse y avisar por chat si Google pide permisos nuevos o si la URL cambió, y no escribe la URL', () => {
+    expect(cuerpo).toMatch(/Si\s+Google\s+pide\s+permisos\s+nuevos\s+al\s+implementar,\s+detente\s+y\s+avisa\s+por\s+chat/);
+    expect(cuerpo).toMatch(/Si\s+cambió,\s+avísalo\s+por\s+chat\s+y\s+no\s+la\s+pegues/);
+    expect(cuerpo).not.toMatch(/\/macros\/s\//);
+    expect(cuerpo).not.toContain('script.google.com');
+  });
+
+  it('el orden es el sitio primero y el script después, y la prueba revisa la frase, la fila con "d":"" y que la marca no vuelva', () => {
+    expect(cuerpo.indexOf('workflow `pages`')).toBeLessThan(cuerpo.indexOf('Get-Content'));
+    expect(cuerpo.replace(/\s+/g, ' ')).toContain('Si te equivocas, elige el veredicto correcto; quitar la marca no se guarda.');
+    expect(cuerpo).toContain('"d":""');
+    expect(cuerpo).toMatch(/la marca no vuelve/);
+    expect(cuerpo).toMatch(/Limpia\s+como\s+dice\s+el\s+paso\s+7/);
+  });
+
+  it('la guía aclara que un retiro no suprime datos personales y que la supresión sigue en la sección 7', () => {
+    expect(cuerpo).toMatch(/no\s+borra\s+nada\s+de\s+la\s+hoja\s+ni\s+suprime\s+datos\s+personales/);
+    expect(cuerpo).toContain('sección 7');
+    expect(tramo(guia, /^## 7\./).replace(/\s+/g, ' ')).toContain('filas de retiro (#217)');
+  });
+
+  it('la sección 5 dice que el formulario de respaldo no lleva retiros', () => {
+    const seccion5 = tramo(guia, /^## 5\./);
+    expect(seccion5).toMatch(/formulario\s+no\s+lleva\s+retiros/);
+    expect(seccion5).toContain('"d":""');
+  });
+
+  it('el ADR 0012 lo registra en Amended y dice que el retiro no lleva texto de propuesta ni de comentario', () => {
+    expect(adr).toMatch(/Amended:[^\n]*#217/);
+    expect(adr).toContain('no lleva texto de propuesta ni de comentario');
+    expect(adr).not.toContain('no lleva texto libre');
+  });
+
+  it('la spec 03 y SPEC.md F24 lo dicen, sin afirmar que el retiro no lleva texto libre', () => {
+    for (const r of ['R3.8', 'R3.9', 'R4.5', 'R7.3', 'R8.3']) expect(requisitos, r).toMatch(new RegExp(`^- ${r.replace('.', '\\.')} `, 'm'));
+    expect(spec).toContain('también se guarda, como un retiro');
+    for (const texto of [requisitos, diseno, spec, adr, guia]) expect(texto).not.toMatch(/retiro[^.\n]*no lleva texto libre|sin texto libre[^.\n]*retiro/i);
+  });
+
+  it('la tabla "Verification summary" de la spec 03 coincide con las etiquetas de los requisitos', () => {
+    const lineas = requisitos.split('\n').filter((l) => /^- R\d+\.\d+ /.test(l));
+    for (const etiqueta of ['unit', 'integration', 'e2e', 'eval', 'manual']) {
+      const n = lineas.filter((l) => l.includes(`\`[${etiqueta}]\``)).length;
+      expect(requisitos, etiqueta).toMatch(new RegExp(`^\\| ${etiqueta} \\| ${n} \\|$`, 'm'));
+    }
+  });
+
+  it('el diseño de la spec 03 menciona los retiros en la interfaz de leer y en la idempotencia', () => {
+    const fila = diseno.split('\n').find((l) => l.includes("`POST <urlCanal>` `{accion:'leer', r}`"));
+    expect(fila).toContain('retiradas (v:2 con esos retiros)');
+    expect(fila).toContain('`{ok, canal, respuestas');
+    const viñeta = diseno.split('\n').find((l) => l.startsWith('- **Idempotencia:**'));
+    expect(viñeta).toContain('la clave sale de `respuestas` y queda en `retiradas`');
+    expect(viñeta).toContain('se rechaza con `formato`');
+  });
+
+  it('la cabecera del script y la del cliente describen la forma nueva de leer, sin la vieja', () => {
+    const cabecera = (ruta: string) =>
+      leer(ruta)
+        .split('\n')
+        .slice(0, 30)
+        .map((l) => l.replace(/^\/\/\s?/, ''))
+        .join(' ')
+        .replace(/\s+/g, ' ');
+    expect(cabecera('apps-script/Codigo.js')).toContain("{accion: 'leer', r}: {ok, canal, respuestas: {v: 2, r, e}, retiradas: {v: 2, r, e}, autorizacion: {version, vago} | null}");
+    expect(cabecera('src/lib/canal.ts')).toContain(
+      '`{ok:true, canal:<número>, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, retiradas:{v:2, r:<código>, e:{<id>:[{c, i?, d:"", f}]}}, autorizacion:{version, vago} | null}`',
+    );
+    for (const ruta of ['apps-script/Codigo.js', 'src/lib/canal.ts']) expect(cabecera(ruta), ruta).not.toMatch(/\{ok, respuestas|\{ok:true, respuestas/);
+  });
+});

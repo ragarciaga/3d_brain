@@ -60,6 +60,38 @@ export function respuestaValida(r: unknown, idOk: (id: unknown) => boolean): r i
 }
 
 /**
+ * Retiro de una marca (#217): el docente quitó su veredicto. Viaja en la carga `v:2` como `{c, i?, d:"", f}`: la
+ * misma clave que el veredicto que retira y una fecha nueva. No lleva propuesta, comentario, posición, malla, ramo
+ * ni versión, así que no trae texto de propuesta ni de comentario (el campo `trazo:` admite hasta 120 caracteres).
+ */
+export interface Retiro {
+  estructura: string;
+  campo: string;
+  idioma?: 'es' | 'en';
+  veredicto: '';
+  fecha: string;
+}
+
+/** Campos de una respuesta que un retiro no admite: ni propuesta ni comentario, ni posición, ni datos del trazo, ni versión. */
+const CAMPOS_PROHIBIDOS_EN_RETIRO = ['propuesta', 'comentario', 'posicion', 'malla', 'ramo', 'version'] as const;
+
+/**
+ * Entrada externa (la carga que llega al canal, lo que devuelve `leer` o una fila de la hoja): un retiro solo vale
+ * con estructura conocida, `veredicto` igual a '', `campo` con la forma que genera la app, idioma es o en (o
+ * ausente), `fecha` válida (obligatoria) y ninguno de los campos de `CAMPOS_PROHIBIDOS_EN_RETIRO`. Nunca lanza.
+ * El Apps Script tiene una copia regla por regla (`retiroValido` en apps-script/Codigo.js).
+ */
+export function retiroValido(r: unknown, idOk: (id: unknown) => boolean): r is Retiro {
+  if (!esObjeto(r) || !idOk(r['estructura'])) return false;
+  if (r['veredicto'] !== '') return false;
+  if (r['idioma'] !== undefined && !IDIOMAS.includes(r['idioma'])) return false;
+  if (typeof r['campo'] !== 'string' || !CAMPO_VALIDO.test(r['campo'])) return false;
+  if (!fechaValida(r['fecha'])) return false;
+  for (const k of CAMPOS_PROHIBIDOS_EN_RETIRO) if (r[k] !== undefined) return false;
+  return true;
+}
+
+/**
  * Posición que el revisor ya propuso para un marcador, o null si no hay.
  * `piezas` dice sobre qué pieza cayó el toque (solo en esta sesión); si no se conoce, `pieza` es null.
  */
@@ -169,15 +201,15 @@ export const CLAVES_V2 = {
 } as const;
 
 /**
- * Carga `v:2`: todas las respuestas en un solo envío, agrupadas por estructura (en orden de primera
- * aparición) y con claves cortas. `{"v":2,"r":<código>,"e":{<id>:[{<claves cortas>}]}}`.
+ * Carga `v:2`: todas las respuestas (y los retiros, #217) en un solo envío, agrupadas por estructura (en orden de
+ * primera aparición) y con claves cortas. `{"v":2,"r":<código>,"e":{<id>:[{<claves cortas>}]}}`.
  */
-export function cargaRevisionV2(codigo: string, respuestas: Respuesta[]): string {
+export function cargaRevisionV2(codigo: string, respuestas: readonly (Respuesta | Retiro)[]): string {
   const e: Record<string, Record<string, unknown>[]> = {};
   for (const r of respuestas) {
     const fila: Record<string, unknown> = {};
     for (const [largo, corto] of Object.entries(CLAVES_V2)) {
-      const valor = r[largo as keyof typeof CLAVES_V2];
+      const valor = (r as unknown as Record<string, unknown>)[largo];
       if (valor === undefined || (largo === 'fecha' && valor === '')) continue;
       fila[corto] = valor;
     }

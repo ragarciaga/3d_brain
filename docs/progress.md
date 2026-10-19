@@ -163,7 +163,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 
 ## Next steps
 1. Revisión docente: la spec 04 está completa en main y el vago torácico en espejo se retiró con el hueco explicado (#222). La verificación de la spec 04 (#220) dio seguridad PASS y E2E 8 de 9 (1 omitida con motivo); la auditoría de objetivo dio dos parciales: la fuente del trazo se ve solo como clave (04-T9, #218, se construye cuando #220 llegue a main) y las preguntas de #219.
-2. Modo revisión: deshacer un veredicto no llega al canal (#217, decisión del editor).
+2. Modo revisión: quitar una marca se guarda como un retiro por el canal (#217, opción 1 aprobada por el editor). Falta desplegar el script nuevo después de fusionar y publicar el sitio (docs/revision-docente.md, "quitar una marca se guarda"); mientras tanto la app deja el retiro pendiente y la guía lo dice.
 3. Vago torácico trazado: después del lanzamiento (docs/v2.md). El trabajo del generador está en las ramas `rb/02-T5`, `rb/02-T6` y `rb/i216`; #52 (T7) queda diferido.
 4. Rendimiento en gama baja: cerrado como está; si llega retroalimentación, primero que el índice de toque ceda un cuadro entre tandas, después recorte por hardware de las piezas cruzadas y F19.
 
@@ -171,7 +171,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
 Hecho el 2026-10-16: #168 aprobado, privacidad publicada, #49 resuelto, medición de cortes en los tres equipos (#42), texto legal de #149 revisado y aprobado. Hecho el 2026-10-17: controles revisados en el iPhone (#194), Rockbuilt 0.9.0 aprobado (#198). Hecho el 2026-10-18: #205 fusionado, SPEC F24 con "Correcto" para la posición (#212), plan B del vago torácico aprobado y fusionado (#222).
 
 Sigue, en este orden:
-1. Responder #219 (trazos del bulbo sin propuesta y nombres en inglés en la evidencia) y #217 (deshacer en modo revisión), antes de mandar el mensaje a los docentes.
+1. Responder #219 (trazos del bulbo sin propuesta y nombres en inglés en la evidencia) y, cuando #217 (deshacer en modo revisión) esté fusionado, desplegar el script nuevo (docs/revision-docente.md), antes de mandar el mensaje a los docentes.
 2. Revisar y fusionar #220 (verificación de la spec 04).
 3. Abrir https://brain.maysasp.com/es/revision con un código de prueba y mirar un trazo del vago, un marcador y el hueco del tórax (leyenda y ficha del vago).
 4. Mandar el mensaje a los docentes (`docs/guia-docentes.md`): el script versión 3 está desplegado y probado y la hoja quedó limpia.

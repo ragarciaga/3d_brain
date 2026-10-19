@@ -20,11 +20,14 @@ import {
   propuestaDePosicion,
   respuestaCompleta,
   respuestaValida,
+  retiroValido,
   separarIncompletas,
   urlFormulario,
   urlFormularioV2,
   type Respuesta,
+  type Retiro,
 } from '../src/lib/revision';
+import { casosRetiro } from './fixtures/apps-script/dobles';
 
 const config = {
   urlFormulario: 'https://docs.google.com/forms/d/e/abc/viewform',
@@ -491,5 +494,42 @@ describe('nombre del archivo de una parte (#149)', () => {
     const carga = JSON.parse(cargaRevisionV2('ABC', [r('que_es.es')])) as { v: number; r: string };
     expect(carga.v).toBe(2);
     expect(carga.r).toBe('ABC');
+  });
+});
+
+describe('retiros (#217)', () => {
+  const idOk = (id: unknown) => typeof id === 'string' && /^[a-z0-9-]+$/.test(id);
+  const retiro: Retiro = { estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es', veredicto: '', fecha: '2026-10-14T10:05:00.000Z' };
+
+  it.each(casosRetiro)('retiroValido con %s', (_n, r, vale) => {
+    expect(retiroValido(r, idOk)).toBe(vale);
+  });
+
+  it('exige que la estructura pase idOk', () => {
+    expect(retiroValido(retiro, () => false)).toBe(false);
+    expect(retiroValido(retiro, (id) => id === 'hippocampus')).toBe(true);
+  });
+
+  it('nunca lanza con entradas que no son objetos', () => {
+    for (const x of [undefined, null, 0, 'x', [], () => 1, Symbol('s')]) expect(retiroValido(x, idOk)).toBe(false);
+  });
+
+  it('una respuesta con veredicto vacío no es una respuesta válida y un retiro no es una respuesta', () => {
+    expect(respuestaValida({ ...retiro, version: '0.1.0' }, idOk)).toBe(false);
+  });
+
+  it('cargaRevisionV2 lleva el retiro como {c, i, d:"", f} y respeta el orden de las claves', () => {
+    const { e } = JSON.parse(cargaRevisionV2('P', [retiro, { ...retiro, campo: 'posicion', idioma: undefined }]));
+    expect(e['hippocampus']).toEqual([
+      { c: 'ubicacion', i: 'es', d: '', f: retiro.fecha },
+      { c: 'posicion', d: '', f: retiro.fecha },
+    ]);
+    expect(Object.keys(e['hippocampus'][0])).toEqual(['c', 'i', 'd', 'f']);
+  });
+
+  it('la clave de un retiro es la de la respuesta que retira y desdeClave la deshace', () => {
+    const k = claveRespuesta(retiro);
+    expect(k).toBe('hippocampus|ubicacion|es');
+    expect(desdeClave(k)).toEqual({ estructura: 'hippocampus', campo: 'ubicacion', idioma: 'es' });
   });
 });

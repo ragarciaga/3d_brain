@@ -2,7 +2,7 @@
 // Las tareas T7 a T10 de ese spec amplían este archivo. Helpers propios para no depender de otros specs.
 import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { configRevision, VERSION_AUTORIZACION } from '../src/config/revision';
+import { configRevision, VERSION_AUTORIZACION, VERSION_CANAL } from '../src/config/revision';
 import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, siguienteEspera } from '../src/lib/colaGuardado';
 import { claveGuiaVista, claveRevisionIdb } from '../src/lib/huella';
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
@@ -128,6 +128,17 @@ interface CanalSimulado {
   respuestas: Record<string, Record<string, unknown>[]>;
   /** Demora (ms) de la respuesta de `leer`, para modelar una red lenta. */
   demoraLeer: number;
+  /**
+   * Versión del protocolo que declara el script (#217). `undefined` es el script anterior: `leer` no responde `canal`
+   * ni `retiradas` y `guardar` responde `formato` a una carga con un retiro (`d:""`), como el script real de entonces.
+   * Con un número, `leer` responde `canal` y deriva `respuestas` y `retiradas` de las filas que `guardar` escribió, con la
+   * regla del script: la última fila por clave manda y un retiro quita la clave de `respuestas`.
+   */
+  canal: number | undefined;
+  /** Los `e` de las cargas que `guardar` aceptó, en orden: las filas de `Respuestas`. */
+  filas: CargaGuardar['e'][];
+  /** Si existe, `guardar` espera a que se resuelva antes de responder (para leer el estado "Guardando..." con la petición en vuelo). */
+  retenerGuardar: Promise<void> | null;
   peticiones: PeticionCanal[];
 }
 
@@ -141,7 +152,7 @@ function clavesRecibidas(carga: unknown, fechaFija?: string): string[] {
 
 async function simularCanal(
   page: Page,
-  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar' | 'respuestas' | 'demoraLeer'>> = {},
+  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar' | 'respuestas' | 'demoraLeer' | 'canal'>> = {},
 ): Promise<CanalSimulado> {
   const canal: CanalSimulado = {
     autorizacion: null,
@@ -152,6 +163,9 @@ async function simularCanal(
     retenerAutorizar: null,
     respuestas: {},
     demoraLeer: 0,
+    canal: undefined,
+    filas: [],
+    retenerGuardar: null,
     peticiones: [],
     ...inicial,
   };
@@ -174,7 +188,15 @@ async function simularCanal(
         if (canal.retenerLeer) await canal.retenerLeer;
         if (canal.demoraLeer) await new Promise((r) => setTimeout(r, canal.demoraLeer));
         if (canal.leer === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
-        return json({ ok: true, respuestas: { v: 2, r: cuerpo['r'], e: canal.respuestas }, autorizacion: canal.autorizacion });
+        if (canal.canal === undefined) return json({ ok: true, respuestas: { v: 2, r: cuerpo['r'], e: canal.respuestas }, autorizacion: canal.autorizacion });
+        const { respuestas, retiradas } = derivarLectura(canal);
+        return json({
+          ok: true,
+          canal: canal.canal,
+          respuestas: { v: 2, r: cuerpo['r'], e: respuestas },
+          retiradas: { v: 2, r: cuerpo['r'], e: retiradas },
+          autorizacion: canal.autorizacion,
+        });
       }
       if (accion === 'autorizar') {
         if (canal.retenerAutorizar) await canal.retenerAutorizar;
@@ -183,16 +205,49 @@ async function simularCanal(
         return json(canal.autorizar === 'interno' ? { ok: false, error: 'interno' } : { ok: true });
       }
       if (accion === 'guardar') {
+        if (canal.retenerGuardar) await canal.retenerGuardar;
         if (canal.guardar === 'red') return route.abort('failed');
         if (canal.guardar === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
         if (canal.guardar === 'sin_autorizacion') return json({ ok: false, error: 'sin_autorizacion' });
         if (canal.guardar === 'formato') return json({ ok: false, error: 'formato' });
+        const e = (JSON.parse(String(cuerpo['carga'])) as CargaGuardar).e;
+        // El script anterior validaba cada elemento como una respuesta y el veredicto vacío no lo es: rechaza la carga entera.
+        if (canal.canal === undefined && Object.values(e).some((lista) => lista.some((el) => el.d === ''))) return json({ ok: false, error: 'formato' });
+        canal.filas.push(e);
         return json({ ok: true, recibidas: clavesRecibidas(cuerpo['carga'], canal.guardar === 'otra_fecha' ? '2000-01-01T00:00:00.000Z' : undefined) });
       }
       return route.abort('failed');
     },
   );
   return canal;
+}
+
+/** Lo que `leer` del script nuevo responde: la última fila por clave de las respuestas iniciales y de las filas escritas. */
+function derivarLectura(canal: CanalSimulado) {
+  const ultimas = new Map<string, { id: string; el: Record<string, unknown> }>();
+  const retiradas = new Map<string, { id: string; el: Record<string, unknown> }>();
+  const aplicar = (e: Record<string, Record<string, unknown>[]>) => {
+    for (const [id, lista] of Object.entries(e)) {
+      for (const el of lista) {
+        const k = `${id}|${String(el['c'])}|${String(el['i'] ?? '')}`;
+        if (el['d'] === '') {
+          ultimas.delete(k);
+          retiradas.set(k, { id, el });
+        } else {
+          retiradas.delete(k);
+          ultimas.set(k, { id, el });
+        }
+      }
+    }
+  };
+  aplicar(canal.respuestas);
+  for (const e of canal.filas) aplicar(e as Record<string, Record<string, unknown>[]>);
+  const agrupar = (m: Map<string, { id: string; el: Record<string, unknown> }>) => {
+    const e: Record<string, Record<string, unknown>[]> = {};
+    for (const { id, el } of m.values()) (e[id] ??= []).push(el);
+    return e;
+  };
+  return { respuestas: agrupar(ultimas), retiradas: agrupar(retiradas) };
 }
 
 const peticionesDe = (canal: CanalSimulado, accion: string) => canal.peticiones.filter((p) => p.accion === accion);
@@ -226,6 +281,7 @@ const autorizacionGuardada = (page: Page, codigo: string) =>
 
 interface RevisionGuardada {
   respuestas: Record<string, { fecha: string }>;
+  retiradas?: Record<string, string>;
   confirmadas: Record<string, string>;
 }
 
@@ -1443,4 +1499,295 @@ test('autorización: con una copia local de otra versión y la lectura fallida n
   await expect(dialogoAut(page)).toBeVisible();
   await expect(dialogoAut(page).locator('#autorizacion-texto')).toHaveText(TEXTO_AUTORIZACION_ES);
   expect(peticionesDe(canal, 'autorizar')).toHaveLength(0);
+});
+
+// Quitar una marca se guarda (#217). El simulador deriva `leer` de las filas que `guardar` escribió, con la regla del
+// script nuevo (la última fila por clave manda), y sin `canal` se comporta como el script anterior.
+const FRASE_INTERINA = 'Si te equivocas, elige el veredicto correcto; quitar la marca no se guarda.';
+const AUTORIZADO = { version: VERSION_AUTORIZACION, vago: false };
+const RETIRADAS_STORE = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __atlas: { getState: () => { retiradas: Record<string, string> } } }).__atlas.getState().retiradas);
+const CANAL_RETIROS_STORE = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __atlas: { getState: () => { canalRetiros: boolean } } }).__atlas.getState().canalRetiros);
+/** Los elementos de retiro (`d:""`) de una petición `guardar`. */
+const retirosDe = (p: PeticionCanal) => Object.values(cargaDe(p).e).flat().filter((el) => el.d === '');
+
+test('retiros (#217): con el script nuevo, deshacer manda un retiro con fecha nueva, llega a "Guardado ✓" y la marca no vuelve al recargar ni en otro equipo', async ({
+  page,
+  context,
+  browser,
+}) => {
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  expect(await CANAL_RETIROS_STORE(page)).toBe(true);
+
+  await correcto(page, 'que_es.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  const fecha = (await fechaDelStore(page, 'hippocampus|que_es|es'))!;
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(1);
+  expect(retirosDe(peticionesDe(canal, 'guardar')[0]!)).toEqual([]);
+
+  // Deshacer: el retiro sale con la petición en vuelo (retenida) para leer el estado una sola vez.
+  let soltar!: () => void;
+  canal.retenerGuardar = new Promise<void>((r) => (soltar = r));
+  await correcto(page, 'que_es.es').click();
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(2);
+  expect(await estadoGuardado(page).textContent()).toBe('Guardando...');
+  const carga = cargaDe(peticionesDe(canal, 'guardar')[1]!);
+  expect(carga.r).toBe('RET01');
+  const [retiro] = retirosDe(peticionesDe(canal, 'guardar')[1]!);
+  expect(carga.e).toEqual({ hippocampus: [retiro] });
+  // Solo la clave y la fecha: ni propuesta, ni comentario, ni versión.
+  expect(Object.keys(retiro!).sort()).toEqual(['c', 'd', 'f', 'i']);
+  expect(retiro).toMatchObject({ c: 'que_es', i: 'es', d: '' });
+  expect(Date.parse(retiro!.f!)).toBeGreaterThan(Date.parse(fecha));
+  soltar();
+  canal.retenerGuardar = null;
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect.poll(async () => (await revisionGuardada(page, 'RET01'))?.confirmadas['hippocampus|que_es|es']).toBe(retiro!.f);
+  const guardada = await revisionGuardada(page, 'RET01');
+  expect(guardada?.respuestas).toEqual({});
+  expect(guardada?.retiradas).toEqual({ 'hippocampus|que_es|es': retiro!.f });
+
+  // Al recargar la marca no vuelve y no se reenvía nada.
+  const enviadas = peticionesDe(canal, 'guardar').length;
+  await page.reload();
+  await expect(barra(page)).toContainText('RET01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(enviadas);
+
+  // Otro equipo (contexto nuevo, IndexedDB vacío): el canal ya no devuelve la marca y trae el retiro.
+  const otro = await browser.newContext();
+  try {
+    await prepararContexto(otro);
+    await conCanal(otro, URL_CANAL);
+    await saltarGuia(otro, 'RET01');
+    const pagina = await otro.newPage();
+    const canal2 = await simularCanal(pagina, { autorizacion: AUTORIZADO, canal: VERSION_CANAL, respuestas: canal.respuestas });
+    canal2.filas.push(...canal.filas);
+    await pagina.goto('/es/revision?r=RET01');
+    await expect(barra(pagina)).toContainText('RET01');
+    await expect.poll(() => lecturaDelStore(pagina)).toBe('hecha');
+    await expect(pagina.getByTestId('total-respuestas')).toHaveText('0 respuestas');
+    expect(await RETIRADAS_STORE(pagina)).toEqual({ 'hippocampus|que_es|es': retiro!.f });
+    expect(peticionesDe(canal2, 'guardar')).toHaveLength(0);
+  } finally {
+    await otro.close();
+  }
+});
+
+test('retiros (#217): un retiro del canal más nuevo borra la marca local en otro equipo y un veredicto posterior la devuelve', async ({ page, context }) => {
+  const canal = await simularCanal(page, {
+    autorizacion: AUTORIZADO,
+    canal: VERSION_CANAL,
+    respuestas: {
+      hippocampus: [
+        { c: 'que_es', i: 'es', d: 'correcto', s: VERSION_HIPOCAMPO, f: FECHA_CANAL },
+        { c: 'ubicacion', i: 'es', d: 'correcto', s: VERSION_HIPOCAMPO, f: FECHA_CANAL },
+      ],
+    },
+  });
+  // La hoja ya tiene el retiro de `que_es`, más nuevo que lo que este equipo tiene.
+  canal.filas.push({ hippocampus: [{ c: 'que_es', i: 'es', d: '', f: '2026-01-02T10:00:00.000Z' }] });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET05');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('1 respuesta');
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  await expect(correcto(page, 'ubicacion.es')).toHaveAttribute('aria-pressed', 'true');
+  expect(await RETIRADAS_STORE(page)).toEqual({ 'hippocampus|que_es|es': '2026-01-02T10:00:00.000Z' });
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
+
+  // Un veredicto nuevo sobre esa clave quita el retiro local y sale como cualquier respuesta.
+  await correcto(page, 'que_es.es').click();
+  expect(await RETIRADAS_STORE(page)).toEqual({});
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(1);
+  expect(retirosDe(peticionesDe(canal, 'guardar')[0]!)).toEqual([]);
+  expect(cargaDe(peticionesDe(canal, 'guardar')[0]!).e['hippocampus']).toEqual([expect.objectContaining({ c: 'que_es', d: 'correcto' })]);
+});
+
+test('retiros (#217): con el script anterior el retiro espera, los demás guardados siguen, la guía y la barra lo dicen y sale solo cuando el script declara canal 2', async ({
+  page,
+  context,
+}) => {
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO }); // sin `canal`: el script anterior
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET02');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  expect(await CANAL_RETIROS_STORE(page)).toBe(false);
+
+  await correcto(page, 'que_es.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  const antes = peticionesDe(canal, 'guardar').length;
+
+  // Deshacer no manda nada: el retiro queda pendiente en el equipo y la barra y la guía lo dicen.
+  await correcto(page, 'que_es.es').click();
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  await expect(barra(page).getByTestId('retiros-en-espera')).toHaveText('Quitaste 1 marca; se guardará cuando el editor actualice el canal');
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(antes);
+  await abrirGuia(page);
+  await expect(page.getByTestId('como-revisar')).toContainText(FRASE_INTERINA);
+  await page.getByTestId('como-revisar').getByRole('button', { name: 'Cerrar' }).click();
+
+  // Otra respuesta se guarda sin problema y sin arrastrar el retiro.
+  await correcto(page, 'ubicacion.es').click();
+  await expect.poll(() => peticionesDe(canal, 'guardar').length).toBe(antes + 1);
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  for (const p of peticionesDe(canal, 'guardar')) expect(retirosDe(p)).toEqual([]);
+  expect(cargaDe(peticionesDe(canal, 'guardar').at(-1)!).e['hippocampus']).toEqual([expect.objectContaining({ c: 'ubicacion', d: 'correcto' })]);
+  expect((await revisionGuardada(page, 'RET02'))?.retiradas).toHaveProperty(['hippocampus|que_es|es']);
+
+  // El editor despliega el script nuevo: al reabrir el enlace el retiro sale solo y la frase desaparece.
+  canal.canal = VERSION_CANAL;
+  await page.reload();
+  await expect(barra(page)).toContainText('RET02');
+  await expect.poll(() => CANAL_RETIROS_STORE(page)).toBe(true);
+  await expect.poll(() => peticionesDe(canal, 'guardar').flatMap(retirosDe).length).toBe(1);
+  const [retiro] = peticionesDe(canal, 'guardar').flatMap(retirosDe);
+  expect(retiro).toMatchObject({ c: 'que_es', i: 'es', d: '' });
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect(barra(page).getByTestId('retiros-en-espera')).toHaveCount(0);
+  await expect.poll(async () => (await revisionGuardada(page, 'RET02'))?.confirmadas['hippocampus|que_es|es']).toBe(retiro!.f);
+  await abrirGuia(page);
+  await expect(page.getByTestId('como-revisar')).not.toContainText(FRASE_INTERINA);
+  // Se quedó en la hoja como el último movimiento de la clave: ni vuelve la respuesta vieja ni se reenvía el retiro.
+  const enviadas = peticionesDe(canal, 'guardar').length;
+  await page.reload();
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(enviadas);
+});
+
+test('retiros (#217): con el script anterior ningún retiro llega a la hoja ni siquiera si se deshace varias veces', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET06');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  for (let i = 0; i < 2; i++) {
+    await correcto(page, 'que_es.es').click();
+    await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'true');
+    await correcto(page, 'que_es.es').click();
+    await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  }
+  await page.waitForTimeout(ESPERA_CANAL_MS + 1000);
+  expect(peticionesDe(canal, 'guardar').flatMap(retirosDe)).toEqual([]);
+  // Hay un solo retiro pendiente por clave, con la fecha del último deshacer.
+  await expect(barra(page).getByTestId('retiros-en-espera')).toHaveText('Quitaste 1 marca; se guardará cuando el editor actualice el canal');
+});
+
+test('retiros (#217): sin red el retiro queda pendiente con "Sin conexión", en IndexedDB, y sale solo cuando vuelve la red', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET03');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await correcto(page, 'que_es.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+
+  canal.guardar = 'red';
+  await correcto(page, 'que_es.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+  const intentos = peticionesDe(canal, 'guardar').filter((p) => retirosDe(p).length > 0);
+  expect(intentos.length).toBeGreaterThanOrEqual(1);
+  const k = 'hippocampus|que_es|es';
+  const retiradas = (await revisionGuardada(page, 'RET03'))?.retiradas;
+  expect(Object.keys(retiradas ?? {})).toEqual([k]);
+  expect((await revisionGuardada(page, 'RET03'))?.confirmadas[k]).not.toBe(retiradas![k]);
+  expect(canal.filas.flatMap((e) => Object.values(e).flat()).filter((el) => el.d === '')).toEqual([]);
+
+  // Vuelve la red: el reintento (2 s) lo manda y la barra dice "Guardado ✓".
+  canal.guardar = 'ok';
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect.poll(async () => (await revisionGuardada(page, 'RET03'))?.confirmadas[k]).toBe(retiradas![k]);
+  expect(canal.filas.flatMap((e) => Object.values(e).flat()).filter((el) => el.d === '')).toEqual([expect.objectContaining({ c: 'que_es', f: retiradas![k] })]);
+});
+
+test('retiros (#217): el formulario de respaldo no lleva retiros y un retiro pendiente solo no lo ofrece', async ({ page, context }) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, {
+    autorizacion: AUTORIZADO,
+    canal: VERSION_CANAL,
+    guardar: 'red',
+    respuestas: { hippocampus: [{ c: 'ubicacion', i: 'es', d: 'correcto', s: VERSION_HIPOCAMPO, f: FECHA_CANAL }] },
+  });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET04');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(correcto(page, 'ubicacion.es')).toHaveAttribute('aria-pressed', 'true');
+  await pausarReloj(page);
+
+  // Solo un retiro pendiente: sin conexión, pero no hay respuestas por enviar y el respaldo no se ofrece, ni a los 10 min.
+  await correcto(page, 'ubicacion.es').click({ force: true });
+  await page.clock.fastForward(ESPERA_ENVIO_MS);
+  await expect.poll(() => peticionesDe(canal, 'guardar').flatMap(retirosDe).length).toBeGreaterThanOrEqual(1);
+  await expect(estadoGuardado(page)).toHaveText('Sin conexión: se guardará cuando vuelva');
+  await page.clock.fastForward(AVISO_RESPALDO_MS + 1000);
+  await page.waitForTimeout(500);
+  await expect(enviarPorForm(page)).toHaveCount(0);
+
+  // Con un veredicto pendiente, a los 10 min sí se ofrece y la carga del formulario trae solo veredictos.
+  await correcto(page, 'que_es.es').click({ force: true });
+  const fecha = (await fechaDelStore(page, 'hippocampus|que_es|es'))!;
+  await page.clock.fastForward(AVISO_RESPALDO_MS);
+  await expect(enviarPorForm(page)).toBeVisible();
+  await enviarPorForm(page).click({ force: true });
+  const dialogo = page.getByRole('dialog', { name: 'Enviar por formulario' });
+  const href = (await dialogo.getByRole('link', { name: 'Abrir formulario' }).getAttribute('href'))!;
+  expect(cargaDelEnlace(href)).toEqual({
+    v: 2,
+    r: 'RET04',
+    e: { hippocampus: [expect.objectContaining({ c: 'que_es', i: 'es', d: 'correcto', f: fecha })] },
+  });
+  expect(decodeURIComponent(href)).not.toContain('"d":""');
+});
+
+test('retiros (#217): los retiros de la copia de IndexedDB son entrada no confiable: solo pasan los válidos que no tienen respuesta', async ({ page, context }) => {
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO }); // script anterior: nada sale y se puede mirar el store
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'RET07');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  const respuesta = { estructura: 'hippocampus', campo: 'para_que_sirve', idioma: 'es', veredicto: 'correcto', version: VERSION_HIPOCAMPO, fecha: '2026-01-01T10:00:00.000Z' };
+  const valida = '2026-10-01T10:00:00.000Z';
+  const retiradas: Record<string, unknown> = {
+    'hippocampus|ubicacion|es': valida,
+    'hippocampus|latin|': valida,
+    'sin-barras': valida,
+    'no-existe|que_es|es': valida,
+    'hippocampus|que_es|fr': valida,
+    'hippocampus|Que_Es|es': valida,
+    'hippocampus|que_es|es|extra': valida,
+    'hippocampus|nombre|es': '2999-01-01T00:00:00.000Z',
+    'hippocampus|relaciones|es': 'ayer',
+    'hippocampus|fuente.1|es': 123,
+    'hippocampus|para_que_sirve|es': valida, // tiene respuesta
+    '__proto__|que_es|es': valida,
+    'constructor|que_es|es': valida,
+  };
+  await page.evaluate(
+    ([clave, registro]) =>
+      new Promise<void>((resolver, rechazar) => {
+        const abrirDb = indexedDB.open('keyval-store');
+        abrirDb.onerror = () => rechazar(abrirDb.error);
+        abrirDb.onsuccess = () => {
+          const tx = abrirDb.result.transaction('keyval', 'readwrite');
+          tx.objectStore('keyval').put(registro, clave as string);
+          tx.oncomplete = () => resolver();
+          tx.onerror = () => rechazar(tx.error);
+        };
+      }),
+    [claveRevisionIdb('RET07'), { respuestas: { 'hippocampus|para_que_sirve|es': respuesta }, retiradas, confirmadas: {}, autorizacion: AUTORIZADO }] as const,
+  );
+  await page.reload();
+  await expect(barra(page)).toContainText('RET07');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  expect(await RETIRADAS_STORE(page)).toEqual({ 'hippocampus|ubicacion|es': valida, 'hippocampus|latin|': valida });
+  await expect(barra(page).getByTestId('retiros-en-espera')).toHaveText('Quitaste 2 marcas; se guardarán cuando el editor actualice el canal');
+  expect(peticionesDe(canal, 'guardar').flatMap(retirosDe)).toEqual([]);
 });

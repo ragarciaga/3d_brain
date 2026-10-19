@@ -4,13 +4,18 @@
 // ids de hoja, ni direcciones, ni códigos del padrón; el padrón vive solo en la pestaña `Padrón`.
 //
 // Contrato (lo cumple src/lib/canal.ts):
-// - POST (cuerpo text/plain con JSON) {accion: 'leer', r}: {ok, respuestas: {v: 2, r, e}, autorizacion:
-//   {version, vago} | null}. Es la forma de la app: el código no viaja en la URL (S4, #162).
+// - POST (cuerpo text/plain con JSON) {accion: 'leer', r}: {ok, canal, respuestas: {v: 2, r, e}, retiradas:
+//   {v: 2, r, e}, autorizacion: {version, vago} | null}. Es la forma de la app: el código no viaja en la URL
+//   (S4, #162). `canal` es VERSION_CANAL: dice a la app que este script entiende los retiros (#217).
+//   `respuestas` no trae las claves cuya última fila es un retiro; `retiradas` trae esos retiros.
 // - GET: siempre {ok: false, error: 'formato'}, sin leer nada ni mirar los parámetros (S4, #169). Se
 //   deja para que todo GET reciba JSON.
 // - POST {accion: 'guardar', carga}: {ok, recibidas: [...]}. Exige que la última fila del código en
 //   `Autorizaciones` tenga la versión VERSION_AUTORIZACION (S1, #157). Si esa fila no tiene el vago en
-//   `sí`, rechaza con `formato` la carga entera cuando alguna respuesta es del vago (S2, #166).
+//   `sí`, rechaza con `formato` la carga entera cuando alguna respuesta es del vago (S2, #166). Un retiro
+//   (#217) es un elemento {c, i?, d: "", f} que quita la marca de esa clave: la hoja solo agrega filas y la
+//   última por clave manda. No lleva propuesta ni comentario (solo la clave y la fecha) y no cuenta para la
+//   casilla del vago. Una carga con la misma clave como retiro y como veredicto da `formato`.
 // - POST {accion: 'autorizar', r, version, vago}: {ok}. `version` debe ser VERSION_AUTORIZACION; otra
 //   da `formato` y no escribe (#169).
 // - Un error siempre es {ok: false, error} con error en codigo_no_activo, demasiado_grande, formato,
@@ -24,7 +29,7 @@
 /* exported doGet, doPost */
 
 // Reglas de validación: copia, regla por regla, de src/lib/revision.ts (REVISOR_VALIDO, CAMPO_VALIDO,
-// VERSION_VALIDA, topes, respuestaValida, fechaValida, CLAVES_V2) y de expandirV2 en
+// VERSION_VALIDA, topes, respuestaValida, retiroValido, fechaValida, CLAVES_V2) y de expandirV2 en
 // scripts/lib/revisiones.ts (ID_VALIDO), y esRespuestaDelVago es copia de la del mismo archivo. Una
 // prueba pasa los mismos casos a las dos y exige el mismo veredicto; si cambias una, cambia la otra.
 const REVISOR_VALIDO = /^[A-Za-z0-9_-]{1,40}$/;
@@ -35,6 +40,9 @@ const VERSION_AUTORIZACION_VALIDA = /^[A-Za-z0-9._-]{1,40}$/;
 // Copia de VERSION_AUTORIZACION de src/config/revision.ts: se cambian juntas, y una prueba de
 // tests/apps-script.test.ts falla si difieren. `guardar` exige esta versión en la hoja Autorizaciones (3 desde #168).
 const VERSION_AUTORIZACION = '3';
+// Copia de VERSION_CANAL de src/config/revision.ts (el protocolo con retiros, #217): se cambian juntas, y una
+// prueba de tests/apps-script.test.ts falla si difieren. `leer` la responde en `canal`.
+const VERSION_CANAL = 2;
 const MAX_TEXTO_LARGO = 4000;
 const MAX_TEXTO_CORTO = 200;
 const MAX_FECHA = 40;
@@ -92,7 +100,25 @@ function respuestaValida(r, idOk) {
   return true;
 }
 
+// Campos de una respuesta que un retiro no admite: ni propuesta ni comentario, ni posición, ni datos del trazo, ni versión.
+const CAMPOS_PROHIBIDOS_EN_RETIRO = ['propuesta', 'comentario', 'posicion', 'malla', 'ramo', 'version'];
+
+// Un retiro (#217) solo vale con estructura conocida, veredicto '', campo con la forma de la app, idioma es o en
+// (o ausente), fecha válida y obligatoria, y ninguno de los campos prohibidos.
+function retiroValido(r, idOk) {
+  if (!esObjeto(r) || !idOk(r['estructura'])) return false;
+  if (r['veredicto'] !== '') return false;
+  if (r['idioma'] !== undefined && !IDIOMAS.includes(r['idioma'])) return false;
+  if (typeof r['campo'] !== 'string' || !CAMPO_VALIDO.test(r['campo'])) return false;
+  if (!fechaValida(r['fecha'])) return false;
+  for (const k of CAMPOS_PROHIBIDOS_EN_RETIRO) if (r[k] !== undefined) return false;
+  return true;
+}
+
 const idForma = (id) => typeof id === 'string' && ID_VALIDO.test(id);
+
+// Un elemento con claves cortas es un retiro si su veredicto (d) es el texto vacío.
+const esRetiro = (el) => hasOwn(el, CLAVES_V2.veredicto) && el[CLAVES_V2.veredicto] === '';
 
 // Una respuesta es del vago si su campo empieza por `trazo:` o `trazado_`, o si trae malla o ramo. Recibe
 // un elemento con claves cortas (c, m, a).
@@ -142,6 +168,8 @@ function validarCarga(texto) {
     const lista = e[id];
     if (!idForma(id) || !Array.isArray(lista) || lista.length === 0) return null;
     const elementos = [];
+    // Clave `c|i` de cada elemento a si es retiro: la misma clave como retiro y como veredicto invalida la carga.
+    const tipos = new Map();
     for (const el of lista) {
       if (!esObjeto(el)) return null;
       const corto = {};
@@ -153,7 +181,11 @@ function validarCarga(texto) {
         if (CLAVES_CORTAS.includes(clave)) corto[clave] = el[clave];
       }
       if (hasOwn(el, CLAVES_V2.fecha) && !fechaValida(el[CLAVES_V2.fecha])) return null;
-      if (!respuestaValida(largo, idForma)) return null;
+      const retiro = esRetiro(el);
+      if (!(retiro ? retiroValido(largo, idForma) : respuestaValida(largo, idForma))) return null;
+      const clave = largo.campo + '|' + (largo.idioma === undefined ? '' : largo.idioma);
+      if (tipos.has(clave) && tipos.get(clave) !== retiro) return null;
+      tipos.set(clave, retiro);
       elementos.push(corto);
     }
     limpio[id] = elementos;
@@ -268,7 +300,8 @@ function accionGuardar(codigo, carga) {
   if (!aut || aut.version !== VERSION_AUTORIZACION) return fallo('sin_autorizacion');
   const limpia = validarCarga(carga);
   if (!limpia || limpia.r !== codigo) return fallo('formato');
-  if (!aut.vago && Object.keys(limpia.e).some((id) => limpia.e[id].some(esRespuestaDelVago))) return fallo('formato');
+  // Un retiro no lleva contenido (#217): no cuenta para la casilla del vago, aunque su campo sea un trazo.
+  if (!aut.vago && Object.keys(limpia.e).some((id) => limpia.e[id].some((el) => !esRetiro(el) && esRespuestaDelVago(el)))) return fallo('formato');
   const texto = JSON.stringify({ v: 2, r: codigo, e: limpia.e });
   if (texto.length > MAX_CELDA) return fallo('demasiado_grande');
   const fila = [ahoraIso(), codigo, Object.keys(limpia.e).join(','), texto];
@@ -313,26 +346,40 @@ function doPost(e) {
   }
 }
 
-// Última respuesta por estructura, campo e idioma de ese código; las filas posteriores pisan a las
-// anteriores. Solo cuentan las filas cuya columna B es el código y cuya carga declara el mismo código.
+// Agrupa los elementos por estructura en la forma `e` de la carga.
+function agrupar(elementos) {
+  const e = {};
+  for (const { id, el } of elementos.values()) {
+    if (!hasOwn(e, id)) e[id] = [];
+    e[id].push(el);
+  }
+  return e;
+}
+
+// Última fila por estructura, campo e idioma de ese código; las filas posteriores pisan a las anteriores. Si la
+// última es un retiro (#217), la clave sale en `retiradas` y no en `respuestas`; un veredicto posterior al retiro
+// vuelve a `respuestas`. Solo cuentan las filas cuya columna B es el código y cuya carga declara el mismo código.
 function respuestasDe(codigo) {
   const ultimas = new Map();
+  const retiradas = new Map();
   for (const fila of filasDe(PESTANA_RESPUESTAS)) {
     if (String(fila[1]) !== codigo) continue;
     const limpia = validarCarga(fila[3]);
     if (!limpia || limpia.r !== codigo) continue;
     for (const id of Object.keys(limpia.e)) {
       for (const el of limpia.e[id]) {
-        ultimas.set(id + '|' + el.c + '|' + (el.i === undefined ? '' : el.i), { id: id, el: el });
+        const clave = id + '|' + el.c + '|' + (el.i === undefined ? '' : el.i);
+        if (esRetiro(el)) {
+          ultimas.delete(clave);
+          retiradas.set(clave, { id: id, el: el });
+        } else {
+          retiradas.delete(clave);
+          ultimas.set(clave, { id: id, el: el });
+        }
       }
     }
   }
-  const e = {};
-  for (const { id, el } of ultimas.values()) {
-    if (!hasOwn(e, id)) e[id] = [];
-    e[id].push(el);
-  }
-  return { v: 2, r: codigo, e: e };
+  return { respuestas: { v: 2, r: codigo, e: agrupar(ultimas) }, retiradas: { v: 2, r: codigo, e: agrupar(retiradas) } };
 }
 
 // La última fila de Autorizaciones de ese código, o null si no tiene.
@@ -349,7 +396,8 @@ function autorizacionDe(codigo) {
 // Lo que el canal guarda de un código. Solo lee: no toma el bloqueo ni escribe. Lo usa doPost, después de
 // rechazoDeCodigo.
 function accionLeer(codigo) {
-  return json({ ok: true, respuestas: respuestasDe(codigo), autorizacion: autorizacionDe(codigo) });
+  const guardado = respuestasDe(codigo);
+  return json({ ok: true, canal: VERSION_CANAL, respuestas: guardado.respuestas, retiradas: guardado.retiradas, autorizacion: autorizacionDe(codigo) });
 }
 
 // El GET ya no lee (S4, #169): responde el error del contrato sin mirar parámetros, padrón, caché ni
