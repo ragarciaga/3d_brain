@@ -198,6 +198,28 @@ export async function leer(
   return { respuestas, retiros, retirosAdmitidos, autorizacion: autorizacionVigente(res['autorizacion']) };
 }
 
+/** Primera espera (ms) antes de volver a intentar una lectura `leer` fallida; se duplica con cada fallo seguido (#240). */
+export const ESPERA_LECTURA_INICIAL_MS = 2000;
+/** Tope (ms) de la espera entre lecturas fallidas: con la espera en el tope, los temporizadores dan un `leer` por minuto y por pestaña. */
+export const ESPERA_LECTURA_MAXIMA_MS = 60_000;
+
+/**
+ * Programa el reintento de `leer` (#240): lógica pura, sin temporizadores. Con `fallo` el contador sube y la espera
+ * es 2000, 4000, 8000... con tope de 60000; con `ok` o `inactivo` no hay más intentos (`espera: null`) y `ok` pone
+ * el contador en cero. Un contador que no es finito o es menor que 0 vale 0. Nunca da NaN ni Infinity. No usa
+ * `colaGuardado`, que ya importa este módulo.
+ */
+export function siguienteLectura(
+  fallos: number,
+  resultado: 'ok' | 'fallo' | 'inactivo',
+): { fallos: number; espera: number | null } {
+  if (resultado === 'ok') return { fallos: 0, espera: null };
+  const previos = Number.isFinite(fallos) && fallos > 0 ? Math.floor(fallos) : 0;
+  if (resultado === 'inactivo') return { fallos: previos, espera: null };
+  const n = previos + 1;
+  return { fallos: n, espera: Math.min(ESPERA_LECTURA_MAXIMA_MS, ESPERA_LECTURA_INICIAL_MS * 2 ** (n - 1)) };
+}
+
 /** Envía las respuestas (y los retiros) y devuelve las claves de confirmación (`estructura|campo|idioma|fecha`) que el canal recibió. */
 export async function guardar(codigo: string, respuestas: readonly (Respuesta | Retiro)[]): Promise<Set<string>> {
   const res = await pedir(cuerpoGuardar(codigo, respuestas));

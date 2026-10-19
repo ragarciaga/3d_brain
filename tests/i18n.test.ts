@@ -391,4 +391,20 @@ describe('textos de los retiros (#217)', () => {
     }
     if (idioma === 'es') for (const texto of [revision.guia.quitarSinCanal!, revision['retirosEnEspera_one']!]) expect(texto).not.toMatch(/\bvos\b|elegí|equivocás/i);
   });
+
+  // #240: con la lectura del canal fallida, la barra no culpa al editor: dice que se reintenta sola.
+  it.each(['es', 'en'] as const)('los textos de la lectura fallida (%s) existen y pasan las mismas reglas', (idioma) => {
+    const { revision } = leer(idioma);
+    const textos = [revision['retirosSinLectura_one']!, revision['retirosSinLectura_other']!];
+    for (const texto of textos) {
+      expect(texto).toContain('{{count}}');
+      expect(texto).not.toMatch(SUGIERE_BORRADO[idioma]);
+      expect(texto).not.toContain('—');
+    }
+    expect(textos[0]).not.toBe(textos[1]);
+    if (idioma === 'es') {
+      expect(textos[0]).not.toMatch(/\bvos\b|elegí|equivocás/i);
+      expect(textos[0]).toBe('Quitaste {{count}} marca; no se pudo leer el canal y se volverá a intentar solo');
+    }
+  });
 });

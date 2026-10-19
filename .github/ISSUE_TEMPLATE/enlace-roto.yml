@@ -1,0 +1,31 @@
+name: "Enlace roto / Broken link"
+description: "Un enlace de la ficha no abre o lleva a otra página. / A link on the card does not open or leads to another page."
+labels: ["reporte:enlace-roto"]
+body:
+  - type: input
+    id: estructura
+    attributes:
+      label: "Estructura / Structure"
+      description: "Identificador de la estructura en el atlas, lo llena la app. / Structure identifier in the atlas, filled in by the app."
+  - type: input
+    id: idioma
+    attributes:
+      label: "Idioma / Language"
+      description: "Idioma de la ficha, es o en. / Card language, es or en."
+  - type: input
+    id: version
+    attributes:
+      label: "Versión de la ficha / Card version"
+      description: "Versión del contenido, o sin-ficha. / Content version, or sin-ficha."
+  - type: input
+    id: parte
+    attributes:
+      label: "Parte de la ficha / Part of the card"
+      description: "Parte señalada, por ejemplo general, nombre o fuente.0. / Reported part, for example general, nombre or fuente.0."
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: "Descripción / Description"
+      description: "Qué está mal y, si puedes, la fuente que lo corrige. No escribas datos personales, este issue es público. / What is wrong and, if you can, the source that corrects it. Do not write personal data, this issue is public."
+    validations:
+      required: true

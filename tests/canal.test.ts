@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configRevision, VERSION_AUTORIZACION, VERSION_CANAL } from '../src/config/revision';
 import { estructuras } from '../src/data/atlas';
-import { autorizacionVigente, autorizar, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS, retirosDelCanal, TIEMPO_CANAL_MS, type TipoErrorCanal } from '../src/lib/canal';
+import { autorizacionVigente, autorizar, canalConfigurado, ErrorCanal, guardar, leer, MARGEN_FECHA_FUTURA_MS, retirosDelCanal, siguienteLectura, TIEMPO_CANAL_MS, type TipoErrorCanal } from '../src/lib/canal';
 import { cargaRevisionV2, type Respuesta, type Retiro } from '../src/lib/revision';
 
 const idOk = (id: unknown) => typeof id === 'string' && Object.hasOwn(estructuras, id);
@@ -367,6 +367,38 @@ describe('canalConfigurado', () => {
     expect(canalConfigurado()).toBe(false);
     configRevision.urlCanal = URL_PRUEBA;
     expect(canalConfigurado()).toBe(true);
+  });
+});
+
+describe('siguienteLectura (#240)', () => {
+  it('con fallos seguidos da 2000, 4000, 8000, 16000, 32000, 60000, 60000', () => {
+    let fallos = 0;
+    const esperas: (number | null)[] = [];
+    for (let i = 0; i < 7; i++) {
+      const s = siguienteLectura(fallos, 'fallo');
+      fallos = s.fallos;
+      esperas.push(s.espera);
+    }
+    expect(esperas).toEqual([2000, 4000, 8000, 16000, 32000, 60000, 60000]);
+    expect(fallos).toBe(7);
+  });
+
+  it('un ok después de 3 fallos reinicia el contador y no programa nada', () => {
+    expect(siguienteLectura(3, 'ok')).toEqual({ fallos: 0, espera: null });
+  });
+
+  it('inactivo no programa nada y conserva el contador', () => {
+    expect(siguienteLectura(3, 'inactivo')).toEqual({ fallos: 3, espera: null });
+  });
+
+  it('un contador NaN, negativo o Infinity vale 0 y la espera es finita', () => {
+    for (const malo of [Number.NaN, -1, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(siguienteLectura(malo, 'fallo')).toEqual({ fallos: 1, espera: 2000 });
+    }
+  });
+
+  it('con un contador enorme la espera sigue siendo el tope', () => {
+    expect(siguienteLectura(5000, 'fallo').espera).toBe(60000);
   });
 });
 

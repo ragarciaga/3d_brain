@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { configRevision, VERSION_AUTORIZACION, VERSION_CANAL } from '../src/config/revision';
 import { AVISO_RESPALDO_MS, ESPERA_CANAL_MS, ESPERA_ENVIO_MS, ESPERA_MAXIMA_MS, siguienteEspera } from '../src/lib/colaGuardado';
+import { ESPERA_LECTURA_INICIAL_MS, ESPERA_LECTURA_MAXIMA_MS } from '../src/lib/canal';
 import { claveGuiaVista, claveRevisionIdb } from '../src/lib/huella';
 import { ESPERA_GUARDADO_MS } from '../src/lib/revision';
 import { leerRutas } from '../src/lib/rutas';
@@ -122,6 +123,8 @@ interface CanalSimulado {
   guardar: 'ok' | 'red' | 'otra_fecha' | 'formato' | 'inactivo' | 'sin_autorizacion';
   /** Si existe, la respuesta de `leer` espera a que se resuelva (para probar lo que pasa mientras la lectura está pendiente). */
   retenerLeer: Promise<void> | null;
+  /** Cuántos `leer` seguidos se abortan (como una red caída) antes de mirar `retenerLeer` y `leer`; baja con cada uno (#240). */
+  fallarLeer: number;
   /** Si existe, `autorizar` espera a que se resuelva antes de responder (para mirar la página con la petición en vuelo). */
   retenerAutorizar: Promise<void> | null;
   /** El `e` de la carga `v:2` que devuelve `leer`: elementos por estructura, con las claves cortas del canal. */
@@ -152,7 +155,7 @@ function clavesRecibidas(carga: unknown, fechaFija?: string): string[] {
 
 async function simularCanal(
   page: Page,
-  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar' | 'respuestas' | 'demoraLeer' | 'canal'>> = {},
+  inicial: Partial<Pick<CanalSimulado, 'autorizacion' | 'leer' | 'autorizar' | 'guardar' | 'respuestas' | 'demoraLeer' | 'canal' | 'fallarLeer'>> = {},
 ): Promise<CanalSimulado> {
   const canal: CanalSimulado = {
     autorizacion: null,
@@ -160,6 +163,7 @@ async function simularCanal(
     autorizar: 'ok',
     guardar: 'ok',
     retenerLeer: null,
+    fallarLeer: 0,
     retenerAutorizar: null,
     respuestas: {},
     demoraLeer: 0,
@@ -184,8 +188,14 @@ async function simularCanal(
       const accion = typeof cuerpo['accion'] === 'string' ? cuerpo['accion'] : null;
       canal.peticiones.push({ metodo: pedido.method(), accion, url: pedido.url(), cuerpo, t: Date.now() });
       if (accion === 'leer') {
-        if (canal.leer === 'red') return route.abort('failed');
+        // `fallarLeer` aborta antes de mirar la retención; `leer: 'red'` se decide al soltarla, para poder retener una
+        // lectura y hacerla fallar después (#240).
+        if (canal.fallarLeer > 0) {
+          canal.fallarLeer -= 1;
+          return route.abort('failed');
+        }
         if (canal.retenerLeer) await canal.retenerLeer;
+        if (canal.leer === 'red') return route.abort('failed');
         if (canal.demoraLeer) await new Promise((r) => setTimeout(r, canal.demoraLeer));
         if (canal.leer === 'inactivo') return json({ ok: false, error: 'codigo_no_activo' });
         if (canal.canal === undefined) return json({ ok: true, respuestas: { v: 2, r: cuerpo['r'], e: canal.respuestas }, autorizacion: canal.autorizacion });
@@ -1788,3 +1798,219 @@ test('retiros (#217): los retiros de la copia de IndexedDB son entrada no confia
   await expect(barra(page).getByTestId('retiros-en-espera')).toHaveText('Quitaste 2 marcas; se guardarán cuando el editor actualice el canal');
   expect(peticionesDe(canal, 'guardar').flatMap(retirosDe)).toEqual([]);
 });
+
+// Lectura del canal con reintento (#240). Si `leer` falla, la lectura queda `fallida` y se reintenta sola (2 s, 4 s...
+// tope 60 s) y al volver la conexión, sin recargar.
+const dispararOnline = (page: Page) => page.evaluate(() => window.dispatchEvent(new Event('online')));
+const cantidadLeer = (canal: CanalSimulado) => peticionesDe(canal, 'leer').length;
+
+/** Abre la ficha con el código recordado sin esperar a que pinte: sirve para pausar el reloj con la primera `leer` en vuelo. */
+async function entrarSinEsperar(page: Page, context: BrowserContext, codigo: string) {
+  await saltarGuia(context, codigo);
+  await context.addInitScript((c) => localStorage.setItem('atlas:revisor', c), codigo);
+  await page.goto('/es/hipocampo');
+}
+
+test('lectura del canal (#240): con la primera lectura fallida el retiro espera, la barra lo dice y sale solo en el reintento, sin recargar', async ({
+  page,
+  context,
+}) => {
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+  await conCanal(context, URL_CANAL);
+  await entrarDirecto(page, context, 'LEC01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await correcto(page, 'que_es.es').click();
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(1);
+
+  // Al recargar la primera lectura falla y la segunda (el reintento a los 2 s) queda retenida.
+  let soltar!: () => void;
+  canal.fallarLeer = 1;
+  canal.retenerLeer = new Promise<void>((r) => (soltar = r));
+  const antes = cantidadLeer(canal);
+  await page.reload();
+  await expect(barra(page)).toContainText('LEC01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('fallida');
+  await expect.poll(() => cantidadLeer(canal)).toBe(antes + 2);
+  // D6: con el reintento en vuelo el estado sigue en `fallida`; nunca vuelve a `pendiente`, que frenaría la cola.
+  expect(await lecturaDelStore(page)).toBe('fallida');
+
+  // D3: deshacer con la lectura fallida deja el retiro pendiente y la barra no culpa al editor.
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'true');
+  await correcto(page, 'que_es.es').click();
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  await expect(barra(page).getByTestId('retiros-en-espera')).toHaveText('Quitaste 1 marca; no se pudo leer el canal y se volverá a intentar solo');
+  await page.waitForTimeout(1000);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(1);
+
+  // D2: el reintento trae `canal` 2 y el retiro sale solo, sin recargar la página.
+  await page.evaluate(() => ((window as unknown as { __sinRecarga?: boolean }).__sinRecarga = true));
+  canal.retenerLeer = null;
+  soltar();
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  expect(await CANAL_RETIROS_STORE(page)).toBe(true);
+  await expect.poll(() => peticionesDe(canal, 'guardar').flatMap(retirosDe).length).toBe(1);
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(2);
+  await expect(estadoGuardado(page)).toHaveText('Guardado ✓');
+  await expect(barra(page).getByTestId('retiros-en-espera')).toHaveCount(0);
+  await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
+  expect(await page.evaluate(() => (window as unknown as { __sinRecarga?: boolean }).__sinRecarga)).toBe(true);
+});
+
+/**
+ * Con el reloj ya instalado: la primera lectura falla con el reloj pausado (se retiene para pausar antes de que falle),
+ * el reintento sale a los 2 s y queda en vuelo, retenido, con `leer: 'ok'`. Devuelve cómo soltarlo.
+ */
+async function reintentoRetenido(page: Page, context: BrowserContext, canal: CanalSimulado, codigo: string) {
+  let soltarPrimera!: () => void;
+  canal.retenerLeer = new Promise<void>((r) => (soltarPrimera = r));
+  await conCanal(context, URL_CANAL);
+  await entrarSinEsperar(page, context, codigo);
+  await expect.poll(() => cantidadLeer(canal)).toBe(1);
+  await pausarReloj(page);
+  canal.leer = 'red';
+  canal.retenerLeer = null;
+  soltarPrimera();
+  await expect.poll(() => lecturaDelStore(page)).toBe('fallida');
+  canal.leer = 'ok';
+  let soltar!: () => void;
+  canal.retenerLeer = new Promise<void>((r) => (soltar = r));
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS);
+  await expect.poll(() => cantidadLeer(canal)).toBe(2);
+  return soltar;
+}
+
+test('lectura del canal (#240): reintenta a los 2 s y con el evento online, con un mínimo de 2 s desde el último intento, y para al leer', async ({
+  page,
+  context,
+}) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+  // La primera lectura se retiene para pausar el reloj antes de que falle: así la espera siguiente es exactamente 2 s.
+  let soltar!: () => void;
+  canal.retenerLeer = new Promise<void>((r) => (soltar = r));
+  await conCanal(context, URL_CANAL);
+  await entrarSinEsperar(page, context, 'LEC02');
+  await expect.poll(() => cantidadLeer(canal)).toBe(1);
+  await pausarReloj(page);
+  canal.leer = 'red';
+  canal.retenerLeer = null;
+  soltar();
+  await expect.poll(() => lecturaDelStore(page)).toBe('fallida');
+
+  // D5: antes de 2 s no sale nada; al cumplirse, sale una.
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS - 1);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(1);
+  await page.clock.fastForward(1);
+  await expect.poll(() => cantidadLeer(canal)).toBe(2);
+  await page.waitForTimeout(500); // deja fallar ese intento: la siguiente espera es de 4 s
+
+  // `online` justo después de un intento no lanza otro; con 2 s desde el último, sí (D4).
+  await dispararOnline(page);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(2);
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(2); // el temporizador de 4 s aún no vence
+  await dispararOnline(page);
+  await expect.poll(() => cantidadLeer(canal)).toBe(3);
+  await page.waitForTimeout(500);
+  expect(await lecturaDelStore(page)).toBe('fallida');
+
+  // `online` no reinicia la espera: ese tercer fallo deja la siguiente en 8 s (la secuencia sigue, no vuelve a 2 s) y,
+  // sin más `online`, solo el temporizador lanza la cuarta lectura, justo a los 8 s.
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS * 4 - 1);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(3);
+  await page.clock.fastForward(1);
+  await expect.poll(() => cantidadLeer(canal)).toBe(4);
+  await page.waitForTimeout(500); // deja fallar ese intento: la siguiente espera es de 16 s
+
+  // Vuelve el canal: un `online` lee, la lectura queda `hecha` y no queda ni temporizador ni listener que lea otra vez.
+  canal.leer = 'ok';
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS);
+  await dispararOnline(page);
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  expect(cantidadLeer(canal)).toBe(5);
+  expect(await CANAL_RETIROS_STORE(page)).toBe(true);
+  await page.clock.fastForward(ESPERA_LECTURA_MAXIMA_MS);
+  await dispararOnline(page);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(5);
+  expect(await lecturaDelStore(page)).toBe('hecha');
+});
+
+test('lectura del canal (#240): el resultado tardío de un reintento del revisor anterior no toca la lectura del revisor nuevo', async ({
+  page,
+  context,
+}) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+  // El reintento del primer revisor sale a los 2 s y se queda retenido; con él en vuelo el store pasa a otro revisor,
+  // cuya primera lectura falla.
+  const soltarTardia = await reintentoRetenido(page, context, canal, 'LEC03');
+  // `online` con el reintento en vuelo (y con 2 s desde que salió) no lanza una segunda lectura a la vez.
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS);
+  await dispararOnline(page);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(2);
+  canal.fallarLeer = 1;
+  await page.evaluate(() => (window as unknown as { __atlas: { getState: () => { setRevisor: (c: string) => void } } }).__atlas.getState().setRevisor('LEC04'));
+  await expect.poll(() => cantidadLeer(canal)).toBe(3);
+  await expect.poll(() => lecturaDelStore(page)).toBe('fallida');
+
+  // La respuesta buena del primero llega tarde: no hace `hecha` al segundo, ni le pone retiros ni autorización.
+  canal.retenerLeer = null;
+  soltarTardia();
+  await page.waitForTimeout(800);
+  expect(await revisorDelStore(page)).toBe('LEC04');
+  expect(await lecturaDelStore(page)).toBe('fallida');
+  expect(await CANAL_RETIROS_STORE(page)).toBe(false);
+  expect(await autorizacionDelStore(page)).toBeNull();
+});
+
+test('lectura del canal (#240): si el docente cambia su autorización con el reintento en vuelo, gana la del estado y no la del canal', async ({
+  page,
+  context,
+}) => {
+  await page.clock.install();
+  const canal = await simularCanal(page, { autorizacion: null, canal: VERSION_CANAL });
+  const soltar = await reintentoRetenido(page, context, canal, 'LEC05');
+  const nueva = { version: VERSION_AUTORIZACION, vago: true };
+  await page.evaluate(
+    (a) => (window as unknown as { __atlas: { getState: () => { setAutorizacion: (x: unknown) => void } } }).__atlas.getState().setAutorizacion(a),
+    nueva,
+  );
+  canal.retenerLeer = null;
+  soltar();
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  expect(await autorizacionDelStore(page)).toEqual(nueva);
+});
+
+// Un resultado tardío, bueno o malo, no pisa una lectura que ya pasó a `inactivo` mientras el reintento estaba en vuelo.
+for (const tardio of ['ok', 'red'] as const) {
+  test(`lectura del canal (#240): un reintento en vuelo que termina en ${tardio} después de pasar a inactivo no cambia el estado ni programa otro`, async ({
+    page,
+    context,
+  }) => {
+    await page.clock.install();
+    const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+    const soltar = await reintentoRetenido(page, context, canal, `LEC0${tardio === 'ok' ? 6 : 7}`);
+    await page.evaluate(() =>
+      (window as unknown as { __atlas: { getState: () => { setLecturaCanal: (l: string) => void } } }).__atlas.getState().setLecturaCanal('inactivo'),
+    );
+    canal.leer = tardio;
+    canal.retenerLeer = null;
+    soltar();
+    await page.waitForTimeout(800);
+    expect(await lecturaDelStore(page)).toBe('inactivo');
+    expect(await CANAL_RETIROS_STORE(page)).toBe(false);
+    // Sin temporizador ni lectura nueva, aunque pase el tope y vuelva la conexión.
+    await page.clock.fastForward(ESPERA_LECTURA_MAXIMA_MS);
+    await dispararOnline(page);
+    await page.waitForTimeout(500);
+    expect(cantidadLeer(canal)).toBe(2);
+    expect(await lecturaDelStore(page)).toBe('inactivo');
+  });
+}
