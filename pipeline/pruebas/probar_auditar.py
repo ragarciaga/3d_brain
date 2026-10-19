@@ -103,10 +103,12 @@ largo_30 = uno("Vagus nerve (X).r#t92", [sup_raicilla, [sup_raicilla[0] - 0.316 
                                                        sup_raicilla[1] - 0.949 * largo / 1000, sup_raicilla[2]]])
 assert abs(largo_30["largo_mm"] - largo) < 0.2, largo_30["largo_mm"]
 assert largo_30["regla"] == "sin_regla", largo_30["regla"]
+assert largo_30["fallas"] == [{"regla": "raicilla", "no_cumple": [{"condicion": "largo", "mm": -10.0}]}], largo_30["fallas"]
 
 # 6. Raicilla, negativo por oliva: el mismo trazo corto con el extremo superior delante del centro z de la oliva.
 delante = uno("Vagus nerve (X).r#t93", [[-0.006, 1.576, 0.005], [-0.016, 1.571, 0.007]])
 assert delante["largo_mm"] < r.LARGO_RAICILLA_MAX_MM and delante["regla"] == "sin_regla", delante
+assert delante["fallas"] == [{"regla": "raicilla", "no_cumple": [{"condicion": "detras_oliva", "mm": -8.0}]}], delante["fallas"]
 
 # 7. Faríngeo, positivo: origen a DF[0] + 6 mm del foramen y extremo 2 mm detrás de la cara posterior de Laryngopharynx.
 fin_faringe = [-0.005, 1.49, ANCLAS["Laryngopharynx"]["caja"][0][2] - 0.002]
@@ -152,8 +154,13 @@ assert celiaco["cerca_extremos"]["inferior"][0]["pieza"] == "Thoracic aorta"
 contrario = uno("Vagus nerve (X).r#t85", [[0.03, 1.230, 0.02], [0.05, 1.17, 0.043]])  # solo cambia el lado
 assert contrario["regla"] == "sin_regla" and contrario["propuesta"] is None, contrario
 assert contrario["cerca_extremos"]["inferior"][0]["pieza"] == "Stomach"
+# Cara y lado no encajan: la regla que se evalúa es la del lado (derecho: posterior) y falla solo por la cara.
+assert contrario["fallas"] == [{"regla": "abdominal_gastrico_posterior",
+                                "no_cumple": [{"condicion": "cara_estomago", "mm": -43.0}]}], contrario["fallas"]
 contrario_p = uno("Vagus nerve (X).l#t87", [[0.03, 1.230, -0.02], [0.05, 1.17, -0.043]])  # cara posterior desde el izquierdo
 assert contrario_p["regla"] == "sin_regla" and contrario_p["cerca_extremos"]["inferior"][0]["pieza"] == "Stomach", contrario_p
+assert contrario_p["fallas"] == [{"regla": "abdominal_gastrico_anterior",
+                                  "no_cumple": [{"condicion": "cara_estomago", "mm": -43.0}]}], contrario_p["fallas"]
 # Entre el hígado y el estómago a la misma distancia: sale hepático (empate por nombre) pero con confianza baja.
 empate = uno("Vagus nerve (X).r#t88", [[-0.005, 1.230, -0.010], [-0.0075, 1.19, 0.0]])
 assert empate["regla"] == "abdominal_hepatico" and empate["confianza"] == "baja", empate
@@ -163,6 +170,11 @@ assert [c["pieza"] for c in empate["cerca_extremos"]["inferior"]] == ["Liver", "
 ambiguo = uno("Vagus nerve (X).l#t96", [desde_foramen("l", DF[0] + 6), [0.05, 1.50, 0.02]])
 assert ambiguo["regla"] == "sin_regla" and ambiguo["propuesta"] is None and ambiguo["confianza"] is None, ambiguo
 assert ambiguo["auditoria"] == "sin candidato", ambiguo
+# Una región (el cuello) con dos reglas cercanas: cada una trae sus condiciones que fallan, en el orden de clasificar.
+assert [f["regla"] for f in ambiguo["fallas"]] == ["faringeo", "laringeo_superior"], ambiguo["fallas"]
+assert [c["condicion"] for c in ambiguo["fallas"][0]["no_cumple"]] == ["mas_cerca_faringe", "cerca_faringe", "cara_posterior_faringe"]
+assert [c["condicion"] for c in ambiguo["fallas"][1]["no_cumple"]] == ["bajo_foramen_min", "cerca_tiroides"]
+assert all(c["mm"] < 0 for f in ambiguo["fallas"] for c in f["no_cumple"]), ambiguo["fallas"]
 
 # 12. Tronco: más de 200 mm. El faríngeo, corto, no.
 assert fixture["Vagus nerve (X).r#t00"]["regla"] == "tronco" and fixture["Vagus nerve (X).r#t00"]["propuesta"] == "no_es_ramo"
@@ -198,11 +210,66 @@ SOLO_UNA = {
     "hepático lejos del hígado": (
         "Vagus nerve (X).r#t80", [[-0.045, 1.230, -0.010], [-0.015 - (r.CERCA_ABDOMEN_MM + 5) / 1000, 1.19, 0.0]]),
 }
+# Lo que reporta `fallas` de cada caso: (regla que lo rompe, condición, margen en mm). La primera fila es de frontera
+# de región: el trazo entero queda bajo el foramen (altura media) y no bajo el hiato, así que la raicilla no es la
+# más cercana y se reportan las dos del cuello (FRONTERA guarda la condición de la regla rota). El hepático que empieza
+# sobre el hiato tiene su altura media bajo el hiato: es abdominal y falla solo por `bajo_hiato`.
+ESPERADO = {
+    "raicilla bajo el foramen": None,
+    "hepático que empieza sobre el hiato": ("abdominal_hepatico", "bajo_hiato", -6.0),
+    "faríngeo que termina en la cara anterior de la faringe": ("faringeo", "cara_posterior_faringe", -12.0),
+    "faríngeo que termina lejos de la faringe": ("faringeo", "cerca_faringe", -5.0),
+    "faríngeo que termina más cerca del tiroides": ("faringeo", "mas_cerca_faringe", -5.5),
+    "laríngeo superior que termina más cerca de la faringe": ("laringeo_superior", "mas_cerca_tiroides", -6.0),
+    "raicilla lejos del bulbo": ("raicilla", "cerca_bulbo", -5.0),
+    "laríngeo superior que termina lejos del tiroides": ("laringeo_superior", "cerca_tiroides", -5.0),
+    "laríngeo superior bajo el rango": ("laringeo_superior", "bajo_foramen_min", -5.0),
+    "laríngeo superior sobre el rango": ("laringeo_superior", "bajo_foramen_max", -5.0),
+    "hepático lejos del hígado": ("abdominal_hepatico", "cerca_destino", -5.0),
+}
+FRONTERA = {"raicilla bajo el foramen": "sobre_foramen"}
+assert set(ESPERADO) == set(SOLO_UNA) and set(FRONTERA) == {d for d, v in ESPERADO.items() if v is None}
 for descripcion, (nombre_, control) in SOLO_UNA.items():
     reg = uno(nombre_, control)
     assert reg["regla"] == "sin_regla" and reg["propuesta"] is None, (descripcion, reg["regla"])
+    esperado = ESPERADO[descripcion]
+    if esperado is None:
+        # El trazo cae en la región del cuello: las dos reglas del cuello, sin la condición de frontera de la otra.
+        assert [f["regla"] for f in reg["fallas"]] == ["faringeo", "laringeo_superior"], (descripcion, reg["fallas"])
+        linea_ = g.orientar_de_arriba_abajo(trazo(*control)["puntos"])
+        lado_ = r.lado_de(nombre_)
+        conds = r._condiciones_raicilla(lado_, linea_, g.largo(linea_) * 1000, CTX)
+        # Aparte, la regla rota falla exactamente por la condición de frontera.
+        assert [k for k, _, ok in conds if not ok] == [FRONTERA[descripcion]], (descripcion, conds)
+        continue
+    regla_, condicion_, mm_ = esperado
+    assert [f["regla"] for f in reg["fallas"] if f["regla"] == regla_] == [regla_], (descripcion, reg["fallas"])
+    propia = next(f for f in reg["fallas"] if f["regla"] == regla_)
+    assert [c["condicion"] for c in propia["no_cumple"]] == [condicion_], (descripcion, propia)
+    assert abs(propia["no_cumple"][0]["mm"] - mm_) <= 0.1, (descripcion, propia)
+# 12c. La región de `fallas` la decide la altura media del trazo, no un extremo: un trazo que cruza una frontera por menos de
+# un milímetro sigue siendo de su región y lista la condición de frontera entre sus fallas.
+y_foramen, y_hiato = CTX.foramen["r"][0][1], CTX.hiato
+# Raicilla que baja 0,3 mm del foramen (la altura media queda sobre él): es la raicilla y falla también por `sobre_foramen`.
+cruza_foramen = uno("Vagus nerve (X).r#t60", [[-0.006, y_foramen + 0.0030, -0.017], [-0.016, y_foramen - 0.0003, -0.015]])
+assert cruza_foramen["regla"] == "sin_regla", cruza_foramen
+assert [f["regla"] for f in cruza_foramen["fallas"]] == ["raicilla"], cruza_foramen["fallas"]
+sobre = [c["mm"] for c in cruza_foramen["fallas"][0]["no_cumple"] if c["condicion"] == "sobre_foramen"]
+assert len(sobre) == 1 and -1.0 < sobre[0] < 0, cruza_foramen["fallas"]
+# Al revés: casi todo el trazo bajo el foramen y solo la punta 0,3 mm arriba (altura media bajo él): son las del cuello.
+punta_foramen = uno("Vagus nerve (X).r#t61", [[-0.006, y_foramen + 0.0003, -0.017], [-0.016, y_foramen - 0.0030, -0.015]])
+assert [f["regla"] for f in punta_foramen["fallas"]] == ["faringeo", "laringeo_superior"], punta_foramen["fallas"]
+# Hepático que empieza 0,5 mm sobre el hiato (altura media bajo él): es abdominal y falla solo por `bajo_hiato`.
+cruza_hiato = uno("Vagus nerve (X).r#t62", [[-0.010, y_hiato + 0.0005, -0.010], [-0.0165, 1.19, 0.0]])
+assert cruza_hiato["regla"] == "sin_regla" and cruza_hiato["fallas"] == [
+    {"regla": "abdominal_hepatico", "no_cumple": [{"condicion": "bajo_hiato", "mm": -0.5}]}], cruza_hiato["fallas"]
+# Casi todo el trazo sobre el hiato y la punta 0,5 mm abajo (altura media sobre él): son las del cuello, no las abdominales.
+punta_hiato = uno("Vagus nerve (X).r#t63", [[-0.010, y_hiato + 0.0300, -0.010], [-0.0165, y_hiato - 0.0005, 0.0]])
+assert [f["regla"] for f in punta_hiato["fallas"]] == ["faringeo", "laringeo_superior"], punta_hiato["fallas"]
+
 # Control: el hepático de ese tipo, sin el cambio, sí sale hepático.
-assert uno("Vagus nerve (X).r#t86", [[-0.045, 1.230, -0.010], [-0.0165, 1.19, 0.0]])["regla"] == "abdominal_hepatico"
+control_ = uno("Vagus nerve (X).r#t86", [[-0.045, 1.230, -0.010], [-0.0165, 1.19, 0.0]])
+assert control_["regla"] == "abdominal_hepatico" and control_["fallas"] is None, control_
 
 # 13. confianza(): el procedimiento de tasks.md, con sus bordes.
 dos = [(0.5, "A"), (1.0, "B")]
@@ -245,7 +312,7 @@ casos = {"Vagus nerve (X).l#t91": trazo([0.006, 1.576, -0.017], [0.016, 1.571, -
          "Vagus nerve (X).l#t96": trazo(desde_foramen("l", DF[0] + 6), [0.05, 1.50, 0.02])}
 todos = {**TRAZOS, **casos}
 medidos = r.medir_trazos(ANCLAS, todos, SUP)
-CLAVES = ["altura_mm", "auditoria", "cerca_extremos", "confianza", "fuente", "largo_mm", "propuesta", "regla"]
+CLAVES = ["altura_mm", "auditoria", "cerca_extremos", "confianza", "fallas", "fuente", "largo_mm", "propuesta", "regla"]
 with tempfile.TemporaryDirectory() as tmp:
     destino = Path(tmp) / "salida" / "trazos-medidos.json"
     r.escribir_trazos_medidos(medidos, destino)
@@ -263,10 +330,19 @@ for nombre, m in leido.items():
     assert (m["confianza"] is None) == (m["propuesta"] is None), nombre
     assert m["confianza"] in (None, "alta", "media", "baja"), nombre
     assert isinstance(m["largo_mm"], float), nombre
+    # fallas: null con regla; sin regla, de 1 a 2 reglas con sus condiciones que no se cumplen (mm a 0,1, cero o menos).
+    assert (m["fallas"] is None) == (m["regla"] != "sin_regla"), nombre
+    for f in m["fallas"] or []:
+        assert list(f) == ["no_cumple", "regla"] and f["regla"] in r.REGLAS and f["regla"] not in ("tronco", "sin_regla"), nombre
+        assert len(f["no_cumple"]) >= 1, (nombre, f)
+        for c in f["no_cumple"]:
+            assert list(c) == ["condicion", "mm"] and c["mm"] <= 0 and c["mm"] == round(c["mm"], 1), (nombre, c)
+    assert m["fallas"] is None or 1 <= len(m["fallas"]) <= 2, nombre
     mm = [m["largo_mm"], m["altura_mm"]["max"], m["altura_mm"]["min"]] + \
         [p["mm"] for v in m["cerca_extremos"].values() for p in v]
     assert all(v == round(v, 1) for v in mm), (nombre, "las distancias van a 0,1 mm")
 assert {m["regla"] for m in leido.values()} >= {"tronco", "raicilla", "faringeo", "abdominal_hepatico", "sin_regla"}
+assert any(m["fallas"] for m in leido.values()), "ningún trazo sin regla trae fallas"
 assert set(r.PROPUESTA) == set(r.FUENTE) == set(r.TEXTO_AUDITORIA) == set(r.REGLAS)
 # Los textos de la columna Propuesta son los que src/data/trazos-vago.json y tests/trazos.test.ts ya usan.
 assert r.TEXTO_AUDITORIA == {
@@ -276,6 +352,27 @@ assert r.TEXTO_AUDITORIA == {
     "abdominal_gastrico_posterior": "candidato: ramo gástrico posterior",
     "abdominal_celiaco": "candidato: ramo celíaco", "sin_regla": "sin candidato"}
 assert {v for v in r.PROPUESTA.values() if v not in (None, "no_es_ramo")} <= MARCADORES
+
+# 15b. Las condiciones de cada regla: la misma decisión que antes, partida. `se cumple` es el signo del margen (la cara
+# del estómago lo decide por el lado y el signo de dz: su margen es la distancia al centro z, con el signo de si encaja;
+# solo un dz exactamente 0 en el lado derecho da margen -0,0 y no se cumple, y los datos de prueba no lo tocan).
+claves_vistas = set()
+for nombre, datos_ in todos.items():
+    linea_ = g.orientar_de_arriba_abajo(datos_["puntos"])
+    lado_ = r.lado_de(nombre)
+    por_regla = [("raicilla", r._condiciones_raicilla(lado_, linea_, g.largo(linea_) * 1000, CTX)),
+                 ("faringeo", r._condiciones_faringeo(lado_, linea_, CTX)),
+                 ("laringeo_superior", r._condiciones_laringeo_superior(lado_, linea_, CTX)),
+                 r._condiciones_abdominal(lado_, linea_, CTX)]
+    for regla_, conds in por_regla:
+        for clave_, margen_, ok_ in conds:
+            claves_vistas.add(clave_)
+            assert ok_ == (margen_ >= 0), (nombre, regla_, clave_, margen_, ok_)
+    # Las funciones de siempre dan lo que dan las condiciones.
+    assert (r._raicilla(lado_, linea_, g.largo(linea_) * 1000, CTX) is None) == (not all(ok for _, _, ok in por_regla[0][1]))
+assert claves_vistas == {"largo", "cerca_bulbo", "detras_oliva", "sobre_foramen", "bajo_foramen_min", "bajo_foramen_max",
+                         "mas_cerca_faringe", "cerca_faringe", "cara_posterior_faringe", "mas_cerca_tiroides",
+                         "cerca_tiroides", "bajo_hiato", "destino_mas_cercano", "cerca_destino", "cara_estomago"}, claves_vistas
 
 # 16. Cada fuente está en la bibliografía de fuentes.md. Control negativo: una clave inventada no.
 assert set(r.FUENTE.values()) <= set(BIB), set(r.FUENTE.values()) - set(BIB)

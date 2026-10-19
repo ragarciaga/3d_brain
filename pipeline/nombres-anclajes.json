@@ -1,0 +1,157 @@
+{
+ "piezas": {
+  "Aortic arch": {
+   "en": "Aortic arch",
+   "es": "Arco aórtico",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Brachiocephalic trunk": {
+   "en": "Brachiocephalic trunk",
+   "es": "Tronco braquiocefálico",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Cricoid cartilage": {
+   "en": "Cricoid cartilage",
+   "es": "Cartílago cricoides",
+   "fuente": "src/data/estructuras.json",
+   "lado": "",
+   "pieza": "cricoid-cartilage"
+  },
+  "Diaphragm": {
+   "en": "Diaphragm",
+   "es": "Diafragma",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Internal jugular vein.l": {
+   "en": "Internal jugular vein",
+   "es": "Vena yugular interna",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": "l"
+  },
+  "Internal jugular vein.r": {
+   "en": "Internal jugular vein",
+   "es": "Vena yugular interna",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": "r"
+  },
+  "Laryngopharynx": {
+   "en": "Laryngopharynx",
+   "es": "Porción laríngea de la farínge",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Left common carotid artery": {
+   "en": "Left common carotid artery",
+   "es": "Arteria carótida común izquierda",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Left main bronchus": {
+   "en": "Left main bronchus",
+   "es": "Bronquio principal izquierdo",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Left subclavian artery": {
+   "en": "Left subclavian artery",
+   "es": "Arteria subclavia izquierda",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Liver": {
+   "en": "Liver",
+   "es": "Hígado",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Medulla oblongata.l": {
+   "en": "Medulla oblongata",
+   "es": "Bulbo",
+   "fuente": "src/data/estructuras.json",
+   "lado": "l",
+   "pieza": "medulla-oblongata-l"
+  },
+  "Medulla oblongata.r": {
+   "en": "Medulla oblongata",
+   "es": "Bulbo",
+   "fuente": "src/data/estructuras.json",
+   "lado": "r",
+   "pieza": "medulla-oblongata-r"
+  },
+  "Node of ligamentum arteriosum": {
+   "en": "Node of ligamentum arteriosum",
+   "es": "Nodo del ligamento arterioso",
+   "fuente": "TA2 (Z-Anatomy), término entre paréntesis",
+   "lado": ""
+  },
+  "Oesophagus": {
+   "en": "Oesophagus",
+   "es": "Esófago",
+   "fuente": "src/data/estructuras.json",
+   "lado": "",
+   "pieza": "oesophagus"
+  },
+  "Olive.l": {
+   "en": "Olive",
+   "es": "Oliva",
+   "fuente": "src/data/estructuras.json",
+   "lado": "l",
+   "pieza": "olive-l"
+  },
+  "Olive.r": {
+   "en": "Olive",
+   "es": "Oliva",
+   "fuente": "src/data/estructuras.json",
+   "lado": "r",
+   "pieza": "olive-r"
+  },
+  "Right common carotid artery": {
+   "en": "Right common carotid artery",
+   "es": "Arteria carótida común derecha",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Right main bronchus": {
+   "en": "Right main bronchus",
+   "es": "Bronquio principal derecho",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Right subclavian artery": {
+   "en": "Right subclavian artery",
+   "es": "Arteria subclavia derecha",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Stomach": {
+   "en": "Stomach",
+   "es": "Estómago",
+   "fuente": "src/data/estructuras.json",
+   "lado": "",
+   "pieza": "stomach"
+  },
+  "Thoracic aorta": {
+   "en": "Thoracic aorta",
+   "es": "Aorta torácica",
+   "fuente": "TA2 (Z-Anatomy)",
+   "lado": ""
+  },
+  "Thyroid cartilage": {
+   "en": "Thyroid cartilage",
+   "es": "Cartílago tiroideo",
+   "fuente": "src/data/estructuras.json",
+   "lado": "",
+   "pieza": "thyroid-cartilage"
+  },
+  "Trachea": {
+   "en": "Trachea",
+   "es": "Tráquea",
+   "fuente": "src/data/estructuras.json",
+   "lado": "",
+   "pieza": "trachea"
+  }
+ }
+}
