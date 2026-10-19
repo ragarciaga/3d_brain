@@ -353,12 +353,12 @@ describe('página Privacidad (#168)', () => {
       dice('proveedorGoogle', 'Google');
       dice('proveedorGithub', 'GitHub');
       dice('proveedorHostinger', 'Hostinger', 'info@maysasp.com', es ? 'donde llegan los reportes' : 'where reports');
-      dice('transferencia', es ? 'Estados Unidos' : 'United States', 'Hostinger', es ? 'Chipre' : 'Cyprus', es ? 'fuera de Colombia' : 'outside Colombia');
+      dice('transferencia', es ? 'Estados Unidos' : 'United States', 'Hostinger', es ? 'Chipre' : 'Cyprus', es ? 'empresas procesan los datos fuera de Colombia' : 'companies process data outside Colombia');
     });
 
     it(`(${idioma}) dice cuánto se conservan los reportes y quién puede borrar los issues`, () => {
       dice('conservacionReportes', ...(es ? ['como máximo 12 meses', 'solo el editor puede borrarlos'] : ['for at most 12 months', 'only the editor can delete them']));
-      dice('conservacionProveedores', 'Hostinger', es ? 'siguen el plazo de 12 meses' : 'follow the 12-month limit');
+      dice('conservacionProveedores', 'Hostinger', es ? 'de Hostinger siguen el plazo de 12 meses' : 'mailbox follow the 12-month limit');
     });
 
     it(`(${idioma}) dice la conservación y los derechos`, () => {
