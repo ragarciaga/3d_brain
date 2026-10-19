@@ -33,8 +33,10 @@ import { claveRespuesta, type Respuesta, type Retiro } from '../lib/revision';
 import { ENTRADA_VAGO } from '../lib/trazos';
 
 /**
- * Estado de la lectura inicial del canal. `inactivo`: el canal respondió `codigo_no_activo` a `leer`, `autorizar`
- * o `guardar` para el revisor actual; con ese valor no se guarda nada en el canal.
+ * Estado de la lectura `leer` del canal. `fallida`: la lectura falló y el panel la reintenta solo (2 s, 4 s... tope de
+ * 60 s, y al volver la conexión); nunca vuelve a `pendiente` mientras se reintenta, porque `pendiente` frena la cola de
+ * guardado. `inactivo`: el canal respondió `codigo_no_activo` a `leer`, `autorizar` o `guardar` para el revisor actual;
+ * con ese valor no se guarda nada en el canal ni se reintenta.
  */
 export type LecturaCanal = 'pendiente' | 'hecha' | 'fallida' | 'inactivo';
 
@@ -123,7 +125,7 @@ interface Estado {
   revisor: string | null;
   revisionBloqueada: boolean; // la app no pudo abrir el modo revisión en esta pestaña (beacon que no se quitó con una recarga)
   autorizacion: Autorizacion | null; // vigente para el revisor actual; null es "falta autorizar o no se sabe"
-  lecturaCanal: LecturaCanal; // estado del canal para el revisor actual: la lectura inicial `leer`, y `inactivo` también por `autorizar` o `guardar`
+  lecturaCanal: LecturaCanal; // estado del canal para el revisor actual: la lectura `leer` (con reintentos si falla), y `inactivo` también por `autorizar` o `guardar`
   respuestas: Record<string, Respuesta>;
   retiradas: Record<string, string>; // clave de respuesta -> fecha del retiro: marcas que el docente quitó y el canal aún debe recibir (#217); una clave no está aquí y en `respuestas`
   canalRetiros: boolean; // el script del canal declaró `canal >= VERSION_CANAL` en la lectura de este revisor: solo entonces se mandan retiros

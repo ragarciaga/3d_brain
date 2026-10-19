@@ -240,6 +240,8 @@
     "sinEnviar_other": "{{count}} not sent",
     "retirosEnEspera_one": "You removed {{count}} mark; it will be saved when the editor updates the channel",
     "retirosEnEspera_other": "You removed {{count}} marks; they will be saved when the editor updates the channel",
+    "retirosSinLectura_one": "You removed {{count}} mark; the channel could not be read and will be retried automatically",
+    "retirosSinLectura_other": "You removed {{count}} marks; the channel could not be read and will be retried automatically",
     "parteSinAbrir": "not opened",
     "parteAbierta": "opened",
     "parteConfirmada": "confirmed",
