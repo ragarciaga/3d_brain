@@ -319,14 +319,23 @@ describe('la pestaña Padrón es la única fuente (#257)', () => {
     expect(plano).toMatch(/ejecuta los mismos comandos otra vez sin `-WhatIf`/);
   });
 
-  it('un código creado con el menú sirve enseguida y uno escrito a mano tarda hasta un minuto, en el paso 7 y en la migración', () => {
+  it('un código creado con el menú normalmente sirve enseguida, y si responde codigo_no_activo se espera un minuto y se repite, en el paso 7 y en la migración', () => {
     const paso7 = guia.slice(guia.indexOf('7. Prueba rápida'), guia.indexOf('Para actualizar el script'));
     const plano7 = paso7.replace(/\s+/g, ' ');
-    expect(plano7).toContain('Un código creado con el menú sirve enseguida, porque el menú vacía la caché del `Padrón`');
-    expect(plano7).toMatch(/Una fila escrita a mano puede tardar hasta un minuto/);
     const plano = cuerpo.replace(/\s+/g, ' ');
-    expect(plano).toContain('enseguida: el menú vacía la caché y no hace falta esperar');
-    expect(plano).not.toMatch(/a menos de un minuto de crearlo/);
+    for (const [nombre, texto] of [['paso 7', plano7], ['migración', plano]] as const) {
+      expect(texto, nombre).toMatch(/normalmente sirve enseguida, porque el menú vacía la caché/i);
+      expect(texto, nombre).toMatch(/`codigo_no_activo`[^.]*espera un minuto y repítela/);
+      expect(texto, nombre).not.toMatch(/no hace falta esperar|a menos de un minuto de crearlo|sirve enseguida\./);
+    }
+    expect(plano7).toMatch(/una petición que ya estaba en curso pudo volver a guardar la lista vieja/);
+    expect(plano7).toMatch(/Una fila escrita a mano puede tardar hasta un minuto/);
+  });
+
+  it('la migración solo sigue si no repartiste códigos, igual que su punto 2', () => {
+    const plano = cuerpo.replace(/\s+/g, ' ');
+    expect(plano).toContain('sigue solo si no has repartido ninguno (el punto 2 te manda detenerte si ya repartiste alguno)');
+    expect(plano).not.toMatch(/Como todavía no has repartido ningún código/);
   });
 
   it('la sección 2 pide limpiar el portapapeles, no "límpiate"', () => {

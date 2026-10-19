@@ -25,7 +25,7 @@
 // La lógica vive en scripts/lib/revisiones.ts (importar); aquí solo se lee y se escribe.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { argumentosImportar, importar, padronDeCsv, parsearCsv } from './lib/revisiones.ts';
+import { argumentosImportar, importar, padronDeCsv, parsearCsvConVacias } from './lib/revisiones.ts';
 import { vaciarSalida } from './lib/salida.ts';
 
 const args = argumentosImportar(process.argv.slice(2));
@@ -56,7 +56,7 @@ const textoAutorizaciones = args.autorizaciones
   : null;
 const textoPadron = leer(args.padron, `No está el CSV del Padrón en ${args.padron}. Descárgalo de la pestaña Padrón de la hoja del canal.`);
 const textoRespuestas = leer(args.csv, `No está el CSV de respuestas en ${args.csv}. Descárgalo de la pestaña Respuestas de la hoja del canal.`);
-const leido = padronDeCsv(parsearCsv(textoPadron));
+const leido = padronDeCsv(parsearCsvConVacias(textoPadron));
 if (leido.error) {
   console.error(`Padrón inválido (${args.padron}): ${leido.error}`);
   process.exit(2);
@@ -78,7 +78,7 @@ const { archivos, validos, invalidas, desconocidos, sinVago, autorizaciones, sin
 );
 for (const f of inactivos) {
   console.error(
-    `Código inactivo (Activo distinto de sí) del alias ${f.alias}: ${f.aceptadas} filas de Respuestas importadas, ${f.descartadasFormulario} del formulario descartadas.`,
+    `Código inactivo (Activo distinto de sí) del alias ${f.alias}: filas de Respuestas importadas: ${f.aceptadas}; filas del formulario descartadas: ${f.descartadasFormulario}.`,
   );
 }
 if (autorizaciones === 0) {

@@ -104,11 +104,12 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
 7. Prueba rápida, desde PowerShell, con una fila de prueba y no con el código de un docente real.
    En la hoja, menú Maysa Brain, Crear revisor: crea un código de prueba aleatorio de 10 caracteres con
    el alias siguiente y Activo `sí`. Después de agregar la fila, espera un minuto (solo si la escribiste
-   a mano en vez de usar el menú) antes de pegar el bloque. Un código creado con el menú sirve enseguida,
-   porque el menú vacía la caché del `Padrón`. Una fila escrita a mano puede tardar hasta un minuto, porque
-   el script guarda `Padrón` unos 60 s: con la caché caliente, la primera prueba puede responder
-   `codigo_no_activo` aunque la fila ya diga `sí`. La primera vez, Google pide permisos para el menú (ver la subsección "Actualización: el
-   Padrón es la única fuente (#257)"). Copia el código de la fila nueva de `Padrón`, columna A.
+   a mano en vez de usar el menú) antes de pegar el bloque. Con el menú, el código normalmente sirve
+   enseguida, porque el menú vacía la caché del `Padrón`. Si la prueba responde `codigo_no_activo` aunque
+   la fila diga `sí`, espera un minuto y repítela: una petición que ya estaba en curso pudo volver a
+   guardar la lista vieja, y el script guarda `Padrón` unos 60 s. Una fila escrita a mano puede tardar
+   hasta un minuto por la misma razón. La primera vez, Google pide permisos para el menú (ver la
+   subsección "Actualización: el Padrón es la única fuente (#257)"). Copia el código de la fila nueva de `Padrón`, columna A.
    Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
    un PR. Crea un código nuevo para esta prueba: uno anterior pudo quedar en el historial del
@@ -195,7 +196,8 @@ guardar y recargar la hoja; aun así, haz "Nueva versión" en el mismo paso para
    texto exacto de estos permisos se confirma en la prueba manual D10. Si pide cualquier otro (Drive,
    todas tus hojas de cálculo, servicios externos, correo), detente, no aceptes y avísalo por chat. Si Google avisa que la app no está verificada,
    pulsa Configuración avanzada e Ir a (nombre del proyecto): es tu propio script.
-6. Migra el padrón. Como todavía no has repartido ningún código, no hace falta conservar los viejos:
+6. Migra el padrón. Esto borra los códigos viejos, así que sigue solo si no has repartido ninguno (el
+   punto 2 te manda detenerte si ya repartiste alguno):
    1. Borra las filas de prueba de `Respuestas` y de `Autorizaciones`.
    2. Si ya repartiste algún código a un docente, detente y avísalo por chat antes de borrar nada: esa
       fila dejaría de valer. Si no, borra todas las filas de `Padrón` salvo la cabecera.
@@ -215,8 +217,8 @@ guardar y recargar la hoja; aun así, haz "Nueva versión" en el mismo paso para
       Si PowerShell dice que no encuentra el archivo, ya no está: no hace falta hacer nada. Cuando la
       lista sea la correcta, ejecuta los mismos comandos otra vez sin `-WhatIf`.
 7. Comprueba que funciona: elige "Crear revisor", mira la fila nueva en `Padrón` y repite
-   la prueba rápida del paso 7 con ese código, enseguida: el menú vacía la caché y no hace falta esperar.
-   Limpia como dice el paso 7.
+   la prueba rápida del paso 7 con ese código. Normalmente sirve enseguida, porque el menú vacía la caché;
+   si responde `codigo_no_activo`, espera un minuto y repítela. Limpia como dice el paso 7.
 
 ### Actualización: guardar exige la autorización (#157)
 

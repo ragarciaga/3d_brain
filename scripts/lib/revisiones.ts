@@ -16,6 +16,15 @@
 import { CLAVES_V2, esObjeto, fechaValida, respuestaValida, retiroValido, REVISOR_VALIDO, type Respuesta, type Retiro } from '../../src/lib/revision.ts';
 
 export function parsearCsv(texto: string): string[][] {
+  return parsearCsvConVacias(texto).filter((f) => f.some((x) => x.trim()));
+}
+
+/**
+ * Todos los registros del CSV, también los totalmente vacíos (una línea en blanco o `,,`, que es como Sheets exporta
+ * una fila borrada), para que el índice de cada uno sea su número de fila física en la hoja menos uno. Una celda con
+ * comillas y saltos de línea cuenta como un solo registro.
+ */
+export function parsearCsvConVacias(texto: string): string[][] {
   const filas: string[][] = [];
   let fila: string[] = [];
   let celda = '';
@@ -44,7 +53,7 @@ export function parsearCsv(texto: string): string[][] {
     fila.push(celda);
     filas.push(fila);
   }
-  return filas.filter((f) => f.some((x) => x.trim()));
+  return filas;
 }
 
 export interface Envio {
@@ -335,13 +344,14 @@ export interface PadronLeido {
 }
 
 /**
- * Lee las filas de `parsearCsv` del CSV de la pestaña `Padrón` (A código, B alias, C activo). La primera fila,
- * recortada (también de la BOM), debe ser exactamente `Código,Alias,Activo`: si no, el error es un texto fijo (la fila
- * podría ser un código). Código y alias se recortan, como hace el script. Una fila con código o alias inválido
- * se descarta con un aviso (`fila N de la pestaña Padrón`, con el alias solo si es válido). N es el número de fila de la hoja
- * (la cabecera es la 1) para que el editor la encuentre; `parsearCsv` no cuenta las filas totalmente vacías, así que una en medio la corre. El mismo código con otro alias es un
- * error que nombra las filas y los alias; con el mismo alias, las filas se juntan. Un alias en dos códigos
- * es un error (`errorDePadron`). Sin ningún código válido es un error. Activo no filtra aquí: solo se anota en `inactivos`.
+ * Lee los registros del CSV de la pestaña `Padrón` (A código, B alias, C activo), tal como los da `parsearCsvConVacias`.
+ * La primera fila, recortada (también de la BOM), debe ser exactamente `Código,Alias,Activo`: si no, el error es un
+ * texto fijo (la fila podría ser un código). Código y alias se recortan, como hace el script. Una fila con código o
+ * alias inválido se descarta con un aviso (`fila N de la pestaña Padrón`, con el alias solo si es válido). N es el
+ * número de fila física de la hoja (la cabecera es la 1): las filas totalmente vacías, que se saltan sin aviso, cuentan
+ * en la numeración. El mismo código con otro alias es un error que nombra las filas y los alias; con el mismo alias,
+ * las filas se juntan. Un alias en dos códigos es un error que nombra las filas y el alias. Sin ningún código válido
+ * es un error. Activo no filtra aquí: solo se anota en `inactivos`.
  * Nunca imprime ni devuelve un código en un mensaje.
  */
 export function padronDeCsv(filas: string[][]): PadronLeido {
@@ -353,11 +363,13 @@ export function padronDeCsv(filas: string[][]): PadronLeido {
   }
   const padron = Object.create(null) as Padron;
   const filasDe = new Map<string, number>(); // código -> número de fila (en la hoja) de su primera aparición
+  const filaDeAlias = new Map<string, number>(); // alias -> fila de su primera aparición
   const inactivos = new Set<string>();
   const avisos: string[] = [];
   for (const [i, fila] of filas.slice(1).entries()) {
     // Número de fila en la pestaña Padrón: la cabecera es la 1, así que la primera de datos es la 2.
     const posicion = i + 2;
+    if (fila.every((c) => !c.trim())) continue; // fila borrada o línea en blanco: cuenta en el número, no es un código
     const codigo = (fila[0] ?? '').trim();
     const alias = (fila[1] ?? '').trim();
     const aliasValido = ALIAS_VALIDO.test(alias);
@@ -372,8 +384,12 @@ export function padronDeCsv(filas: string[][]): PadronLeido {
     if (Object.hasOwn(padron, codigo) && padron[codigo] !== alias) {
       return vacio(`el mismo código está en las filas ${filasDe.get(codigo)} y ${posicion} de la pestaña Padrón con los alias ${padron[codigo]} y ${alias}`);
     }
+    if (!Object.hasOwn(padron, codigo) && filaDeAlias.has(alias)) {
+      return vacio(`alias repetido en las filas ${filaDeAlias.get(alias)} y ${posicion} de la pestaña Padrón: ${alias}`);
+    }
     padron[codigo] = alias;
     if (!filasDe.has(codigo)) filasDe.set(codigo, posicion);
+    if (!filaDeAlias.has(alias)) filaDeAlias.set(alias, posicion);
     if ((fila[2] ?? '').trim() !== ACTIVO_SI) inactivos.add(codigo);
   }
   if (Object.keys(padron).length === 0) return vacio('el padrón no tiene ningún código válido: revisa que sea el CSV de la pestaña Padrón');

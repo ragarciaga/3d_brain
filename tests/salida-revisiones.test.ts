@@ -258,7 +258,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       const repetido = padronCsv(tmp, 'alias.csv', 'Código,Alias,Activo\nQQSECRETOX,D07,sí\nQQBUENOXYZ,D07,sí\n');
       const uno = correr(tmp, HOJA, '--padron', repetido, '--autorizaciones', AUT);
       expect(uno.status).toBe(2);
-      expect(uno.stderr).toContain('alias repetido en el padrón: D07');
+      expect(uno.stderr).toContain('alias repetido en las filas 2 y 3 de la pestaña Padrón: D07');
       sinSecreto(uno);
       sinRastro(uno);
       const doble = padronCsv(tmp, 'codigo.csv', 'Código,Alias,Activo\nQQSECRETOX,D07,sí\nQQSECRETOX,D08,sí\n');
@@ -285,11 +285,21 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       }
     });
 
+    it('una fila ,, o una línea en blanco antes de la fila mala cuenta en su número de fila de la hoja', () => {
+      const { tmp } = conCorridaBuena();
+      const original = readFileSync(PADRON, 'utf8');
+      const conVacias = padronCsv(tmp, 'con-vacias.csv', `${original},,\n\nQQSECRETOX,D07x,sí\n`);
+      const r = correr(tmp, HOJA, '--padron', conVacias, '--autorizaciones', AUT);
+      expect(r.status, r.stderr).toBe(0);
+      expect(r.stderr).toContain('alias inválido en la fila 7 de la pestaña Padrón');
+      sinSecreto(r);
+    });
+
     it('Activo no filtra las filas de Respuestas: el código en no se importa y la consola dice cuántas filas aportó', () => {
       const { tmp } = conCorridaBuena();
       const r = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', AUT);
       expect(r.status, r.stderr).toBe(0);
-      expect(r.stderr).toContain('Código inactivo (Activo distinto de sí) del alias D93: 1 filas de Respuestas importadas, 0 del formulario descartadas.');
+      expect(r.stderr).toContain('Código inactivo (Activo distinto de sí) del alias D93: filas de Respuestas importadas: 1; filas del formulario descartadas: 0.');
       expect(readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8')).toContain('| `D93` | 1 | 0 |');
       sinCodigos(r);
     });
@@ -302,7 +312,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       escribir(hoja, readFileSync(HOJA, 'utf8').replace(/\r?\n?$/, '\n') + filaForm);
       const con = correr(tmp, hoja, '--padron', PADRON, '--autorizaciones', AUT);
       expect(con.status, con.stderr).toBe(0);
-      expect(con.stderr).toContain('del alias D93: 1 filas de Respuestas importadas, 1 del formulario descartadas.');
+      expect(con.stderr).toContain('del alias D93: filas de Respuestas importadas: 1; filas del formulario descartadas: 1.');
       const resumen = readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8');
       expect(resumen).toContain('| `D93` | 1 | 1 |');
       expect(resumen).not.toContain('`latin`');

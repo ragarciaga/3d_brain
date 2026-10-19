@@ -10,6 +10,7 @@ import {
   leerEnvios,
   padronDeCsv,
   parsearCsv,
+  parsearCsvConVacias,
   quitarRetiradas,
   resumenConsolidado,
   resumenMarkdown,
@@ -514,7 +515,7 @@ describe('padrón privado de revisores (#15)', () => {
 
 describe('padronDeCsv: la pestaña Padrón es la fuente del padrón (#257, D4)', () => {
   const CAB = 'Código,Alias,Activo';
-  const leer = (...lineas: string[]) => padronDeCsv(parsearCsv([CAB, ...lineas].join('\n') + '\n'));
+  const leer = (...lineas: string[]) => padronDeCsv(parsearCsvConVacias([CAB, ...lineas].join('\n') + '\n'));
   const plano = (p: Record<string, string>) => ({ ...p });
 
   it('lee código -> alias y deja en inactivos lo que no es exactamente sí', () => {
@@ -567,14 +568,41 @@ describe('padronDeCsv: la pestaña Padrón es la fuente del padrón (#257, D4)',
     for (const aviso of r.avisos) for (const c of ['QQBUENO', 'QQTYPO', 'QQSECRETO', 'QQ.MALO', 'Ana']) expect(aviso).not.toContain(c);
   });
 
+  it.each([
+    ['una fila ,, (cómo Sheets exporta una fila borrada)', ',,'],
+    ['una línea en blanco', ''],
+    ['una fila con solo espacios', ' , ,'],
+  ])('%s antes de una fila mala no corre su número: es la fila física de la hoja', (_n, vacia) => {
+    const r = leer('QQBUENOXYZ,D01,sí', vacia, 'QQSECRET0!,D02,sí');
+    expect(r.error).toBeNull();
+    expect(plano(r.padron)).toEqual({ QQBUENOXYZ: 'D01' });
+    expect(r.avisos).toEqual(['código inválido en la fila 4 de la pestaña Padrón (alias D02): se descartó']);
+  });
+
+  it('una celda con comillas y saltos de línea cuenta como una sola fila', () => {
+    const r = padronDeCsv(parsearCsvConVacias(`${CAB}\nQQBUENOXYZ,D01,"sí\nnota"\nQQSECRET0!,D02,sí\n`));
+    expect(r.avisos).toEqual(['código inválido en la fila 3 de la pestaña Padrón (alias D02): se descartó']);
+  });
+
+  it('el alias repetido y el código con dos alias también cuentan las filas vacías', () => {
+    expect(leer('QQSECRETOX,D01,sí', ',,', 'QQSECRETO2,D01,sí').error).toBe('alias repetido en las filas 2 y 4 de la pestaña Padrón: D01');
+    expect(leer('QQSECRETOX,D01,sí', '', 'QQSECRETOX,D03,sí').error).toBe('el mismo código está en las filas 2 y 4 de la pestaña Padrón con los alias D01 y D03');
+  });
+
+  it('parsearCsvConVacias guarda los registros vacíos y parsearCsv los quita', () => {
+    const texto = 'a,b\n,,\n\nc,d\n';
+    expect(parsearCsvConVacias(texto)).toEqual([['a', 'b'], ['', '', ''], [''], ['c', 'd']]);
+    expect(parsearCsv(texto)).toEqual([['a', 'b'], ['c', 'd']]);
+  });
+
   it('Activo no filtra: sí, no y cualquier otro valor entran al padrón', () => {
     const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D02,no', 'QQSECRETO3,D03,quizás');
     expect(Object.keys(r.padron)).toHaveLength(3);
   });
 
-  it('un alias repetido en dos códigos es un error que nombra el alias y no el código', () => {
+  it('un alias repetido en dos códigos es un error que nombra las filas y el alias, no el código', () => {
     const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D01,sí');
-    expect(r.error).toBe('alias repetido en el padrón: D01');
+    expect(r.error).toBe('alias repetido en las filas 2 y 3 de la pestaña Padrón: D01');
     expect(r.error).not.toContain('QQSECRETO');
   });
 
