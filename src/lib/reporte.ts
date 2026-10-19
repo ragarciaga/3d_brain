@@ -1,6 +1,6 @@
-// Reportar un error (F12, ADR 0016): funciones puras del reporte. Sin `window` ni `document`.
+// Reportar un error (F12, ADR 0016): funciones puras del reporte (enlace a GitHub y enlace de correo). Sin `window` ni `document`.
 import type { TFunction } from 'i18next';
-import { MAX_DESCRIPCION, MAX_URL, PLANTILLA, TIPOS, URL_ISSUES, type TipoReporte } from '../config/reporte';
+import { CORREO_REPORTES, MAX_DESCRIPCION, MAX_URL, PLANTILLA, TIPOS, URL_ISSUES, type TipoReporte } from '../config/reporte';
 import { estructuras } from '../data/atlas';
 import type { Idioma } from '../data/tipos';
 import { camposDeFicha } from './prioridad';
@@ -39,14 +39,19 @@ export interface Reporte {
   descripcion: string;
 }
 
+/** Lanza si `r.tipo` no es uno de `TIPOS`. */
+function exigirTipo(r: Reporte): void {
+  // `includes` y no `in PLANTILLA`: 'constructor' y otros nombres heredados no son tipos.
+  if (!(TIPOS as readonly string[]).includes(r.tipo)) throw new Error(`Tipo de reporte desconocido: ${String(r.tipo)}`);
+}
+
 /**
  * Enlace al formulario de issue de GitHub con el reporte ya llenado. Solo usa los campos de `r`: nunca lee la
  * ubicación de la página, así el código de un revisor docente (`?r=`/`#r=`) no sale en el enlace. El largo de la
  * descripción no se valida aquí (ver `descripcionValida`). Lanza si `r.tipo` no es uno de `TIPOS`.
  */
 export function enlaceGithub(r: Reporte, t: TFunction): string {
-  // `includes` y no `in PLANTILLA`: 'constructor' y otros nombres heredados no son tipos.
-  if (!(TIPOS as readonly string[]).includes(r.tipo)) throw new Error(`Tipo de reporte desconocido: ${String(r.tipo)}`);
+  exigirTipo(r);
   const params = new URLSearchParams({
     template: PLANTILLA[r.tipo],
     title: `[${t(`reporte.tipo.${r.tipo}`)}] ${r.nombre} (${r.estructura})`,
@@ -57,6 +62,35 @@ export function enlaceGithub(r: Reporte, t: TFunction): string {
     descripcion: r.descripcion,
   });
   return `${URL_ISSUES}?${params.toString()}`;
+}
+
+/**
+ * Enlace `mailto:` al correo de reportes con el asunto y el cuerpo ya llenados, para cuando el enlace de GitHub no
+ * cabe o el visitante no tiene cuenta. Solo usa los campos de `r`: nunca lee la ubicación de la página, así el código
+ * de un revisor docente (`?r=`/`#r=`) no sale en el enlace. Usa `encodeURIComponent` y no `URLSearchParams`, que
+ * escribe el espacio como `+` y muchos clientes de correo lo muestran tal cual. No corta el cuerpo ni valida el largo
+ * de la descripción (ver `descripcionValida`). `escapeValue: false` evita que un `t` que escapa HTML cambie `&` o `"`.
+ * Lanza si `r.tipo` no es uno de `TIPOS`.
+ */
+export function enlaceCorreo(r: Reporte, t: TFunction): string {
+  exigirTipo(r);
+  const interpolation = { escapeValue: false };
+  const asunto = t('reporte.correo.asunto', {
+    tipo: t(`reporte.tipo.${r.tipo}`, { interpolation }),
+    id: r.estructura,
+    idioma: r.idioma,
+    version: r.version,
+    interpolation,
+  });
+  const cuerpo = t('reporte.correo.cuerpo', {
+    estructura: r.estructura,
+    idioma: r.idioma,
+    version: r.version,
+    parte: r.parte,
+    descripcion: r.descripcion,
+    interpolation,
+  });
+  return `mailto:${CORREO_REPORTES}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
 }
 
 /** El enlace de `enlaceGithub` mide `MAX_URL` o menos. Si no cabe, el visitante usa el correo. */
