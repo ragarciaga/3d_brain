@@ -50,7 +50,7 @@ Spec: docs/specs/05-error-report/  |  Status: approved  |  Converged: 2026-10-19
 - Files: .github/ISSUE_TEMPLATE/contenido.yml, .github/ISSUE_TEMPLATE/traduccion.yml, .github/ISSUE_TEMPLATE/enlace-roto.yml, .github/ISSUE_TEMPLATE/pieza-mal-ubicada.yml, tests/plantillas-issue.test.ts, docs/operacion.md
 - Verify: `npm test -- tests/plantillas-issue.test.ts` (lee los `.yml` y `docs/operacion.md` como texto, sin dependencias nuevas): los nombres de archivo de `.github/ISSUE_TEMPLATE/` son exactamente los valores de `PLANTILLA`, uno por cada tipo de `TIPOS`; cada archivo trae `name`, `description` y `labels: [reporte:<tipo>]` con la etiqueta de su tipo (`reporte:contenido`, `reporte:traduccion`, `reporte:enlace-roto`, `reporte:pieza`, todas distintas); trae los campos con `id` `estructura`, `idioma`, `version`, `parte` (input) y `descripcion` (textarea con `validations: required: true`), y esos ids son exactamente los parámetros `estructura`, `idioma`, `version`, `parte` y `descripcion` (más `template` y `title`) que produce `enlaceGithub` al leer su URL con `URLSearchParams`; `name`, `description` y cada `attributes.label` y `attributes.description` usan el formato `Español / English` (dos segmentos no vacíos separados por ` / `); ninguno tiene guion largo; `docs/operacion.md` tiene una sección con las cuatro etiquetas por nombre y sus pasos. R6.3 `[manual]` (se crean en GitHub una vez y no hay prueba automática contra la API desde el CI): los pasos para crear las cuatro etiquetas quedan en `docs/operacion.md` y el PR los pide en su lista para el humano
 - Issue: #234
-- Status: in-review
+- Status: done
 
 ### Decision log
 - 2026-10-19 ronda 1: depende de T2 (compara con `enlaceGithub`); la guía de las etiquetas va en `docs/operacion.md` (guía del editor), no en la guía de la revisión docente; formato bilingüe comprobable `Español / English`. Tier C por `.github/`.
@@ -106,7 +106,7 @@ Spec: docs/specs/05-error-report/  |  Status: approved  |  Converged: 2026-10-19
 - Files: src/components/Privacidad.tsx, src/i18n/es.json, src/i18n/en.json, tests/i18n.test.ts
 - Verify: `npm test -- tests/i18n.test.ts`: `CLAVES` de "página Privacidad" incluye `reportes` y `Privacidad.tsx` pinta `t('privacidad.reportes')`; `privacidad.reportes` en es contiene `GitHub`, `público`, `info@maysasp.com` y `la app no guarda`, y en en contiene `GitHub`, `public`, `info@maysasp.com` y `the app does not save`; sin guion largo (lo cubre la prueba existente); `src/components/ReportarError.tsx` no tiene texto suelto entre etiquetas JSX ni literales en `aria-label`, `placeholder`, `title` o `alt` (todo pasa por `t()`), y la prueba falla si el archivo no existe; `npm run check:i18n`; `npm run typecheck`
 - Issue: #238
-- Status: in-review
+- Status: done
 
 ### Decision log
 - 2026-10-19 ronda 1: clave `privacidad.reportes` fijada en `CLAVES`, frases exactas por idioma, comprobación ejecutable de literales y dependencia de T6. Tier C (texto legal).
