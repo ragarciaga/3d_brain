@@ -1,7 +1,8 @@
 // Dobles para probar apps-script/Codigo.js (spec 03, T2): el script se carga en Node con `node:vm` y
-// recibe dobles de SpreadsheetApp, CacheService, LockService y ContentService que siguen la
-// documentación de Google. El oráculo real es la prueba manual del editor (docs/revision-docente.md).
+// recibe dobles de SpreadsheetApp (con su menú y sus avisos), CacheService, LockService, ContentService y
+// Utilities que siguen la documentación de Google. El oráculo real es la prueba manual del editor (docs/revision-docente.md).
 // También guarda las tablas de casos que se pasan al script y a la app, para que exijan el mismo veredicto.
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { VERSION_AUTORIZACION } from '../../../src/config/revision';
@@ -125,6 +126,27 @@ export interface Opciones {
   vago?: boolean;
   /** Claves de CacheService para las que `put` lanza, como si el valor no cupiera. */
   putFalla?: (clave: string) => boolean;
+  /** `CacheService.remove` lanza, como si la caché no respondiera. */
+  removeFalla?: boolean;
+  /** `SpreadsheetApp.flush` lanza, como si Sheets no respondiera después de escribir. */
+  flushFalla?: boolean;
+  /** Lo que responde el diálogo `prompt` del menú. Por defecto el botón OK con el texto '1'. */
+  respuestaPrompt?: { boton: 'OK' | 'CANCEL'; texto: string };
+}
+
+/** Un aviso `ui.alert` tal como lo recibió el doble, con el estado del bloqueo en ese momento. */
+export interface Alerta {
+  titulo: string;
+  texto: string;
+  botones: string;
+  bloqueoTomado: boolean;
+}
+
+/** Un menú creado con `createMenu`: su nombre, los pares [texto, función] y si llegó a `addToUi`. */
+export interface Menu {
+  nombre: string;
+  items: [string, string][];
+  agregado: boolean;
 }
 
 export interface Salida {
@@ -152,11 +174,44 @@ export function crearEntorno(op: Opciones = {}) {
   hojas.Autorizaciones.filas.push(...(op.autorizados ?? []).map((c) => [c, '2026-10-14T09:00:00.000Z', VERSION_AUTORIZACION, op.vago ? 'sí' : 'no']));
 
   let flushes = 0;
+  const alertas: Alerta[] = [];
+  const menus: Menu[] = [];
+  /** Títulos y textos de los diálogos `prompt`. */
+  const prompts: { titulo: string; texto: string }[] = [];
+  const ui = {
+    ButtonSet: { OK: 'BOTONES_OK', OK_CANCEL: 'BOTONES_OK_CANCEL' },
+    Button: { OK: 'BOTON_OK', CANCEL: 'BOTON_CANCEL' },
+    createMenu(nombre: string) {
+      const menu: Menu = { nombre, items: [], agregado: false };
+      menus.push(menu);
+      const objeto = {
+        addItem(texto: string, funcion: string) {
+          menu.items.push([texto, funcion]);
+          return objeto;
+        },
+        addToUi() {
+          menu.agregado = true;
+        },
+      };
+      return objeto;
+    },
+    alert(titulo: string, texto: string, botones: string) {
+      alertas.push({ titulo, texto, botones, bloqueoTomado: candado.tomado });
+      return 'BOTON_OK';
+    },
+    prompt(titulo: string, texto: string) {
+      prompts.push({ titulo, texto });
+      const r = op.respuestaPrompt ?? { boton: 'OK', texto: '1' };
+      return { getSelectedButton: () => (r.boton === 'OK' ? 'BOTON_OK' : 'BOTON_CANCEL'), getResponseText: () => r.texto };
+    },
+  };
   const SpreadsheetApp = {
     getActiveSpreadsheet: () => ({
       getSheetByName: (n: string) => (n === op.sinPestana ? null : (Object.entries(hojas).find(([k]) => k === n)?.[1] ?? null)),
     }),
+    getUi: () => ui,
     flush: () => {
+      if (op.flushFalla) throw new Error('falla simulada de flush');
       flushes++;
     },
   };
@@ -166,6 +221,8 @@ export function crearEntorno(op: Opciones = {}) {
   const vidas: number[] = [];
   /** Cada `put` que llegó a guardar, con su clave y su vida en segundos. */
   const puts: { clave: string; segundos: number }[] = [];
+  /** Claves que el script borró con `remove`. */
+  const removidos: string[] = [];
   const CacheService = {
     getScriptCache: () => ({
       get(clave: string): string | null {
@@ -178,6 +235,11 @@ export function crearEntorno(op: Opciones = {}) {
         vidas.push(segundos);
         puts.push({ clave, segundos });
         almacen.set(clave, { valor, vence: reloj.ahora + segundos * 1000 });
+      },
+      remove(clave: string) {
+        if (op.removeFalla) throw new Error('falla simulada de la caché');
+        removidos.push(clave);
+        almacen.delete(clave);
       },
     }),
   };
@@ -219,7 +281,24 @@ export function crearEntorno(op: Opciones = {}) {
     },
   };
 
-  const ctx = vm.createContext({ SpreadsheetApp, CacheService, LockService, ContentService }) as Ctx;
+  // Utilities: `getUuid` da UUID distintos y `computeDigest` el SHA-256 real, con bytes con signo como el de Google.
+  // `bytesSembrados` hace que los próximos resúmenes devuelvan esos bytes, para probar el rechazo de sesgo.
+  const bytesSembrados: number[][] = [];
+  const resumenes: string[] = [];
+  let uuids = 0;
+  const Utilities = {
+    DigestAlgorithm: { SHA_256: 'SHA_256_DOBLE' },
+    getUuid: () => `00000000-0000-4000-8000-${String(++uuids).padStart(12, '0')}`,
+    computeDigest(algoritmo: string, texto: string): number[] {
+      if (algoritmo !== 'SHA_256_DOBLE') throw new Error('algoritmo desconocido');
+      resumenes.push(texto);
+      const sembrado = bytesSembrados.shift();
+      if (sembrado) return sembrado.map((b) => (b > 127 ? b - 256 : b));
+      return [...createHash('sha256').update(texto, 'utf8').digest()].map((b) => (b > 127 ? b - 256 : b));
+    },
+  };
+
+  const ctx = vm.createContext({ SpreadsheetApp, CacheService, LockService, ContentService, Utilities }) as Ctx;
   vm.runInContext(readFileSync(RUTA_SCRIPT, 'utf8'), ctx);
   // La hora del script sale solo de Date.now(): esta es la costura del reloj.
   (vm.runInContext('Date', ctx) as { now: () => number }).now = () => reloj.ahora;
@@ -234,6 +313,15 @@ export function crearEntorno(op: Opciones = {}) {
     salidas,
     vidas,
     puts,
+    removidos,
+    alertas,
+    menus,
+    prompts,
+    resumenes,
+    /** Los próximos `computeDigest` devuelven estos bytes (0 a 255; el doble los pasa a con signo), uno por llamada. */
+    sembrarBytes(...resumenesDeBytes: number[][]) {
+      bytesSembrados.push(...resumenesDeBytes);
+    },
     flushes: () => flushes,
     /** Deja un valor en la caché como si otra ejecución del script lo hubiera guardado. */
     sembrarCache(clave: string, valor: string, segundos = 600) {

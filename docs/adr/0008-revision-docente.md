@@ -34,6 +34,11 @@ bastaba para enviar revisiones a su nombre. Ahora:
   git); `scripts/crear-revisores.ts` lo crea.
 - `scripts/importar-revisiones.ts` exige el padrón, cambia cada código por su alias y descarta los
   envíos con códigos que no están en él. Los issues solo muestran alias.
+- Actualización 2026-10-19 (#257): el padrón ya no es `pipeline/revisores.local.json` ni lo crea
+  `scripts/crear-revisores.ts` (se retiraron). La única fuente es la pestaña `Padrón` de la hoja del
+  canal: los códigos nuevos los crea el menú "Maysa Brain" de esa hoja y el importador lee su copia en
+  CSV con `--padron`. El resto de esta decisión (alias públicos, códigos aleatorios, issues solo con
+  alias) sigue igual.
 - Antes de marcar una ficha como verificada con el nombre de un docente, el editor se lo confirma
   por un canal propio.
 

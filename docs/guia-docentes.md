@@ -33,7 +33,8 @@ Notas para el editor:
   este mensaje solo cuando el sitio publicado ya tenga ese cambio y la prueba en ventana de incógnito,
   con un código de prueba, haya dado "Guardado ✓": si el canal no responde, el docente vería pasos
   que este mensaje no explica. Los pasos de montaje están en `docs/revision-docente.md`.
-- Los códigos y enlaces de cada docente están en la carpeta privada del Drive, nunca aquí.
+- Los códigos de los docentes están en la pestaña `Padrón` de la hoja del canal; el enlace de cada uno lo
+  muestra el menú "Maysa Brain" de esa hoja al crearlo. Nunca van aquí.
 - Cada código debe estar activo (`sí`) en la pestaña `Padrón` de la hoja del canal; si no, la app le
   dice al docente que escriba al editor.
 - Si un enlace se filtra, el código viejo pasa a `no` en `Padrón` y se crea uno nuevo

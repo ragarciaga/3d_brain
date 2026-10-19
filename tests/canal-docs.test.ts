@@ -46,7 +46,7 @@ describe('la prueba rápida del paso 7 de la guía (D9)', () => {
 
   it('el paso conserva el código aleatorio, el generador, el veredicto negativo y la limpieza', () => {
     expect(paso).toMatch(/código\s+de\s+prueba\s+aleatorio/);
-    expect(paso).toContain('`scripts/crear-revisores.ts`');
+    expect(paso).toContain('Crear revisor');
     expect(paso).toContain('codigo_no_activo');
     expect(paso).toMatch(/borra\s+las\s+filas\s+de\s+ese\s+código/);
   });
@@ -273,5 +273,65 @@ describe('quitar una marca se guarda (#217)', () => {
       '`{ok:true, canal:<número>, respuestas:{v:2, r:<código>, e:{<id>:[{<claves cortas, con f>}]}}, retiradas:{v:2, r:<código>, e:{<id>:[{c, i?, d:"", f}]}}, autorizacion:{version, vago} | null}`',
     );
     for (const ruta of ['apps-script/Codigo.js', 'src/lib/canal.ts']) expect(cabecera(ruta), ruta).not.toMatch(/\{ok, respuestas|\{ok:true, respuestas/);
+  });
+});
+
+describe('la pestaña Padrón es la única fuente (#257)', () => {
+  const titulos = guia.split('\n').filter((l) => /^###\s.*#257/.test(l));
+  const lineas = guia.split('\n');
+  const inicio = lineas.findIndex((l) => /^###\s.*#257/.test(l));
+  const fin = lineas.findIndex((l, i) => i > inicio && /^##+\s/.test(l));
+  const cuerpo = lineas.slice(inicio, fin).join('\n');
+
+  it('la guía tiene una sola subsección con #257, sin "autorización" en el título (otra prueba busca ese título para #157)', () => {
+    expect(titulos).toHaveLength(1);
+    expect(titulos[0]).not.toMatch(/autorización/);
+  });
+
+  it('el bloque PowerShell deja main al día antes de copiar el script, y la subsección no escribe la URL del script', () => {
+    const bloques = [...cuerpo.matchAll(/```powershell\n([\s\S]*?)```/g)].map((m) => m[1]!);
+    const bloque = bloques.find((b) => b.includes('Set-Clipboard'));
+    expect(bloque).toBeDefined();
+    const idx = (inicio: string) => bloque!.split('\n').findIndex((l) => l.trim().startsWith(inicio));
+    expect(idx('git switch main')).toBeGreaterThan(-1);
+    expect(idx('git pull --ff-only')).toBeGreaterThan(idx('git switch main'));
+    expect(idx('git status')).toBeGreaterThan(idx('git pull --ff-only'));
+    expect(idx('Get-Content -Raw -Encoding UTF8 apps-script\\Codigo.js | Set-Clipboard')).toBeGreaterThan(idx('git status'));
+    expect(cuerpo).not.toMatch(/\/macros\/s\//);
+    expect(cuerpo).not.toContain('script.google.com');
+  });
+
+  it('pide Nueva versión (nunca Nueva implementación), nombra los permisos esperados y manda detenerse ante cualquier otro', () => {
+    expect(cuerpo).toMatch(/Nueva\s+versión/);
+    expect(cuerpo).toMatch(/Nunca\s+"Nueva\s+implementación"/);
+    expect(cuerpo).toContain('esta hoja de\n   cálculo');
+    expect(cuerpo.replace(/\s+/g, ' ')).toMatch(/mostrar contenido en avisos/);
+    expect(cuerpo.replace(/\s+/g, ' ')).toMatch(/Drive, todas tus hojas de cálculo, servicios externos, correo\), detente, no aceptes y avísalo por chat/);
+  });
+
+  it('la migración borra el padrón viejo del Drive y de los equipos, y vacía la papelera', () => {
+    expect(cuerpo).toContain('revisores.local.json');
+    expect(cuerpo).toContain('Eliminar definitivamente');
+    expect(cuerpo).toContain('enlaces-docentes.md');
+    for (const l of cuerpo.split('\n').filter((l) => /^\s*Remove-Item\b/.test(l))) expect(l).toMatch(/-WhatIf\s*$/);
+  });
+
+  it('el ADR 0012, el ADR 0008, el diseño y SPEC.md lo registran', () => {
+    expect(adr).toMatch(/Amended:[^\n]*#257/);
+    expect(adr).toContain('La pestaña `Padrón` es la única fuente del padrón (#257)');
+    expect(leer('docs/adr/0008-revision-docente.md')).toMatch(/Actualización 2026-10-19 \(#257\)/);
+    expect(diseno).toContain('Maysa Brain');
+    expect(diseno).not.toContain('y en `pipeline/revisores.local.json`');
+    const spec = leer('SPEC.md');
+    expect(spec).toContain('`--padron`');
+    expect(spec).not.toContain('(`pipeline/revisores.local.json`, fuera de git)');
+  });
+
+  it('la sección 4 pasa --padron en el comando de la importación y pide borrar el CSV del Padrón', () => {
+    const seccion = tramo(guia, /^## 4\./);
+    const bloques = [...seccion.matchAll(/```powershell\n([\s\S]*?)```/g)].map((m) => m[1]!);
+    expect(bloques.some((b) => b.includes('--padron') && b.includes('- Padrón.csv'))).toBe(true);
+    expect(bloques.some((b) => /Remove-Item .*- Padrón\.csv" -WhatIf/.test(b))).toBe(true);
+    expect(seccion.replace(/\s+/g, ' ')).toContain('Activo no filtra lo que viene de la pestaña `Respuestas`');
   });
 });

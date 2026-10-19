@@ -62,13 +62,14 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   marcadores y los trazos del vago los validan docentes, no el editor.
 - Revisión docente lista: formularios de revisión y de registro conectados (#5); 10 códigos de
   revisor (D01 a D10) con padrón y enlaces en la carpeta privada "Maysa Brain (privado)" del Drive
-  de Maysa Digital, nunca en el repositorio (#15); mensaje para cada docente en
+  de Maysa Digital, nunca en el repositorio (#15; desde #257 el padrón es solo la pestaña `Padrón` y
+  los códigos se crean con el menú "Maysa Brain" de la hoja); mensaje para cada docente en
   docs/guia-docentes.md, guía del editor en docs/revision-docente.md, 16 propuestas de nombre
   visibles (#8).
   Todo lo anatómico (nombres, fichas, posiciones, trazos) lo validan docentes, no el editor.
 - Pending (editor):
   - mandar a cada docente el mensaje de docs/guia-docentes.md con su enlace (el registro está dentro
-    de la web) y anotar su nombre junto al alias en el documento de enlaces del Drive;
+    de la web) y anotar su nombre junto al alias en un documento privado del Drive (solo alias y nombre);
   - importar las revisiones con `scripts/importar-revisiones.ts` (CSV desde la pestaña Respuestas
     del formulario de revisión).
 - Mejoras de la revisión docente (auditoría UX, `docs/research/revision-docente/auditoria-ux.md`), en
