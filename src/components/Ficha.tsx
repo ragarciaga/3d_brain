@@ -22,6 +22,7 @@ import {
 import { camposDeFicha } from '../lib/prioridad';
 import { useAtlas, vagoVisible } from '../store/useAtlas';
 import { colorDePieza } from './colores';
+import ReportarError from './ReportarError';
 import RevisionTrazo from './RevisionTrazo';
 import { CONSULTA_MOVIL } from './useMovil';
 
@@ -765,6 +766,12 @@ export default function Ficha({ idioma, alCompartir, alCerrar }: { idioma: Idiom
             {t('ficha.version')}: {f.version}
           </p>
         </details>
+      )}
+
+      {!revisor && (
+        <footer className="ficha-pie" data-testid="ficha-pie">
+          <ReportarError key={id} estructura={id} nombre={nombre(e, idioma)} idioma={idioma} version={version} />
+        </footer>
       )}
     </aside>
   );

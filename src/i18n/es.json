@@ -484,5 +484,46 @@
     "aviso": "Trazado aproximado con fines didácticos. La posición general sigue la fuente citada; el calibre y el recorrido exacto varían entre personas.",
     "toracico": "Hueco en el tórax: un tramo de cada vago está pendiente de trazado.",
     "huecoFicha": "En el atlas, un tramo torácico de este nervio está pendiente de trazado: en el vago derecho, entre la arteria subclavia y el bronquio principal; el vago izquierdo se interrumpe al entrar al tórax. El modelo de origen trae ese tramo en espejo de un lado al otro, con relaciones que no corresponden, y por eso queda un hueco."
+  },
+  "reporte": {
+    "boton": "Reportar un error",
+    "titulo": "Reportar un error en {{nombre}}",
+    "tipoLeyenda": "Tipo de error",
+    "tipo": {
+      "contenido": "Contenido",
+      "traduccion": "Traducción",
+      "enlace-roto": "Enlace roto",
+      "pieza": "Pieza mal ubicada"
+    },
+    "tipoAyuda": {
+      "contenido": "Un nombre, un dato o una fuente de la ficha está mal o incompleto.",
+      "traduccion": "El texto en el otro idioma no dice lo mismo o se entiende mal.",
+      "enlace-roto": "Un enlace de la ficha no abre o lleva a otra página.",
+      "pieza": "La pieza del modelo 3D no corresponde a esta estructura o está en otro lugar."
+    },
+    "parte": "Parte de la ficha",
+    "parteGeneral": "General",
+    "parteRecursos": "Recursos",
+    "parteNombre": "Nombre",
+    "parteSinonimos": "Otros nombres",
+    "partePieza": "Pieza del modelo 3D",
+    "parteRelevancia": "Relevancia en psicología, afirmación {{n}}",
+    "parteFuente": "Fuente {{n}}",
+    "descripcion": "¿Qué está mal?",
+    "contador": "{{n}} / {{max}}",
+    "aviso": "El reporte por GitHub queda público. No escribas datos personales.",
+    "abrirGithub": "Abrir en GitHub",
+    "enviarCorreo": "Enviar por correo",
+    "correoTexto": "o escribe a {{correo}}",
+    "falta": {
+      "tipo": "Elige el tipo de error.",
+      "descripcion": "Escribe qué está mal."
+    },
+    "muyLargo": "El texto es muy largo para abrirlo en GitHub. Acórtalo o envíalo por correo.",
+    "correo": {
+      "asunto": "[Maysa Brain] {{tipo}}: {{id}} ({{idioma}}, versión {{version}})",
+      "cuerpo": "Estructura: {{estructura}}\nIdioma: {{idioma}}\nVersión: {{version}}\nParte: {{parte}}\n\nDescripción:\n{{descripcion}}"
+    },
+    "cerrar": "Cerrar"
   }
 }
