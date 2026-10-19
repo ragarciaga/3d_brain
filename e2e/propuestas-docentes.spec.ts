@@ -8,6 +8,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { VERSION_AUTORIZACION } from '../src/config/revision';
 import { claveGuiaVista } from '../src/lib/huella';
 import { protegerCanalReal } from './canal-real';
+import { esperarCitaVisible } from './citas';
 
 protegerCanalReal();
 
@@ -354,7 +355,7 @@ test.describe('F2: el docente revisa un trazo del vago con su propuesta', () => 
     await expect(panelTrazo(page).getByText(`La auditoría del modelo propone: ${nombreEs(dato.propuesta!)}`)).toBeVisible();
     await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confianza: ${CONFIANZA_ES[dato.confianza!]}`);
     await expect(page.getByTestId('trazo-evidencia')).toHaveText(dato.evidencia!.es);
-    await expect(page.getByTestId('trazo-fuente')).toHaveText(`Fuente de la regla: ${dato.fuente}`);
+    await esperarCitaVisible(page, dato.fuente, 'Fuente de la regla: ');
 
     // 3. Un solo toque en "Correcto, es lo propuesto".
     const correcto = panelTrazo(page).getByRole('button', { name: 'Correcto, es lo propuesto' });
@@ -417,7 +418,7 @@ test.describe('F2: el docente revisa un trazo del vago con su propuesta', () => 
     await expect(panelTrazo(page).getByText(`The model audit proposes: ${nombreEn(dato.propuesta!)}`, { exact: true })).toBeVisible();
     await expect(page.getByTestId('trazo-confianza')).toHaveText(`Confidence: ${CONFIANZA_EN[dato.confianza!]}`);
     await expect(page.getByTestId('trazo-evidencia')).toHaveText(dato.evidencia!.en);
-    await expect(page.getByTestId('trazo-fuente')).toHaveText(`Rule source: ${dato.fuente}`);
+    await esperarCitaVisible(page, dato.fuente, 'Rule source: ');
     await expect(panelTrazo(page).getByRole('button', { name: 'Correct, as proposed' })).toBeVisible();
 
     // Nada de la versión en español dentro del panel.
