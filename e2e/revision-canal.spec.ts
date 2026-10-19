@@ -313,7 +313,7 @@ const fechaDelStore = (page: Page, clave: string) =>
 interface CargaGuardar {
   v: number;
   r: string;
-  e: Record<string, { c: string; i?: string; d?: string; f?: string }[]>;
+  e: Record<string, { c: string; i?: string; d?: string; s?: string; f?: string }[]>;
 }
 
 /** Carga `v:2` (texto JSON dentro del cuerpo) de una petición `guardar`. */
@@ -1512,10 +1512,9 @@ const CANAL_RETIROS_STORE = (page: Page) =>
 /** Los elementos de retiro (`d:""`) de una petición `guardar`. */
 const retirosDe = (p: PeticionCanal) => Object.values(cargaDe(p).e).flat().filter((el) => el.d === '');
 
-test('retiros (#217): con el script nuevo, deshacer manda un retiro con fecha nueva, llega a "Guardado ✓" y la marca no vuelve al recargar ni en otro equipo', async ({
+test('retiros (#217): con el script nuevo, deshacer manda un retiro con fecha nueva, llega a "Guardado ✓" y la marca no vuelve al recargar', async ({
   page,
   context,
-  browser,
 }) => {
   const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
   await conCanal(context, URL_CANAL);
@@ -1560,25 +1559,23 @@ test('retiros (#217): con el script nuevo, deshacer manda un retiro con fecha nu
   await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
   await expect(correcto(page, 'que_es.es')).toHaveAttribute('aria-pressed', 'false');
   expect(peticionesDe(canal, 'guardar')).toHaveLength(enviadas);
+});
 
-  // Otro equipo (contexto nuevo, IndexedDB vacío): el canal ya no devuelve la marca y trae el retiro.
-  const otro = await browser.newContext();
-  try {
-    await prepararContexto(otro);
-    await conCanal(otro, URL_CANAL);
-    await saltarGuia(otro, 'RET01');
-    const pagina = await otro.newPage();
-    const canal2 = await simularCanal(pagina, { autorizacion: AUTORIZADO, canal: VERSION_CANAL, respuestas: canal.respuestas });
-    canal2.filas.push(...canal.filas);
-    await pagina.goto('/es/revision?r=RET01');
-    await expect(barra(pagina)).toContainText('RET01');
-    await expect.poll(() => lecturaDelStore(pagina)).toBe('hecha');
-    await expect(pagina.getByTestId('total-respuestas')).toHaveText('0 respuestas');
-    expect(await RETIRADAS_STORE(pagina)).toEqual({ 'hippocampus|que_es|es': retiro!.f });
-    expect(peticionesDe(canal2, 'guardar')).toHaveLength(0);
-  } finally {
-    await otro.close();
-  }
+// Aparte del anterior para que cada prueba tenga a lo sumo dos cargas en frío de la app (en CI cada una tarda 40 a 60 s).
+test('retiros (#217): en otro equipo (IndexedDB vacío) el canal no devuelve la marca retirada y trae el retiro, sin reenviar nada', async ({ page, context }) => {
+  const RETIRO_F = '2026-01-02T10:00:00.000Z';
+  const canal = await simularCanal(page, { autorizacion: AUTORIZADO, canal: VERSION_CANAL });
+  // La hoja ya tiene el veredicto y, después, su retiro, como los dejó el equipo donde se deshizo.
+  canal.filas.push({ hippocampus: [{ c: 'que_es', i: 'es', d: 'correcto', s: VERSION_HIPOCAMPO, f: FECHA_CANAL }] });
+  canal.filas.push({ hippocampus: [{ c: 'que_es', i: 'es', d: '', f: RETIRO_F }] });
+  await conCanal(context, URL_CANAL);
+  await saltarGuia(context, 'RET01');
+  await page.goto('/es/revision?r=RET01');
+  await expect(barra(page)).toContainText('RET01');
+  await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
+  await expect(page.getByTestId('total-respuestas')).toHaveText('0 respuestas');
+  expect(await RETIRADAS_STORE(page)).toEqual({ 'hippocampus|que_es|es': RETIRO_F });
+  expect(peticionesDe(canal, 'guardar')).toHaveLength(0);
 });
 
 test('retiros (#217): un retiro del canal más nuevo borra la marca local en otro equipo y un veredicto posterior la devuelve', async ({ page, context }) => {
