@@ -1,9 +1,9 @@
 # 0016. Reportes de error del público por formulario de issue de GitHub y por correo, sin backend
 
-Status: proposed
+Status: accepted
 Date: 2026-10-19
 Related: docs/specs/05-error-report/design.md, docs/adr/0003-datos-sin-backend.md, docs/adr/0012-apps-script-canal-revision.md, docs/adr/0015-analitica-sin-cookies.md
-Approved by: pendiente (se aprueba con design.md)
+Approved by: el editor, con design.md el 2026-10-19
 
 ## Context
 SPEC F12 pide que cualquier visitante pueda reportar un error desde una ficha: un issue de GitHub ya llenado con el id de la estructura, el idioma y la versión, o un correo para quien no tiene cuenta. AGENTS.md prohíbe el backend propio y los datos personales de usuarios en un servidor. La única excepción es el canal de los revisores docentes (ADR 0012), que acepta solo códigos del padrón y pide autorización de tratamiento de datos (Ley 1581). Un reporte del público trae texto libre y, según la vía, el usuario de GitHub o el correo de quien lo envía.

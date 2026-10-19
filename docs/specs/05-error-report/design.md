@@ -1,6 +1,6 @@
 # Design: Reportar un error desde la ficha (F12)
 
-Status: draft  |  Date: 2026-10-19  |  Requirements: ./requirements.md
+Status: approved  |  Date: 2026-10-19  |  Requirements: ./requirements.md
 ADRs: docs/adr/0016-reportes-por-github-y-correo.md
 
 Every item below cites the requirement IDs it serves. Anything without an R reference does not
@@ -140,6 +140,6 @@ Paid services this feature needs: none.
 | `window.open` en vez de `<a>` | Lo pueden bloquear los navegadores y no deja ver el destino. Además el repo usa `<a target="_blank" rel="noopener noreferrer">` en todos sus enlaces salientes |
 
 ## Open questions
-- BLOCKING: R3.3, tal como lo aprobaste, decía que el enlace más largo posible (1500 caracteres) mide 8000 o menos. Eso solo se cumple con texto común: un espacio ocupa 3 caracteres en la URL, una tilde 6 y un emoji 12, así que 1500 emojis dan unos 18 000. Lo dejé en el requisito como "el enlace que abre mide 8000 o menos" y sumé R3.4: si pasaría de 8000, se desactiva GitHub y queda el correo. Recomendado: aprobar R3.4 junto con este diseño.
+- BLOCKING: ninguna. R3.3 se ajustó y R3.4 se agregó con la aprobación del diseño (2026-10-19): con mucho texto no ASCII el enlace pasaría de 8000 caracteres, y entonces se desactiva GitHub y queda el correo.
 - ADVISORY: algunos programas de correo cortan el cuerpo de un `mailto:` largo (más de unos 2000 caracteres). Default: no cortarlo en la app. Si el programa lo corta, el visitante ve el texto incompleto antes de enviar.
 - ADVISORY: la parte "recursos" es nueva y no está en F24. Default: sí, porque es donde están casi todos los enlaces rotos.
