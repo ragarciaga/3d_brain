@@ -335,7 +335,15 @@ describe('página Privacidad (#168)', () => {
     });
 
     it(`(${idioma}) dice qué pasa con un reporte (F12)`, () => {
-      dice('reportes', 'GitHub', es ? 'público' : 'public', 'info@maysasp.com', es ? 'la app no guarda' : 'the app does not save');
+      // Frases que cargan la afirmación: "public" también está en "published" y la dirección sale dos veces
+      // (destino del correo y pedido de borrado), así que se fijan con el verbo o el adjetivo que las acompaña.
+      dice('reportes', 'GitHub', 'info@maysasp.com');
+      dice(
+        'reportes',
+        ...(es
+          ? ['issue público', 'llega a info@maysasp.com', 'la app no guarda', 'se abre el formulario de GitHub ya lleno', 'cuando lo envías con tu cuenta']
+          : ['public issue', 'reaches info@maysasp.com', 'the app does not save', "GitHub's form opens already filled in", 'when you send it with your account']),
+      );
     });
 
     it(`(${idioma}) dice las finalidades, la base, los proveedores y la transferencia`, () => {
