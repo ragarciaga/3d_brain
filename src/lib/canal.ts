@@ -200,7 +200,7 @@ export async function leer(
 
 /** Primera espera (ms) antes de volver a intentar una lectura `leer` fallida; se duplica con cada fallo seguido (#240). */
 export const ESPERA_LECTURA_INICIAL_MS = 2000;
-/** Tope (ms) de la espera entre lecturas fallidas: un `leer` por minuto y por pestaña, muy por debajo del límite del script. */
+/** Tope (ms) de la espera entre lecturas fallidas: con la espera en el tope, los temporizadores dan un `leer` por minuto y por pestaña. */
 export const ESPERA_LECTURA_MAXIMA_MS = 60_000;
 
 /**

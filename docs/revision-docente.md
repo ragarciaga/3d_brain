@@ -254,7 +254,7 @@ orden, con el sitio primero y el script después:
 Entre el paso 1 y el 4, el sitio y el script no coinciden: la lectura de la app falla (el script viejo
 responde `formato` a la lectura por POST) y `guardar` responde `sin_autorizacion`. Por eso van seguidos
 y antes de mandar los enlaces. Una pestaña abierta con la lectura fallida la reintenta sola (2 s, 4 s...
-hasta una vez por minuto) y se repone sin recargar cuando el script nuevo ya responde. Después del
+hasta una vez por minuto cuando lleva rato fallando) y se repone sin recargar cuando el script nuevo ya responde. Después del
 despliegue, una pestaña abierta con la app anterior no registra una aceptación vieja: el diálogo muestra
 el aviso y basta recargar la página.
 

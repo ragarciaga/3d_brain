@@ -1918,17 +1918,26 @@ test('lectura del canal (#240): reintenta a los 2 s y con el evento online, con 
   await page.waitForTimeout(500);
   expect(await lecturaDelStore(page)).toBe('fallida');
 
+  // `online` no reinicia la espera: ese tercer fallo deja la siguiente en 8 s (la secuencia sigue, no vuelve a 2 s) y,
+  // sin más `online`, solo el temporizador lanza la cuarta lectura, justo a los 8 s.
+  await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS * 4 - 1);
+  await page.waitForTimeout(500);
+  expect(cantidadLeer(canal)).toBe(3);
+  await page.clock.fastForward(1);
+  await expect.poll(() => cantidadLeer(canal)).toBe(4);
+  await page.waitForTimeout(500); // deja fallar ese intento: la siguiente espera es de 16 s
+
   // Vuelve el canal: un `online` lee, la lectura queda `hecha` y no queda ni temporizador ni listener que lea otra vez.
   canal.leer = 'ok';
   await page.clock.fastForward(ESPERA_LECTURA_INICIAL_MS);
   await dispararOnline(page);
   await expect.poll(() => lecturaDelStore(page)).toBe('hecha');
-  expect(cantidadLeer(canal)).toBe(4);
+  expect(cantidadLeer(canal)).toBe(5);
   expect(await CANAL_RETIROS_STORE(page)).toBe(true);
   await page.clock.fastForward(ESPERA_LECTURA_MAXIMA_MS);
   await dispararOnline(page);
   await page.waitForTimeout(500);
-  expect(cantidadLeer(canal)).toBe(4);
+  expect(cantidadLeer(canal)).toBe(5);
   expect(await lecturaDelStore(page)).toBe('hecha');
 });
 
