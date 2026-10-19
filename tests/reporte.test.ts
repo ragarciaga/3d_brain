@@ -1,12 +1,28 @@
 // Reportar un error (F12): las partes que se pueden señalar salen de la ficha, la descripción se valida, el enlace
-// a GitHub se arma solo con los datos del reporte y los textos del reporte existen en los dos idiomas.
+// a GitHub y el enlace de correo se arman solo con los datos del reporte y los textos del reporte existen en los
+// dos idiomas.
 import { readFileSync } from 'node:fs';
 import i18next from 'i18next';
 import { describe, expect, it, vi } from 'vitest';
-import { MAX_DESCRIPCION, MAX_URL, PLANTILLA, TIPOS, URL_ISSUES, type TipoReporte } from '../src/config/reporte';
+import {
+  CORREO_REPORTES,
+  MAX_DESCRIPCION,
+  MAX_URL,
+  PLANTILLA,
+  TIPOS,
+  URL_ISSUES,
+  type TipoReporte,
+} from '../src/config/reporte';
 import { estructuras } from '../src/data/atlas';
 import { camposDeFicha } from '../src/lib/prioridad';
-import { cabeEnGithub, descripcionValida, enlaceGithub, partesDeFicha, type Reporte } from '../src/lib/reporte';
+import {
+  cabeEnGithub,
+  descripcionValida,
+  enlaceCorreo,
+  enlaceGithub,
+  partesDeFicha,
+  type Reporte,
+} from '../src/lib/reporte';
 
 const COPIA = 'copia-de-prueba-reporte';
 const conFicha = Object.keys(estructuras).filter((id) => estructuras[id]!.ficha);
@@ -170,7 +186,9 @@ describe('enlaceGithub (R3.1 a R3.3)', () => {
       const t = await crearT(idioma);
       const json = leerJson(idioma);
       for (const tipo of TIPOS) {
-        const title = new URL(enlaceGithub(base({ tipo, idioma }), t)).searchParams.get('title');
+        const params = new URL(enlaceGithub(base({ tipo, idioma }), t)).searchParams;
+        expect(params.get('idioma'), `${idioma} ${tipo}`).toBe(idioma);
+        const title = params.get('title');
         expect(title, `${idioma} ${tipo}`).toBe(`[${json.reporte.tipo[tipo]}] Lóbulo grácil (${ID})`);
       }
     }
@@ -252,12 +270,140 @@ describe('cabeEnGithub (R3.4)', () => {
   });
 });
 
+// Una instancia con la interpolación por omisión de i18next (escapa HTML), como la tendría un llamador descuidado.
+const crearTEscapado = async (lng: 'es' | 'en') => {
+  const i = i18next.createInstance();
+  await i.init({ lng, resources: { [lng]: { translation: leerJson(lng) } } });
+  return i.getFixedT(lng);
+};
+const PREFIJO_CORREO = `mailto:${CORREO_REPORTES}?`;
+// Asunto y cuerpo decodificados: exige exactamente dos pares, `subject` y `body`, en ese orden.
+const partes = (enlace: string) => {
+  expect(enlace.startsWith(PREFIJO_CORREO)).toBe(true);
+  const pares = enlace.slice(PREFIJO_CORREO.length).split('&');
+  expect(pares).toHaveLength(2);
+  const [subject, body] = pares.map((p) => {
+    const i = p.indexOf('=');
+    return [p.slice(0, i), decodeURIComponent(p.slice(i + 1))] as const;
+  });
+  expect(subject![0]).toBe('subject');
+  expect(body![0]).toBe('body');
+  return { asunto: subject![1], cuerpo: body![1] };
+};
+
+describe('enlaceCorreo (R4.1, R4.2)', () => {
+  it('empieza por mailto:info@maysasp.com?', async () => {
+    const t = await crearT('es');
+    for (const tipo of TIPOS) {
+      const enlace = enlaceCorreo(base({ tipo }), t);
+      expect(enlace.startsWith('mailto:info@maysasp.com?'), tipo).toBe(true);
+      expect(enlace.startsWith(`mailto:${CORREO_REPORTES}?`), tipo).toBe(true);
+    }
+  });
+
+  it('asunto en es: "[Maysa Brain] <tipo>: <id> (es, versión <versión>)" para los cuatro tipos', async () => {
+    const t = await crearT('es');
+    const json = leerJson('es');
+    const version = estructuras[ID]!.ficha!.version;
+    expect(version).toBeTruthy();
+    for (const tipo of TIPOS) {
+      const { asunto } = partes(enlaceCorreo(base({ tipo }), t));
+      expect(asunto, tipo).toBe(`[Maysa Brain] ${json.reporte.tipo[tipo]}: ${ID} (es, versión ${version})`);
+    }
+    expect(partes(enlaceCorreo(base(), t)).asunto).toBe(`[Maysa Brain] Contenido: ${ID} (es, versión ${version})`);
+  });
+
+  it('asunto en en: "[Maysa Brain] <tipo>: <id> (en, version <versión>)" para los cuatro tipos', async () => {
+    const t = await crearT('en');
+    const json = leerJson('en');
+    const version = estructuras[ID]!.ficha!.version;
+    for (const tipo of TIPOS) {
+      const { asunto } = partes(enlaceCorreo(base({ tipo, idioma: 'en' }), t));
+      expect(asunto, tipo).toBe(`[Maysa Brain] ${json.reporte.tipo[tipo]}: ${ID} (en, version ${version})`);
+    }
+    expect(partes(enlaceCorreo(base({ idioma: 'en' }), t)).asunto).toBe(
+      `[Maysa Brain] Content: ${ID} (en, version ${version})`,
+    );
+  });
+
+  it('el cuerpo es la plantilla del idioma con estructura, idioma, versión, parte y la descripción completa', async () => {
+    const version = estructuras[ID]!.ficha!.version;
+    for (const idioma of ['es', 'en'] as const) {
+      const t = await crearT(idioma);
+      const descripcion = 'Dice otra cosa en la segunda línea.';
+      const { cuerpo } = partes(enlaceCorreo(base({ idioma, parte: 'relevancia.1', descripcion }), t));
+      const valores: Record<string, string> = { estructura: ID, idioma, version, parte: 'relevancia.1', descripcion };
+      const esperado = (leerJson(idioma).reporte.correo.cuerpo as string).replace(/\{\{(\w+)\}\}/g, (_, k) => valores[k]!);
+      expect(cuerpo, idioma).toBe(esperado);
+      expect(cuerpo, idioma).toContain(idioma === 'es' ? `Estructura: ${ID}` : `Structure: ${ID}`);
+      expect(cuerpo, idioma).toContain(descripcion);
+      expect(cuerpo, idioma).toContain('relevancia.1');
+    }
+  });
+
+  it('los espacios van como %20 y nunca como +', async () => {
+    const t = await crearT('es');
+    const enlace = enlaceCorreo(base({ descripcion: 'a b + c' }), t);
+    expect(enlace).toContain('%20');
+    expect(enlace).not.toContain('+');
+    expect(partes(enlace).cuerpo.endsWith('a b + c')).toBe(true);
+  });
+
+  it('un texto con #, &, +, %20, salto de línea, comillas, tildes y marcadores de i18next vuelve intacto (R4.2)', async () => {
+    const t = await crearT('es');
+    const texto = 'Dice "núcleo" #3 & más + 50%20\nñ á ü \'ok\' {{nombre}} $t(reporte.boton) $&';
+    const enlace = enlaceCorreo(base({ descripcion: texto }), t);
+    expect(partes(enlace).cuerpo.endsWith(`Descripción:\n${texto}`)).toBe(true);
+    expect(enlace).not.toContain('#');
+    expect(enlace.split('&')).toHaveLength(2);
+  });
+
+  it('un t que escapa HTML no cambia & ni " de la descripción (D2)', async () => {
+    const t = await crearTEscapado('es');
+    // Control: este t sí escapa lo que le llega sin la opción por llamada.
+    expect(t('reporte.correo.cuerpo', { estructura: 'x', idioma: 'es', version: '1', parte: 'p', descripcion: 'a & "b"' })).toContain('&amp;');
+    const descripcion = 'a & "b" <c>';
+    const { cuerpo } = partes(enlaceCorreo(base({ descripcion }), t));
+    expect(cuerpo.endsWith(`Descripción:\n${descripcion}`)).toBe(true);
+    expect(cuerpo).not.toContain('&amp;');
+    expect(cuerpo).not.toContain('&quot;');
+    const { asunto } = partes(enlaceCorreo(base({ estructura: 'a&b' }), t));
+    expect(asunto).toContain('a&b');
+  });
+
+  it('no lee la ubicación de la página: ?r= y #r= no salen en el enlace (R4.2)', async () => {
+    const t = await crearT('es');
+    const location = { search: '?r=PRUEBA01', hash: '#r=PRUEBA01', href: 'https://x.test/?r=PRUEBA01#r=PRUEBA01' };
+    vi.stubGlobal('location', location);
+    vi.stubGlobal('window', { location });
+    try {
+      const enlace = enlaceCorreo(base(), t);
+      expect(enlace).not.toContain('PRUEBA01');
+      expect(enlace).not.toContain('r=');
+      expect(enlace.split('&')).toHaveLength(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('no corta el cuerpo: 1500 caracteres con espacios y 750 emojis llegan completos', async () => {
+    const t = await crearT('es');
+    for (const descripcion of ['palabra '.repeat(188).slice(0, 1500), '😀'.repeat(750)]) {
+      expect(descripcion).toHaveLength(1500);
+      const { cuerpo } = partes(enlaceCorreo(base({ descripcion }), t));
+      expect(cuerpo.endsWith(descripcion)).toBe(true);
+      expect(cuerpo.length).toBeGreaterThan(descripcion.length);
+    }
+  });
+});
+
 describe('tipo fuera de TIPOS (D1)', () => {
-  it("enlaceGithub y cabeEnGithub lanzan con 'otro' y con 'constructor'", async () => {
+  it("enlaceGithub, enlaceCorreo y cabeEnGithub lanzan con 'otro' y con 'constructor'", async () => {
     const t = await crearT('es');
     for (const tipo of ['otro', 'constructor', '__proto__', 'toString']) {
       const r = base({ tipo: tipo as TipoReporte });
       expect(() => enlaceGithub(r, t), tipo).toThrow();
+      expect(() => enlaceCorreo(r, t), tipo).toThrow();
       expect(() => cabeEnGithub(r, t), tipo).toThrow();
     }
   });
