@@ -33,14 +33,14 @@ Four ideas decide every feature. If a feature does not strengthen one of them, i
 
 1. **Circuits for psychology.** Psychology students study systems (memory, fear, reward), not isolated names. That is the direction of the product. Today the only guided route is the vagus nerve; the circuits are on the [roadmap](#-roadmap).
 2. **Brain and vagus nerve in one space.** They sit in the same coordinates, so you can see where the nerve leaves the skull and how it relates to the structures around it.
-3. **Really bilingual.** Search works across Spanish, English and Latin, so "insular cortex", "corteza insular" and "cortex insularis" reach the same card. Every card shows the Latin name.
+3. **Really bilingual.** Search works across Spanish, English and Latin, so "amygdala", "amígdala" and "corpus amygdaloideum" reach the same card. Every card shows the Latin name.
 4. **Sources and teacher review.** Every card cites its sources, labels how strong the evidence is, and shows whether a teacher has reviewed it. Nothing anatomical is invented.
 
 ## 📍 Status
 
 - **Milestone 1, pilot with teachers.** All 236 cards are written with verified sources. They stay marked as drafts until teachers review them.
 - **Milestone 2, in progress.** Cutting planes (F8) and "Report an error" (F12) are live. The goal is 40 cards verified in both languages.
-- **Thoracic vagus: an honest gap.** The scanned model has a mirrored thoracic segment, so the atlas does not publish it and says so on screen until a teacher reviews a corrected route (plan B, [ADR 0010](docs/adr/0010-vago-toracico-trazado.md)).
+- **Thoracic vagus: an honest gap.** The scanned model has a mirrored thoracic segment, so the atlas does not publish it and says so on screen. It stays that way until a corrected route is traced and a teacher reviews it; the tracing is pending and deferred (plan B, [ADR 0010](docs/adr/0010-vago-toracico-trazado.md)).
 
 ## ✨ Features
 
@@ -51,10 +51,10 @@ Only what exists in `main` today.
 | Study mode | Full-screen brain with a side rail that opens the structure tree, study groups, cutting planes and search only when you ask. |
 | Search | `Ctrl+K` finds structures in Spanish, English, Latin and synonyms, tolerant to accents and typos. |
 | Structure card | What it is, function, location, relations, relevance for psychology with an evidence level, resources, article searches and sources. |
-| Take it apart | Split by hemispheres, lobes or single pieces with a vertical slider, send pieces to an inventory, **Separate** one, **Reassemble** to the exact original position, orient with the view compass. |
+| Take it apart | Split by hemispheres, lobes or single pieces with a vertical slider, send pieces to an inventory, **Separate** one, **Reassemble** puts everything back in its exact original position, orient with the view compass. |
 | Cutting planes | Sagittal, coronal and axial planes, with a notice that the model is a single body. |
 | Vagus nerve | It never fragments. **Follow the vagus** walks it in 4 stops, drawing it as you go. |
-| Geometry origin | Traced routes look matte and dotted, with a legend and a **Scanned geometry only** filter. |
+| Geometry origin | A legend tells measured geometry (from the scanned body) from markers (a labelled point, no volume) and flags the explained gap in the thorax. Traced routes, when they arrive, will look matte and dotted, with a **Scanned geometry only** filter ([ADR 0010](docs/adr/0010-vago-toracico-trazado.md), [docs/v2.md](docs/v2.md)). |
 | Share | A link per structure and language (`/en/hippocampus`, `/es/hipocampo`) and **Share this view**. |
 | Comfort | Light and dark theme. |
 | Report an error | From any card, through a GitHub form or by email. |
@@ -111,19 +111,19 @@ Three rules shape the code:
 
 This repository is built with AI coding tools orchestrated by [Rockbuilt](https://github.com/ragarciaga/rockbuilt), an open harness that splits every change into plan, implementation, verification and audit.
 
-Humans stay in charge of the anatomy. A change to `src/data/**`, `pipeline/mapeo.csv`, `pipeline/cajas.json` or `public/modelos/**` always waits for the editor's approval, and teachers validate names, cards, marker positions and nerve routes. A teacher review is never applied automatically: it becomes a proposed change that the editor approves.
+Humans stay in charge of the anatomy. A change to `src/data/**`, `pipeline/mapeo.csv`, `pipeline/cajas.json` or `public/modelos/**` always waits for the editor's approval, and teachers validate names, cards and marker positions. Any traced nerve route needs teacher review before it is shown as reviewed. A teacher review is never applied automatically: it becomes a proposed change that the editor approves.
 
 ## 🔬 Content quality
 
 - Every record carries its source, and names come from Terminologia Anatomica 2 when they exist.
-- Each claim has an evidence level: `consensus`, `moderate` or `debated`.
+- Each claim has an evidence level: consensus, moderate or debated.
 - When a source or certainty is missing, the field says `PENDIENTE` (pending). It is never invented.
 - Each card is a **draft**, **in review** or **verified**, and a reviewed card says "Reviewed by a university teacher", with no names.
 - External resources (StatPearls, Kenhub and others) are linked, never copied.
 
 ## 🤝 Contributing
 
-- **Spot a mistake?** Press **Report an error** on the card. It opens a GitHub form or an email.
+- **Spot a mistake?** Press **Report an error** on the card. It offers the four GitHub forms or an email.
 - **Are you a teacher?** Write to info@maysasp.com. The editor sends you a personal review link.
 - **Code:** read [CONTRIBUTING.md](CONTRIBUTING.md) for the branch, checks and rules.
 - **Translations:** the interface lives in `src/i18n/es.json` and `src/i18n/en.json`.
@@ -152,7 +152,7 @@ npm run test:e2e
 ```
 
 - **Regenerate the model:** follow [pipeline/README.md](pipeline/README.md). The GLB is never edited by hand.
-- **Publish on GitHub Pages:** [.github/workflows/pages.yml](.github/workflows/pages.yml) deploys every merge to `main`. Once, set Settings > Pages > Source to GitHub Actions. A custom domain is optional and set from Settings (there is no `CNAME` file; see [ADR 0014](docs/adr/0014-dominio-propio.md)).
+- **Publish on GitHub Pages:** [.github/workflows/pages.yml](.github/workflows/pages.yml) deploys every merge to `main`. Once, set Settings > Pages > Source to GitHub Actions. The build serves from the site root (`base: '/'` in `vite.config.ts`), so use a custom domain (Settings > Pages; there is no `CNAME` file, see [ADR 0014](docs/adr/0014-dominio-propio.md)) or change `base` to `'/<repo>/'` for a project site at `<user>.github.io/<repo>/`.
 - **Adapt it to another region:** change `pipeline/` and `pipeline/mapeo.csv`, and write the content in `src/data/*.json`. Another language needs code: the `Idioma` type in `src/data/tipos.ts`, the routes in `src/main.tsx` and a new `src/i18n/<code>.json`.
 - Derivatives keep CC BY-SA 4.0 and the credits below.
 

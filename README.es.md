@@ -33,14 +33,14 @@ Cuatro ideas deciden cada función. Si una función no refuerza alguna, no entra
 
 1. **Circuitos para psicología.** En psicología se estudian sistemas (memoria, miedo, recompensa), no nombres sueltos. Hacia allá va el producto. Hoy el único recorrido guiado es el del nervio vago; los circuitos están en la [hoja de ruta](#-hoja-de-ruta).
 2. **Cerebro y vago en el mismo espacio.** Comparten coordenadas, así que ves por dónde sale el nervio del cráneo y cómo se relaciona con las estructuras que lo rodean.
-3. **Bilingüe de verdad.** La búsqueda cruza español, inglés y latín: "corteza insular", "insular cortex" y "cortex insularis" llegan a la misma ficha. Cada ficha muestra el nombre en latín.
+3. **Bilingüe de verdad.** La búsqueda cruza español, inglés y latín: "amígdala", "amygdala" y "corpus amygdaloideum" llegan a la misma ficha. Cada ficha muestra el nombre en latín.
 4. **Fuentes y revisión docente.** Cada ficha cita sus fuentes, indica qué tan sólida es la evidencia y muestra si un docente la revisó. Nada anatómico se inventa.
 
 ## 📍 Estado
 
 - **Hito 1, piloto con docentes.** Las 236 fichas están escritas con fuentes verificadas. Siguen marcadas como borrador hasta que las revisen docentes.
 - **Hito 2, en curso.** Los planos de corte (F8) y "Reportar un error" (F12) ya están publicados. La meta es tener 40 fichas verificadas en los dos idiomas.
-- **Vago torácico: un hueco explicado.** El modelo escaneado trae un tramo torácico en espejo, así que el atlas no lo publica y lo dice en pantalla hasta que un docente revise una ruta corregida (plan B, [ADR 0010](docs/adr/0010-vago-toracico-trazado.md)).
+- **Vago torácico: un hueco explicado.** El modelo escaneado trae un tramo torácico en espejo, así que el atlas no lo publica y lo dice en pantalla. Sigue así hasta que se trace una ruta corregida y un docente la revise; el trazado está pendiente y diferido (plan B, [ADR 0010](docs/adr/0010-vago-toracico-trazado.md)).
 
 ## ✨ Funciones
 
@@ -51,10 +51,10 @@ Solo lo que ya existe en `main`.
 | Modo estudio | El cerebro a pantalla completa y un riel lateral que abre el árbol de estructuras, los grupos de estudio, los planos de corte y la búsqueda solo cuando los pides. |
 | Búsqueda | `Ctrl+K` encuentra estructuras en español, inglés, latín y sinónimos, con tolerancia a tildes y errores. |
 | Ficha | Qué es, función, ubicación, relaciones, relevancia en psicología con nivel de evidencia, recursos, búsquedas de artículos y fuentes. |
-| Desarmar | Fragmenta por hemisferios, lóbulos o piezas con un deslizador vertical, manda piezas al inventario, usa **Separar** en una y **Reensamblar** la devuelve a su posición exacta. Una brújula orienta las vistas. |
+| Desarmar | Fragmenta por hemisferios, lóbulos o piezas con un deslizador vertical, manda piezas al inventario, usa **Separar** en una y **Reensamblar** devuelve todo a su posición exacta. Una brújula orienta las vistas. |
 | Planos de corte | Sagital, coronal y axial, con el aviso de que el modelo es un solo cuerpo. |
 | Nervio vago | No se fragmenta. **Recorrer el vago** lo sigue en 4 paradas y lo va dibujando. |
-| Origen de la geometría | Las rutas trazadas se ven mate y punteadas, con leyenda y el filtro **Solo geometría escaneada**. |
+| Origen de la geometría | Una leyenda distingue la geometría medida (del cuerpo escaneado) de los marcadores (un punto con etiqueta, sin volumen) y avisa del hueco explicado en el tórax. Las rutas trazadas, cuando lleguen, se verán mate y punteadas, con el filtro **Solo geometría escaneada** ([ADR 0010](docs/adr/0010-vago-toracico-trazado.md), [docs/v2.md](docs/v2.md)). |
 | Compartir | Un enlace por estructura e idioma (`/es/hipocampo`, `/en/hippocampus`) y **Compartir esta vista**. |
 | Comodidad | Tema claro y oscuro. |
 | Reportar un error | Desde cualquier ficha, con un formulario de GitHub o por correo. |
@@ -111,19 +111,19 @@ Tres reglas le dan forma al código:
 
 Este repositorio se construye con herramientas de IA para programar, orquestadas por el harness abierto [Rockbuilt](https://github.com/ragarciaga/rockbuilt), que divide cada cambio en plan, implementación, verificación y auditoría.
 
-La anatomía siempre la decide una persona. Un cambio en `src/data/**`, `pipeline/mapeo.csv`, `pipeline/cajas.json` o `public/modelos/**` espera la aprobación del editor, y los docentes validan nombres, fichas, posiciones de marcadores y rutas del nervio. Una revisión docente nunca se aplica sola: se convierte en un cambio propuesto que el editor aprueba.
+La anatomía siempre la decide una persona. Un cambio en `src/data/**`, `pipeline/mapeo.csv`, `pipeline/cajas.json` o `public/modelos/**` espera la aprobación del editor, y los docentes validan nombres, fichas y posiciones de marcadores. Toda ruta trazada del nervio necesita revisión docente antes de mostrarse como revisada. Una revisión docente nunca se aplica sola: se convierte en un cambio propuesto que el editor aprueba.
 
 ## 🔬 Calidad del contenido
 
 - Cada registro lleva su fuente, y los nombres salen de Terminologia Anatomica 2 cuando existen.
-- Cada afirmación tiene un nivel de evidencia: `consenso`, `moderada` o `debatida`.
+- Cada afirmación tiene un nivel de evidencia: consenso, moderada o debatida.
 - Cuando falta la fuente o la certeza, el campo dice `PENDIENTE`. Nunca se inventa.
 - Cada ficha está en **borrador**, **en revisión** o **verificada**, y una ficha revisada dice "Revisado por un docente universitario", sin nombres.
 - Los recursos externos (StatPearls, Kenhub y otros) se enlazan, nunca se copian.
 
 ## 🤝 Cómo aportar
 
-- **¿Viste un error?** Pulsa **Reportar un error** en la ficha. Abre un formulario de GitHub o un correo.
+- **¿Viste un error?** Pulsa **Reportar un error** en la ficha. Ofrece los cuatro formularios de GitHub o un correo.
 - **¿Eres docente?** Escribe a info@maysasp.com. El editor te entrega un enlace personal de revisión.
 - **Código:** lee [CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) para la rama, las verificaciones y las reglas.
 - **Traducciones:** la interfaz vive en `src/i18n/es.json` y `src/i18n/en.json`.
@@ -152,7 +152,7 @@ npm run test:e2e
 ```
 
 - **Regenerar el modelo:** sigue [pipeline/README.md](pipeline/README.md). El GLB nunca se edita a mano.
-- **Publicar en GitHub Pages:** [.github/workflows/pages.yml](.github/workflows/pages.yml) despliega cada fusión a `main`. Una sola vez, en Settings > Pages > Source elige GitHub Actions. El dominio propio es opcional y se configura desde Settings (no hay archivo `CNAME`; ver [ADR 0014](docs/adr/0014-dominio-propio.md)).
+- **Publicar en GitHub Pages:** [.github/workflows/pages.yml](.github/workflows/pages.yml) despliega cada fusión a `main`. Una sola vez, en Settings > Pages > Source elige GitHub Actions. El build sirve desde la raíz del sitio (`base: '/'` en `vite.config.ts`), así que usa un dominio propio (Settings > Pages; no hay archivo `CNAME`, ver [ADR 0014](docs/adr/0014-dominio-propio.md)) o cambia `base` a `'/<repo>/'` si lo publicas como sitio de proyecto en `<usuario>.github.io/<repo>/`.
 - **Adaptarlo a otra región:** cambia `pipeline/` y `pipeline/mapeo.csv`, y escribe el contenido en `src/data/*.json`. Otro idioma pide código: el tipo `Idioma` en `src/data/tipos.ts`, las rutas en `src/main.tsx` y un nuevo `src/i18n/<código>.json`.
 - Los derivados conservan CC BY-SA 4.0 y los créditos de abajo.
 

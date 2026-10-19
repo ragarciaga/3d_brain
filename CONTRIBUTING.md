@@ -6,7 +6,7 @@ Thank you for helping a free atlas get better. Anatomy is the one thing nobody c
 
 ## Report a content error
 
-Open the structure card on https://brain.maysasp.com/ and press **Report an error**. It opens one of four issue forms, which you can also pick directly in [New issue](https://github.com/ragarciaga/3d_brain/issues/new/choose):
+Open the structure card on https://brain.maysasp.com/ and press **Report an error**. It offers the four GitHub issue forms or an email. You can also pick a form directly in [New issue](https://github.com/ragarciaga/3d_brain/issues/new/choose):
 
 - [Content error](.github/ISSUE_TEMPLATE/contenido.yml): a name, fact or source is wrong or incomplete.
 - [Translation error](.github/ISSUE_TEMPLATE/traduccion.yml): the other language does not say the same thing.

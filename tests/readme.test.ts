@@ -31,7 +31,7 @@ describe('guion largo y voseo (D1)', () => {
     expect(leer(f)).not.toContain(String.fromCharCode(0x2014));
   });
   it('README.es.md no tiene voseo', () => {
-    expect(leer('README.es.md')).not.toMatch(/\bvos\b|podés|tenés|querés|escribís/i);
+    expect(leer('README.es.md')).not.toMatch(/\bvos\b|\bsos\b|podés|tenés|querés|escribís|escribí(?![a-záéíóúñ])|mirá|fijate|hacé|revisá/i);
   });
 });
 
@@ -103,7 +103,7 @@ describe('espejo de secciones (D6, D7)', () => {
     const [en, es] = LECTORES.map((f) => encabezados2(f));
     expect(en?.length).toBeGreaterThanOrEqual(10);
     expect(emoji((es ?? []).join('\n'))).toEqual(emoji((en ?? []).join('\n')));
-    expect([...(en ?? []), ...(es ?? [])].join('')).not.toContain('️');
+    expect([...(en ?? []), ...(es ?? [])].join('')).not.toContain('\uFE0F');
   });
 
   const comunes = ['Rafael Andrés García', 'AI Consultant', 'https://www.linkedin.com/in/ragarciaga/', 'https://maysasp.com', 'info@maysasp.com', 'https://github.com/ragarciaga/rockbuilt', 'https://brain.maysasp.com/'];
