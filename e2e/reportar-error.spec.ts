@@ -387,27 +387,34 @@ test('largo: 1501 caracteres pegados quedan en 1500, y un texto largo desactiva 
   expect((await descripcionDe(page).inputValue()).length).toBe(MAX_DESCRIPCION);
 });
 
-test('D3: un surrogate suelto no rompe el formulario y los enlaces llevan U+FFFD', async ({ page }) => {
+test('D3: un surrogate suelto, alto o bajo, no rompe el formulario y los enlaces llevan U+FFFD', async ({ page }) => {
   const errores: string[] = [];
   page.on('pageerror', (e) => errores.push(e.message));
   await abrirDialogo(page, 'es');
   const caja = dialogo(page);
   await elegirTipo(page, 'es', 'contenido');
   // El valor se fija por programa: ninguna tecla escribe un surrogate suelto.
-  await descripcionDe(page).evaluate((el) => {
-    const area = el as HTMLTextAreaElement;
-    const poner = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
-    poner.call(area, 'a' + String.fromCharCode(0xd83d));
-    area.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  await expect(caja.getByText(tr('es', 'reporte.contador', { n: 2, max: MAX_DESCRIPCION }), { exact: true })).toBeVisible();
-  const href = (await enlaceGithubDe(page, 'es').getAttribute('href'))!;
-  expect(leerGithub(href)['descripcion']).toBe('a�');
-  const mailto = (await enlaceCorreoDe(page, 'es').getAttribute('href'))!;
-  expect(decodeURIComponent(new URL(mailto).search.split('&body=')[1]!)).toContain('a�');
-  expect(mailto).toBe(esperadoCorreo('es', 'contenido', 'general', 'a�'));
-  await expect(caja).toBeVisible();
-  expect(errores).toEqual([]);
+  const fijar = (valor: string) =>
+    descripcionDe(page).evaluate((el, v) => {
+      const area = el as HTMLTextAreaElement;
+      const poner = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+      poner.call(area, v);
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    }, valor);
+  const comprobar = async (valor: string, esperado: string) => {
+    await fijar(valor);
+    await expect(caja.getByText(tr('es', 'reporte.contador', { n: valor.length, max: MAX_DESCRIPCION }), { exact: true })).toBeVisible();
+    const href = (await enlaceGithubDe(page, 'es').getAttribute('href'))!;
+    expect(leerGithub(href)['descripcion']).toBe(esperado);
+    const mailto = (await enlaceCorreoDe(page, 'es').getAttribute('href'))!;
+    expect(decodeURIComponent(new URL(mailto).search.split('&body=')[1]!)).toContain(esperado);
+    expect(mailto).toBe(esperadoCorreo('es', 'contenido', 'general', esperado));
+    await expect(caja).toBeVisible();
+    expect(errores).toEqual([]);
+  };
+  // Alto sin pareja al final y, sin recargar, bajo sin pareja al inicio.
+  await comprobar('a' + String.fromCharCode(0xd83d), 'a�');
+  await comprobar(String.fromCharCode(0xde00) + 'b', '�b');
 });
 
 // R1.4: con el formulario completo y un texto largo, la dirección y "Cerrar" se alcanzan y nada los tapa.
