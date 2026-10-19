@@ -130,7 +130,8 @@ interface Estado {
   retiradas: Record<string, string>; // clave de respuesta -> fecha del retiro: marcas que el docente quitó y el canal aún debe recibir (#217); una clave no está aquí y en `respuestas`
   canalRetiros: boolean; // el script del canal declaró `canal >= VERSION_CANAL` en la lectura de este revisor: solo entonces se mandan retiros
   piezaPropuesta: Record<string, string>; // estructura -> id de la pieza tocada al proponer su posición; solo en esta sesión, no se envía
-  dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra (después de la confirmación de salida)
+  dialogoReporte: boolean; // hay un diálogo de reportar un error abierto; Escape lo cierra (después de la confirmación de salida)
+  dialogoRevision: boolean; // hay un diálogo de revisión abierto; Escape lo cierra (después de la confirmación de salida y del diálogo de reporte)
   cargaRespuestas: number; // sube cada vez que se cargan las respuestas guardadas; la ficha remonta sus controles
   ubicando: string | null; // marcador o estructura esperando un toque en el modelo
   shift: boolean; // Shift presionado: los fantasmas se pueden sumar al aislamiento (F5)
@@ -186,6 +187,7 @@ interface Estado {
   importarRespuestas(nuevas: Respuesta[], retiros?: Retiro[]): { agregadas: number; actualizadas: number; sinCambio: number };
   proponerPosicion(r: Respuesta, pieza: string): void;
   deshacerPosicion(estructura: string, fecha?: string): void;
+  setDialogoReporte(v: boolean): void;
   setDialogoRevision(v: boolean): void;
   setUbicando(id: string | null): void;
   setShift(v: boolean): void;
@@ -281,6 +283,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   retiradas: {},
   canalRetiros: false,
   piezaPropuesta: {},
+  dialogoReporte: false,
   dialogoRevision: false,
   cargaRespuestas: 0,
   ubicando: null,
@@ -485,6 +488,9 @@ export const useAtlas = create<Estado>((set, get) => ({
     const piezaPropuesta = { ...s.piezaPropuesta };
     delete piezaPropuesta[estructura];
     set({ respuestas, piezaPropuesta, ubicando: estructura, ...(habia ? { retiradas: { ...s.retiradas, [clave]: fecha } } : {}) });
+  },
+  setDialogoReporte: (v) => {
+    if (get().dialogoReporte !== v) set({ dialogoReporte: v });
   },
   setDialogoRevision: (v) => {
     if (get().dialogoRevision !== v) set({ dialogoRevision: v });
