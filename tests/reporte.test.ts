@@ -170,7 +170,9 @@ describe('enlaceGithub (R3.1 a R3.3)', () => {
       const t = await crearT(idioma);
       const json = leerJson(idioma);
       for (const tipo of TIPOS) {
-        const title = new URL(enlaceGithub(base({ tipo, idioma }), t)).searchParams.get('title');
+        const params = new URL(enlaceGithub(base({ tipo, idioma }), t)).searchParams;
+        expect(params.get('idioma'), `${idioma} ${tipo}`).toBe(idioma);
+        const title = params.get('title');
         expect(title, `${idioma} ${tipo}`).toBe(`[${json.reporte.tipo[tipo]}] Lóbulo grácil (${ID})`);
       }
     }

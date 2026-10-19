@@ -497,7 +497,7 @@
     },
     "tipoAyuda": {
       "contenido": "A name, fact or source on the card is wrong or incomplete.",
-      "traduccion": "The text in the other language does not say the same or reads badly.",
+      "traduccion": "The text in the other language does not mean the same or reads poorly.",
       "enlace-roto": "A link on the card does not open or leads to another page.",
       "pieza": "The 3D model piece does not match this structure or is in the wrong place."
     },
