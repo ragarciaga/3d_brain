@@ -1737,6 +1737,77 @@ a {
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
+  width: 100%;
+}
+
+.reporte-caja fieldset {
+  margin: 0 0 0.6rem;
+  padding: 0.4rem 0.7rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.reporte-tipo {
+  margin: 0.3rem 0;
+}
+
+.reporte-ayuda {
+  display: block;
+  margin-left: 1.5rem;
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.reporte-campo label {
+  display: block;
+}
+
+.reporte-caja select,
+.reporte-caja textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.2rem;
+}
+
+.reporte-caja textarea {
+  padding: 0.3rem 0.4rem;
+  background: var(--elevado);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  resize: vertical;
+}
+
+.reporte-contador {
+  display: block;
+  text-align: right;
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.reporte-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
+.reporte-acciones a {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  text-decoration: none;
+}
+
+.reporte-acciones a[aria-disabled='true'] {
+  color: var(--texto-suave);
+  border-color: var(--borde);
+  cursor: not-allowed;
+}
+
+.reporte-motivos p {
+  margin: 0.2rem 0;
+  font-size: 0.9em;
 }
 
 .ficha-pie {
