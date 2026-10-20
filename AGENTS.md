@@ -1,6 +1,6 @@
 # Atlas 3D de cerebro y nervio vago
 
-Docs language: es
+Docs language: en
 Project type: web
 Default branch: main
 Autonomy: auto
@@ -74,7 +74,14 @@ Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y 
 - **Cambio de alcance:** primero en SPEC.md, después en código.
 - **Comandos para el portátil del editor** (Windows, PowerShell): listos para pegar, con rutas
   de Windows de ejemplo.
-- Textos para humanos en español de Bogotá (tú, nunca vos). Nunca el guion largo.
+- **Repository language: English.** From 2026-10-20 on, everything new written to the
+  repository or to GitHub is in English: docs, code comments, test names, commit messages,
+  issues and pull requests. Existing Spanish text stays as it is until someone edits it, and code
+  identifiers are not renamed. The product is out of this rule and stays as it is: the interface
+  (`src/i18n/*.json`), card content (`src/data/**`), the review sheet menu and the importer
+  messages, `README.es.md` and the message for teachers (`docs/guia-docentes.md`). Spanish
+  product text uses Bogotá Spanish (tú, never vos). Conversations with the editor stay in
+  Spanish. Never the em dash.
 
 ## Verification
 ```bash
