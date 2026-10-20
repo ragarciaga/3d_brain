@@ -312,6 +312,56 @@ a {
   margin: 0.15rem 0;
 }
 
+/* Plegable: plegada es solo el botón (en celular arranca así); desplegada, el botón es el encabezado. */
+.leyenda-origen.plegada {
+  padding: 0;
+}
+
+.leyenda-boton {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.leyenda-origen:not(.plegada) .leyenda-boton {
+  padding: 0 0 0.3rem;
+}
+
+/* Indicador sin texto en duro: un triángulo que gira según aria-expanded. */
+.leyenda-boton::after {
+  content: '';
+  flex: none;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transition: transform 0.15s;
+}
+
+.leyenda-boton[aria-expanded='true']::after {
+  transform: rotate(180deg);
+}
+
+.leyenda-boton:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--radio);
+}
+
+.leyenda-hueco-breve {
+  color: var(--acento);
+  font-weight: 600;
+}
+
 .muestra {
   flex: none;
   width: 22px;

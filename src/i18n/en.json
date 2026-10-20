@@ -483,6 +483,8 @@
   },
   "origen": {
     "leyenda": "Geometry origin",
+    "boton": "Legend",
+    "huecoBreve": "Thoracic gap",
     "escaneada": "Measured from the scanned body",
     "aproximada": "Traced (approximate, for teaching)",
     "marcador": "Marker: labelled point, no volume",

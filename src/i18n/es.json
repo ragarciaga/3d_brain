@@ -483,6 +483,8 @@
   },
   "origen": {
     "leyenda": "Origen de la geometría",
+    "boton": "Leyenda",
+    "huecoBreve": "Hueco en el tórax",
     "escaneada": "Medida del cuerpo escaneado",
     "aproximada": "Trazada (aproximada, con fines didácticos)",
     "marcador": "Marcador: punto con etiqueta, sin volumen",

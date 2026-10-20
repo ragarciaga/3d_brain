@@ -139,6 +139,7 @@ interface Estado {
   enfocarFicha: string | null; // entrada cuya ficha debe recibir el foco (búsqueda, árbol, relaciones)
   recorrido: number | null; // parada actual del recorrido del vago (F14); null fuera del recorrido
   soloEscaneada: boolean; // F25: esconder la geometría trazada
+  leyendaPlegada: boolean | null; // null: la persona no la ha tocado en esta sesión; sigue el corte de celular
   rutas: RutaTrazada[]; // rutas trazadas del vago (ADR 0009), cargadas de public/modelos/rutas-vago.json
   huecos: Reemplaza[]; // tramos del vago que el atlas deja sin trazar (Plan B, ADR 0010), del mismo archivo
   trazos: string[]; // mallas de trazo del GLB cargado, en orden (src/lib/trazos.ts); [] hasta que carga el modelo
@@ -198,6 +199,7 @@ interface Estado {
   salirRecorrido(): void;
   setPanelRecorrido(px: number): void;
   setSoloEscaneada(v: boolean): void;
+  setLeyendaPlegada(v: boolean): void;
   setRutas(r: RutaTrazada[]): void;
   setHuecos(h: Reemplaza[]): void;
   setTrazos(l: string[]): void;
@@ -293,6 +295,7 @@ export const useAtlas = create<Estado>((set, get) => ({
   recorrido: null,
   panelRecorrido: 0,
   soloEscaneada: false,
+  leyendaPlegada: null,
   rutas: [],
   huecos: [],
   trazos: [],
@@ -522,6 +525,7 @@ export const useAtlas = create<Estado>((set, get) => ({
     set(recalcularBase(get()));
   },
   setSoloEscaneada: (v) => set({ soloEscaneada: v }),
+  setLeyendaPlegada: (v) => set({ leyendaPlegada: v }),
   setRutas: (r) => set({ rutas: r }),
   setHuecos: (h) => set({ huecos: h }),
   setTrazos: (l) => {
