@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { estructuras } from '../src/data/atlas';
-import { esPrivacidad, rutaPrivacidad, SLUG_PRIVACIDAD } from '../src/lib/paginas';
+import { esPrivacidad, rutaPrivacidad, SLUG_LICENCIA, SLUG_PRIVACIDAD, SLUG_REVISION } from '../src/lib/paginas';
 
 const leer = (ruta: string) => readFileSync(ruta, 'utf8');
 /** Trozo de `texto` entre dos marcas; falla si alguna no existe, para que un corte vacío no deje pasar los expect. */
@@ -34,6 +34,29 @@ describe('rutas de las páginas de texto (#168)', () => {
       expect(slugs.has(e.slug.es), e.slug.es).toBe(false);
       expect(slugs.has(e.slug.en), e.slug.en).toBe(false);
     }
+  });
+});
+
+describe('licencia and revision slugs (#265)', () => {
+  it('have the values the router and the build entry files rely on', () => {
+    expect(SLUG_LICENCIA).toBe('licencia');
+    expect(SLUG_REVISION).toBe('revision');
+  });
+
+  it('no structure uses the licencia or revision slug in either language', () => {
+    const reservados = new Set([SLUG_LICENCIA, SLUG_REVISION]);
+    const todas = Object.values(estructuras);
+    expect(todas.length).toBeGreaterThan(0);
+    for (const e of todas) {
+      expect(reservados.has(e.slug.es), e.slug.es).toBe(false);
+      expect(reservados.has(e.slug.en), e.slug.en).toBe(false);
+    }
+  });
+
+  it('main.tsx compares against the constants, not literals', () => {
+    const main = leer('src/main.tsx');
+    expect(main).toContain('resto === SLUG_LICENCIA');
+    expect(main).toContain('resto === SLUG_REVISION');
   });
 });
 

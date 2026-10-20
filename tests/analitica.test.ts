@@ -219,6 +219,23 @@ describe('beacon de Cloudflare Web Analytics (D1)', () => {
       expect(copia).toContain(TOKEN);
       expect(ejecutar(cargadorInline(copia), '/es/revision', '?r=X')).toHaveLength(0);
     });
+
+    it('the review entry file carries the loader, which skips the beacon on /es/revision (#265)', () => {
+      const carpeta = mkdtempSync(join(tmpdir(), 'atlas-analitica-'));
+      carpetas.push(carpeta);
+      mkdirSync(join(carpeta, 'dist'));
+      writeFileSync(join(carpeta, 'dist', 'index.html'), transformar(HTML_FALSO));
+      const r = spawnSync(process.execPath, [join(raiz, 'scripts/postbuild.ts')], { cwd: carpeta, encoding: 'utf8' });
+      expect(r.status, r.stderr).toBe(0);
+      for (const archivo of ['es/revision.html', 'en/revision.html', 'es/hipocampo.html']) {
+        const copia = readFileSync(join(carpeta, 'dist', archivo), 'utf8');
+        expect(copia, archivo).toContain(SCRIPT);
+        expect(copia, archivo).toContain(TOKEN);
+      }
+      const entrada = readFileSync(join(carpeta, 'dist', 'es', 'revision.html'), 'utf8');
+      expect(ejecutar(cargadorInline(entrada), '/es/revision', '')).toHaveLength(0);
+      expect(ejecutar(cargadorInline(entrada), '/es/hipocampo', '')).toHaveLength(1);
+    });
   });
 });
 
