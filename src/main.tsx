@@ -14,7 +14,7 @@ import { escucharRetiroDelCodigo } from './lib/persistencia';
 import { dejarModoRevision, useAtlas } from './store/useAtlas';
 import './estilos.css';
 import { MARCA_INICIO_APP } from './lib/medicion';
-import { esPrivacidad } from './lib/paginas';
+import { esPrivacidad, SLUG_LICENCIA, SLUG_REVISION } from './lib/paginas';
 
 performance.mark(MARCA_INICIO_APP);
 
@@ -28,9 +28,9 @@ function Ruta() {
     document.documentElement.lang = idioma;
   }, [idioma]);
   if (lang !== 'es' && lang !== 'en') return <Navigate to="/es" replace />;
-  if (resto === 'licencia') return <Licencia />;
+  if (resto === SLUG_LICENCIA) return <Licencia />;
   if (esPrivacidad(resto)) return <Privacidad />;
-  if (resto === 'revision') return <Pagina revision />;
+  if (resto === SLUG_REVISION) return <Pagina revision />;
   return <Pagina slug={resto || undefined} />;
 }
 

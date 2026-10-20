@@ -1,6 +1,12 @@
 // Rutas de las páginas de texto (#168).
 import type { Idioma } from '../data/tipos';
 
+/** Slug of the Licencia page, the same in both languages. */
+export const SLUG_LICENCIA = 'licencia';
+
+/** Slug of the review route, the same in both languages. */
+export const SLUG_REVISION = 'revision';
+
 /** Slug de la página Privacidad por idioma. Ningún slug de estructura puede coincidir (lo prueba tests/paginas.test.ts). */
 export const SLUG_PRIVACIDAD: Record<Idioma, string> = { es: 'privacidad', en: 'privacy' };
 

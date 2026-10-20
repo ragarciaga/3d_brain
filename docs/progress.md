@@ -181,7 +181,6 @@ Sigue, en este orden:
 ## Seguimientos abiertos (sin decisión pendiente)
 - Modo revisión (#149): no hay prueba e2e de dos pestañas con el modelo cargado (el CI no tiene CPU para dibujarlo dos veces por software); el nombre del archivo de descarga ya no lleva el código, pero el contenido y las URL prellenadas del formulario de respaldo sí (por diseño; la ayuda y la guía lo advierten).
 - Celular: botones de la brújula de 28 px, por debajo de los 44 px recomendados (#66).
-- Sitio: GitHub Pages sirve `/es` y `/en` con estado 404 (por `404.html`); funciona para el usuario, pero los buscadores pueden no indexar esas rutas.
 - Canal: `public/probar-canal.html` con `apps-script/prueba-canal.js` todavía lee por GET con una marca de prueba (no con un código); design.md de spec 03 dice que un código no puede empezar con `-` y `REVISOR_VALIDO` lo permite (la defensa real es el formato `@`).
 - Visor: con cortes, al tocar una pieza no aparece su etiqueta 3D flotante (sin cortes sí); no se comparó con el comportamiento anterior. Los marcadores de la línea media (x = 0) se esconden con el sagital en 0 por quedar unas centésimas de micra del lado oculto.
 - Índice de toque: árboles en modo `indirect` para evitar el pico de memoria de GPU al clonar índices, o un worker propio, solo si el editor nota trabas.
