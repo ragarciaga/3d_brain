@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const leer = (ruta: string) => readFileSync(ruta, 'utf8');
@@ -153,7 +154,7 @@ describe('docs/revision-docente.md', () => {
     expect(texto).not.toContain('pero el editor la pasa solo por chat');
     // La prueba rápida usa un código aleatorio propio: uno fijo y publicado dejaría escribir en la hoja a cualquiera.
     expect(texto).not.toContain('PRUEBA99');
-    expect(texto).toContain('`scripts/crear-revisores.ts`');
+    expect(texto).toContain('Crear revisor');
     expect(texto).toMatch(/código\s+de\s+prueba\s+aleatorio/);
     expect(texto).toContain('Win+V');
     expect(texto).toContain('Set-Clipboard -Value $null');
@@ -228,6 +229,30 @@ describe('docs/revision-docente.md', () => {
     expect(adr).toContain('/es/privacidad');
     expect(adr).toContain('/en/privacy');
     expect(adr).toMatch(/Amended:.*#168/);
+  });
+
+  it('el Padrón es la única fuente (#257, D8): no quedan el script ni el JSON, y la guía solo nombra el archivo viejo al migrar', () => {
+    for (const ruta of ['scripts/crear-revisores.ts', 'tests/crear-revisores.test.ts', 'pipeline/revisores.ejemplo.json', 'tests/fixtures/revisiones/padron-prueba.json']) {
+      expect(existsSync(ruta), ruta).toBe(false);
+    }
+    const scripts = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? scripts(join(dir, e.name)) : [join(dir, e.name)]));
+    for (const ruta of scripts('scripts')) {
+      const fuente = leer(ruta);
+      expect(fuente, ruta).not.toContain('agregarRevisores');
+      expect(fuente, ruta).not.toContain('ALFABETO_CODIGO');
+    }
+    expect(texto).not.toContain('crear-revisores');
+    // Todo lo que nombra revisores.local.json está en la subsección de migración (#257).
+    const lineas = texto.split('\n');
+    const inicio = lineas.findIndex((l) => /^###\s.*#257/.test(l));
+    expect(inicio).toBeGreaterThan(-1);
+    const fin = lineas.findIndex((l, i) => i > inicio && /^##+\s/.test(l));
+    const nombran = lineas.map((l, i) => [l, i] as const).filter(([l]) => l.includes('revisores.local.json'));
+    expect(nombran.length).toBeGreaterThan(0);
+    for (const [l, i] of nombran) {
+      expect(i > inicio && i < fin, l).toBe(true);
+    }
   });
 
   it('la guía del editor no lleva ninguna URL /exec del script', () => {

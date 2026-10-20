@@ -77,9 +77,10 @@ describe('enlaces del sitio (D2, D3)', () => {
     expect(readFileSync(join(raiz, 'README.md'), 'utf8')).toContain('https://brain.maysasp.com/');
   });
 
-  it('crear-revisores.ts usa https://brain.maysasp.com como base por defecto', () => {
-    const fuente = readFileSync(join(raiz, 'scripts/crear-revisores.ts'), 'utf8');
-    expect(fuente).toMatch(/process\.argv\[3\] \?\? 'https:\/\/brain\.maysasp\.com'/);
+  it('el menú de Codigo.js arma el enlace del revisor con https://brain.maysasp.com (SITIO)', () => {
+    const fuente = readFileSync(join(raiz, 'apps-script/Codigo.js'), 'utf8');
+    expect(fuente).toContain("const SITIO = 'https://brain.maysasp.com';");
+    expect(fuente).toContain("SITIO + '/es/revision?r=' + codigo");
   });
 
   it('existe el ADR 0014 aceptado', () => {

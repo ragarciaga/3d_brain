@@ -1,10 +1,10 @@
 # Enlaces importantes
 
 Todos los enlaces del proyecto en un solo lugar. Los códigos de los docentes **no** van aquí: el
-repositorio es público. Esos viven en la carpeta privada **"Maysa Brain (privado)"** del Drive de
-Maysa Digital: el documento "Enlaces de docentes Maysa Brain (privado)" y el padrón
-`revisores.local.json`, que se copia a `pipeline/revisores.local.json` (fuera de git) antes de
-importar revisiones.
+repositorio es público. Esos viven solo en la pestaña `Padrón` de la hoja del canal (Drive de Maysa
+Digital), que se descarga en CSV únicamente para importar revisiones y se borra al terminar
+(`docs/revision-docente.md`). Si guardas un documento de enlaces, que lleve solo el alias y el nombre
+del docente, nunca su código.
 
 ## El sitio
 

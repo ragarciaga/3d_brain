@@ -20,7 +20,7 @@ export interface Respuesta {
 export const claveRespuesta = (r: Pick<Respuesta, 'estructura' | 'campo' | 'idioma'>) =>
   `${r.estructura}|${r.campo}|${r.idioma ?? ''}`;
 
-/** Código del revisor: 8 caracteres A-Z0-9 según docs/revision-docente.md; se admiten guion y guion bajo. */
+/** Código del revisor: letras, dígitos, guion y guion bajo, de 1 a 40. Los que crea el menú de la hoja (#257) tienen 10 caracteres; los de 8 siguen valiendo (docs/revision-docente.md). */
 export const REVISOR_VALIDO = /^[A-Za-z0-9_-]{1,40}$/;
 /** Campos que genera la app (nombre, latin, relevancia.N, fuente.N, posicion...) o `trazo:<malla>` sin comillas invertidas, barras verticales, saltos de línea ni ángulos. */
 const CAMPO_VALIDO = /^([a-z_]+(\.\d+)?|trazo:[^\r\n`|<>]{1,120})$/;

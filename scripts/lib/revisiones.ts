@@ -1,9 +1,12 @@
 // Convierte el CSV exportado del formulario de Google o de la pestaña Respuestas de la hoja del
 // Apps Script (ADR 0012) en un resumen por estructura. El repositorio es público: los issues
 // muestran el alias del revisor (D01, D02...), nunca su código ni su nombre (#15). El padrón
-// código -> alias vive solo en el portátil del editor (pipeline/revisores.local.json, ignorado por
-// git) y un envío con un código fuera del padrón se descarta. Las fichas nunca muestran datos del
-// revisor.
+// código -> alias es la pestaña `Padrón` de la hoja del canal, que el editor descarga como CSV
+// (`padronDeCsv`, #257); un envío con un código fuera del padrón se descarta. Las fichas nunca
+// muestran datos del revisor.
+// Activo (#257): las filas de la pestaña Respuestas de cualquier código del padrón se importan, esté o no
+// en `sí`; las del formulario de respaldo de un código que no está en `sí` se descartan, y el resumen y la
+// consola dicen por alias cuántas filas aportó cada código inactivo (`seccionInactivos`).
 // La casilla del vago (S2, #163): las respuestas de trazos y de rutas trazadas del vago solo entran al
 // resumen normal si la última fila del código en la pestaña Autorizaciones dice `sí`; el resto sale en
 // una sección aparte, sin aplicarse (`separarSinVago`, `seccionSinVago`).
@@ -13,6 +16,15 @@
 import { CLAVES_V2, esObjeto, fechaValida, respuestaValida, retiroValido, REVISOR_VALIDO, type Respuesta, type Retiro } from '../../src/lib/revision.ts';
 
 export function parsearCsv(texto: string): string[][] {
+  return parsearCsvConVacias(texto).filter((f) => f.some((x) => x.trim()));
+}
+
+/**
+ * Todos los registros del CSV, también los totalmente vacíos (una línea en blanco o `,,`, que es como Sheets exporta
+ * una fila borrada), para que el índice de cada uno sea su número de fila física en la hoja menos uno. Una celda con
+ * comillas y saltos de línea cuenta como un solo registro.
+ */
+export function parsearCsvConVacias(texto: string): string[][] {
   const filas: string[][] = [];
   let fila: string[] = [];
   let celda = '';
@@ -41,7 +53,7 @@ export function parsearCsv(texto: string): string[][] {
     fila.push(celda);
     filas.push(fila);
   }
-  return filas.filter((f) => f.some((x) => x.trim()));
+  return filas;
 }
 
 export interface Envio {
@@ -153,10 +165,25 @@ function esFilaDeOtraPestana(fila: string[]): boolean {
  * se cuenta como inválida y nunca aborta la importación completa.
  */
 export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envios: Envio[]; invalidas: number } {
+  const { envios, invalidas } = leerEnviosConFila(filas, idsValidos);
+  return { envios, invalidas };
+}
+
+/**
+ * Como `leerEnvios`, y además `filas[i]` es el índice de la fila del CSV de la que salió `envios[i]` (una carga `v:2`
+ * con varias estructuras da varios envíos de la misma fila). Sirve para contar filas y no envíos (#257).
+ */
+export function leerEnviosConFila(filas: string[][], idsValidos?: Set<string>): { envios: Envio[]; invalidas: number; filas: number[] } {
   const envios: Envio[] = [];
+  const filaDe: number[] = [];
   let invalidas = 0;
   const idOk = (id: unknown) => typeof id === 'string' && ID_VALIDO.test(id) && (!idsValidos || idsValidos.has(id));
-  for (const fila of filas.slice(1)) {
+  for (const [indice, fila] of filas.entries()) {
+    if (indice === 0) continue; // la cabecera
+    const agregar = (...nuevos: Envio[]) => {
+      envios.push(...nuevos);
+      for (let k = 0; k < nuevos.length; k++) filaDe.push(indice);
+    };
     try {
       const celda = fila.find((c) => c.trim().startsWith('{"v":'));
       if (!celda) {
@@ -166,7 +193,7 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
       const d: unknown = JSON.parse(celda);
       if (esObjeto(d) && d['v'] === 2) {
         const expandidos = expandirV2(d, idOk, fila[0] ?? '', esFilaDeRespuestas(fila, d['r']));
-        if (expandidos) envios.push(...expandidos);
+        if (expandidos) agregar(...expandidos);
         else invalidas++;
         continue;
       }
@@ -182,12 +209,12 @@ export function leerEnvios(filas: string[][], idsValidos?: Set<string>): { envio
         invalidas++;
         continue;
       }
-      envios.push({ revisor: d['revisor'], estructura: d['estructura'] as string, respuestas: d['respuestas'] as Respuesta[], marcaTemporal: fila[0] ?? '' });
+      agregar({ revisor: d['revisor'], estructura: d['estructura'] as string, respuestas: d['respuestas'] as Respuesta[], marcaTemporal: fila[0] ?? '' });
     } catch {
       invalidas++;
     }
   }
-  return { envios, invalidas };
+  return { envios, invalidas, filas: filaDe };
 }
 
 /**
@@ -277,7 +304,7 @@ const limpiar = (t: string) => t.replace(/\|/g, '/').replace(/[\r\n]+/g, ' ').re
 export type Padron = Record<string, string>;
 
 /**
- * Valida el padrón leído de pipeline/revisores.local.json: un objeto con códigos válidos y alias
+ * Valida el padrón (código -> alias) que arma `padronDeCsv`: un objeto con códigos válidos y alias
  * D01, D02... sin repetir. Devuelve el error en español o null si está bien. El error nombra la entrada
  * por su posición (y su alias si es válido), nunca por su código.
  */
@@ -299,6 +326,78 @@ export function errorDePadron(p: unknown): string | null {
   return null;
 }
 
+/** Cabecera exacta de la pestaña `Padrón` (tres columnas, sin otras). */
+const CABECERA_PADRON = ['Código', 'Alias', 'Activo'];
+/** Valor de Activo que deja un código vivo en el canal; igual que `ACTIVO` en apps-script/Codigo.js. */
+const ACTIVO_SI = 'sí';
+
+/** El padrón leído de un CSV de la pestaña `Padrón` (#257). */
+export interface PadronLeido {
+  /** Código -> alias, sin prototipo (un código llamado `constructor` no cuenta como conocido). Vacío si hay `error`. */
+  padron: Padron;
+  /** Códigos cuyo Activo no es exactamente `sí` en alguna de sus filas (falla cerrada si el código se repite). */
+  inactivos: Set<string>;
+  /** Una línea por fila descartada (código o alias inválido), con su posición y, si es válido, su alias; nunca el código. */
+  avisos: string[];
+  /** Por qué el CSV no sirve, con un texto fijo que no cita ninguna celda, o null si sirve. */
+  error: string | null;
+}
+
+/**
+ * Lee los registros del CSV de la pestaña `Padrón` (A código, B alias, C activo), tal como los da `parsearCsvConVacias`.
+ * La primera fila, recortada (también de la BOM), debe ser exactamente `Código,Alias,Activo`: si no, el error es un
+ * texto fijo (la fila podría ser un código). Código y alias se recortan, como hace el script. Una fila con código o
+ * alias inválido se descarta con un aviso (`fila N de la pestaña Padrón`, con el alias solo si es válido). N es el
+ * número de fila física de la hoja (la cabecera es la 1): las filas totalmente vacías, que se saltan sin aviso, cuentan
+ * en la numeración. El mismo código con otro alias es un error que nombra las filas y los alias; con el mismo alias,
+ * las filas se juntan. Un alias en dos códigos es un error que nombra las filas y el alias. Sin ningún código válido
+ * es un error. Activo no filtra aquí: solo se anota en `inactivos`.
+ * Nunca imprime ni devuelve un código en un mensaje.
+ */
+export function padronDeCsv(filas: string[][]): PadronLeido {
+  const vacio = (error: string): PadronLeido => ({ padron: Object.create(null) as Padron, inactivos: new Set(), avisos: [], error });
+  // `trim` también quita la BOM (U+FEFF cuenta como espacio en blanco), que Sheets y Excel ponen al inicio del CSV.
+  const cabecera = (filas[0] ?? []).map((c) => c.trim());
+  if (cabecera.length !== CABECERA_PADRON.length || cabecera.some((c, i) => c !== CABECERA_PADRON[i])) {
+    return vacio('la primera fila no es la cabecera Código,Alias,Activo: descarga el CSV de la pestaña Padrón de la hoja del canal');
+  }
+  const padron = Object.create(null) as Padron;
+  const filasDe = new Map<string, number>(); // código -> número de fila (en la hoja) de su primera aparición
+  const filaDeAlias = new Map<string, number>(); // alias -> fila de su primera aparición
+  const inactivos = new Set<string>();
+  const avisos: string[] = [];
+  for (const [i, fila] of filas.slice(1).entries()) {
+    // Número de fila en la pestaña Padrón: la cabecera es la 1, así que la primera de datos es la 2.
+    const posicion = i + 2;
+    if (fila.every((c) => !c.trim())) continue; // fila borrada o línea en blanco: cuenta en el número, no es un código
+    const codigo = (fila[0] ?? '').trim();
+    const alias = (fila[1] ?? '').trim();
+    const aliasValido = ALIAS_VALIDO.test(alias);
+    if (!REVISOR_VALIDO.test(codigo)) {
+      avisos.push(`código inválido en la fila ${posicion} de la pestaña Padrón${aliasValido ? ` (alias ${alias})` : ''}: se descartó`);
+      continue;
+    }
+    if (!aliasValido) {
+      avisos.push(`alias inválido en la fila ${posicion} de la pestaña Padrón (usa D01, D02...): se descartó`);
+      continue;
+    }
+    if (Object.hasOwn(padron, codigo) && padron[codigo] !== alias) {
+      return vacio(`el mismo código está en las filas ${filasDe.get(codigo)} y ${posicion} de la pestaña Padrón con los alias ${padron[codigo]} y ${alias}`);
+    }
+    if (!Object.hasOwn(padron, codigo) && filaDeAlias.has(alias)) {
+      return vacio(`alias repetido en las filas ${filaDeAlias.get(alias)} y ${posicion} de la pestaña Padrón: ${alias}`);
+    }
+    padron[codigo] = alias;
+    if (!filasDe.has(codigo)) filasDe.set(codigo, posicion);
+    if (!filaDeAlias.has(alias)) filaDeAlias.set(alias, posicion);
+    if ((fila[2] ?? '').trim() !== ACTIVO_SI) inactivos.add(codigo);
+  }
+  if (Object.keys(padron).length === 0) return vacio('el padrón no tiene ningún código válido: revisa que sea el CSV de la pestaña Padrón');
+  const repetido = errorDePadron(padron);
+  if (repetido) return vacio(repetido);
+  return { padron, inactivos, avisos, error: null };
+}
+
 /**
  * Cambia el código de cada envío por su alias y descarta los envíos cuyo código no está en el padrón.
  * Después de esto el código ya no aparece en ningún archivo de salida.
@@ -312,29 +411,6 @@ export function aplicarPadron(envios: Envio[], padron: Padron): { envios: Envio[
     else desconocidos++;
   }
   return { envios: conocidos, desconocidos };
-}
-
-/** Letras y dígitos sin los que se confunden al dictar o copiar (0/O, 1/I/L). */
-const ALFABETO_CODIGO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-
-/**
- * Agrega `n` revisores al padrón: códigos de 8 caracteres que no se pueden adivinar y alias
- * consecutivos después del mayor que ya exista. `azar(max)` devuelve un entero en [0, max); el
- * script le pasa `crypto.randomInt`. Devuelve el padrón nuevo y los agregados, en orden.
- */
-export function agregarRevisores(padron: Padron, n: number, azar: (max: number) => number): { padron: Padron; nuevos: [string, string][] } {
-  const siguiente = Math.max(0, ...Object.values(padron).map((a) => Number(a.slice(1)))) + 1;
-  const res: Padron = { ...padron };
-  const nuevos: [string, string][] = [];
-  for (let i = 0; i < n; i++) {
-    const crear = () => Array.from({ length: 8 }, () => ALFABETO_CODIGO[azar(ALFABETO_CODIGO.length)]).join('');
-    let codigo = crear();
-    while (Object.hasOwn(res, codigo)) codigo = crear();
-    const alias = `D${String(siguiente + i).padStart(2, '0')}`;
-    res[codigo] = alias;
-    nuevos.push([codigo, alias]);
-  }
-  return { padron: res, nuevos };
 }
 
 /**
@@ -474,6 +550,33 @@ export function seccionSinAutorizacion(envios: Envio[]): string {
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
+/** Lo que un código del padrón con Activo distinto de `sí` aportó al CSV, por alias (nunca por código). */
+export interface AporteInactivo {
+  alias: string;
+  /** Filas del CSV de la pestaña Respuestas (`deHoja`) que se importaron (una fila `v:2` con varias estructuras cuenta una vez). */
+  aceptadas: number;
+  /** Filas del CSV del formulario de respaldo (o `v:1`) que se descartaron. */
+  descartadasFormulario: number;
+}
+
+/**
+ * Sección de `resumen.md` con los alias que tienen algún código del padrón con Activo distinto de `sí` y envíos en el
+ * CSV (#257): cuántas filas de Respuestas se importaron y cuántas del formulario se descartaron. Solo alias y cuentas.
+ * Devuelve '' si no hay ninguno.
+ */
+export function seccionInactivos(inactivos: AporteInactivo[]): string {
+  if (inactivos.length === 0) return '';
+  return [
+    '## Códigos inactivos',
+    '',
+    'Alias con algún código del Padrón cuyo Activo no es `sí`. Las filas de la pestaña Respuestas se importaron igual; las del formulario de respaldo se descartaron. Si un código se filtró, revisa y borra de Respuestas las filas posteriores a la filtración y vuelve a importar.',
+    '',
+    '| Revisor (alias) | Filas de Respuestas importadas | Filas del formulario descartadas |',
+    '|---|---|---|',
+    ...inactivos.map((f) => `| ${codigo(f.alias)} | ${f.aceptadas} | ${f.descartadasFormulario} |`),
+  ].join('\n');
+}
+
 /** Un solo resumen con todas las estructuras de la importación (un issue por importación). */
 export function resumenConsolidado(
   envios: Envio[],
@@ -482,6 +585,7 @@ export function resumenConsolidado(
   vago: { descartadas: Envio[]; sinArchivo: boolean } = { descartadas: [], sinArchivo: false },
   sinAutorizacion: Envio[] = [],
   retiradas: MarcaRetirada[] = [],
+  inactivos: AporteInactivo[] = [],
 ): string {
   const ids = [...new Set(envios.map((e) => e.estructura))].sort();
   const partes = ids.map((id) => resumenMarkdown(id, envios.filter((e) => e.estructura === id), versionDe(id)));
@@ -492,10 +596,12 @@ export function resumenConsolidado(
   const sinAut = seccionSinAutorizacion(sinAutorizacion);
   const sinVago = seccionSinVago(vago.descartadas, versionDe, vago.sinArchivo);
   const quitadas = seccionRetiradas(retiradas);
+  const inactivas = seccionInactivos(inactivos);
   return [
     `# Revisiones docentes (${total} respuestas, ${ids.length} estructuras)`,
     '',
     ...aviso,
+    ...(inactivas ? [inactivas] : []),
     ...partes,
     ...(quitadas ? [quitadas] : []),
     ...(sinAut ? [sinAut] : []),
@@ -527,6 +633,8 @@ export interface Importacion {
   aliasSinAutorizacion: string[];
   /** Claves únicas que un retiro dejó sin ninguna respuesta (#217), de revisores del padrón; salen en "Marcas retiradas" de `resumen.md`. */
   retiradas: number;
+  /** Por alias, lo que aportaron los códigos con Activo distinto de `sí` (#257), en orden alfabético; vacío si ninguno tuvo envíos. */
+  inactivos: AporteInactivo[];
 }
 
 /**
@@ -545,16 +653,38 @@ export interface Importacion {
  * (`deHoja`) no salen en las tablas, en los `<id>.md` ni en ninguna sección "Descartadas"; un retiro nunca quita lo del
  * formulario ni los `v:1`. `retiradas` cuenta, y "Marcas retiradas" de `resumen.md` lista, solo las claves que quedaron
  * sin ninguna respuesta (no las que un veredicto posterior o el formulario conservan), así que puede valer 0.
+ * `inactivos` (#257): códigos del padrón con Activo distinto de `sí`. Sus envíos de la pestaña Respuestas (`deHoja`)
+ * entran como los de cualquier código del padrón; los del formulario de respaldo (y los `v:1`) se descartan antes de
+ * todo lo demás y no cuentan en `validos`. `Importacion.inactivos` y la sección "Códigos inactivos" de `resumen.md`
+ * dicen, por alias, cuántas filas del CSV se importaron y cuántas se descartaron (filas, no envíos). Sin ese conjunto, Activo no cambia nada.
  */
 export function importar(
   csvTexto: string,
   estructuras: Record<string, { ficha: { version: string } | null }>,
   padron: Padron,
   autorizacionesCsv: string | null = null,
+  inactivosDelPadron: ReadonlySet<string> = new Set(),
 ): Importacion {
   const ids = new Set(Object.keys(estructuras));
   const versionDe = (id: string) => estructuras[id]?.ficha?.version ?? 'sin-ficha';
-  const leidos = leerEnvios(parsearCsv(csvTexto), ids);
+  const todos = leerEnviosConFila(parsearCsv(csvTexto), ids);
+  // Activo (#257): lo que llegó por el formulario de respaldo de un código inactivo se descarta; lo de la pestaña Respuestas no.
+  // Se cuentan filas del CSV, no envíos: una carga `v:2` con varias estructuras es una sola fila.
+  const aportes = new Map<string, { aceptadas: Set<number>; descartadas: Set<number> }>();
+  const leidos = {
+    invalidas: todos.invalidas,
+    envios: todos.envios.filter((e, i) => {
+      if (!inactivosDelPadron.has(e.revisor) || !Object.hasOwn(padron, e.revisor)) return true;
+      const alias = padron[e.revisor]!;
+      const aporte = aportes.get(alias) ?? { aceptadas: new Set<number>(), descartadas: new Set<number>() };
+      aportes.set(alias, aporte);
+      (e.deHoja ? aporte.aceptadas : aporte.descartadas).add(todos.filas[i]!);
+      return e.deHoja === true;
+    }),
+  };
+  const inactivos: AporteInactivo[] = [...aportes.entries()]
+    .map(([alias, a]) => ({ alias, aceptadas: a.aceptadas.size, descartadasFormulario: a.descartadas.size }))
+    .sort((a, b) => cmp(a.alias, b.alias));
   // Los retiros se aplican antes que el padrón, la autorización y la casilla del vago: lo retirado no sale en ninguna sección.
   const sinRetiradas = quitarRetiradas(leidos.envios);
   // Las cuentas (`validos`, `desconocidos`) son de los envíos leídos, también los que un retiro dejó sin nada.
@@ -588,7 +718,7 @@ export function importar(
   for (const [id, lista] of porEstructura) archivos.set(`${id}.md`, resumenMarkdown(id, lista, versionDe(id)));
   archivos.set(
     'resumen.md',
-    resumenConsolidado(envios, versionDe, desconocidos, { descartadas: sinVago, sinArchivo: autorizacionesCsv === null }, apartadas, retiradas),
+    resumenConsolidado(envios, versionDe, desconocidos, { descartadas: sinVago, sinArchivo: autorizacionesCsv === null }, apartadas, retiradas, inactivos),
   );
   return {
     archivos,
@@ -600,30 +730,32 @@ export function importar(
     sinAutorizacion,
     aliasSinAutorizacion,
     retiradas: retiradas.length,
+    inactivos,
   };
 }
 
 /**
- * Argumentos del script de importación: `respuestas.csv [padrón] [--autorizaciones <csv>]`, con la bandera
- * en cualquier posición. Devuelve null ante un uso indebido: sin CSV, bandera sin valor o seguida de otra
- * bandera, bandera repetida o desconocida, o más de dos posicionales.
+ * Argumentos del script de importación: `respuestas.csv --padron <csv> [--autorizaciones <csv>]`, con las
+ * banderas en cualquier posición. `--padron` es obligatorio (#257: el padrón es el CSV de la pestaña Padrón).
+ * Devuelve null ante un uso indebido: sin CSV de respuestas, sin `--padron`, bandera sin valor, vacía o seguida
+ * de otra bandera, bandera repetida o desconocida, o más de un posicional (también un JSON viejo como segundo).
  */
-export function argumentosImportar(args: string[]): { csv: string; padron?: string; autorizaciones?: string } | null {
+export function argumentosImportar(args: string[]): { csv: string; padron: string; autorizaciones?: string } | null {
   const posicionales: string[] = [];
-  let autorizaciones: string | undefined;
+  const banderas: { padron?: string; autorizaciones?: string } = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a === '--autorizaciones') {
+    if (a === '--autorizaciones' || a === '--padron') {
+      const nombre = a === '--padron' ? 'padron' : 'autorizaciones';
       const valor = args[i + 1];
-      if (autorizaciones !== undefined || !valor || valor.startsWith('--')) return null;
-      autorizaciones = valor;
+      if (banderas[nombre] !== undefined || !valor || valor.startsWith('--')) return null;
+      banderas[nombre] = valor;
       i++;
     } else if (a.startsWith('--')) return null;
     else posicionales.push(a);
   }
-  if (posicionales.length < 1 || posicionales.length > 2) return null;
-  const res: { csv: string; padron?: string; autorizaciones?: string } = { csv: posicionales[0]! };
-  if (posicionales[1] !== undefined) res.padron = posicionales[1];
-  if (autorizaciones !== undefined) res.autorizaciones = autorizaciones;
+  if (posicionales.length !== 1 || banderas.padron === undefined) return null;
+  const res: { csv: string; padron: string; autorizaciones?: string } = { csv: posicionales[0]!, padron: banderas.padron };
+  if (banderas.autorizaciones !== undefined) res.autorizaciones = banderas.autorizaciones;
   return res;
 }

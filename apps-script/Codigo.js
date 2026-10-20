@@ -1,7 +1,8 @@
 /** @OnlyCurrentDoc */
 // Canal de retorno del modo revisión docente (F24, docs/adr/0012, spec 03). Se pega en el editor de
 // Apps Script de la hoja del editor y se publica como aplicación web. Este archivo no lleva datos: ni
-// ids de hoja, ni direcciones, ni códigos del padrón; el padrón vive solo en la pestaña `Padrón`.
+// ids de hoja, ni más dirección que la del sitio público (SITIO), ni códigos del padrón; el padrón vive solo en la
+// pestaña `Padrón`.
 //
 // Contrato (lo cumple src/lib/canal.ts):
 // - POST (cuerpo text/plain con JSON) {accion: 'leer', r}: {ok, canal, respuestas: {v: 2, r, e}, retiradas:
@@ -20,13 +21,18 @@
 //   da `formato` y no escribe (#169).
 // - Un error siempre es {ok: false, error} con error en codigo_no_activo, demasiado_grande, formato,
 //   demasiadas_peticiones, sin_autorizacion o interno. Nunca lleva el mensaje de una excepción.
-// - El padrón se guarda en CacheService 60 s (S3, #162): un código que pasa a `no`, o uno nuevo, cambia
-//   como mucho en un minuto.
+// - El padrón se guarda en CacheService 60 s (S3, #162): un código que pasa a `no`, o uno nuevo escrito a
+//   mano, cambia como mucho en un minuto. Los que crea el menú vacían esa caché al escribir.
 // Orden de las comprobaciones: tamaño, JSON, acción, código en el padrón, ritmo, autorización (solo
 // guardar), forma de la carga, casilla del vago (solo guardar), tamaño de la celda; en autorizar, forma
 // y versión. Leer pasa por las del código, sin tomar el bloqueo.
-/* global SpreadsheetApp, CacheService, LockService, ContentService */
-/* exported doGet, doPost */
+// Menú "Maysa Brain" de la hoja (#257): "Crear revisor" y "Crear revisores…" agregan filas a la pestaña
+// `Padrón` con un código nuevo, el alias siguiente y Activo `sí`, bajo el mismo bloqueo que `escribir`, y
+// muestran el enlace personal en un aviso. Según la documentación de Google corren con el código guardado, no con la
+// versión implementada (lo confirma a mano el editor, prueba manual de #257).
+// El código solo sale en la fila y en ese aviso: nunca en un registro ni en el texto de un error.
+/* global SpreadsheetApp, CacheService, LockService, ContentService, Utilities */
+/* exported doGet, doPost, onOpen, crearRevisor, crearRevisores */
 
 // Reglas de validación: copia, regla por regla, de src/lib/revision.ts (REVISOR_VALIDO, CAMPO_VALIDO,
 // VERSION_VALIDA, topes, respuestaValida, retiroValido, fechaValida, CLAVES_V2) y de expandirV2 en
@@ -76,6 +82,16 @@ const PESTANA_RESPUESTAS = 'Respuestas';
 const PESTANA_AUTORIZACIONES = 'Autorizaciones';
 const PESTANA_PADRON = 'Padrón';
 const ACTIVO = 'sí';
+
+// Revisores nuevos (#257). El sitio es público (ADR 0014); es el único URL de este archivo.
+const SITIO = 'https://brain.maysasp.com';
+// Letras y dígitos sin los que se confunden al dictar o copiar (0/O, 1/I/L): 31 símbolos, unos 49,5 bits en 10.
+const ALFABETO_CODIGO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const LARGO_CODIGO = 10;
+const MAX_INTENTOS_CODIGO = 100;
+const MAX_ALIAS = 999;
+const MAX_REVISORES_POR_VEZ = 30;
+const ALIAS_PADRON = /^D(\d{2,3})$/;
 
 const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const esObjeto = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
@@ -266,17 +282,21 @@ function rechazoDeCodigo(codigo) {
   return null;
 }
 
-// Agrega las filas al final de la pestaña, con formato de texto simple ('@') antes de escribir para que
-// nada de lo recibido se interprete como fórmula. Un escritor a la vez. Devuelve false si no obtiene el
+// Agrega las filas al final de la hoja, con formato de texto simple ('@') antes de escribir para que
+// nada de lo recibido se interprete como fórmula. El llamador ya tiene el bloqueo.
+function agregarFilas(hoja, filas) {
+  const rango = hoja.getRange(hoja.getLastRow() + 1, 1, filas.length, filas[0].length);
+  rango.setNumberFormat('@');
+  rango.setValues(filas);
+}
+
+// Agrega las filas al final de la pestaña. Un escritor a la vez. Devuelve false si no obtiene el
 // bloqueo; si falla la escritura lanza, y el bloqueo se libera igual.
 function escribir(nombre, filas) {
   const bloqueo = LockService.getScriptLock();
   if (!bloqueo.tryLock(ESPERA_BLOQUEO_MS)) return false;
   try {
-    const hoja = pestana(nombre);
-    const rango = hoja.getRange(hoja.getLastRow() + 1, 1, filas.length, filas[0].length);
-    rango.setNumberFormat('@');
-    rango.setValues(filas);
+    agregarFilas(pestana(nombre), filas);
     SpreadsheetApp.flush();
     return true;
   } finally {
@@ -404,4 +424,145 @@ function accionLeer(codigo) {
 // hojas. Se deja para que todo GET reciba JSON.
 function doGet() {
   return fallo('formato');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Revisores nuevos desde el menú (#257).
+// ---------------------------------------------------------------------------------------------
+
+// Entero en [0, max) con max entre 1 y 256, de los bytes de un SHA-256 de dos UUID aleatorios. Cada
+// llamada pide un resumen nuevo y usa un solo byte (nunca reutiliza los de otra llamada). Un byte
+// de 256 - (256 % max) en adelante se rechaza para no sesgar el resultado. No se usa el generador del motor de JavaScript.
+function azarSeguro(max) {
+  if (typeof max !== 'number' || !Number.isInteger(max) || max < 1 || max > 256) throw new Error('azar_invalido');
+  const limite = 256 - (256 % max);
+  for (let vuelta = 0; vuelta < MAX_INTENTOS_CODIGO; vuelta++) {
+    const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + Utilities.getUuid());
+    for (let i = 0; i < bytes.length; i++) {
+      const b = bytes[i] & 0xff; // computeDigest devuelve bytes con signo
+      if (b < limite) return b % max;
+    }
+  }
+  throw new Error('azar_agotado');
+}
+
+// Un código de LARGO_CODIGO símbolos que no está en `existentes` (toda la columna A del padrón, activos o
+// no). `azar(max)` da un entero en [0, max). Lanza tras MAX_INTENTOS_CODIGO intentos repetidos. Compara con
+// indexOf en un arreglo, nunca con una búsqueda de propiedad.
+function crearCodigo(azar, existentes) {
+  for (let intento = 0; intento < MAX_INTENTOS_CODIGO; intento++) {
+    let codigo = '';
+    for (let i = 0; i < LARGO_CODIGO; i++) {
+      const k = azar(ALFABETO_CODIGO.length);
+      if (typeof k !== 'number' || !Number.isInteger(k) || k < 0 || k >= ALFABETO_CODIGO.length) throw new Error('azar_invalido');
+      codigo += ALFABETO_CODIGO.charAt(k);
+    }
+    if (existentes.indexOf(codigo) === -1) return codigo;
+  }
+  throw new Error('sin_codigo');
+}
+
+// El alias que sigue al mayor de `aliases`: dos dígitos hasta 99 y tres desde 100. Ignora lo que no tenga
+// la forma de un alias. Lanza si pasaría del tope.
+function aliasSiguiente(aliases) {
+  let mayor = 0;
+  for (let i = 0; i < aliases.length; i++) {
+    const m = ALIAS_PADRON.exec(String(aliases[i]).trim());
+    if (m && Number(m[1]) > mayor) mayor = Number(m[1]);
+  }
+  const n = mayor + 1;
+  if (n > MAX_ALIAS) throw new Error('sin_alias');
+  return 'D' + (n < 10 ? '0' + n : String(n));
+}
+
+const AVISO_FALLO = 'No se creó ningún revisor. Revisa que la pestaña Padrón exista y vuelve a intentarlo; si sigue igual, agrega la fila a mano.';
+const AVISO_SIN_ALIAS = 'No se creó ningún revisor: ya no quedan alias libres (el tope es el 999). Avísalo por chat antes de seguir.';
+const AVISO_SIN_CODIGO = 'No se creó ningún revisor: no se pudo generar un código nuevo. Vuelve a intentarlo; si sigue igual, avísalo por chat.';
+const AVISO_OCUPADO = 'No se creó ningún revisor: la hoja está ocupada. Espera unos segundos y vuelve a intentarlo.';
+const AVISO_REVISAR = 'La fila se escribió, pero algo falló después. Revisa la última fila de la pestaña Padrón antes de volver a intentarlo.';
+const AVISO_PRIVADO =
+  'Este enlace es personal: mándalo solo por un canal privado, a una persona. No lo pegues en un issue, un chat público ni un documento compartido.';
+
+// Crea `cantidad` filas [código, alias, Activo] al final de la pestaña Padrón con el bloqueo tomado,
+// escribe, vacía la caché del padrón (para que el código nuevo sirva de inmediato) y libera el bloqueo.
+// Devuelve {nuevos: [{codigo, alias}]} o {aviso} con un texto fijo: nunca el mensaje de una excepción ni un código.
+function crearEnPadron(cantidad) {
+  const bloqueo = LockService.getScriptLock();
+  let tomado = false;
+  let escrito = false;
+  try {
+    tomado = bloqueo.tryLock(ESPERA_BLOQUEO_MS);
+    if (!tomado) return { aviso: AVISO_OCUPADO };
+    const hoja = pestana(PESTANA_PADRON);
+    const filas = hoja.getDataRange().getValues().slice(1);
+    const codigos = filas.map((fila) => String(fila[0]).trim());
+    const aliases = filas.map((fila) => String(fila[1]).trim());
+    const nuevos = [];
+    for (let i = 0; i < cantidad; i++) {
+      const codigo = crearCodigo(azarSeguro, codigos);
+      const alias = aliasSiguiente(aliases);
+      codigos.push(codigo);
+      aliases.push(alias);
+      nuevos.push({ codigo: codigo, alias: alias });
+    }
+    agregarFilas(hoja, nuevos.map((n) => [n.codigo, n.alias, ACTIVO]));
+    escrito = true;
+    SpreadsheetApp.flush();
+    try {
+      CacheService.getScriptCache().remove(CLAVE_PADRON);
+    } catch {
+      // sin caché que vaciar: el código nuevo sirve al vencer los VIDA_PADRON_S segundos
+    }
+    return { nuevos: nuevos };
+  } catch (e) {
+    // El mensaje de la excepción solo escoge entre textos fijos: nunca se muestra.
+    const causa = e && typeof e.message === 'string' ? e.message : '';
+    if (escrito) return { aviso: AVISO_REVISAR };
+    if (causa === 'sin_alias') return { aviso: AVISO_SIN_ALIAS };
+    if (causa === 'sin_codigo' || causa === 'azar_agotado' || causa === 'azar_invalido') return { aviso: AVISO_SIN_CODIGO };
+    return { aviso: AVISO_FALLO };
+  } finally {
+    if (tomado) bloqueo.releaseLock();
+  }
+}
+
+function enlaceDe(codigo) {
+  return SITIO + '/es/revision?r=' + codigo;
+}
+
+// Un revisor: crea la fila y muestra su enlace. El bloqueo ya se liberó cuando sale el aviso.
+function crearRevisor() {
+  const ui = SpreadsheetApp.getUi();
+  const res = crearEnPadron(1);
+  if (res.aviso) {
+    ui.alert('Crear revisor', res.aviso, ui.ButtonSet.OK);
+    return;
+  }
+  const nuevo = res.nuevos[0];
+  ui.alert('Revisor ' + nuevo.alias, enlaceDe(nuevo.codigo) + '\n\n' + AVISO_PRIVADO, ui.ButtonSet.OK);
+}
+
+// Varios a la vez: pregunta cuántos (1 a MAX_REVISORES_POR_VEZ). Cancelar o un valor inválido no escribe nada.
+function crearRevisores() {
+  const ui = SpreadsheetApp.getUi();
+  const pregunta = ui.prompt('Crear revisores', '¿Cuántos revisores quieres crear? (de 1 a ' + MAX_REVISORES_POR_VEZ + ')', ui.ButtonSet.OK_CANCEL);
+  if (pregunta.getSelectedButton() !== ui.Button.OK) return;
+  const texto = String(pregunta.getResponseText()).trim();
+  const n = /^\d{1,2}$/.test(texto) ? Number(texto) : 0;
+  if (n < 1 || n > MAX_REVISORES_POR_VEZ) {
+    ui.alert('Crear revisores', 'No se creó ningún revisor: escribe un número entero de 1 a ' + MAX_REVISORES_POR_VEZ + '.', ui.ButtonSet.OK);
+    return;
+  }
+  const res = crearEnPadron(n);
+  if (res.aviso) {
+    ui.alert('Crear revisores', res.aviso, ui.ButtonSet.OK);
+    return;
+  }
+  const lineas = res.nuevos.map((x) => x.alias + ': ' + enlaceDe(x.codigo));
+  ui.alert('Revisores creados', lineas.join('\n') + '\n\n' + AVISO_PRIVADO, ui.ButtonSet.OK);
+}
+
+// Se ejecuta al abrir la hoja. Crea el menú con los dos manejadores.
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Maysa Brain').addItem('Crear revisor', 'crearRevisor').addItem('Crear revisores…', 'crearRevisores').addToUi();
 }

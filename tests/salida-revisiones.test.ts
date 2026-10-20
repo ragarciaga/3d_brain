@@ -123,7 +123,7 @@ describe('vaciarSalida (#166)', () => {
 describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #190)', () => {
   const fx = (n: string) => join(raiz, 'tests', 'fixtures', 'revisiones', n);
   const HOJA = fx('hoja-respuestas-vago.csv');
-  const PADRON = fx('padron-prueba.json');
+  const PADRON = fx('hoja-padron.csv');
   const AUT = fx('hoja-autorizaciones.csv');
   const ESTRUCTURAS =
     '{"estructuras":{"hippocampus":{"ficha":{"version":"0.1.0"}},"m-recurrent-laryngeal-nerve":{"ficha":null},"vagus-nerve-x":{"ficha":{"version":"0.1.0"}}}}';
@@ -143,7 +143,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
     const enlaces = join(tmp, 'pipeline', 'salida', 'enlaces-docentes.md');
     escribir(enlaces, 'enlaces');
 
-    const uno = correr(tmp, HOJA, PADRON, '--autorizaciones', AUT);
+    const uno = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', AUT);
     expect(uno.status, uno.stderr).toBe(0);
     for (const n of ['m-recurrent-laryngeal-nerve.md', 'vagus-nerve-x.md', 'hippocampus.md', 'resumen.md']) expect(existe(join(rev, n)), n).toBe(true);
     expect(uno.stdout).toContain(', 3 respuestas de revisores sin ninguna autorización');
@@ -156,7 +156,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
     expect(readFileSync(join(rev, 'vagus-nerve-x.md'), 'utf8')).not.toContain('`D93`');
     sinCodigos(uno);
 
-    const dos = correr(tmp, HOJA, PADRON);
+    const dos = correr(tmp, HOJA, '--padron', PADRON);
     expect(dos.status, dos.stderr).toBe(0);
     expect(existe(join(rev, 'm-recurrent-laryngeal-nerve.md'))).toBe(false);
     expect(existe(join(rev, 'vagus-nerve-x.md'))).toBe(true);
@@ -170,7 +170,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
     sinCodigos(dos);
 
     const resumenAntes = readFileSync(join(rev, 'resumen.md'), 'utf8');
-    const tres = correr(tmp, HOJA, join(tmp, 'no-existe.json'));
+    const tres = correr(tmp, HOJA, '--padron', join(tmp, 'no-existe.csv'));
     expect(tres.status).toBe(2);
     expect(readFileSync(join(rev, 'resumen.md'), 'utf8')).toBe(resumenAntes);
     expect(existe(join(rev, 'vagus-nerve-x.md'))).toBe(true);
@@ -183,7 +183,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       const tmp = temporal();
       escribir(join(tmp, 'src', 'data', 'estructuras.json'), ESTRUCTURAS);
       const rev = join(tmp, ...PARTES);
-      const buena = correr(tmp, HOJA, PADRON, '--autorizaciones', AUT);
+      const buena = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', AUT);
       expect(buena.status, buena.stderr).toBe(0);
       const nombres = ['m-recurrent-laryngeal-nerve.md', 'vagus-nerve-x.md', 'hippocampus.md', 'resumen.md'];
       const antes = nombres.map((n) => readFileSync(join(rev, n), 'utf8'));
@@ -199,7 +199,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
 
     it('si falta el CSV de respuestas: sale con 2, sin traza de Node y con los resúmenes byte a byte iguales', () => {
       const { tmp, igual } = conCorridaBuena();
-      const r = correr(tmp, join(tmp, 'no-existe.csv'), PADRON, '--autorizaciones', AUT);
+      const r = correr(tmp, join(tmp, 'no-existe.csv'), '--padron', PADRON, '--autorizaciones', AUT);
       expect(r.status).toBe(2);
       expect(r.stderr).toContain('No está el CSV de respuestas');
       expect(r.stderr).toContain('no-existe.csv');
@@ -208,40 +208,138 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
       expect(igual()).toBe(true);
     });
 
-    it('si el padrón no es un JSON válido: sale con 2 y ni stdout ni stderr traen los códigos del archivo', () => {
+    /** Un CSV del Padrón en la carpeta temporal; devuelve su ruta. */
+    const padronCsv = (tmp: string, nombre: string, texto: string) => {
+      const ruta = join(tmp, nombre);
+      escribir(ruta, texto);
+      return ruta;
+    };
+    const sinSecreto = (r: { stdout: string; stderr: string }) => {
+      for (const c of ['QQSECRETOX', 'QQBUENOXYZ']) {
+        expect(r.stdout).not.toContain(c);
+        expect(r.stderr).not.toContain(c);
+      }
+    };
+
+    it('si falta el CSV del Padrón: sale con 2 y un mensaje corto con la ruta', () => {
       const { tmp, igual } = conCorridaBuena();
-      const roto = join(tmp, 'padron-roto.json');
-      // El error de V8 cita la entrada solo con un token inesperado: así un `e.message` impreso traería el código.
-      const texto = '{"QQSECRETOX":D07}';
-      expect(() => JSON.parse(texto)).toThrow(/QQSECRETOX/);
-      escribir(roto, texto);
-      const r = correr(tmp, HOJA, roto, '--autorizaciones', AUT);
+      const r = correr(tmp, HOJA, '--padron', join(tmp, 'no-esta.csv'), '--autorizaciones', AUT);
       expect(r.status).toBe(2);
-      expect(r.stderr).toContain('no es un JSON válido');
-      expect(r.stdout).not.toContain('QQSECRETOX');
-      expect(r.stderr).not.toContain('QQSECRETOX');
+      expect(r.stderr).toContain('No está el CSV del Padrón');
+      expect(r.stderr).toContain('no-esta.csv');
       sinRastro(r);
       expect(igual()).toBe(true);
     });
 
-    it('si un código del padrón es inválido: lo dice por su posición y su alias, sin imprimir el código', () => {
+    it('si la cabecera del Padrón es mala (la primera fila es un código): sale con 2, con un texto fijo, y el código no sale en ningún flujo', () => {
       const { tmp, igual } = conCorridaBuena();
-      const malo = join(tmp, 'padron-malo.json');
-      escribir(malo, '{"QQBUENOXYZ":"D01","QQTYPO XYZ":"D02"}');
-      const r = correr(tmp, HOJA, malo, '--autorizaciones', AUT);
+      const sinCabecera = padronCsv(tmp, 'sin-cabecera.csv', 'QQSECRETOX,D07,sí\nQQBUENOXYZ,D08,sí\n');
+      const r = correr(tmp, HOJA, '--padron', sinCabecera, '--autorizaciones', AUT);
       expect(r.status).toBe(2);
-      expect(r.stderr).toContain('código inválido en la entrada 2 del padrón (alias D02)');
-      for (const c of ['QQBUENO', 'QQTYPO']) {
+      expect(r.stderr).toContain('la primera fila no es la cabecera Código,Alias,Activo');
+      sinSecreto(r);
+      sinRastro(r);
+      expect(igual()).toBe(true);
+    });
+
+    it('si el Padrón no tiene ningún código válido: sale con 2 y un texto fijo', () => {
+      const { tmp, igual } = conCorridaBuena();
+      const vacio = padronCsv(tmp, 'vacio.csv', 'Código,Alias,Activo\nQQSECRETOX,Ana,sí\n');
+      const r = correr(tmp, HOJA, '--padron', vacio, '--autorizaciones', AUT);
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('no tiene ningún código válido');
+      sinSecreto(r);
+      sinRastro(r);
+      expect(igual()).toBe(true);
+    });
+
+    it('un alias repetido y un código con dos alias salen con 2 sin imprimir el código', () => {
+      const { tmp, igual } = conCorridaBuena();
+      const repetido = padronCsv(tmp, 'alias.csv', 'Código,Alias,Activo\nQQSECRETOX,D07,sí\nQQBUENOXYZ,D07,sí\n');
+      const uno = correr(tmp, HOJA, '--padron', repetido, '--autorizaciones', AUT);
+      expect(uno.status).toBe(2);
+      expect(uno.stderr).toContain('alias repetido en las filas 2 y 3 de la pestaña Padrón: D07');
+      sinSecreto(uno);
+      sinRastro(uno);
+      const doble = padronCsv(tmp, 'codigo.csv', 'Código,Alias,Activo\nQQSECRETOX,D07,sí\nQQSECRETOX,D08,sí\n');
+      const dos = correr(tmp, HOJA, '--padron', doble, '--autorizaciones', AUT);
+      expect(dos.status).toBe(2);
+      expect(dos.stderr).toContain('el mismo código está en las filas 2 y 3 de la pestaña Padrón con los alias D07 y D08');
+      sinSecreto(dos);
+      sinRastro(dos);
+      expect(igual()).toBe(true);
+    });
+
+    it('una fila con código o alias inválido se descarta con un aviso por su fila de la hoja: sale con 0 y el código no sale en ningún flujo', () => {
+      const { tmp } = conCorridaBuena();
+      const original = readFileSync(PADRON, 'utf8');
+      const conMala = padronCsv(tmp, 'con-mala.csv', `${original}QQSECRETOX,D07x,sí\nQQBUENOXYZ 2,D08,sí\n`);
+      const r = correr(tmp, HOJA, '--padron', conMala, '--autorizaciones', AUT);
+      expect(r.status, r.stderr).toBe(0);
+      expect(r.stderr).toContain('alias inválido en la fila 5 de la pestaña Padrón');
+      expect(r.stderr).toContain('código inválido en la fila 6 de la pestaña Padrón (alias D08)');
+      sinSecreto(r);
+      for (const c of ['VAGO01', 'NOVAGO01', 'SINAUT01']) {
         expect(r.stdout).not.toContain(c);
         expect(r.stderr).not.toContain(c);
       }
-      sinRastro(r);
+    });
+
+    it('una fila ,, o una línea en blanco antes de la fila mala cuenta en su número de fila de la hoja', () => {
+      const { tmp } = conCorridaBuena();
+      const original = readFileSync(PADRON, 'utf8');
+      const conVacias = padronCsv(tmp, 'con-vacias.csv', `${original},,\n\nQQSECRETOX,D07x,sí\n`);
+      const r = correr(tmp, HOJA, '--padron', conVacias, '--autorizaciones', AUT);
+      expect(r.status, r.stderr).toBe(0);
+      expect(r.stderr).toContain('alias inválido en la fila 7 de la pestaña Padrón');
+      sinSecreto(r);
+    });
+
+    it('Activo no filtra las filas de Respuestas: el código en no se importa y la consola dice cuántas filas aportó', () => {
+      const { tmp } = conCorridaBuena();
+      const r = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', AUT);
+      expect(r.status, r.stderr).toBe(0);
+      expect(r.stderr).toContain('Código inactivo (Activo distinto de sí) del alias D93: filas de Respuestas importadas: 1; filas del formulario descartadas: 0.');
+      expect(readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8')).toContain('| `D93` | 1 | 0 |');
+      sinCodigos(r);
+    });
+
+    it('la fila del formulario de respaldo de un código en no se descarta y se cuenta; la de la pestaña Respuestas no', () => {
+      const { tmp } = conCorridaBuena();
+      const envio = { v: 1, revisor: 'SINAUT01', estructura: 'hippocampus', respuestas: [{ estructura: 'hippocampus', campo: 'latin', veredicto: 'correcto', version: '0.1.0', fecha: '' }] };
+      const filaForm = `2026-10-16 09:00,SINAUT01,x,"${JSON.stringify(envio).replace(/"/g, '""')}",Ana\n`;
+      const hoja = join(tmp, 'respuestas-con-formulario.csv');
+      escribir(hoja, readFileSync(HOJA, 'utf8').replace(/\r?\n?$/, '\n') + filaForm);
+      const con = correr(tmp, hoja, '--padron', PADRON, '--autorizaciones', AUT);
+      expect(con.status, con.stderr).toBe(0);
+      expect(con.stderr).toContain('del alias D93: filas de Respuestas importadas: 1; filas del formulario descartadas: 1.');
+      const resumen = readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8');
+      expect(resumen).toContain('| `D93` | 1 | 1 |');
+      expect(resumen).not.toContain('`latin`');
+      sinCodigos(con);
+      // Con el mismo código en sí, esa fila del formulario sí entra: lo que descarta la fila es su Activo.
+      const activo = padronCsv(tmp, 'activo.csv', readFileSync(PADRON, 'utf8').replace('SINAUT01,D93,no', 'SINAUT01,D93,sí'));
+      const sin = correr(tmp, hoja, '--padron', activo, '--autorizaciones', AUT);
+      expect(sin.status, sin.stderr).toBe(0);
+      expect(sin.stderr).not.toContain('Código inactivo');
+      expect(readFileSync(join(tmp, ...PARTES, 'resumen.md'), 'utf8')).toContain('`latin`');
+      sinCodigos(sin);
+    });
+
+    it('sin --padron sale con 2 y el uso, también con el JSON viejo como segundo argumento', () => {
+      const { tmp, igual } = conCorridaBuena();
+      for (const args of [[HOJA], [HOJA, '--autorizaciones', AUT], [HOJA, join(tmp, 'revisores.local.json')], [HOJA, join(tmp, 'revisores.local.json'), '--padron', PADRON]]) {
+        const r = correr(tmp, ...args);
+        expect(r.status).toBe(2);
+        expect(r.stderr).toContain('Uso: node scripts/importar-revisiones.ts respuestas.csv --padron padron.csv');
+        sinRastro(r);
+      }
       expect(igual()).toBe(true);
     });
 
     it('si el CSV de Autorizaciones es una carpeta: sale con 2 y un mensaje corto', () => {
       const { tmp, igual } = conCorridaBuena();
-      const r = correr(tmp, HOJA, PADRON, '--autorizaciones', tmp);
+      const r = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', tmp);
       expect(r.status).toBe(2);
       expect(r.stderr).toContain('No se pudo leer');
       sinRastro(r);
@@ -256,7 +354,7 @@ describe('importar-revisiones.ts borra los .md de la corrida anterior (#166, #19
     escribir(join(destino, 'x.md'), 'destino');
     mkdirSync(join(tmp, 'pipeline', 'salida'), { recursive: true });
     symlinkSync(destino, join(tmp, ...PARTES), 'dir');
-    const r = correr(tmp, HOJA, PADRON, '--autorizaciones', AUT);
+    const r = correr(tmp, HOJA, '--padron', PADRON, '--autorizaciones', AUT);
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('es un enlace o un archivo');
     expect(readFileSync(join(destino, 'x.md'), 'utf8')).toBe('destino');

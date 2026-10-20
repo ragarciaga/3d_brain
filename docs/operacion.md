@@ -35,8 +35,9 @@ Si el workflow falla en "configure-pages" con "Not Found", Pages no está activa
 ## Revisión docente
 
 Todo el flujo (formularios, códigos, enlaces, importación y verificación de fichas) está en
-`docs/revision-docente.md`. Lo privado (padrón de códigos y enlaces de cada docente) está en la
-carpeta "Maysa Brain (privado)" del Drive de Maysa Digital, nunca en el repositorio. A los docentes
+`docs/revision-docente.md`. El padrón de códigos vive en la pestaña `Padrón` de la hoja del canal
+(Drive de Maysa Digital), nunca en el repositorio; los códigos nuevos se crean con el menú "Maysa
+Brain" de esa hoja. A los docentes
 se les envía el mensaje de `docs/guia-docentes.md`; la guía, las dudas y la lista de qué revisar
 están dentro de la web, en el modo revisión.
 

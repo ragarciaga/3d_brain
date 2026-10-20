@@ -1418,15 +1418,19 @@ describe('(h) el archivo no lleva datos (R6.5)', () => {
     for (const c of [CODIGO_AUSENTE, OTRO_ACTIVO]) expect(fuente).not.toContain(c);
   });
 
-  it('no tiene direcciones ni abre hojas por id o por dirección', () => {
-    expect(fuente).not.toContain('https://');
+  it('su único URL es el del sitio público; no abre hojas por id o por dirección ni nombra servicios de Google', () => {
+    // Desde #257 el menú muestra el enlace del revisor, así que el sitio (ADR 0014) es el único URL permitido.
+    const urls = fuente.match(/https?:\/\/[^\s'"`)]+/g) ?? [];
+    expect(urls).toEqual(['https://brain.maysasp.com']);
     expect(fuente).not.toContain('http://');
-    expect(fuente).not.toContain('openById');
-    expect(fuente).not.toContain('openByUrl');
+    for (const prohibido of ['script.google', 'docs.google', 'googleusercontent', '/macros/', '/exec', 'openById', 'openByUrl']) {
+      expect(fuente).not.toContain(prohibido);
+    }
   });
 
   it('limita el acceso a la hoja vinculada y es un script clásico', () => {
-    expect(fuente).toContain('@OnlyCurrentDoc');
+    // La anotación va en la primera línea: Google solo la lee ahí.
+    expect(fuente.split(/\r?\n/)[0]).toBe('/** @OnlyCurrentDoc */');
     expect(fuente).not.toMatch(/\bimport /);
     expect(fuente).not.toMatch(/\bexport /);
   });

@@ -61,7 +61,7 @@ Script, Implementar, Gestionar implementaciones, Archivar.
 | `urlCanal` | Llena en `src/config/revision.ts` desde T13 (#99) con la URL `/exec` del script. Si se vacía, la app vuelve al formulario como único camino |
 | Formulario de revisión (respaldo) | "Revisión del atlas Maysa Brain", Drive de Maysa Digital, conectado en `src/config/revision.ts` |
 | Formulario de registro (se retira con el canal) | "Registro de revisores del atlas Maysa Brain", Drive de Maysa Digital. Enlace para docentes: https://docs.google.com/forms/d/e/1FAIpQLSdy6h0gI-nrX6s_ZMGq9PSsSTYxhSd0e7ZVDx4p0_QvgHrJ2A/viewform |
-| Códigos de revisor | 10 creados (alias D01 a D10). Padrón y enlaces en la carpeta privada "Maysa Brain (privado)" del Drive de Maysa Digital; nunca en el repositorio |
+| Códigos de revisor | La pestaña `Padrón` de la hoja del canal es la única fuente (#257). Se crean con el menú "Maysa Brain" de la hoja (sección 3); nunca en el repositorio |
 | Guía para docentes | Dentro de la web: botón "Cómo revisar" del modo revisión (se abre sola la primera vez) |
 | Mensaje para cada docente | `docs/guia-docentes.md` |
 | Dudas abiertas | `src/data/dudas.json` (registro en `docs/fichas-dudas.md`); salen en cada ficha con su campo `duda.N` |
@@ -78,7 +78,8 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    la primera fila de cada pestaña y escribe siempre al final, así que la cabecera no puede faltar:
    - `Respuestas`: A Recibido, B Código, C Estructuras, D Carga.
    - `Autorizaciones`: A Código, B Fecha, C Versión, D Vago.
-   - `Padrón`: A Código, B Alias, C Activo.
+   - `Padrón`: A Código, B Alias, C Activo. La cabecera debe ser exactamente esa, sin más columnas: el
+     importador la exige (sección 4).
 
    Si falta una pestaña o el nombre difiere (por ejemplo `Padron` sin tilde), el script responde un
    error interno.
@@ -101,13 +102,17 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    URL se pasa solo por chat a la sesión que construye T13, y nunca en un issue, un PR ni un
    comentario.
 7. Prueba rápida, desde PowerShell, con una fila de prueba y no con el código de un docente real.
-   En `Padrón`, agrega una fila inventada: un código de prueba aleatorio de 8 caracteres, generado
-   como lo hace `scripts/crear-revisores.ts` y que no se parezca a los reales, alias `D99` y Activo
-   `sí`. Después de agregar la fila, espera un minuto (el script guarda `Padrón` unos 60 s) antes de
-   pegar el bloque: si la caché está caliente, la primera prueba puede responder `codigo_no_activo`
-   aunque la fila ya diga `sí`. Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
+   En la hoja, menú Maysa Brain, Crear revisor: crea un código de prueba aleatorio de 10 caracteres con
+   el alias siguiente y Activo `sí`. Después de agregar la fila, espera un minuto (solo si la escribiste
+   a mano en vez de usar el menú) antes de pegar el bloque. Con el menú, el código normalmente sirve
+   enseguida, porque el menú vacía la caché del `Padrón`. Si la prueba responde `codigo_no_activo` aunque
+   la fila diga `sí`, espera un minuto y repítela: una petición que ya estaba en curso pudo volver a
+   guardar la lista vieja, y el script guarda `Padrón` unos 60 s. Una fila escrita a mano puede tardar
+   hasta un minuto por la misma razón. La primera vez, Google pide permisos para el menú (ver la
+   subsección "Actualización: el Padrón es la única fuente (#257)"). Copia el código de la fila nueva de `Padrón`, columna A.
+   Con el canal publicado en la app, un código fijo y conocido dejaría escribir en la hoja a
    cualquiera: no lo escribas en ningún archivo del repositorio, y no lo compartas en un issue ni en
-   un PR. Genera un código nuevo para esta prueba: uno anterior pudo quedar en el historial del
+   un PR. Crea un código nuevo para esta prueba: uno anterior pudo quedar en el historial del
    navegador. El script ya no lee por GET (#169): la prueba es un POST, igual que el de la app. Pega
    este bloque entero (te pide la URL y el código con `Read-Host`, así el código no queda en ninguna URL
    ni en el historial de PowerShell, y solo imprime el veredicto):
@@ -138,12 +143,82 @@ El canal es `apps-script/Codigo.js` pegado en una hoja de Google tuya. El script
    }
    ```
 
-   Al terminar, borra las filas de ese código en `Respuestas` y `Autorizaciones` y déjalo en `no` en
-   `Padrón`, para que no llegue al importador.
+   Al terminar, borra las filas de ese código en `Respuestas` y `Autorizaciones`, y borra también su
+   fila de `Padrón`: el importador no filtra por Activo (sección 2), así que una fila de prueba que se
+   quede, aunque esté en `no`, llegaría al padrón del importador y ocuparía un alias.
 
 Para actualizar el script sin cambiar la URL, edita la implementación existente: Implementar,
 Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. No crees una
 implementación nueva: cambiaría la URL y habría que volver a pasarla.
+
+### Actualización: el Padrón es la única fuente (#257)
+
+Hasta #257 había dos copias del padrón: la pestaña `Padrón` y un archivo privado con los mismos códigos
+para el importador, y los códigos nuevos se creaban en el portátil. Desde #257 hay una sola: la pestaña
+`Padrón`. Cambia esto:
+
+- `apps-script/Codigo.js` suma el menú "Maysa Brain" (aparece al abrir la hoja, a la derecha de Ayuda) con
+  "Crear revisor" y "Crear revisores…" (pregunta cuántos, de 1 a 30). Cada uno agrega las filas al final
+  de `Padrón` con un código nuevo de 10 caracteres, el alias siguiente (D01, D02...) y Activo `sí`, vacía
+  la caché del `Padrón` y muestra el enlace personal de cada docente en un aviso. El código también queda
+  en la fila. El código del script sigue sin llevar datos: su único URL es el del sitio.
+- El importador recibe el padrón con `--padron`: el CSV de la pestaña `Padrón` (sección 4). Ya no existen
+  el script que creaba los códigos en el portátil ni su archivo de ejemplo.
+- Activo no filtra lo que llegó por `Respuestas` al importar (sección 4). El canal sí lo respeta al
+  recibir: un código en `no` ya no escribe.
+- Los códigos nuevos tienen 10 caracteres; los de 8 que ya existan siguen valiendo.
+
+El menú corre con el código guardado en Apps Script, no con la versión implementada, así que basta
+guardar y recargar la hoja; aun así, haz "Nueva versión" en el mismo paso para que la implementación
+`/exec` y el repositorio coincidan. En este orden:
+
+1. Espera a que el PR de #257 esté fusionado.
+2. En PowerShell, ponte en `main` al día y copia el script. Si `git status` lista cambios o `git pull`
+   falla, detente y avísalo por chat:
+
+   ```powershell
+   cd C:\Users\TU_USUARIO\proyectos\3d_brain
+   git switch main
+   git pull --ff-only
+   git status
+   Get-Content -Raw -Encoding UTF8 apps-script\Codigo.js | Set-Clipboard
+   ```
+
+3. En Apps Script, selecciona todo `Código.gs`, pega y pulsa Guardar.
+4. Implementar, Gestionar implementaciones, el lápiz, Versión: Nueva versión, Implementar. Nunca
+   "Nueva implementación". Comprueba que la URL de la aplicación web es la misma que ya está en
+   `src/config/revision.ts`; si cambió, avísalo por chat y no la pegues en ningún issue.
+5. Recarga la hoja (F5). Aparece el menú "Maysa Brain". Al elegir una opción por primera vez, Google
+   pide autorizar el script. Los permisos esperados son solo estos dos: ver, editar, crear y borrar
+   solo esta hoja de cálculo (la de este proyecto, no todas) y "Mostrar y ejecutar contenido web de
+   terceros en mensajes y barras laterales" (en inglés: "Display and run third-party web content in
+   prompts and sidebars inside Google applications"), que es lo que deja al menú mostrar sus avisos. El
+   texto exacto de estos permisos se confirma en la prueba manual D10. Si pide cualquier otro (Drive,
+   todas tus hojas de cálculo, servicios externos, correo), detente, no aceptes y avísalo por chat. Si Google avisa que la app no está verificada,
+   pulsa Configuración avanzada e Ir a (nombre del proyecto): es tu propio script.
+6. Migra el padrón. Esto borra los códigos viejos, así que sigue solo si no has repartido ninguno (el
+   punto 2 te manda detenerte si ya repartiste alguno):
+   1. Borra las filas de prueba de `Respuestas` y de `Autorizaciones`.
+   2. Si ya repartiste algún código a un docente, detente y avísalo por chat antes de borrar nada: esa
+      fila dejaría de valer. Si no, borra todas las filas de `Padrón` salvo la cabecera.
+   3. Crea los nuevos con el menú: "Crear revisores…" y el número que necesites. La numeración empieza
+      de nuevo en D01.
+   4. Borra del Drive el archivo `revisores.local.json` y el documento "Enlaces de docentes Maysa Brain
+      (privado)", o déjale al documento solo el alias y el nombre de cada docente (nunca el código).
+      Vacía la papelera con "Eliminar definitivamente". Si guardaste una copia de ese archivo en el
+      portátil, bórrala; primero mira qué borraría cada comando con `-WhatIf`:
+
+      ```powershell
+      cd C:\Users\TU_USUARIO\proyectos\3d_brain
+      Remove-Item pipeline\revisores.local.json -WhatIf
+      Remove-Item pipeline\salida\enlaces-docentes.md -WhatIf
+      ```
+
+      Si PowerShell dice que no encuentra el archivo, ya no está: no hace falta hacer nada. Cuando la
+      lista sea la correcta, ejecuta los mismos comandos otra vez sin `-WhatIf`.
+7. Comprueba que funciona: elige "Crear revisor", mira la fila nueva en `Padrón` y repite
+   la prueba rápida del paso 7 con ese código. Normalmente sirve enseguida, porque el menú vacía la caché;
+   si responde `codigo_no_activo`, espera un minuto y repítela. Limpia como dice el paso 7.
 
 ### Actualización: guardar exige la autorización (#157)
 
@@ -336,57 +411,47 @@ las respuestas de ese docente.
   Con cualquier otro valor el código no está activo.
 - Antes de pegar filas, selecciona la columna A y ponla en texto sin formato (Formato, Número, Texto
   sin formato). Un código solo de dígitos se convertiría en número y dejaría de coincidir.
-- Para copiar los códigos desde el padrón privado, en PowerShell, desde la carpeta del repositorio.
-  Copia filas `código`, `alias` y `sí` separadas por tabulaciones, listas para pegar en A2:
-
-  ```powershell
-  cd C:\Users\TU_USUARIO\proyectos\3d_brain
-  $si = "s$([char]0xED)"
-  (Get-Content -Raw -Encoding UTF8 pipeline\revisores.local.json | ConvertFrom-Json).PSObject.Properties |
-    ForEach-Object { "$($_.Name)`t$($_.Value)`t$si" } | Set-Clipboard
-  ```
-
-  Esas filas llevan los códigos. Después de pegarlas en `Padrón`, limpia el portapapeles
-  (`Set-Clipboard -Value $null` en PowerShell) y borra el historial del portapapeles de Windows
-  (Win+V, Borrar todo).
-
-- Mantén `Padrón` y `pipeline/revisores.local.json` iguales: el canal usa la primera y el importador
-  el segundo.
-- Para docentes nuevos, `node scripts/crear-revisores.ts N` (sección 3) y agrega las filas nuevas a
-  `Padrón`.
+- La pestaña `Padrón` es la única fuente del padrón (#257): el canal la lee al recibir y el importador
+  usa su CSV (sección 4). La cabecera es exactamente `Código`, `Alias`, `Activo`, sin más columnas: el
+  nombre del docente no va ahí (sección 3).
+- Para docentes nuevos, usa el menú "Maysa Brain" de la hoja (sección 3). Si alguna vez pegas filas a
+  mano, limpia el portapapeles después: el aviso del menú trae enlaces con el código, y lo que copies queda en el
+  portapapeles. Limpia el portapapeles (`Set-Clipboard -Value $null` en PowerShell) y borra el
+  historial del portapapeles de Windows (Win+V, Borrar todo).
+- Activo decide qué códigos pueden escribir en el canal, pero no filtra lo que el importador lee de
+  `Respuestas` (sección 4): todo código del padrón se importa, esté en `sí`, en `no` o con otro valor.
 - Si un código se filtra, cámbialo a `no` en `Padrón` y crea uno nuevo. El cambio vale en un minuto
-  como mucho: el script guarda `Padrón` unos 60 s (#162).
+  como mucho: el script guarda `Padrón` unos 60 s (#162). Como Activo no filtra al importar, revisa en
+  `Respuestas` las filas de ese código posteriores a la filtración, borra las que no sean del docente y
+  solo entonces importa; el resumen de la importación lo recuerda en la sección "Códigos inactivos".
+- El límite de 120 peticiones por minuto no impide adivinar un código: lo que lo hace inviable es su
+  largo (10 caracteres de un alfabeto de 31 símbolos). Pasa a `no` los códigos de los docentes que ya
+  terminaron.
 
 ## 3. Invitar a cada docente
 
-Cada docente tiene un código aleatorio de 8 caracteres que no se puede adivinar y un alias público
+Cada docente tiene un código aleatorio de 10 caracteres que no se puede adivinar y un alias público
 (D01, D02...). El repositorio es público, así que el código nunca aparece en él: solo el alias (#15).
 
-Ya hay 10 códigos (D01 a D10), creados el 2026-10-12. Están en la carpeta privada **"Maysa Brain
-(privado)"** del Drive de Maysa Digital:
+Los códigos se crean desde la hoja del canal, con el menú **Maysa Brain** (a la derecha de Ayuda; si no
+aparece, recarga la hoja):
 
-- `revisores.local.json`: el **padrón privado** (código y alias). Sin él no se pueden importar las
-  revisiones. Antes de importar, se copia a `pipeline/revisores.local.json` (git lo ignora).
-- "Enlaces de docentes Maysa Brain (privado)": alias, código y enlace personal de cada docente, con
-  una columna para anotar a quién se lo diste.
+- **Crear revisor**: agrega una fila a `Padrón` con un código nuevo, el alias siguiente y Activo `sí`.
+- **Crear revisores…**: pregunta cuántos (de 1 a 30) y los crea todos de una vez, con alias seguidos.
+  Cancelar o un valor que no sea un número entero de 1 a 30 no escribe nada.
 
-Nunca compartas esa carpeta ni pegues un código en un issue, un PR o un chat público.
+El aviso que sale al terminar trae, por cada docente, el alias y su enlace personal. Ese aviso no se
+vuelve a mostrar: copia los enlaces antes de cerrarlo. Si no puedes copiar el texto del aviso, el código
+queda en la fila de `Padrón` y armas el enlace con la forma de más abajo. El enlace lleva el código:
+trátalo como una contraseña y no lo pegues en ningún chat público, issue o PR. Si el aviso dice que algo
+falló después de escribir, mira la última fila de `Padrón` antes de volver a intentarlo.
 
-Para agregar docentes, copia primero el padrón del Drive a `pipeline/revisores.local.json` (así los
-nuevos siguen la numeración: D11, D12...) y, desde la carpeta del repositorio:
-
-```powershell
-cd C:\Users\TU_USUARIO\proyectos\3d_brain
-node scripts/crear-revisores.ts 5
-```
-
-El script escribe el padrón actualizado y `pipeline/salida/enlaces-docentes.md`. Sube los dos al
-Drive en lugar de los anteriores (o pídeselo a Claude) y agrega los códigos nuevos a `Padrón`
-(sección 2).
+Anota el nombre de cada docente junto a su alias fuera de `Padrón`, porque la cabecera de la pestaña es
+estricta: en un documento privado del Drive que lleve solo el alias y el nombre, nunca el código.
 
 Mándale a cada docente, por un canal privado (correo o WhatsApp), solo el mensaje de
-`docs/guia-docentes.md` con su enlace personal, y anota su nombre junto al alias en el documento de
-enlaces. No hay formulario de registro que mandar. El enlace personal tiene esta forma:
+`docs/guia-docentes.md` con su enlace personal. No hay formulario de registro que mandar. El enlace
+personal tiene esta forma:
 
 ```
 https://brain.maysasp.com/es/revision?r=CODIGO
@@ -400,23 +465,27 @@ su canal propio. Esa confirmación es opcional pero recomendable.
 
 ## 4. Procesar las revisiones
 
-1. En la hoja del canal, descarga dos pestañas, una por una: abre `Respuestas` y usa Archivo,
-   Descargar, Valores separados por comas (.csv); después abre `Autorizaciones` y repite. Cada
-   descarga trae la pestaña que tengas abierta, así que cambia de pestaña antes de descargar. Los
-   archivos quedan en Descargas con los nombres `<nombre de la hoja> - Respuestas.csv` y
-   `<nombre de la hoja> - Autorizaciones.csv` (el formulario baja como `<título del
-   formulario>.csv.zip`). Los dos contienen códigos de docentes: bórralos cuando termines de importar.
-2. Copia el padrón del Drive a `pipeline/revisores.local.json` y, desde el repositorio, en PowerShell:
+1. En la hoja del canal, descarga tres pestañas, una por una: abre `Respuestas` y usa Archivo,
+   Descargar, Valores separados por comas (.csv); después abre `Autorizaciones` y repite, y por último
+   `Padrón`. Cada descarga trae la pestaña que tengas abierta, así que cambia de pestaña antes de
+   descargar. Los archivos quedan en Descargas con los nombres `<nombre de la hoja> - Respuestas.csv`,
+   `<nombre de la hoja> - Autorizaciones.csv` y `<nombre de la hoja> - Padrón.csv` (el formulario baja
+   como `<título del formulario>.csv.zip`). Los tres contienen códigos de docentes: bórralos cuando
+   termines de importar.
+2. Desde el repositorio, en PowerShell:
 
 ```powershell
 cd C:\Users\TU_USUARIO\proyectos\3d_brain
-node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Respuestas.csv" --autorizaciones "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Autorizaciones.csv"
+node scripts/importar-revisiones.ts "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Respuestas.csv" --padron "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Padrón.csv" --autorizaciones "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Autorizaciones.csv"
 ```
 
 El importador lee las cargas de antes (`v:1`, una estructura por envío) y las nuevas (`v:2`, todas
-las estructuras en un envío), y con las mismas respuestas da el mismo resumen. Lee el padrón de
-`pipeline/revisores.local.json` (o de la ruta que le pases como segundo argumento, antes o después de
-`--autorizaciones`) y no corre sin él. Ignora las filas con forma de `Autorizaciones` y de `Padrón`
+las estructuras en un envío), y con las mismas respuestas da el mismo resumen. Lee el padrón del CSV
+de `Padrón` que le pases con `--padron` (obligatorio, en cualquier posición) y no corre sin él: la
+primera fila debe ser la cabecera `Código,Alias,Activo`. Una fila del padrón con código o alias
+inválido se descarta con un aviso en la consola que dice su posición (y su alias, nunca el código);
+un alias repetido, un código con dos alias distintos, una cabecera mala o un padrón sin ningún código
+válido detienen la corrida. Ignora las filas con forma de `Autorizaciones` y de `Padrón`
 que vengan en el CSV de respuestas, así que también sirve con un CSV de la hoja entera. Pero las
 autorizaciones se leen solo del archivo de `--autorizaciones`, aunque el CSV de respuestas traiga
 sus filas.
@@ -426,9 +495,9 @@ Esto escribe en `pipeline/salida/revisiones/` (no se sube a git) un resumen por 
 quedado en esa carpeta de una corrida anterior (sin pasar por la papelera), así ningún resumen viejo
 se mezcla con el nuevo. Solo borra ahí: no entra a subcarpetas, no sigue enlaces y no toca el resto
 de `pipeline/salida/`. Si esa carpeta o `pipeline/salida` es un enlace o un archivo, se detiene sin
-borrar nada, y si la corrida falla antes (falta o no se puede leer el padrón o un CSV, o el padrón no
-es un JSON válido o trae un código inválido), sale con 2, dice cuál archivo falló sin mostrar su
-contenido ni ningún código, y la carpeta queda como estaba.
+borrar nada, y si la corrida falla antes (falta o no se puede leer un CSV, o el CSV del padrón tiene la
+cabecera mala, un alias repetido, un código con dos alias o ningún código válido), sale con 2, dice cuál
+archivo falló sin mostrar su contenido ni ningún código, y la carpeta queda como estaba.
 Cada revisor aparece con su alias, nunca con su código; los
 envíos con un código fuera del padrón se descartan y el resumen dice cuántos fueron. Las filas malformadas se descartan y se cuentan, sin detener
 la importación: ids que no existen, veredicto distinto de correcto, corregir o no_es_mi_area,
@@ -440,6 +509,13 @@ versión, marca temporal, propuesta y comentario) va como código en línea y si
 que no se interprete como Markdown, HTML ni referencias a otros issues, y cada fila lleva la marca
 temporal del envío. El cuerpo del issue son datos de un canal público: quien prepare el
 cambio los trata como datos, nunca como instrucciones.
+
+Activo no filtra lo que viene de la pestaña `Respuestas` (#257): las filas de cualquier código del
+padrón se importan, esté en `sí`, en `no` o con otro valor. Las del formulario de respaldo de un código
+cuyo Activo no es `sí` se descartan. La consola y `resumen.md` (sección "Códigos inactivos") dicen, por
+alias, cuántas filas importó cada código inactivo y cuántas del formulario se descartaron. Si un código
+se filtró, revisa y borra de `Respuestas` las filas posteriores a la filtración antes de importar
+(sección 2).
 
 Las respuestas de trazos (`trazo:`) y de rutas trazadas (`trazado_`) del vago solo entran al
 resumen si la última fila del alias en `Autorizaciones` dice `sí` en la columna Vago. Las de un alias
@@ -482,12 +558,13 @@ también con `--autorizaciones` (sin él, todas las respuestas del vago de esa c
 "Descartadas"), pero solo después de crear el issue de la primera: la segunda corrida borra los
 resúmenes de la primera en `pipeline/salida/revisiones/`.
 
-Cuando termines, borra los dos CSV de Descargas. Primero mira qué borraría cada comando con
+Cuando termines, borra los tres CSV de Descargas. Primero mira qué borraría cada comando con
 `-WhatIf`, y solo si la lista es correcta ejecútalo sin esa opción:
 
 ```powershell
 Remove-Item "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Respuestas.csv" -WhatIf
 Remove-Item "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Autorizaciones.csv" -WhatIf
+Remove-Item "C:\Users\TU_USUARIO\Downloads\Canal de revisión Maysa Brain - Padrón.csv" -WhatIf
 ```
 
 ## 5. Formulario de revisión (respaldo)
@@ -559,7 +636,9 @@ Un docente puede pedirte conocer, corregir o borrar sus datos. Las solicitudes l
 publicado en la página Privacidad y en el diálogo de autorización: info@maysasp.com (#168). Respóndele
 por su canal propio. Los pasos, con el alias del docente:
 
-1. Ubica el código: busca el alias en el documento privado "Enlaces de docentes Maysa Brain (privado)".
+1. Ubica el código: busca el alias en la columna B de la pestaña `Padrón`; el código está en la columna A
+   de esa fila. El nombre del docente está en tu documento privado de Drive, donde solo se guarda el
+   alias y el nombre.
 2. Si pide conocer sus datos, filtra por su código en `Respuestas` y en `Autorizaciones`, y entrégale
    esas filas.
 3. Si pide borrarlos, haz todo esto, en este orden:
@@ -568,7 +647,7 @@ por su canal propio. Los pasos, con el alias del docente:
    2. Borra todas sus filas de `Respuestas` y de `Autorizaciones` (en `Autorizaciones` hay una por
       cada aceptación y por cada cambio de la casilla del vago). En `Respuestas` van también las filas
       de retiro (#217), que llevan su código como las demás.
-   3. Borra su nombre del documento privado de enlaces.
+   3. Borra su nombre del documento privado donde anotas alias y nombre.
    4. Borra sus filas del formulario de registro y del formulario de revisión.
    5. Quita sus propuestas y comentarios de los issues de importación. Esos issues son públicos y
       repiten tal cual lo que el docente escribió, bajo su alias. Busca el alias en los issues
@@ -577,7 +656,7 @@ por su canal propio. Los pasos, con el alias del docente:
       muestra a cualquiera: en el menú del cuerpo del issue, Edit history, borra las revisiones
       anteriores. Si ese texto ya llegó a `src/data/` o a un PR, también hay que corregirlo allí,
       y eso lo aprueba el editor.
-   6. Quita el historial de versiones de las hojas y del documento de enlaces. Las filas y el
+   6. Quita el historial de versiones de las hojas y del documento donde anotas alias y nombre. Las filas y el
       nombre que borraste en los pasos 2 y 3 siguen recuperables en el historial de versiones de
       Hojas y de Documentos. Para quitarlo, haz una copia (Archivo, Hacer una copia), comprueba
       que la copia ya no tiene las filas ni el nombre, manda el original a la papelera de Drive y
@@ -593,6 +672,7 @@ por su canal propio. Los pasos, con el alias del docente:
       cd C:\Users\TU_USUARIO\proyectos\3d_brain
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Respuestas*.csv" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Autorizaciones*.csv" -WhatIf
+      Remove-Item "C:\Users\TU_USUARIO\Downloads\*Padrón*.csv" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Revisión del atlas*.csv*" -WhatIf
       Remove-Item "C:\Users\TU_USUARIO\Downloads\*Registro de revisores*.csv*" -WhatIf
       ```
@@ -612,7 +692,7 @@ por su canal propio. Los pasos, con el alias del docente:
    alias en las fichas que se hayan verificado y en los textos ya publicados en `src/data/` o en
    un PR; el alias en los issues que no se hayan editado; y las copias que no controlas (capturas,
    cachés, el historial de Git de lo ya publicado). Su nombre deja de estar recuperable en el
-   documento de enlaces solo si hiciste el paso 6, y aun así el alias puede ligarse a la persona si
+   documento de alias y nombres solo si hiciste el paso 6, y aun así el alias puede ligarse a la persona si
    ella misma escribió algo que la identifique en una propuesta o un comentario. Si pide que se retire de las
    fichas, es un cambio en `src/data/` que apruebas tú. La copia local de su navegador se borra
    borrando los datos del sitio en ese navegador.

@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
-  agregarRevisores,
   aplicarPadron,
   argumentosImportar,
   errorDePadron,
@@ -9,10 +8,13 @@ import {
   importar,
   leerAutorizaciones,
   leerEnvios,
+  padronDeCsv,
   parsearCsv,
+  parsearCsvConVacias,
   quitarRetiradas,
   resumenConsolidado,
   resumenMarkdown,
+  seccionInactivos,
   seccionRetiradas,
   seccionSinAutorizacion,
   separarSinVago,
@@ -509,15 +511,228 @@ describe('padrón privado de revisores (#15)', () => {
     expect(errorDePadron({ AAAA1111: 'Ana' })).toMatch(/alias inválido/);
     expect(errorDePadron({ AAAA1111: 'D01', BBBB2222: 'D01' })).toMatch(/repetido/);
   });
+});
 
-  it('agregarRevisores crea códigos de 8 caracteres sin repetir y alias consecutivos', () => {
-    let i = 0;
-    const azar = (max: number) => (i++ * 7) % max;
-    const { padron: nuevo, nuevos } = agregarRevisores({ EXISTENT: 'D02' }, 10, azar);
-    expect(nuevos.map((x) => x[1])).toEqual(['D03', 'D04', 'D05', 'D06', 'D07', 'D08', 'D09', 'D10', 'D11', 'D12']);
-    expect(Object.keys(nuevo)).toHaveLength(11);
-    for (const [codigo] of nuevos) expect(codigo).toMatch(/^[A-HJKMNP-Z2-9]{8}$/);
-    expect(errorDePadron(nuevo)).toBeNull();
+describe('padronDeCsv: la pestaña Padrón es la fuente del padrón (#257, D4)', () => {
+  const CAB = 'Código,Alias,Activo';
+  const leer = (...lineas: string[]) => padronDeCsv(parsearCsvConVacias([CAB, ...lineas].join('\n') + '\n'));
+  const plano = (p: Record<string, string>) => ({ ...p });
+
+  it('lee código -> alias y deja en inactivos lo que no es exactamente sí', () => {
+    const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D02,no', 'QQSECRETO3,D03,', 'QQSECRETO4,D04,SÍ', 'QQSECRETO5,D05,si');
+    expect(r.error).toBeNull();
+    expect(r.avisos).toEqual([]);
+    expect(plano(r.padron)).toEqual({ QQSECRETOX: 'D01', QQSECRETO2: 'D02', QQSECRETO3: 'D03', QQSECRETO4: 'D04', QQSECRETO5: 'D05' });
+    expect([...r.inactivos].sort()).toEqual(['QQSECRETO2', 'QQSECRETO3', 'QQSECRETO4', 'QQSECRETO5']);
+  });
+
+  it('quita la BOM y los espacios de la cabecera, y recorta código, alias y Activo', () => {
+    const r = padronDeCsv(parsearCsv(`\uFEFF Código , Alias ,Activo \n  QQSECRETOX , D01 , sí \n`));
+    expect(r.error).toBeNull();
+    expect(plano(r.padron)).toEqual({ QQSECRETOX: 'D01' });
+    expect(r.inactivos.size).toBe(0);
+  });
+
+  it('acepta la cabecera con solo la BOM delante, como la baja Excel', () => {
+    const r = padronDeCsv(parsearCsv(`\uFEFF${CAB}\nQQSECRETOX,D01,sí\n`));
+    expect(r.error).toBeNull();
+    expect(plano(r.padron)).toEqual({ QQSECRETOX: 'D01' });
+  });
+
+  it.each([
+    ['sin cabecera: la primera fila es un código', ['QQSECRETOX,D07,sí']],
+    ['cabecera con otro orden', ['Alias,Código,Activo', 'QQSECRETOX,D07,sí']],
+    ['cabecera con una columna de más', ['Código,Alias,Activo,Nombre', 'QQSECRETOX,D07,sí,Ana']],
+    ['cabecera con una columna de menos', ['Código,Alias', 'QQSECRETOX,D07']],
+    ['cabecera en inglés', ['Code,Alias,Active', 'QQSECRETOX,D07,sí']],
+    ['archivo vacío', []],
+  ])('%s: error con un texto fijo que no cita ninguna celda', (_n, lineas) => {
+    const r = padronDeCsv(parsearCsv(lineas.join('\n') + '\n'));
+    expect(r.error).toMatch(/^la primera fila no es la cabecera Código,Alias,Activo/);
+    expect(r.error).not.toContain('QQSECRETOX');
+    expect(r.error).not.toContain('D07');
+    expect(Object.keys(r.padron)).toEqual([]);
+  });
+
+  it('descarta la fila con código o alias inválido con un aviso por su fila de la hoja (la cabecera es la 1), con el alias si es válido y nunca el código', () => {
+    const r = leer('QQBUENOXYZ,D01,sí', 'QQTYPO XYZ,D02,sí', 'QQSECRETO7,Ana,sí', 'QQSECRETO8,,sí', 'QQ.MALO,Ana,sí', ',D06,sí');
+    expect(r.error).toBeNull();
+    expect(plano(r.padron)).toEqual({ QQBUENOXYZ: 'D01' });
+    expect(r.avisos).toEqual([
+      'código inválido en la fila 3 de la pestaña Padrón (alias D02): se descartó',
+      'alias inválido en la fila 4 de la pestaña Padrón (usa D01, D02...): se descartó',
+      'alias inválido en la fila 5 de la pestaña Padrón (usa D01, D02...): se descartó',
+      'código inválido en la fila 6 de la pestaña Padrón: se descartó',
+      'código inválido en la fila 7 de la pestaña Padrón (alias D06): se descartó',
+    ]);
+    for (const aviso of r.avisos) for (const c of ['QQBUENO', 'QQTYPO', 'QQSECRETO', 'QQ.MALO', 'Ana']) expect(aviso).not.toContain(c);
+  });
+
+  it.each([
+    ['una fila ,, (cómo Sheets exporta una fila borrada)', ',,'],
+    ['una línea en blanco', ''],
+    ['una fila con solo espacios', ' , ,'],
+  ])('%s antes de una fila mala no corre su número: es la fila física de la hoja', (_n, vacia) => {
+    const r = leer('QQBUENOXYZ,D01,sí', vacia, 'QQSECRET0!,D02,sí');
+    expect(r.error).toBeNull();
+    expect(plano(r.padron)).toEqual({ QQBUENOXYZ: 'D01' });
+    expect(r.avisos).toEqual(['código inválido en la fila 4 de la pestaña Padrón (alias D02): se descartó']);
+  });
+
+  it('una celda con comillas y saltos de línea cuenta como una sola fila', () => {
+    const r = padronDeCsv(parsearCsvConVacias(`${CAB}\nQQBUENOXYZ,D01,"sí\nnota"\nQQSECRET0!,D02,sí\n`));
+    expect(r.avisos).toEqual(['código inválido en la fila 3 de la pestaña Padrón (alias D02): se descartó']);
+  });
+
+  it('el alias repetido y el código con dos alias también cuentan las filas vacías', () => {
+    expect(leer('QQSECRETOX,D01,sí', ',,', 'QQSECRETO2,D01,sí').error).toBe('alias repetido en las filas 2 y 4 de la pestaña Padrón: D01');
+    expect(leer('QQSECRETOX,D01,sí', '', 'QQSECRETOX,D03,sí').error).toBe('el mismo código está en las filas 2 y 4 de la pestaña Padrón con los alias D01 y D03');
+  });
+
+  it('parsearCsvConVacias guarda los registros vacíos y parsearCsv los quita', () => {
+    const texto = 'a,b\n,,\n\nc,d\n';
+    expect(parsearCsvConVacias(texto)).toEqual([['a', 'b'], ['', '', ''], [''], ['c', 'd']]);
+    expect(parsearCsv(texto)).toEqual([['a', 'b'], ['c', 'd']]);
+  });
+
+  it('Activo no filtra: sí, no y cualquier otro valor entran al padrón', () => {
+    const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D02,no', 'QQSECRETO3,D03,quizás');
+    expect(Object.keys(r.padron)).toHaveLength(3);
+  });
+
+  it('un alias repetido en dos códigos es un error que nombra las filas y el alias, no el código', () => {
+    const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D01,sí');
+    expect(r.error).toBe('alias repetido en las filas 2 y 3 de la pestaña Padrón: D01');
+    expect(r.error).not.toContain('QQSECRETO');
+  });
+
+  it('el mismo código con otro alias es un error que nombra las filas de la hoja y los alias', () => {
+    const r = leer('QQSECRETOX,D01,sí', 'QQSECRETO2,D02,sí', 'QQSECRETOX,D03,sí');
+    expect(r.error).toBe('el mismo código está en las filas 2 y 4 de la pestaña Padrón con los alias D01 y D03');
+    expect(r.error).not.toContain('QQSECRETO');
+  });
+
+  it('el mismo código con el mismo alias se junta; si alguna de sus filas no es sí, el código queda inactivo', () => {
+    const r = leer('QQSECRETOX,D01,sí', 'QQSECRETOX,D01,no', 'QQSECRETO2,D02,sí');
+    expect(r.error).toBeNull();
+    expect(plano(r.padron)).toEqual({ QQSECRETOX: 'D01', QQSECRETO2: 'D02' });
+    expect([...r.inactivos]).toEqual(['QQSECRETOX']);
+  });
+
+  it('sin ningún código válido es un error con un texto fijo', () => {
+    const r = leer('QQTYPO XYZ,D02,sí', 'QQSECRETO7,Ana,sí');
+    expect(r.error).toBe('el padrón no tiene ningún código válido: revisa que sea el CSV de la pestaña Padrón');
+    expect(leer().error).toBe(r.error);
+  });
+
+  it('el padrón no tiene prototipo: un código llamado constructor no cuenta como conocido', () => {
+    const r = leer('QQSECRETOX,D01,sí');
+    expect(Object.getPrototypeOf(r.padron)).toBeNull();
+    const { envios, desconocidos } = aplicarPadron([{ revisor: 'constructor', estructura: 'hippocampus', respuestas: [], marcaTemporal: '' }], r.padron);
+    expect(envios).toEqual([]);
+    expect(desconocidos).toBe(1);
+    expect(leer('constructor,D01,sí').error).toBeNull();
+  });
+
+  it('D5: importar con el padrón del CSV da lo mismo que con el objeto equivalente, también con un código en no', () => {
+    const hoja = readFileSync('tests/fixtures/revisiones/hoja-respuestas-vago.csv', 'utf8');
+    const aut = readFileSync('tests/fixtures/revisiones/hoja-autorizaciones.csv', 'utf8');
+    const ests = {
+      hippocampus: { ficha: { version: '0.1.0' } },
+      'm-recurrent-laryngeal-nerve': { ficha: null },
+      'vagus-nerve-x': { ficha: { version: '0.1.0' } },
+    };
+    const delCsv = padronDeCsv(parsearCsv(readFileSync('tests/fixtures/revisiones/hoja-padron.csv', 'utf8')));
+    expect(delCsv.inactivos.has('SINAUT01')).toBe(true);
+    const equivalente = { VAGO01: 'D91', NOVAGO01: 'D92', SINAUT01: 'D93' };
+    const a = importar(hoja, ests, delCsv.padron, aut);
+    const b = importar(hoja, ests, equivalente, aut);
+    expect(a.archivos.size).toBeGreaterThan(1);
+    expect([...a.archivos]).toEqual([...b.archivos]);
+    expect(a).toEqual(b);
+    // El código en no no se filtra: sus tres respuestas siguen yendo a "sin autorización".
+    expect(a.sinAutorizacion).toBe(3);
+    expect(a.aliasSinAutorizacion).toEqual(['D93']);
+  });
+});
+
+describe('Activo al importar (#257, S1)', () => {
+  const CABH = 'Recibido,Código,Estructuras,Carga';
+  const elemento = { c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0' };
+  const deHoja = (r: string, c: string, recibido: string) => filaHoja({ r, e: { hippocampus: [{ ...elemento, c }] } }, recibido);
+  /** Fila del formulario de respaldo: cinco columnas, la fecha no es ISO. */
+  const delFormulario = (r: string, c: string) => fila({ v: 1, revisor: r, estructura: 'hippocampus', respuestas: [{ ...base, estructura: 'hippocampus', campo: c, veredicto: 'correcto' }] });
+  const csv = [
+    CABH,
+    deHoja('ANAT01', 'ubicacion', '2026-10-14T10:00:00.000Z'),
+    deHoja('PROF01', 'que_es', '2026-10-14T10:01:00.000Z'),
+    deHoja('PROF01', 'nombre', '2026-10-14T10:02:00.000Z'),
+    delFormulario('PROF01', 'latin'),
+    delFormulario('PROF01', 'pieza'),
+    delFormulario('ANAT01', 'relaciones'),
+    '',
+  ].join('\n');
+
+  it('con PROF01 inactivo: sus filas de Respuestas entran, las del formulario no, y los alias lo cuentan', () => {
+    const r = importar(csv, estructuras, padron, null, new Set(['PROF01']));
+    expect(r.inactivos).toEqual([{ alias: 'D02', aceptadas: 2, descartadasFormulario: 2 }]);
+    const md = r.archivos.get('hippocampus.md')!;
+    expect(md).toContain('`que_es`');
+    expect(md).toContain('`nombre`');
+    expect(md).not.toContain('`latin`');
+    expect(md).not.toContain('`pieza`');
+    // Un código activo no pierde nada.
+    expect(md).toContain('`relaciones`');
+    expect(md).toContain('`ubicacion`');
+    expect(r.validos).toBe(4);
+    const resumen = r.archivos.get('resumen.md')!;
+    expect(resumen).toContain('## Códigos inactivos');
+    expect(resumen).toContain('| `D02` | 2 | 2 |');
+    expect(resumen).not.toContain('PROF01');
+    expect(resumen).not.toContain('ANAT01');
+  });
+
+  it('sin el conjunto de inactivos Activo no cambia nada: entran todas las filas y no hay sección', () => {
+    const r = importar(csv, estructuras, padron, null);
+    expect(r.inactivos).toEqual([]);
+    expect(r.archivos.get('hippocampus.md')).toContain('`latin`');
+    expect(r.archivos.get('resumen.md')).not.toContain('Códigos inactivos');
+    expect(r.validos).toBe(6);
+  });
+
+  it('cuenta filas del CSV, no envíos: una fila v:2 con dos estructuras es una sola fila', () => {
+    const dos = (r: string, recibido: string) =>
+      filaHoja({ r, e: { hippocampus: [{ ...elemento, c: 'que_es' }], 'm-periaqueductal-grey': [{ ...elemento, c: 'que_es' }] } }, recibido);
+    const csvDos = [CABH, dos('PROF01', '2026-10-14T10:00:00.000Z'), deHoja('PROF01', 'nombre', '2026-10-14T10:01:00.000Z'), ''].join('\n');
+    const r = importar(csvDos, estructuras, padron, null, new Set(['PROF01']));
+    // Tres envíos (dos estructuras en la primera fila, una en la segunda) y solo dos filas.
+    expect(r.validos).toBe(3);
+    expect(r.inactivos).toEqual([{ alias: 'D02', aceptadas: 2, descartadasFormulario: 0 }]);
+    expect(r.archivos.get('resumen.md')).toContain('| `D02` | 2 | 0 |');
+  });
+
+  it('un código inactivo sin envíos no deja rastro', () => {
+    const r = importar(csv, estructuras, padron, null, new Set(['P1']));
+    expect(r.inactivos).toEqual([]);
+    expect(r.archivos.get('resumen.md')).not.toContain('Códigos inactivos');
+  });
+
+  it('un código inactivo fuera del padrón (con filas en el CSV) no deja rastro y cuenta como desconocido', () => {
+    const fuera = [CABH, deHoja('FUERA01', 'que_es', '2026-10-14T10:00:00.000Z'), delFormulario('FUERA01', 'latin'), ''].join('\n');
+    const r = importar(fuera, estructuras, padron, null, new Set(['FUERA01']));
+    expect(r.inactivos).toEqual([]);
+    expect(r.desconocidos).toBe(2);
+    expect(r.archivos.get('resumen.md')).not.toContain('Códigos inactivos');
+    expect(r.archivos.get('resumen.md')).not.toContain('FUERA01');
+  });
+
+  it('seccionInactivos lista solo alias y cuentas, en el orden recibido, y es vacía sin filas', () => {
+    expect(seccionInactivos([])).toBe('');
+    const sec = seccionInactivos([
+      { alias: 'D02', aceptadas: 1, descartadasFormulario: 0 },
+      { alias: 'D07', aceptadas: 0, descartadasFormulario: 4 },
+    ]);
+    expect(sec.split('\n').filter((l) => l.startsWith('| `D'))).toEqual(['| `D02` | 1 | 0 |', '| `D07` | 0 | 4 |']);
   });
 });
 
@@ -780,7 +995,8 @@ describe('casilla del vago (S2, #163)', () => {
     'm-recurrent-laryngeal-nerve': { ficha: null },
     'vagus-nerve-x': { ficha: { version: '0.1.0' } },
   };
-  const padronVago: Record<string, string> = JSON.parse(readFileSync('tests/fixtures/revisiones/padron-prueba.json', 'utf8'));
+  // El padrón sale de la copia de la pestaña Padrón (#257), como en la corrida real: VAGO01 D91, NOVAGO01 D92, SINAUT01 D93 (en no).
+  const padronVago = padronDeCsv(parsearCsv(readFileSync('tests/fixtures/revisiones/hoja-padron.csv', 'utf8'))).padron;
   const hojaVago = readFileSync('tests/fixtures/revisiones/hoja-respuestas-vago.csv', 'utf8');
   const autorizaciones = readFileSync('tests/fixtures/revisiones/hoja-autorizaciones.csv', 'utf8');
   const TITULO_SECCION = '## Descartadas: sin la casilla del vago';
@@ -912,7 +1128,7 @@ describe('casilla del vago (S2, #163)', () => {
       const { archivos } = importar(hojaVago, estructurasVago, padronVago, autorizaciones);
       expect(filasDe(archivos.get('vagus-nerve-x.md')!, 'D92').some((l) => l.includes('| `nombre` |'))).toBe(true);
       expect(filasDe(archivos.get('hippocampus.md')!, 'D92')).toHaveLength(1);
-      const soloUbicacion = `Recibido,Código,Estructuras,Carga\n${filaHoja({ r: 'NOVAGO01', e: { hippocampus: [{ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0' }] } }, '2026-10-15 11:05:00')}\n`;
+      const soloUbicacion = `Recibido,Código,Estructuras,Carga\n${filaHoja({ r: 'NOVAGO01', e: { hippocampus: [{ c: 'ubicacion', i: 'es', d: 'correcto', s: '0.1.0' }] } }, '2026-10-15T11:05:00.000Z')}\n`;
       const aparte = importar(soloUbicacion, estructurasVago, padronVago, autorizaciones);
       expect(archivos.get('hippocampus.md')).toBe(aparte.archivos.get('hippocampus.md'));
     });
@@ -1269,24 +1485,32 @@ describe('casilla del vago (S2, #163)', () => {
     });
   });
 
-  describe('D1: argumentosImportar', () => {
-    it('acepta el CSV, el padrón y la bandera en cualquier posición', () => {
-      expect(argumentosImportar(['a.csv'])).toEqual({ csv: 'a.csv' });
-      expect(argumentosImportar(['a.csv', 'p.json'])).toEqual({ csv: 'a.csv', padron: 'p.json' });
-      expect(argumentosImportar(['a.csv', '--autorizaciones', 'b.csv'])).toEqual({ csv: 'a.csv', autorizaciones: 'b.csv' });
-      expect(argumentosImportar(['--autorizaciones', 'b.csv', 'a.csv', 'p.json'])).toEqual({ csv: 'a.csv', padron: 'p.json', autorizaciones: 'b.csv' });
-      expect(argumentosImportar(['a.csv', 'p.json', '--autorizaciones', 'b.csv'])).toEqual({ csv: 'a.csv', padron: 'p.json', autorizaciones: 'b.csv' });
+  describe('D7: argumentosImportar', () => {
+    it('exige --padron, acepta las banderas en cualquier posición y un solo posicional', () => {
+      expect(argumentosImportar(['a.csv', '--padron', 'p.csv'])).toEqual({ csv: 'a.csv', padron: 'p.csv' });
+      expect(argumentosImportar(['--padron', 'p.csv', 'a.csv'])).toEqual({ csv: 'a.csv', padron: 'p.csv' });
+      expect(argumentosImportar(['a.csv', '--padron', 'p.csv', '--autorizaciones', 'b.csv'])).toEqual({ csv: 'a.csv', padron: 'p.csv', autorizaciones: 'b.csv' });
+      expect(argumentosImportar(['--autorizaciones', 'b.csv', 'a.csv', '--padron', 'p.csv'])).toEqual({ csv: 'a.csv', padron: 'p.csv', autorizaciones: 'b.csv' });
+      expect(argumentosImportar(['--autorizaciones', 'b.csv', '--padron', 'p.csv', 'a.csv'])).toEqual({ csv: 'a.csv', padron: 'p.csv', autorizaciones: 'b.csv' });
     });
 
     it.each([
       ['sin argumentos', []],
-      ['sin CSV', ['--autorizaciones', 'b.csv']],
-      ['bandera sin valor', ['a.csv', '--autorizaciones']],
-      ['bandera seguida de otra bandera', ['a.csv', '--autorizaciones', '--x']],
-      ['bandera con valor vacío', ['a.csv', '--autorizaciones', '']],
-      ['bandera repetida', ['a.csv', '--autorizaciones', 'b.csv', '--autorizaciones', 'c.csv']],
-      ['bandera desconocida', ['a.csv', '--otra']],
-      ['tres posicionales', ['a.csv', 'p.json', 'c']],
+      ['sin --padron', ['a.csv']],
+      ['sin --padron y con autorizaciones', ['a.csv', '--autorizaciones', 'b.csv']],
+      ['sin CSV de respuestas', ['--padron', 'p.csv']],
+      ['el JSON viejo como segundo posicional', ['a.csv', 'p.json']],
+      ['el JSON viejo como segundo posicional y --padron', ['a.csv', 'p.json', '--padron', 'p.csv']],
+      ['dos posicionales', ['a.csv', 'b.csv', '--padron', 'p.csv']],
+      ['--padron sin valor', ['a.csv', '--padron']],
+      ['--padron seguida de otra bandera', ['a.csv', '--padron', '--autorizaciones', 'b.csv']],
+      ['--padron con valor vacío', ['a.csv', '--padron', '']],
+      ['--padron repetida', ['a.csv', '--padron', 'p.csv', '--padron', 'q.csv']],
+      ['--autorizaciones sin valor', ['a.csv', '--padron', 'p.csv', '--autorizaciones']],
+      ['--autorizaciones seguida de otra bandera', ['a.csv', '--padron', 'p.csv', '--autorizaciones', '--x']],
+      ['--autorizaciones con valor vacío', ['a.csv', '--padron', 'p.csv', '--autorizaciones', '']],
+      ['--autorizaciones repetida', ['a.csv', '--padron', 'p.csv', '--autorizaciones', 'b.csv', '--autorizaciones', 'c.csv']],
+      ['bandera desconocida', ['a.csv', '--padron', 'p.csv', '--otra']],
     ])('uso indebido (%s) da null', (_n, args) => {
       expect(argumentosImportar(args)).toBeNull();
     });

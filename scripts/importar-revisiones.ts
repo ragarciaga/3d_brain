@@ -1,12 +1,17 @@
-// Uso: node scripts/importar-revisiones.ts respuestas.csv [padrón] [--autorizaciones autorizaciones.csv]
+// Uso: node scripts/importar-revisiones.ts respuestas.csv --padron padron.csv [--autorizaciones autorizaciones.csv]
 // Lee el CSV exportado de la hoja del formulario (F24) y escribe en pipeline/salida/revisiones/
 // (carpeta ignorada por git) un resumen por estructura y un resumen.md con todo, que es el cuerpo
 // del issue de la importación. Antes de escribir (y solo si todo lo anterior salió bien) borra los .md de
 // primer nivel que hayan quedado de una corrida anterior, sin seguir enlaces ni tocar nada más (ver
 // scripts/lib/salida.ts):
 //   node tools/rockbuilt/rb.mjs gh issue-create --title "Revisiones docentes" --body-file pipeline/salida/revisiones/resumen.md --label rb:needs-human
-// El padrón (código -> alias) es privado: por defecto pipeline/revisores.local.json, ignorado por
-// git. Los envíos con un código fuera del padrón se descartan y los issues solo muestran el alias.
+// --padron: CSV de la pestaña Padrón de la hoja del canal (obligatorio, #257): es la única fuente del padrón
+// (código -> alias). Debe tener la cabecera Código,Alias,Activo. Una fila con código o alias inválido se
+// descarta con un aviso por su posición (nunca por su código); un alias repetido, un código con dos alias, una
+// cabecera mala o ningún código válido salen con 2. Los envíos con un código fuera del padrón se descartan y los
+// issues solo muestran el alias.
+// Activo: las filas de la pestaña Respuestas de un código que no está en `sí` se importan igual; las del formulario
+// de respaldo de ese código se descartan. La consola y resumen.md dicen, por alias, cuántas filas aportó cada uno.
 // --autorizaciones: CSV de la pestaña Autorizaciones. Las respuestas de trazos y rutas del vago de un
 // revisor sin la casilla del vago no entran al resumen normal: salen en la sección "Descartadas: sin la
 // casilla del vago". Las de un revisor sin ninguna fila en Autorizaciones (también las del vago) salen
@@ -20,18 +25,18 @@
 // La lógica vive en scripts/lib/revisiones.ts (importar); aquí solo se lee y se escribe.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { argumentosImportar, errorDePadron, importar, type Padron } from './lib/revisiones.ts';
+import { argumentosImportar, importar, padronDeCsv, parsearCsvConVacias } from './lib/revisiones.ts';
 import { vaciarSalida } from './lib/salida.ts';
 
 const args = argumentosImportar(process.argv.slice(2));
 if (!args) {
-  console.error('Uso: node scripts/importar-revisiones.ts respuestas.csv [pipeline/revisores.local.json] [--autorizaciones autorizaciones.csv]');
+  console.error('Uso: node scripts/importar-revisiones.ts respuestas.csv --padron padron.csv [--autorizaciones autorizaciones.csv]');
   process.exit(2);
 }
 
 /**
  * Lee un archivo de entrada o sale con 2 y un mensaje corto con el rol y la ruta. Nunca muestra el
- * contenido ni el mensaje del sistema (el de un JSON roto trae el trozo del texto, con códigos).
+ * contenido ni el mensaje del sistema.
  */
 function leer(ruta: string, falta: string): string {
   if (!existsSync(ruta)) {
@@ -46,36 +51,36 @@ function leer(ruta: string, falta: string): string {
   }
 }
 
-const rutaPadron = args.padron ?? join('pipeline', 'revisores.local.json');
 const textoAutorizaciones = args.autorizaciones
   ? leer(args.autorizaciones, `No está el CSV de Autorizaciones en ${args.autorizaciones}. Descárgalo de la pestaña Autorizaciones de la hoja del canal.`)
   : null;
-const textoPadron = leer(rutaPadron, `No está el padrón de revisores en ${rutaPadron}. Créalo con: node scripts/crear-revisores.ts 10`);
+const textoPadron = leer(args.padron, `No está el CSV del Padrón en ${args.padron}. Descárgalo de la pestaña Padrón de la hoja del canal.`);
 const textoRespuestas = leer(args.csv, `No está el CSV de respuestas en ${args.csv}. Descárgalo de la pestaña Respuestas de la hoja del canal.`);
-let padron: unknown;
-try {
-  padron = JSON.parse(textoPadron);
-} catch {
-  console.error(`Padrón inválido (${rutaPadron}): no es un JSON válido. Debe ser un objeto {"CODIGO": "D01", ...}.`);
+const leido = padronDeCsv(parsearCsvConVacias(textoPadron));
+if (leido.error) {
+  console.error(`Padrón inválido (${args.padron}): ${leido.error}`);
   process.exit(2);
 }
-const error = errorDePadron(padron);
-if (error) {
-  console.error(`Padrón inválido (${rutaPadron}): ${error}`);
-  process.exit(2);
-}
+// Las filas descartadas se avisan por su posición y su alias, nunca por su código.
+for (const aviso of leido.avisos) console.error(`Padrón (${args.padron}): ${aviso}`);
 const datos = JSON.parse(readFileSync('src/data/estructuras.json', 'utf8')) as {
   estructuras: Record<string, { ficha: { version: string } | null }>;
 };
 if (!args.autorizaciones) {
   console.error('Sin --autorizaciones: todas las respuestas de trazos y rutas del vago van a "Descartadas: sin la casilla del vago".');
 }
-const { archivos, validos, invalidas, desconocidos, sinVago, autorizaciones, sinAutorizacion, aliasSinAutorizacion, retiradas } = importar(
+const { archivos, validos, invalidas, desconocidos, sinVago, autorizaciones, sinAutorizacion, aliasSinAutorizacion, retiradas, inactivos } = importar(
   textoRespuestas,
   datos.estructuras,
-  padron as Padron,
+  leido.padron,
   textoAutorizaciones,
+  leido.inactivos,
 );
+for (const f of inactivos) {
+  console.error(
+    `Código inactivo (Activo distinto de sí) del alias ${f.alias}: filas de Respuestas importadas: ${f.aceptadas}; filas del formulario descartadas: ${f.descartadasFormulario}.`,
+  );
+}
 if (autorizaciones === 0) {
   console.error('El CSV de Autorizaciones no tiene ninguna fila con un código válido: revisa que sea el de la pestaña Autorizaciones.');
 }
