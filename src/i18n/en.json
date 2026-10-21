@@ -324,8 +324,14 @@
     "entendido": "Got it"
   },
   "licencia": {
-    "enlace": "Sources and license",
+    "enlace": "Credits and license",
     "titulo": "Sources and license",
+    "autoresTitulo": "Who makes it",
+    "autoresIntro": "Each name links to their LinkedIn profile.",
+    "roles": {
+      "rafael": "AI Consultant",
+      "lorena": "Psychologist in training"
+    },
     "modeloTitulo": "3D model",
     "modelo": "The geometry comes from Z-Anatomy, built on BodyParts3D.",
     "ta2": "Latin, English and Spanish names: Terminologia Anatomica 2, included in Z-Anatomy.",
@@ -334,6 +340,11 @@
     "contenido": "Cards, groups and markers: CC BY-SA 4.0. External sources are cited and linked; their text is not copied.",
     "codigoTitulo": "Code",
     "codigo": "Application code: MIT license.",
+    "aportaTitulo": "Contribute",
+    "aporta": "This atlas is open source and a public good: you can use it, study it and help improve it.",
+    "repositorio": "GitHub repository",
+    "guiaAportes": "Contribution guide",
+    "aportaErrores": "Spotted a content error? Report it from each piece's card with the \"{{boton}}\" button.",
     "avisosTitulo": "Notices",
     "analitica": "We count visits with Cloudflare Web Analytics, without cookies or review data.",
     "volver": "Back to the atlas"

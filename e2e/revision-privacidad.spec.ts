@@ -153,7 +153,7 @@ test('B1: con beacon en el documento, adoptar el código recordado recarga y que
     (window as unknown as { __marcaDocumento: number }).__marcaDocumento = 1;
     localStorage.setItem('atlas:revisor', 'BEACON01');
   }, BEACON_FALSO);
-  await page.getByRole('link', { name: 'Fuentes y licencia' }).click();
+  await page.getByRole('link', { name: 'Créditos y licencia' }).click();
   await expect(page).toHaveURL(/\/es\/licencia$/);
   await page.getByRole('link', { name: 'Volver al atlas' }).click();
 
@@ -169,7 +169,7 @@ test('B2: sin beacon la adopción es en caliente y no recarga', async ({ page })
     (window as unknown as { __marcaDocumento: number }).__marcaDocumento = 1;
     localStorage.setItem('atlas:revisor', 'BEACON02');
   });
-  await page.getByRole('link', { name: 'Fuentes y licencia' }).click();
+  await page.getByRole('link', { name: 'Créditos y licencia' }).click();
   await page.getByRole('link', { name: 'Volver al atlas' }).click();
   await expect(barra(page)).toContainText('BEACON02');
   // Leído una vez, después de adoptar: el documento es el mismo (sin recarga) y no quedó marca de recarga.
@@ -252,7 +252,7 @@ test('un código que viene del almacén no se vuelve a escribir al navegar dentr
   await otra.goto('/es');
   await expect(barra(otra)).toContainText('SOLOUNA01');
   await irAlHipocampo(otra);
-  await otra.getByRole('link', { name: 'Fuentes y licencia' }).click();
+  await otra.getByRole('link', { name: 'Créditos y licencia' }).click();
   await expect(otra).toHaveURL(/\/es\/licencia$/);
   await otra.getByRole('link', { name: 'Volver al atlas' }).click();
   await expect(barra(otra)).toContainText('SOLOUNA01');

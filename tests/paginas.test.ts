@@ -67,7 +67,7 @@ describe('cableado de la página Privacidad (#168)', () => {
     expect(main).toContain('<Privacidad />');
   });
 
-  it('el pie de Pagina la enlaza después de Fuentes y licencia', () => {
+  it('the Pagina footer links it after the Credits and license link', () => {
     const pie = entre(leer('src/components/Pagina.tsx'), '<footer className="pie">', '</footer>');
     expect(pie).toContain('rutaPrivacidad(idioma)');
     expect(pie).toContain("t('privacidad.enlace')");

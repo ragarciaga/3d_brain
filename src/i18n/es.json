@@ -324,8 +324,14 @@
     "entendido": "Entendido"
   },
   "licencia": {
-    "enlace": "Fuentes y licencia",
+    "enlace": "Créditos y licencia",
     "titulo": "Fuentes y licencia",
+    "autoresTitulo": "Quiénes lo hacen",
+    "autoresIntro": "Cada nombre enlaza a su perfil de LinkedIn.",
+    "roles": {
+      "rafael": "Consultor IA",
+      "lorena": "Psicóloga en formación"
+    },
     "modeloTitulo": "Modelo 3D",
     "modelo": "La geometría proviene de Z-Anatomy, construido sobre BodyParts3D.",
     "ta2": "Nombres en latín, inglés y español: Terminologia Anatomica 2, incluida en Z-Anatomy.",
@@ -334,6 +340,11 @@
     "contenido": "Fichas, grupos y marcadores: CC BY-SA 4.0. Las fuentes externas se citan y enlazan; su texto no se copia.",
     "codigoTitulo": "Código",
     "codigo": "Código de la aplicación: licencia MIT.",
+    "aportaTitulo": "Aporta",
+    "aporta": "Este atlas es de código abierto y un bien público: puedes usarlo, estudiarlo y ayudar a mejorarlo.",
+    "repositorio": "Repositorio en GitHub",
+    "guiaAportes": "Guía para aportar (en inglés)",
+    "aportaErrores": "¿Viste un error de contenido? Repórtalo desde la ficha de cada pieza con el botón \"{{boton}}\".",
     "avisosTitulo": "Avisos",
     "analitica": "Contamos visitas con Cloudflare Web Analytics, sin cookies ni datos de revisión.",
     "volver": "Volver al atlas"
