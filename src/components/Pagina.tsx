@@ -315,62 +315,66 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
       className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${entrada ? ' con-ficha' : ''}${cortesAbierto ? ' cortes-abierto' : ''}`}
     >
       <header className="encabezado">
-        {/* DOM order = visual order on phones (CSS only adds a line break before "Estructuras"):
-            row 1 brand, language, theme; row 2 Estructuras, search, cortes, share. */}
-        <Link to={`/${idioma}`} className="marca">
-          <IconoMarca className="marca-icono" />
-          <PalabraMarca className="marca-palabra" />
-          <span className="solo-lector">{t('app.marca')}</span>
-        </Link>
-        <span className="espacio" />
-        {/* Siempre ES y luego EN, con el activo relleno: se distingue por color, forma y orden fijo. */}
-        <nav aria-label={t('idioma.selector')} className="selector-idioma">
-          {(['es', 'en'] as const).map((i) =>
-            i === idioma ? (
-              <span key={i} className="idioma-actual" aria-current="true" lang={i} title={t('idioma.actual', { idioma: t(`idioma.${i}`) })} data-testid="idioma-actual">
-                {i.toUpperCase()}
-              </span>
-            ) : (
-              <Link key={i} to={rutaOtro} hrefLang={i} lang={i} title={t(`idioma.${i}`)} data-testid="cambiar-idioma">
-                {i.toUpperCase()}
-              </Link>
-            ),
-          )}
-        </nav>
-        <BotonTema />
-        <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq"
-          onClick={() => {
-            if (!menu) setCortesAbierto(false); // el cajón de Estructuras y el de cortes se excluyen
-            setMenu(!menu);
-          }}
-        >
-          {t('menu.boton')}
-        </button>
-        <button type="button" className="boton-buscar" aria-label={t('riel.buscar')} title={t('riel.buscar')} onClick={() => setPaleta(true)}>
-          <IconoBuscar />
-        </button>
-        {/* Solo en celular (sin riel): abre el cajón inferior de cortes. */}
-        <button
-          ref={botonCortesMovil}
-          type="button"
-          className="boton-cortes"
-          aria-label={t('riel.cortes')}
-          title={cargado ? t('riel.cortes') : t('cortes.sinModelo')}
-          aria-expanded={cortesAbierto}
-          aria-controls="panel-cortes"
-          disabled={!cargado}
-          onClick={alternarCortes}
-        >
-          <IconoCortes />
-        </button>
-        <button type="button" className="compartir-encabezado" onClick={() => void compartir()}>
-          <span className="compartir-largo">{t('compartir.vista')}</span>
-          {/* En celular solo el ícono, para que la fila quepa. */}
-          <span className="compartir-corto">
-            <IconoCompartir />
-            <span className="solo-lector">{t('compartir.corto')}</span>
-          </span>
-        </button>
+        {/* Two groups so row 1 (brand, language, theme) can never wrap on phones. DOM order equals visual order.
+            Above 900 px both groups are `display: contents`, so the header is one flat row as before. */}
+        <div className="encabezado-fila encabezado-fila-1">
+          <Link to={`/${idioma}`} className="marca">
+            <IconoMarca className="marca-icono" />
+            <PalabraMarca className="marca-palabra" />
+            <span className="solo-lector">{t('app.marca')}</span>
+          </Link>
+          <span className="espacio" />
+          {/* Siempre ES y luego EN, con el activo relleno: se distingue por color, forma y orden fijo. */}
+          <nav aria-label={t('idioma.selector')} className="selector-idioma">
+            {(['es', 'en'] as const).map((i) =>
+              i === idioma ? (
+                <span key={i} className="idioma-actual" aria-current="true" lang={i} title={t('idioma.actual', { idioma: t(`idioma.${i}`) })} data-testid="idioma-actual">
+                  {i.toUpperCase()}
+                </span>
+              ) : (
+                <Link key={i} to={rutaOtro} hrefLang={i} lang={i} title={t(`idioma.${i}`)} data-testid="cambiar-idioma">
+                  {i.toUpperCase()}
+                </Link>
+              ),
+            )}
+          </nav>
+          <BotonTema />
+        </div>
+        <div className="encabezado-fila encabezado-fila-2">
+          <button ref={botonMenu} type="button" className="boton-menu" aria-expanded={menu} aria-controls="panel-izq"
+            onClick={() => {
+              if (!menu) setCortesAbierto(false); // el cajón de Estructuras y el de cortes se excluyen
+              setMenu(!menu);
+            }}
+          >
+            {t('menu.boton')}
+          </button>
+          <button type="button" className="boton-buscar" aria-label={t('riel.buscar')} title={t('riel.buscar')} onClick={() => setPaleta(true)}>
+            <IconoBuscar />
+          </button>
+          {/* Solo en celular (sin riel): abre el cajón inferior de cortes. */}
+          <button
+            ref={botonCortesMovil}
+            type="button"
+            className="boton-cortes"
+            aria-label={t('riel.cortes')}
+            title={cargado ? t('riel.cortes') : t('cortes.sinModelo')}
+            aria-expanded={cortesAbierto}
+            aria-controls="panel-cortes"
+            disabled={!cargado}
+            onClick={alternarCortes}
+          >
+            <IconoCortes />
+          </button>
+          <button type="button" className="compartir-encabezado" onClick={() => void compartir()}>
+            <span className="compartir-largo">{t('compartir.vista')}</span>
+            {/* On phones only the icon, so row 2 fits. */}
+            <span className="compartir-corto">
+              <IconoCompartir />
+              <span className="solo-lector">{t('compartir.corto')}</span>
+            </span>
+          </button>
+        </div>
         {revisor && !movil && (
           <button type="button" onClick={(e) => pedirSalida(e.currentTarget)}>
             {t('revision.salir')}
