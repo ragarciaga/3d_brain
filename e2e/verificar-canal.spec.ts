@@ -259,8 +259,8 @@ const ALIAS = /\bD\d{2}\b/;
 const REVISOR_CON_NOMBRE = /\b(?:[Rr]evisor(?:a|es)?|[Rr]eviewers?)\s*:?\s+\p{Lu}\p{Ll}+/u;
 
 for (const [lang, ficha, licencia, leerAviso, tituloPrivacidad] of [
-  ['es', 'hipocampo', 'Fuentes y licencia', 'Lee el aviso de privacidad', 'Privacidad'],
-  ['en', 'hippocampus', 'Sources and license', 'Read the privacy notice', 'Privacy'],
+  ['es', 'hipocampo', 'Créditos y licencia', 'Lee el aviso de privacidad', 'Privacidad'],
+  ['en', 'hippocampus', 'Credits and license', 'Read the privacy notice', 'Privacy'],
 ] as const) {
   test(`F7-E1: las vistas públicas (inicio, ficha sin verificar, licencia, privacidad) no muestran alias ni revisor con nombre (${lang})`, async ({ page }) => {
     const sinRevisor = async (vista: string) => {

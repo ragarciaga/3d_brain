@@ -177,7 +177,7 @@ test('carga el modelo, muestra piezas, cuadros por segundo, aviso educativo y li
   await modeloCargado(page);
   await expect(page.getByTestId('fps')).toHaveText(/\d+ cuadros\/s/);
   await expect(page.locator('footer')).toContainText('Uso educativo. No es una herramienta clínica ni de diagnóstico.');
-  await page.getByRole('link', { name: 'Fuentes y licencia' }).click();
+  await page.getByRole('link', { name: 'Créditos y licencia' }).click();
   await expect(page.getByTestId('licencia')).toContainText('Z-Anatomy');
   await expect(page.getByTestId('licencia')).toContainText('BodyParts3D');
   await expect(page.getByTestId('licencia')).toContainText('CC BY-SA 4.0');
@@ -321,10 +321,10 @@ test('la pantalla de licencia abierta directo respeta el idioma de la URL', asyn
 });
 
 for (const [lang, ficha, licencia, privacidad, volver] of [
-  ['es', 'hipocampo', 'Fuentes y licencia', 'Privacidad', 'Volver al atlas'],
-  ['en', 'hippocampus', 'Sources and license', 'Privacy', 'Back to the atlas'],
+  ['es', 'hipocampo', 'Créditos y licencia', 'Privacidad', 'Volver al atlas'],
+  ['en', 'hippocampus', 'Credits and license', 'Privacy', 'Back to the atlas'],
 ] as const) {
-  test(`Privacidad: el pie de inicio y de ficha la enlaza junto a Fuentes y licencia y la abre en el idioma (${lang})`, async ({ page }) => {
+  test(`Privacy: the home and card footers link it next to Credits and license and it opens in the language (${lang})`, async ({ page }) => {
     const ruta = lang === 'es' ? '/es/privacidad' : '/en/privacy';
     const pie = page.locator('footer');
     await abrir(page, `/${lang}`);
