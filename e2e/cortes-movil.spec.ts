@@ -77,7 +77,7 @@ test.describe('celular (390 x 844)', () => {
     const boton = botonMovil(page);
     const focoEnCajon = () => page.evaluate(() => !!document.activeElement?.closest('#panel-cortes'));
 
-    await test.step('(1) sin riel, el botón del encabezado va justo después de la lupa y el encabezado cabe en una línea (R6.2)', async () => {
+    await test.step('(1) sin riel, el botón del encabezado va justo después de la lupa y la segunda fila del encabezado cabe en una línea (R6.2)', async () => {
       await expect(page.locator('.riel')).toBeHidden();
       await expect(boton).toBeVisible();
       await expect(boton).toBeEnabled();

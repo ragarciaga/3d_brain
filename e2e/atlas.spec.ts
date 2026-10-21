@@ -819,7 +819,7 @@ test.describe('celular (390 x 844)', () => {
     const compartir = page.locator('.compartir-encabezado');
     await expect(compartir).toBeVisible();
     await expect(compartir).toHaveAccessibleName('Compartir');
-    // El encabezado cabe en una sola línea: el último botón queda a la altura del primero.
+    // Row 2 of the two-row header (#268) fits in one line: share sits level with "Estructuras".
     const arriba = async (l: Locator) => (await l.boundingBox())!.y;
     expect(Math.abs((await arriba(compartir)) - (await arriba(page.locator('.boton-menu'))))).toBeLessThan(8);
     await compartir.click();
@@ -882,7 +882,7 @@ test.describe('celular (390 x 844)', () => {
     await expect(toggle).toBeFocused(); // al cerrar la guía el foco vuelve a "Acciones"
     expect((await barra.boundingBox())!.height).toBeLessThan(64);
 
-    // El encabezado cabe en una línea y el botón de salir ya no está en él.
+    // Row 2 of the header fits in one line (share level with "Estructuras") and the exit button is no longer in it.
     const arriba = async (l: Locator) => (await l.boundingBox())!.y;
     expect(Math.abs((await arriba(page.locator('.compartir-encabezado'))) - (await arriba(page.locator('.boton-menu'))))).toBeLessThan(8);
     await expect(page.locator('.encabezado').getByRole('button', { name: 'Salir del modo revisión' })).toHaveCount(0);

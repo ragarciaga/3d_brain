@@ -1892,11 +1892,24 @@ body:has(.pagina-texto) {
 
   .encabezado {
     gap: 0.4rem;
+    row-gap: 0.35rem;
     padding: 0.4rem 0.5rem;
   }
 
-  .marca {
-    display: none;
+  /* Two rows (#268). Row 1: brand (icon and wordmark), language, theme. Row 2: "Estructuras", search,
+     cortes, share. The DOM already has this order; the pseudo-element is the full-width line break. */
+  .encabezado::after {
+    content: '';
+    flex-basis: 100%;
+    order: 1;
+    height: 0;
+  }
+
+  .boton-menu,
+  .boton-buscar,
+  .boton-cortes,
+  .compartir-encabezado {
+    order: 2;
   }
 
   /* "Compartir esta vista" no cabe en el encabezado del celular: se usa la etiqueta corta. */
@@ -1910,6 +1923,7 @@ body:has(.pagina-texto) {
   }
 
   .compartir-encabezado {
+    margin-left: auto;
     width: 2.2rem;
     height: 2.2rem;
     padding: 0;
@@ -1933,9 +1947,10 @@ body:has(.pagina-texto) {
     max-height: 44vh;
   }
 
-  /* Con una ficha abierta (la hoja de abajo), el recorrido sube. */
+  /* Con una ficha abierta (la hoja de abajo), el recorrido sube. Es `fixed`: su tope cuenta desde la
+     ventana, así que queda bajo las dos filas del encabezado (#268, unos 6,1rem). */
   .con-ficha .recorrido {
-    top: 3.4rem;
+    top: 6.4rem;
     bottom: auto;
     max-height: 32vh;
   }
@@ -1996,6 +2011,13 @@ body:has(.pagina-texto) {
     height: 6.5rem;
     justify-content: space-between;
     gap: 0.3rem;
+  }
+
+  /* Short phones: the two-row header (#268) takes 3 rem more, so the slider gives that room back. */
+  @media (max-height: 600px) {
+    .dock-deslizador {
+      height: 5.5rem;
+    }
   }
 
   /* Las marcas pasan al flujo para que ocupen su propia columna y no se pisen con el deslizador.
