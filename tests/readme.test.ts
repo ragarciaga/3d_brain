@@ -106,9 +106,20 @@ describe('espejo de secciones (D6, D7)', () => {
     expect([...(en ?? []), ...(es ?? [])].join('')).not.toContain('\uFE0F');
   });
 
-  const comunes = ['Rafael Andrés García', 'AI Consultant', 'https://www.linkedin.com/in/ragarciaga/', 'https://maysasp.com', 'info@maysasp.com', 'https://github.com/ragarciaga/rockbuilt', 'https://brain.maysasp.com/'];
-  const casos = LECTORES.flatMap((f) => [...comunes, f === 'README.md' ? 'Educational use. Not a clinical or diagnostic tool.' : 'Uso educativo. No es una herramienta clínica ni de diagnóstico.'].map((l) => [f, l] as const));
+  const comunes = ['Rafael Andrés García', 'Lorena Gómez', 'https://www.linkedin.com/in/ragarciaga/', 'https://www.linkedin.com/in/loregomeza/', 'https://maysasp.com', 'info@maysasp.com', 'https://github.com/ragarciaga/rockbuilt', 'https://brain.maysasp.com/'];
+  const roles: Record<string, string[]> = { 'README.md': ['AI Consultant', 'Psychologist in training'], 'README.es.md': ['Consultor IA', 'Psicóloga en formación'] };
+  const casos = LECTORES.flatMap((f) => [...comunes, ...(roles[f] ?? []), f === 'README.md' ? 'Educational use. Not a clinical or diagnostic tool.' : 'Uso educativo. No es una herramienta clínica ni de diagnóstico.'].map((l) => [f, l] as const));
   it.each(casos)('%s contiene %s', (f, literal) => {
     expect(leer(f)).toContain(literal);
+  });
+
+  it.each(LECTORES)('%s lists Rafael first, then Lorena, under the authors heading', (f) => {
+    const t = sinCodigo(f);
+    const encabezado = t.search(/^## 👤 (Authors|Autores) *$/m);
+    const rafael = t.indexOf('Rafael Andrés García', encabezado);
+    const lorena = t.indexOf('Lorena Gómez', encabezado);
+    expect(encabezado).toBeGreaterThan(-1);
+    expect(rafael).toBeGreaterThan(encabezado);
+    expect(lorena).toBeGreaterThan(rafael);
   });
 });

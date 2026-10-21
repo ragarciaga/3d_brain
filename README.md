@@ -19,7 +19,7 @@
 
 **Educational use. Not a clinical or diagnostic tool.**
 
-**📑 Contents:** [What it is](#-what-it-is) · [Why](#-why-this-atlas) · [Status](#-status) · [Features](#-features) · [Roadmap](#-roadmap) · [Screenshots](#-screenshots) · [How it's built](#-how-its-built) · [AI and human review](#-built-with-ai-tools-and-human-review) · [Content quality](#-content-quality) · [Contributing](#-contributing) · [Replicate it](#-replicate-it) · [Privacy](#-privacy) · [License](#-license-and-credits) · [Author](#-author) · [Documents](#-project-documents)
+**📑 Contents:** [What it is](#-what-it-is) · [Why](#-why-this-atlas) · [Status](#-status) · [Features](#-features) · [Roadmap](#-roadmap) · [Screenshots](#-screenshots) · [How it's built](#-how-its-built) · [AI and human review](#-built-with-ai-tools-and-human-review) · [Content quality](#-content-quality) · [Contributing](#-contributing) · [Replicate it](#-replicate-it) · [Privacy](#-privacy) · [License](#-license-and-credits) · [Authors](#-authors) · [Documents](#-project-documents)
 
 ## 🎯 What it is
 
@@ -171,9 +171,10 @@ Read the [privacy page](https://brain.maysasp.com/en/privacy), [ADR 0015](docs/a
 - Model and content of this atlas: CC BY-SA 4.0 ([LICENSE-CONTENT](LICENSE-CONTENT)).
 - Code: MIT ([LICENSE](LICENSE)).
 
-## 👤 Author
+## 👤 Authors
 
-**Rafael Andrés García, AI Consultant** · [LinkedIn](https://www.linkedin.com/in/ragarciaga/) · [maysasp.com](https://maysasp.com) · info@maysasp.com
+- **Rafael Andrés García, AI Consultant** · [LinkedIn](https://www.linkedin.com/in/ragarciaga/) · [maysasp.com](https://maysasp.com) · info@maysasp.com
+- **Lorena Gómez, Psychologist in training** · [LinkedIn](https://www.linkedin.com/in/loregomeza/)
 
 ## 📚 Project documents
 

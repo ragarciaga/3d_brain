@@ -19,7 +19,7 @@
 
 **Uso educativo. No es una herramienta clínica ni de diagnóstico.**
 
-**📑 Contenido:** [Qué es](#-qué-es) · [Por qué](#-por-qué-este-atlas) · [Estado](#-estado) · [Funciones](#-funciones) · [Hoja de ruta](#-hoja-de-ruta) · [Capturas](#-capturas) · [Cómo está hecho](#-cómo-está-hecho) · [IA y revisión humana](#-hecho-con-herramientas-de-ia-y-revisión-humana) · [Calidad del contenido](#-calidad-del-contenido) · [Cómo aportar](#-cómo-aportar) · [Replícalo](#-replícalo) · [Privacidad](#-privacidad) · [Licencia](#-licencia-y-créditos) · [Autor](#-autor) · [Documentos](#-documentos-del-proyecto)
+**📑 Contenido:** [Qué es](#-qué-es) · [Por qué](#-por-qué-este-atlas) · [Estado](#-estado) · [Funciones](#-funciones) · [Hoja de ruta](#-hoja-de-ruta) · [Capturas](#-capturas) · [Cómo está hecho](#-cómo-está-hecho) · [IA y revisión humana](#-hecho-con-herramientas-de-ia-y-revisión-humana) · [Calidad del contenido](#-calidad-del-contenido) · [Cómo aportar](#-cómo-aportar) · [Replícalo](#-replícalo) · [Privacidad](#-privacidad) · [Licencia](#-licencia-y-créditos) · [Autores](#-autores) · [Documentos](#-documentos-del-proyecto)
 
 ## 🎯 Qué es
 
@@ -171,9 +171,10 @@ Lee la [página de privacidad](https://brain.maysasp.com/es/privacidad), el [ADR
 - Modelo y contenido de este atlas: CC BY-SA 4.0 ([LICENSE-CONTENT](LICENSE-CONTENT)).
 - Código: MIT ([LICENSE](LICENSE)).
 
-## 👤 Autor
+## 👤 Autores
 
-**Rafael Andrés García, AI Consultant** · [LinkedIn](https://www.linkedin.com/in/ragarciaga/) · [maysasp.com](https://maysasp.com) · info@maysasp.com
+- **Rafael Andrés García, Consultor IA** · [LinkedIn](https://www.linkedin.com/in/ragarciaga/) · [maysasp.com](https://maysasp.com) · info@maysasp.com
+- **Lorena Gómez, Psicóloga en formación** · [LinkedIn](https://www.linkedin.com/in/loregomeza/)
 
 ## 📚 Documentos del proyecto
 
