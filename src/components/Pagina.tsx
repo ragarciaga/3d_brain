@@ -87,6 +87,7 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
   };
   const panel = useRef<HTMLElement>(null);
   const botonMenu = useRef<HTMLButtonElement>(null);
+  const encabezado = useRef<HTMLElement>(null);
   const entrada = slug ? entradaPorSlug(slug, idioma) : undefined; // react-router ya decodificó el slug
   const noEncontrada = !!slug && !entrada;
 
@@ -305,6 +306,22 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     setTimeout(() => setMensaje(''), 4000);
   }, [idioma, t]);
 
+  // On phones the header is one or two lines (it wraps by width and text size). The tour panel is `fixed`
+  // and needs the real height, which CSS alone cannot know, so it is published as `--alto-encabezado`.
+  useEffect(() => {
+    const el = encabezado.current;
+    if (!el) return;
+    const raiz = document.documentElement;
+    const medir = () => raiz.style.setProperty('--alto-encabezado', `${Math.ceil(el.getBoundingClientRect().bottom)}px`);
+    medir();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(medir);
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      raiz.style.removeProperty('--alto-encabezado');
+    };
+  }, [lang]);
+
   if (lang !== 'es' && lang !== 'en') return <Navigate to="/es" replace />;
 
   const otro: Idioma = idioma === 'es' ? 'en' : 'es';
@@ -314,9 +331,10 @@ export default function Pagina({ slug, revision = false }: { slug?: string; revi
     <div
       className={`app${menu ? ' menu-abierto' : ''}${revisor ? ' con-revision' : ''}${entrada ? ' con-ficha' : ''}${cortesAbierto ? ' cortes-abierto' : ''}`}
     >
-      <header className="encabezado">
-        {/* Two groups so row 1 (brand, language, theme) can never wrap on phones. DOM order equals visual order.
-            Above 900 px both groups are `display: contents`, so the header is one flat row as before. */}
+      <header ref={encabezado} className="encabezado">
+        {/* Two groups; DOM order equals visual order. At 900 px and below they are the header's wrapping flex
+            items: they share one line when they fit, otherwise group 2 drops whole to a second line, and each
+            group never splits. Above 900 px both are `display: contents`, so the header is one flat row. */}
         <div className="encabezado-fila encabezado-fila-1">
           <Link to={`/${idioma}`} className="marca">
             <IconoMarca className="marca-icono" />

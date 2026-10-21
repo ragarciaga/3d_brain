@@ -1,7 +1,8 @@
-// Issue 268: on phones the header hid the whole brand. Layout B on narrow phones (up to 596 px): two rows.
-// Row 1 has the brand (icon and wordmark), the language selector and the theme button, and never wraps:
-// the wordmark shrinks first. Row 2 has "Estructuras" (with its label), search, cortes and share. From
-// 597 px up to 900 px the same items fit in one row. These tests measure the real boxes.
+// Issue 268: on phones the header hid the whole brand. Up to 900 px the header has two groups that wrap by
+// themselves: group 1 (brand with icon and wordmark, language selector, theme button) and group 2
+// ("Estructuras" with its label, search, cortes, share). If both fit they share one line; otherwise group 2
+// drops whole to a second line. Group 1 never splits: its wordmark shrinks first. These tests measure the
+// real boxes at 100 % and 125 % text over a sweep of widths.
 import { expect, test, type Page } from '@playwright/test';
 import { protegerCanalReal } from './canal-real';
 
@@ -102,14 +103,28 @@ function comprobarDosFilas(m: Medida, etiqueta: string) {
   comprobarSinDesborde(m, etiqueta);
 }
 
-/** One row: every visible item shares a vertical center, with the brand at the left. */
+/** One line: every visible item shares a vertical center, the brand is first and the rest is at the right. */
 function comprobarUnaFila(m: Medida, etiqueta: string) {
   expect(m.hijos.length, `${etiqueta}: the header has exactly those seven visible children`).toBe(FILA_1.length + FILA_2.length);
   const centros = m.hijos.map((h) => h.caja.centroY);
-  expect.soft(Math.max(...centros) - Math.min(...centros), `${etiqueta}: one row, shared vertical center`).toBeLessThanOrEqual(2);
+  expect.soft(Math.max(...centros) - Math.min(...centros), `${etiqueta}: one line, shared vertical center`).toBeLessThanOrEqual(2);
   expect.soft(m.hijos[0]!.clase.split(' ')[0], `${etiqueta}: the brand comes first`).toBe('marca');
-  expect.soft(m.encabezado.h, `${etiqueta}: one-row header height`).toBeLessThan(64);
+  expect.soft(hijo(m, 'compartir-encabezado', etiqueta).derecha, `${etiqueta}: share is at the right edge`).toBeGreaterThan(m.anchoVentana - 24);
+  expect.soft(hijo(m, 'selector-idioma', etiqueta).x, `${etiqueta}: the language selector is right of the brand`).toBeGreaterThan(hijo(m, 'marca', etiqueta).derecha);
+  expect.soft(hijo(m, 'boton-tema', etiqueta).derecha, `${etiqueta}: the theme button is left of Estructuras`).toBeLessThan(hijo(m, 'boton-menu', etiqueta).x);
+  // Group 2 sits together at the right: the spare room goes to group 1, not between cortes and share.
+  expect.soft(hijo(m, 'compartir-encabezado', etiqueta).x - hijo(m, 'boton-cortes', etiqueta).derecha, `${etiqueta}: share is next to cortes`).toBeLessThanOrEqual(10);
+  expect.soft(m.encabezado.abajo - Math.max(...m.hijos.map((h) => h.caja.abajo)), `${etiqueta}: nothing sits under the line`).toBeLessThan(16);
   comprobarSinDesborde(m, etiqueta);
+}
+
+/** The header is either one line with all items or exactly two lines with the approved split; nothing else. */
+function comprobarEncabezado(m: Medida, etiqueta: string): 'una' | 'dos' {
+  const centros = m.hijos.map((h) => h.caja.centroY);
+  const unaLinea = Math.max(...centros) - Math.min(...centros) <= 2;
+  if (unaLinea) comprobarUnaFila(m, etiqueta);
+  else comprobarDosFilas(m, etiqueta);
+  return unaLinea ? 'una' : 'dos';
 }
 
 async function preparar(page: Page, ruta: string, ancho: number, alto: number, esquema: 'light' | 'dark' = 'light', texto125 = false) {
@@ -137,38 +152,55 @@ async function comprobarMarca(page: Page, idioma: 'es' | 'en', etiqueta: string)
   await expect(enlace.locator('.marca-palabra'), `${etiqueta}: wordmark`).toBeVisible();
 }
 
-// Narrow phones, 100 % and 125 % text, es and en: two rows, row 1 never wraps (also at 320 px and 125 %).
+// Width sweep at 100 % and 125 % text, es and en: one line with everything on it, or exactly two lines with
+// the approved split (row 1: brand, language, theme; row 2: Estructuras, search, cortes, share).
+const BARRIDO = [
+  [320, 568],
+  [360, 740],
+  [390, 844],
+  [480, 800],
+  [600, 800],
+  [700, 800],
+  [760, 800],
+  [844, 390],
+  [900, 700],
+] as const;
+
 for (const [idioma, ruta, estructuras] of [
   ['es', '/es/hipocampo', 'Estructuras'],
   ['en', '/en', 'Structures'],
 ] as const) {
   for (const texto125 of [false, true]) {
-    test(`${idioma}, text at ${texto125 ? 125 : 100} %: narrow phones have two rows, row 1 never wraps and the wordmark shrinks first`, async ({ page }) => {
+    test(`${idioma}, text at ${texto125 ? 125 : 100} %: the header is one line or two lines, row 1 never splits and only the wordmark shrinks`, async ({ page }) => {
       await preparar(page, ruta, 390, 844, 'light', texto125);
-      const anchos: Record<number, Medida> = {};
-      for (const [ancho, alto] of [
-        [390, 844],
-        [360, 740],
-        [320, 568],
-        // The last width with two rows.
-        [596, 800],
-      ] as const) {
+      const medidas: Record<number, Medida> = {};
+      const modos: Record<number, 'una' | 'dos'> = {};
+      for (const [ancho, alto] of BARRIDO) {
         await page.setViewportSize({ width: ancho, height: alto });
         const etiqueta = `${idioma} ${ancho}x${alto} ${texto125 ? '125 %' : '100 %'}`;
         await comprobarMarca(page, idioma, etiqueta);
         await expect(encabezado(page).getByRole('button', { name: estructuras, exact: true }), `${etiqueta}: menu name`).toBeVisible();
         const m = await medir(page);
-        comprobarDosFilas(m, etiqueta);
+        modos[ancho] = comprobarEncabezado(m, etiqueta);
+        // Group 1 never splits, whatever the mode.
+        const fila1 = FILA_1.map((c) => hijo(m, c, etiqueta).centroY);
+        expect.soft(Math.max(...fila1) - Math.min(...fila1), `${etiqueta}: row 1 never splits`).toBeLessThanOrEqual(2);
         // The menu keeps its text label (it is not collapsed to an icon).
         expect(await encabezado(page).locator('.boton-menu').innerText(), `${etiqueta}: menu label`).toBe(estructuras);
         expect(m.icono, `${etiqueta}: icon box`).not.toBeNull();
         expect(m.palabra, `${etiqueta}: wordmark box`).not.toBeNull();
         // The wordmark keeps its aspect ratio however far it shrinks.
         expect.soft(m.palabra!.escalaX, `${etiqueta}: wordmark scales evenly`).toBeCloseTo(m.palabra!.escalaY, 3);
-        anchos[ancho] = m;
+        medidas[ancho] = m;
       }
-      const ancho = anchos[390]!;
-      const angosto = anchos[320]!;
+      // Anchors, so the sweep cannot pass by always being in the same mode: phones are two lines at 320 to 480
+      // px, and the widest viewport holds one line at 100 % text.
+      for (const ancho of [320, 360, 390, 480]) expect(modos[ancho], `${ancho} px is two lines`).toBe('dos');
+      if (!texto125) {
+        for (const ancho of [900, 844]) expect(modos[ancho], `${ancho} px is one line`).toBe('una');
+      }
+      const ancho = medidas[390]!;
+      const angosto = medidas[320]!;
       // Icon, language selector and theme button keep their size; only the wordmark gives way.
       expect(angosto.icono!.w, 'icon width does not change at 320').toBeCloseTo(ancho.icono!.w, 1);
       expect(angosto.icono!.h, 'icon height does not change at 320').toBeCloseTo(ancho.icono!.h, 1);
@@ -176,6 +208,11 @@ for (const [idioma, ruta, estructuras] of [
       expect(hijo(angosto, 'boton-tema', '320').w, 'theme button width does not change').toBeCloseTo(hijo(ancho, 'boton-tema', '390').w, 1);
       expect(angosto.palabra!.w, 'the wordmark shrinks at 320').toBeLessThan(ancho.palabra!.w - 10);
       expect(angosto.palabra!.escalaY, 'the wordmark is still drawn, not collapsed').toBeGreaterThan(0.2);
+      // The wordmark only shrinks when group 1 alone does not fit its line: it never gets narrower as the
+      // viewport widens, and with text at 100 % it has its natural width from 360 px on.
+      const anchosPalabra = [320, 360, 390, 480].map((w) => medidas[w]!.palabra!.w);
+      for (let i = 1; i < anchosPalabra.length; i++) expect(anchosPalabra[i]!, `wordmark width at step ${i}`).toBeGreaterThanOrEqual(anchosPalabra[i - 1]! - 0.5);
+      if (!texto125) expect(medidas[360]!.palabra!.w, 'the wordmark has its natural width at 360').toBeCloseTo(medidas[480]!.palabra!.w, 1);
     });
   }
 }
@@ -189,30 +226,6 @@ test('the phone brand has the same size as on desktop', async ({ page }) => {
   expect(telefono.palabra!.h, 'wordmark height equals the desktop one').toBeCloseTo(escritorio.palabra!.h, 1);
   expect(telefono.palabra!.w, 'wordmark width equals the desktop one at 390').toBeCloseTo(escritorio.palabra!.w, 1);
 });
-
-// From 597 px up to 900 px one row holds the full brand and the labelled "Estructuras".
-for (const [idioma, ruta, estructuras] of [
-  ['es', '/es', 'Estructuras'],
-  ['en', '/en', 'Structures'],
-] as const) {
-  test(`${idioma}: from 597 px the header is one row with the full brand, also on a landscape phone`, async ({ page }) => {
-    await preparar(page, ruta, 597, 800);
-    for (const [ancho, alto] of [
-      [597, 800],
-      [844, 390],
-      [900, 700],
-    ] as const) {
-      await page.setViewportSize({ width: ancho, height: alto });
-      const etiqueta = `${idioma} ${ancho}x${alto}`;
-      await comprobarMarca(page, idioma, etiqueta);
-      await expect(encabezado(page).getByRole('button', { name: estructuras, exact: true }), `${etiqueta}: menu name`).toBeVisible();
-      comprobarUnaFila(await medir(page), etiqueta);
-    }
-    // One pixel narrower it is two rows again.
-    await page.setViewportSize({ width: 596, height: 800 });
-    comprobarDosFilas(await medir(page), `${idioma} 596x800`);
-  });
-}
 
 test('phone tab order follows the visual order: brand, language, theme, Estructuras, search, cortes, share', async ({ page }) => {
   await preparar(page, '/es', 390, 844);
@@ -257,6 +270,11 @@ test('desktop 1280x800: the header keeps one row with icon and wordmark', async 
   expect(m.icono!.w).toBeGreaterThan(0);
   expect(m.palabra!.w).toBeGreaterThan(0);
   expect(m.encabezado.h, 'one-row header height').toBeLessThan(64);
+  // The two groups are `display: contents` here: language, theme and share sit at the right edge, not packed
+  // against the brand.
+  expect(hijo(m, 'compartir-encabezado', '1280x800').derecha, 'share is at the right edge').toBeGreaterThan(m.anchoVentana - 24);
+  expect(hijo(m, 'selector-idioma', '1280x800').x, 'the language selector is in the right half').toBeGreaterThan(m.anchoVentana / 2);
+  expect(hijo(m, 'boton-tema', '1280x800').x, 'the theme button is in the right half').toBeGreaterThan(m.anchoVentana / 2);
   comprobarSinDesborde(m, '1280x800');
 });
 
@@ -332,7 +350,7 @@ test('320x568 with the model: the cortes sheet does not touch the dock and the d
   expect(dock.y + dock.height, 'the dock ends inside .centro').toBeLessThanOrEqual(centro.y + centro.height + 0.5);
 });
 
-test('390x844 with the model: the vagus tour panel with a card open stays below the header', async ({ page }) => {
+test('with the model: the vagus tour panel with a card open stays right under the header, on one line or two', async ({ page }) => {
   test.setTimeout(300_000);
   await conModelo(page, '/es/nervio-vago-x');
   await page.getByTestId('iniciar-recorrido').click();
@@ -345,9 +363,25 @@ test('390x844 with the model: the vagus tour panel with a card open stays below 
   await panel.getByText(/Ramos y estructuras de esta parada/).click();
   await panel.getByRole('button', { name: 'Tronco vagal anterior', exact: true }).click();
   await expect(page.locator('#ficha-titulo')).toHaveText('Tronco vagal anterior');
-  // A fixed panel: its top is counted from the window, so it must clear both header rows.
-  const cabecera = (await encabezado(page).boundingBox())!;
-  const caja = (await panel.boundingBox())!;
-  expect(caja.y, 'the tour panel clears the header').toBeGreaterThanOrEqual(cabecera.y + cabecera.height + 0.5);
-  expect(caja.y + caja.height, 'the tour panel ends inside the viewport').toBeLessThanOrEqual(844);
+  // A fixed panel: its top is counted from the window, so it follows the real header height (the header
+  // height is published by a ResizeObserver, hence the polling after each resize).
+  for (const [ancho, alto, lineas] of [
+    [390, 844, 'two lines'],
+    [760, 800, 'one line'],
+  ] as const) {
+    await page.setViewportSize({ width: ancho, height: alto });
+    await expect
+      .poll(
+        async () => {
+          const cabecera = (await encabezado(page).boundingBox())!;
+          const caja = (await panel.boundingBox())!;
+          const distancia = caja.y - (cabecera.y + cabecera.height);
+          return distancia >= 0.5 && distancia <= 8;
+        },
+        { message: `${ancho}x${alto} (${lineas}): the tour panel starts 0.5 to 8 px under the header`, timeout: 10_000 },
+      )
+      .toBe(true);
+    const caja = (await panel.boundingBox())!;
+    expect(caja.y + caja.height, `${ancho}x${alto}: the tour panel ends inside the viewport`).toBeLessThanOrEqual(alto);
+  }
 });
