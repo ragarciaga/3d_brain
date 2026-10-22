@@ -137,6 +137,8 @@ a {
 .app {
   display: flex;
   flex-direction: column;
+  /* iOS sizes `vh` with the toolbar collapsed; `dvh` is the visible height. `vh` is only the fallback. */
+  height: 100vh;
   height: 100dvh;
   background: var(--fondo);
 }
@@ -1999,6 +2001,20 @@ body:has(.pagina-texto) {
     grid-template-areas: 'centro';
     padding: 0;
     gap: 0;
+  }
+
+  /* The closed cortes drawer sits translated below .cuerpo; without this clip that box made the whole page
+     scroll on phones (#269). `clip` does not create a scroll container, so focus or `scrollIntoView` cannot
+     shift .cuerpo. */
+  .cuerpo {
+    overflow: hidden;
+    overflow: clip;
+  }
+
+  /* No iOS rubber band or pull-to-refresh on the atlas view; text pages (.pagina-texto, no .app) keep it.
+     Only the vertical axis, so the horizontal back-swipe is untouched. */
+  html:has(.app) {
+    overscroll-behavior-y: none;
   }
 
   .riel {
