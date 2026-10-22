@@ -1785,14 +1785,15 @@ a {
   box-shadow: var(--sombra);
   padding: 1.2rem 1.4rem;
   max-width: 460px;
-}
-
-/* Diálogo de "Reportar un error": en celular de poca altura la caja se desplaza en vez de salirse de la pantalla. */
-.reporte-caja {
+  /* B274: on short screens the box scrolls instead of running past the viewport (the overlay is fixed). */
   max-height: calc(100vh - 2rem);
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Diálogo de "Reportar un error". */
+.reporte-caja {
   width: 100%;
 }
 
