@@ -108,6 +108,7 @@ docente confirme o corrija en vez de ubicar desde cero. En paralelo: F8 (#33 a #
   vago con docentes (#11).
 
 ## Key decisions
+- 2026-10-23: retro on 2026-10-19 to 2026-10-23 (#257 to #274 and the nightly cycle): 5 lessons (1 updated), 1 config change (phone test matrix in AGENTS.md), 0 autonomy changes, 5 harness issues (ragarciaga/rockbuilt#34 to #38) plus evidence on #24, #25 and #32.
 - 2026-10-16: rendimiento en gama baja cerrado como está (decisión del editor): en el Tecno el cerebro aparece a los 5,3 a 6,2 s (antes 7,8 a 11,3 s); los cuadros/s de `?medir=1` caen mientras se arma el índice de toque (10 sin cortes, 12 con el sagital, 6 con tres cortes). Se ajusta solo si llega retroalimentación; mejora conocida: que el índice ceda un cuadro entre tandas (ver #178)
 - 2026-10-16: el Android de gama baja con cortes iba a 3 cuadros/s porque todas las mallas del encéfalo usaban `discard` con cualquier corte; se arregla con recorte por caja (#177, PR #187): las piezas enteras del lado oculto no se dibujan y las enteras del lado visible van sin planos. F19 (modelo liviano) queda diferido hasta medir de nuevo (decisión del editor), see docs/v2.md
 - 2026-10-16: el índice de toque (árboles BVH) se arma después del primer cuadro, por tandas de 12 ms (#178, PR #183)
