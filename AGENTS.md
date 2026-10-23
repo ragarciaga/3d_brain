@@ -74,6 +74,9 @@ Alcance y funciones (F1 a F24): SPEC.md. Producto y decisiones: docs/brief.md y 
 - **Cambio de alcance:** primero en SPEC.md, después en código.
 - **Comandos para el portátil del editor** (Windows, PowerShell): listos para pegar, con rutas
   de Windows de ejemplo.
+- **Phone test matrix.** Any change to the phone UI is checked (e2e and blind audit) at
+  320x568, 360x740, 390x844, one landscape size (844x390) and 125 % root text, in es and en.
+  Prefer layouts that wrap by content over breakpoints measured at a single text size.
 - **Repository language: English.** From 2026-10-20 on, everything new written to the
   repository or to GitHub is in English: docs (including the editor guides such as
   `docs/operacion.md` and `docs/revision-docente.md`, and the text around the PowerShell
